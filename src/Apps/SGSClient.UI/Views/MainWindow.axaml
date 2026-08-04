@@ -1,0 +1,57 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SGSClient.UI.ViewModels"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
+        x:Class="SGSClient.UI.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Width="1100" Height="700"
+        Title="SGSClient">
+
+  <Design.DataContext>
+    <vm:MainWindowViewModel/>
+  </Design.DataContext>
+
+  <ui:FANavigationView x:Name="NavView"
+                       PaneDisplayMode="Left"
+                       IsSettingsVisible="False"
+                       IsBackButtonVisible="False"
+                       OpenPaneLength="220"
+                       SelectionChanged="NavView_OnSelectionChanged">
+    <ui:FANavigationView.MenuItems>
+      <ui:FANavigationViewItem Content="Home" Tag="Home" IsSelected="True">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="Home"/>
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Sklep" Tag="Games">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="Shop"/>
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Biblioteka" Tag="Library">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="Library"/>
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+    </ui:FANavigationView.MenuItems>
+
+    <ui:FANavigationView.FooterMenuItems>
+      <ui:FANavigationViewItem Content="Profil" Tag="Account">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="Contact"/>
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Settings" Tag="Settings">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="Setting"/>
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
+    </ui:FANavigationView.FooterMenuItems>
+
+    <ContentControl Content="{Binding CurrentPage}" Margin="0"/>
+  </ui:FANavigationView>
+</Window>

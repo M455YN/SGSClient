@@ -1,0 +1,163 @@
+﻿<Page
+    x:Class="SGSClient.UI.WinUI.Views.AccountPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Grid>
+    <StackPanel x:Name="SignedOutPanel"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Spacing="12"
+                MaxWidth="480"
+                Margin="32">
+      <TextBlock Text="Profil" FontSize="32" FontWeight="SemiBold" />
+      <TextBlock x:Name="SignedOutStatus" Opacity="0.75" TextWrapping="Wrap" />
+      <Button Content="Zaloguj się" Click="SignIn_Click" HorizontalAlignment="Left" Padding="16,8" />
+    </StackPanel>
+
+    <ScrollViewer x:Name="ProfileScroll" Visibility="Collapsed">
+      <Grid>
+        <Border Height="280" VerticalAlignment="Top" IsHitTestVisible="False">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+              <GradientStop Color="#331A3A5C" Offset="0" />
+              <GradientStop Color="#222D5A45" Offset="0.45" />
+              <GradientStop Color="#33401E3A" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+        </Border>
+
+        <Grid Padding="28" ColumnSpacing="28">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="340" />
+          </Grid.ColumnDefinitions>
+
+          <StackPanel Grid.Column="0" Spacing="20">
+            <Grid ColumnSpacing="20">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <Border Width="96" Height="96" CornerRadius="48"
+                      Background="#2A2A2A" BorderBrush="#55FFFFFF" BorderThickness="2">
+                <Grid>
+                  <TextBlock x:Name="AvatarInitialsText"
+                             FontSize="32" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <Ellipse Width="96" Height="96">
+                    <Ellipse.Fill>
+                      <ImageBrush x:Name="AvatarBrush" Stretch="UniformToFill" />
+                    </Ellipse.Fill>
+                  </Ellipse>
+                </Grid>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                <TextBlock x:Name="DisplayNameText" FontSize="34" FontWeight="Bold" />
+                <TextBlock x:Name="LastActivityText" Opacity="0.7" FontSize="13" />
+                <StackPanel Orientation="Horizontal" Spacing="18" Margin="0,8,0,0">
+                  <TextBlock x:Name="FriendsText" Opacity="0.9" />
+                  <TextBlock x:Name="FollowingText" Opacity="0.9" />
+                  <TextBlock x:Name="FollowersText" Opacity="0.9" />
+                </StackPanel>
+              </StackPanel>
+            </Grid>
+
+            <StackPanel x:Name="ProfileInfoPanel" Spacing="14">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Biografia" FontWeight="SemiBold" Opacity="0.55" FontSize="12" />
+                <TextBlock x:Name="BioText" TextWrapping="Wrap" Opacity="0.9" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Lokalizacja" FontWeight="SemiBold" Opacity="0.55" FontSize="12" />
+                <TextBlock x:Name="LocationText" />
+              </StackPanel>
+              <TextBlock x:Name="EmailText" Opacity="0.55" FontSize="12" />
+            </StackPanel>
+
+            <StackPanel Spacing="10" Margin="0,8,0,0">
+              <TextBlock Text="Biblioteka" FontSize="18" FontWeight="SemiBold" />
+              <TextBlock Text="Osiągnięcia i postęp gier pojawią się tutaj." Opacity="0.55" FontSize="13" />
+              <ItemsControl x:Name="LibraryList">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid Margin="0,0,0,10" ColumnSpacing="12">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="48" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      <Border Width="48" Height="48" CornerRadius="4" Background="#333">
+                        <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontWeight="SemiBold" FontSize="12" />
+                      </Border>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Subtitle}" Opacity="0.55" FontSize="12" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel x:Name="RightRail" Grid.Column="1" Spacing="16">
+            <Button x:Name="EditButton" Content="Dostosuj profil" HorizontalAlignment="Stretch"
+                    Padding="12,10" Click="Edit_Click" />
+            <Button Content="Wyloguj" HorizontalAlignment="Stretch" Padding="12,10" Click="SignOut_Click" />
+
+            <StackPanel Spacing="10" Margin="0,8,0,0">
+              <TextBlock Text="Ostatnio używane gry" FontWeight="SemiBold" />
+              <GridView x:Name="RecentGrid" SelectionMode="None" IsItemClickEnabled="False">
+                <GridView.ItemTemplate>
+                  <DataTemplate>
+                    <Border Width="88" Height="88" CornerRadius="6" Background="#2B2B2B" Margin="4"
+                            ToolTipService.ToolTip="{Binding Title}">
+                      <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 FontWeight="Bold" FontSize="14" />
+                    </Border>
+                  </DataTemplate>
+                </GridView.ItemTemplate>
+              </GridView>
+              <TextBlock x:Name="EmptyRecentText" Text="Brak gier w lokalnej bibliotece."
+                         Opacity="0.5" FontSize="12" Visibility="Collapsed" />
+            </StackPanel>
+
+            <StackPanel Spacing="8" Margin="0,8,0,0">
+              <TextBlock Text="Gdzie gram" FontWeight="SemiBold" />
+              <TextBlock Text="PC" Opacity="0.75" />
+            </StackPanel>
+          </StackPanel>
+
+          <Border x:Name="EditPanel"
+                  Grid.Column="1"
+                  Visibility="Collapsed"
+                  Background="#22FFFFFF"
+                  CornerRadius="8"
+                  Padding="18"
+                  VerticalAlignment="Top">
+            <StackPanel Spacing="14">
+              <TextBlock Text="Dostosuj profil" FontSize="20" FontWeight="SemiBold" />
+              <StackPanel Spacing="6">
+                <TextBlock Text="Nazwa wyświetlana" Opacity="0.6" FontSize="12" />
+                <TextBox x:Name="EditDisplayNameBox" MinHeight="36" />
+              </StackPanel>
+              <StackPanel Spacing="6">
+                <TextBlock Text="Biografia" Opacity="0.6" FontSize="12" />
+                <TextBox x:Name="EditBioBox" AcceptsReturn="True" Height="110" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Spacing="6">
+                <TextBlock Text="Lokalizacja" Opacity="0.6" FontSize="12" />
+                <TextBox x:Name="EditLocationBox" MinHeight="36" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                <Button Content="Zapisz" Click="Save_Click" Padding="16,8" />
+                <Button Content="Anuluj" Click="CancelEdit_Click" Padding="16,8" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Grid>
+    </ScrollViewer>
+  </Grid>
+</Page>

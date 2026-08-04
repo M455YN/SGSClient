@@ -1,0 +1,31 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Apps/">
+    <Project Path="src/Apps/SGSClient.Api/SGSClient.Api.csproj" />
+    <Project Path="src/Apps/SGSClient.Server/SGSClient.Server.csproj" />
+    <Project Path="src/Apps/SGSClient.UI.WinUI/SGSClient.UI.WinUI.csproj">
+      <Platform Solution="*|Any CPU" Project="x64" />
+      <Platform Solution="*|x64" Project="x64" />
+      <Platform Solution="*|x86" Project="x86" />
+      <Deploy />
+    </Project>
+    <Project Path="src/Apps/SGSClient.UI/SGSClient.UI.csproj" />
+  </Folder>
+  <Folder Name="/src/Core/">
+    <Project Path="src/Core/SGSClient.Core/SGSClient.Core.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Infrastructure/SGSClient.Infrastructure.Client/SGSClient.Infrastructure.Client.csproj" />
+    <Project Path="src/Infrastructure/SGSClient.Infrastructure.Server/SGSClient.Infrastructure.Server.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SGSClient.Core.Tests/SGSClient.Core.Tests.csproj" />
+    <Project Path="tests/SGSClient.Server.Tests/SGSClient.Server.Tests.csproj" />
+    <Project Path="tests/SGSClient.UI.Tests/SGSClient.UI.Tests.csproj" />
+  </Folder>
+</Solution>

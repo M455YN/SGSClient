@@ -1,0 +1,37 @@
+[
+  {
+    "Name": "Api + Avalonia UI",
+    "Projects": [
+      {
+        "Path": "src\\Apps\\SGSClient.Api\\SGSClient.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Apps\\SGSClient.UI\\SGSClient.UI.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "Api + WinUI",
+    "Projects": [
+      {
+        "Path": "src\\Apps\\SGSClient.Api\\SGSClient.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Apps\\SGSClient.UI.WinUI\\SGSClient.UI.WinUI.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "Api only",
+    "Projects": [
+      {
+        "Path": "src\\Apps\\SGSClient.Api\\SGSClient.Api.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

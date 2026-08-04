@@ -1,0 +1,156 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.AccountView"
+             x:DataType="vm:AccountViewModel">
+  <Panel>
+    <StackPanel Margin="32" Spacing="12" MaxWidth="480"
+                IsVisible="{Binding ShowSignedOut}"
+                VerticalAlignment="Center" HorizontalAlignment="Center">
+      <TextBlock Text="Profil" FontSize="32" FontWeight="SemiBold"/>
+      <TextBlock Text="{Binding AccountStatus}" Opacity="0.75" TextWrapping="Wrap"/>
+      <Button Content="Zaloguj się" Click="SignInButton_OnClick" HorizontalAlignment="Left" Padding="16,8"/>
+    </StackPanel>
+
+    <ScrollViewer IsVisible="{Binding IsLoggedIn}" HorizontalScrollBarVisibility="Disabled">
+      <Panel>
+        <Border Height="280" VerticalAlignment="Top" IsHitTestVisible="False">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#331A3A5C" Offset="0"/>
+              <GradientStop Color="#222D5A45" Offset="0.45"/>
+              <GradientStop Color="#33401E3A" Offset="1"/>
+            </LinearGradientBrush>
+          </Border.Background>
+        </Border>
+
+        <Grid Margin="28,24,28,28" ColumnDefinitions="*,340" ColumnSpacing="28">
+          <StackPanel Grid.Column="0" Spacing="20">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
+              <Border Width="96" Height="96" CornerRadius="48"
+                      Background="#2A2A2A" BorderBrush="#55FFFFFF" BorderThickness="2">
+                <TextBlock Text="{Binding AvatarInitials}"
+                           FontSize="32" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+
+              <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="{Binding DisplayName}" FontSize="34" FontWeight="Bold"/>
+                <TextBlock Text="{Binding LastActivityText}" Opacity="0.7" FontSize="13"/>
+                <StackPanel Orientation="Horizontal" Spacing="18" Margin="0,8,0,0">
+                  <TextBlock Opacity="0.9">
+                    <Run Text="{Binding FriendsCount}" FontWeight="SemiBold"/>
+                    <Run Text=" Znajomi"/>
+                  </TextBlock>
+                  <TextBlock Opacity="0.9">
+                    <Run Text="{Binding FollowingCount}" FontWeight="SemiBold"/>
+                    <Run Text=" Obserwowane"/>
+                  </TextBlock>
+                  <TextBlock Opacity="0.9">
+                    <Run Text="{Binding FollowersCount}" FontWeight="SemiBold"/>
+                    <Run Text=" Obserwujący"/>
+                  </TextBlock>
+                </StackPanel>
+              </StackPanel>
+            </Grid>
+
+            <StackPanel Spacing="14">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Biografia" FontWeight="SemiBold" Opacity="0.55" FontSize="12"/>
+                <TextBlock Text="{Binding BioDisplay}" TextWrapping="Wrap" Opacity="0.9"/>
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Lokalizacja" FontWeight="SemiBold" Opacity="0.55" FontSize="12"/>
+                <TextBlock Text="{Binding LocationDisplay}"/>
+              </StackPanel>
+              <TextBlock Text="{Binding Email}" Opacity="0.55" FontSize="12"/>
+            </StackPanel>
+
+            <StackPanel Spacing="10" Margin="0,8,0,0">
+              <TextBlock Text="Biblioteka" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Osiągnięcia i postęp gier pojawią się tutaj." Opacity="0.55" FontSize="13"/>
+              <ItemsControl ItemsSource="{Binding RecentGames}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RecentGameItem">
+                    <Grid ColumnDefinitions="48,*,Auto" Margin="0,0,0,10" ColumnSpacing="12">
+                      <Border Width="48" Height="48" CornerRadius="4" Background="#333">
+                        <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontWeight="SemiBold" FontSize="12"/>
+                      </Border>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding Subtitle}" Opacity="0.55" FontSize="12"/>
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Right rail: actions OR edit card -->
+          <StackPanel Grid.Column="1" Spacing="16" IsVisible="{Binding ShowProfile}">
+            <Button Content="Dostosuj profil" HorizontalAlignment="Stretch" Padding="12,10"
+                    Click="EditButton_OnClick"/>
+            <Button Content="Wyloguj" HorizontalAlignment="Stretch" Padding="12,10"
+                    Click="SignOutButton_OnClick"/>
+
+            <StackPanel Spacing="10" Margin="0,8,0,0">
+              <TextBlock Text="Ostatnio używane gry" FontWeight="SemiBold"/>
+              <ItemsControl ItemsSource="{Binding RecentGames}" IsVisible="{Binding HasRecentGames}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <UniformGrid Columns="3"/>
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RecentGameItem">
+                    <Border Margin="4" Height="88" CornerRadius="6" Background="#2B2B2B"
+                            ToolTip.Tip="{Binding Title}">
+                      <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 FontWeight="Bold" FontSize="14"/>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="Brak gier w lokalnej bibliotece." Opacity="0.5" FontSize="12"
+                         IsVisible="{Binding ShowEmptyRecentGames}"/>
+            </StackPanel>
+
+            <StackPanel Spacing="8" Margin="0,8,0,0">
+              <TextBlock Text="Gdzie gram" FontWeight="SemiBold"/>
+              <TextBlock Text="PC" Opacity="0.75"/>
+            </StackPanel>
+          </StackPanel>
+
+          <Border Grid.Column="1"
+                  IsVisible="{Binding IsEditing}"
+                  Background="#22FFFFFF"
+                  CornerRadius="8"
+                  Padding="18"
+                  VerticalAlignment="Top">
+            <StackPanel Spacing="14">
+              <TextBlock Text="Dostosuj profil" FontSize="20" FontWeight="SemiBold"/>
+              <StackPanel Spacing="6">
+                <TextBlock Text="Nazwa wyświetlana" Opacity="0.6" FontSize="12"/>
+                <TextBox Text="{Binding EditDisplayName}" MinHeight="36"/>
+              </StackPanel>
+              <StackPanel Spacing="6">
+                <TextBlock Text="Biografia" Opacity="0.6" FontSize="12"/>
+                <TextBox Text="{Binding EditBio}" AcceptsReturn="True" Height="110" TextWrapping="Wrap"/>
+              </StackPanel>
+              <StackPanel Spacing="6">
+                <TextBlock Text="Lokalizacja" Opacity="0.6" FontSize="12"/>
+                <TextBox Text="{Binding EditLocation}" MinHeight="36"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                <Button Content="Zapisz" Click="SaveButton_OnClick" Padding="16,8"/>
+                <Button Content="Anuluj" Click="CancelEditButton_OnClick" Padding="16,8"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Panel>
+    </ScrollViewer>
+  </Panel>
+</UserControl>

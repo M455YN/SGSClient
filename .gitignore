@@ -1,0 +1,81 @@
+## .NET
+bin/
+obj/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.booproj
+*.pidb
+*.unityproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Visual Studio
+.vs/
+*.rsuser
+*.sln.docstates
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## WinUI / MSIX
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+*_TemporaryKey.pfx
+*.pfx
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+
+## Avalonia
+*.axaml.user
+
+## Publish / packages
+publish/
+artifacts/
+nupkg/
+*.nupkg
+*.snupkg
+
+## OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+## IDE
+.idea/
+*.swp
+*~
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+## Secrets / local
+appsettings.local.json
+appsettings.*.local.json
+*.local.json
+.env
+.env.*
+
+## Build noise
+*.binlog
+*.log
+winui_output_pretty.json

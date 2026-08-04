@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "SGSClient.UI.WinUI (Package)": {
+      "commandName": "MsixPackage",
+      "nativeDebugging": false
+    },
+    "SGSClient.UI.WinUI (Unpackaged)": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

@@ -1,0 +1,50 @@
+﻿<Window
+    x:Class="SGSClient.UI.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="SGSClient">
+
+  <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <NavigationView
+        x:Name="NavView"
+        PaneDisplayMode="Left"
+        IsSettingsVisible="False"
+        IsBackButtonVisible="Collapsed"
+        OpenPaneLength="220"
+        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+        SelectionChanged="NavView_SelectionChanged">
+      <NavigationView.MenuItems>
+        <NavigationViewItem Content="Home" Tag="Home" IsSelected="True">
+          <NavigationViewItem.Icon>
+            <FontIcon Glyph="&#xE80F;" />
+          </NavigationViewItem.Icon>
+        </NavigationViewItem>
+        <NavigationViewItem Content="Sklep" Tag="Games">
+          <NavigationViewItem.Icon>
+            <FontIcon Glyph="&#xE719;" />
+          </NavigationViewItem.Icon>
+        </NavigationViewItem>
+        <NavigationViewItem Content="Biblioteka" Tag="Library">
+          <NavigationViewItem.Icon>
+            <FontIcon Glyph="&#xE8F1;" />
+          </NavigationViewItem.Icon>
+        </NavigationViewItem>
+      </NavigationView.MenuItems>
+
+      <NavigationView.FooterMenuItems>
+        <NavigationViewItem Content="Profil" Tag="Account">
+          <NavigationViewItem.Icon>
+            <FontIcon Glyph="&#xE77B;" />
+          </NavigationViewItem.Icon>
+        </NavigationViewItem>
+        <NavigationViewItem Content="Settings" Tag="Settings">
+          <NavigationViewItem.Icon>
+            <FontIcon Glyph="&#xE713;" />
+          </NavigationViewItem.Icon>
+        </NavigationViewItem>
+      </NavigationView.FooterMenuItems>
+
+      <Frame x:Name="ContentFrame" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+    </NavigationView>
+  </Grid>
+</Window>
