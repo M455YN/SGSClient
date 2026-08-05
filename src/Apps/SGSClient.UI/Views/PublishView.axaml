@@ -1,0 +1,169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.PublishView"
+             x:DataType="vm:PublishViewModel">
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="28,24,28,32" Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
+      <StackPanel Spacing="6">
+        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
+        <TextBlock Text="Wybierz folder gry z sgs-manifest.json, popraw dane w formularzu i wyślij do sklepu. Zmiany zapiszą się też w manifeście."
+                   Opacity="0.65" TextWrapping="Wrap"/>
+        <TextBlock Text="{Binding AuthHint}" Opacity="0.55" FontSize="12" TextWrapping="Wrap"/>
+      </StackPanel>
+
+      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+        <StackPanel Spacing="14">
+          <TextBlock Text="1. Folder gry" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding SelectedFolder}" Opacity="0.8" TextWrapping="Wrap"/>
+          <Button Content="Wybierz folder…" Click="PickFolder_OnClick" Padding="14,8"
+                  HorizontalAlignment="Left" IsEnabled="{Binding !IsBusy}"/>
+        </StackPanel>
+      </Border>
+
+      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
+              IsVisible="{Binding HasManifestForm}">
+        <StackPanel Spacing="14">
+          <TextBlock Text="2. Dane gry w sklepie" FontSize="18" FontWeight="SemiBold"/>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Nazwa" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding GameTitle}" PlaceholderText="np. Demo Runner"/>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Symbol (URL, kebab-case)" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding GameSymbol}" PlaceholderText="np. demo-runner"/>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Opis" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding GameDescription}" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="88" PlaceholderText="Krótki opis widoczny w sklepie"/>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Wymagania sprzętowe" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding HardwareRequirements}" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="56" PlaceholderText="opcjonalnie"/>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Inne informacje" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding OtherInformation}" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="56" PlaceholderText="opcjonalnie"/>
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,12,*">
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="Gatunek" Opacity="0.55" FontSize="12"/>
+              <ComboBox ItemsSource="{Binding GenreOptions}" SelectedItem="{Binding GameGenre}"
+                        HorizontalAlignment="Stretch"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4">
+              <TextBlock Text="Silnik" Opacity="0.55" FontSize="12"/>
+              <ComboBox ItemsSource="{Binding EngineOptions}" SelectedItem="{Binding GameEngine}"
+                        HorizontalAlignment="Stretch"/>
+            </StackPanel>
+          </Grid>
+
+          <TextBlock Text="Media (opcjonalne)" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+          <TextBlock Text="Wybierz pliki z dysku — skopiujemy je do folderu media/ w grze. Możesz też zostawić puste."
+                     Opacity="0.5" FontSize="12" TextWrapping="Wrap"/>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Okładka" Opacity="0.55" FontSize="12"/>
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+              <TextBox Grid.Column="0" Text="{Binding MediaCover}" PlaceholderText="media/cover.png"
+                       IsReadOnly="True"/>
+              <Button Grid.Column="1" Content="Wybierz…" Click="PickCover_OnClick"
+                      Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+              <Button Grid.Column="2" Content="Wyczyść" Click="ClearCover_OnClick"
+                      Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Intro / trailer" Opacity="0.55" FontSize="12"/>
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+              <TextBox Grid.Column="0" Text="{Binding MediaIntro}" PlaceholderText="media/intro.mp4"
+                       IsReadOnly="True"/>
+              <Button Grid.Column="1" Content="Wybierz…" Click="PickIntro_OnClick"
+                      Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+              <Button Grid.Column="2" Content="Wyczyść" Click="ClearIntro_OnClick"
+                      Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Screeny" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding MediaScreenshots}" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="72" IsReadOnly="True" PlaceholderText="Brak — kliknij Dodaj…"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Dodaj…" Click="PickScreenshots_OnClick" Padding="12,8"
+                      IsEnabled="{Binding !IsBusy}"/>
+              <Button Content="Wyczyść listę" Click="ClearScreenshots_OnClick" Padding="12,8"
+                      IsEnabled="{Binding !IsBusy}"/>
+            </StackPanel>
+          </StackPanel>
+
+          <TextBlock Text="Build" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+
+          <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,Auto">
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="Wersja" Opacity="0.55" FontSize="12"/>
+              <TextBox Text="{Binding BuildVersion}" PlaceholderText="1.0.0"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4">
+              <TextBlock Text="Plik uruchomieniowy" Opacity="0.55" FontSize="12"/>
+              <TextBox Text="{Binding BuildExecutable}" PlaceholderText="bin/Game.exe"/>
+            </StackPanel>
+          </Grid>
+
+          <Grid ColumnDefinitions="*,12,*">
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="Platforma" Opacity="0.55" FontSize="12"/>
+              <ComboBox ItemsSource="{Binding PlatformOptions}" SelectedItem="{Binding BuildPlatform}"
+                        HorizontalAlignment="Stretch"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4">
+              <TextBlock Text="Architektura" Opacity="0.55" FontSize="12"/>
+              <ComboBox ItemsSource="{Binding ArchitectureOptions}" SelectedItem="{Binding BuildArchitecture}"
+                        HorizontalAlignment="Stretch"/>
+            </StackPanel>
+          </Grid>
+
+          <Button Content="Przygotuj paczkę" Click="Prepare_OnClick" Padding="14,8"
+                  HorizontalAlignment="Left" IsEnabled="{Binding !IsBusy}"/>
+        </StackPanel>
+      </Border>
+
+      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
+              IsVisible="{Binding HasSummary}">
+        <StackPanel Spacing="12">
+          <TextBlock Text="3. Publikacja" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding SummaryTitle}" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding SummaryMeta}" Opacity="0.7" TextWrapping="Wrap"/>
+          <Button Content="Opublikuj w sklepie" Click="Publish_OnClick"
+                  IsEnabled="{Binding CanPublish}" Padding="18,12"
+                  Background="#2E7D32" Foreground="White" HorizontalAlignment="Left"/>
+        </StackPanel>
+      </Border>
+
+      <StackPanel Spacing="8" IsVisible="{Binding ShowProgress}">
+        <TextBlock Text="Wysyłanie…" Opacity="0.7"/>
+        <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress}" Height="8"/>
+      </StackPanel>
+
+      <TextBlock Text="{Binding StatusText}" Opacity="0.75" TextWrapping="Wrap"/>
+
+      <ItemsControl ItemsSource="{Binding Issues}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <TextBlock Text="{Binding}" Foreground="#EF9A9A" Margin="0,0,0,4" TextWrapping="Wrap"/>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

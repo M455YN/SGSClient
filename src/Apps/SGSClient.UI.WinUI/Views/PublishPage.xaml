@@ -1,0 +1,171 @@
+<Page
+    x:Class="SGSClient.UI.WinUI.Views.PublishPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <ScrollViewer>
+    <StackPanel Margin="28,24,28,32" Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
+      <StackPanel Spacing="6">
+        <TextBlock x:Name="TitleText" FontSize="28" FontWeight="SemiBold" />
+        <TextBlock Text="Wybierz folder gry z sgs-manifest.json, popraw dane w formularzu i wyślij do sklepu. Zmiany zapiszą się też w manifeście."
+                   Opacity="0.65" TextWrapping="Wrap" />
+        <TextBlock x:Name="AuthHintText" Opacity="0.55" FontSize="12" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+        <StackPanel Spacing="14">
+          <TextBlock Text="1. Folder gry" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock x:Name="FolderText" Opacity="0.8" TextWrapping="Wrap" />
+          <Button x:Name="PickFolderButton" Content="Wybierz folder…" Click="PickFolder_Click"
+                  Padding="14,8" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="FormBorder" Padding="18" CornerRadius="10" Background="#1AFFFFFF"
+              BorderBrush="#33FFFFFF" BorderThickness="1" Visibility="Collapsed">
+        <StackPanel Spacing="14">
+          <TextBlock Text="2. Dane gry w sklepie" FontSize="18" FontWeight="SemiBold" />
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Nazwa" Opacity="0.55" FontSize="12" />
+            <TextBox x:Name="GameTitleBox" PlaceholderText="np. Demo Runner" />
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Symbol (URL, kebab-case)" Opacity="0.55" FontSize="12" />
+            <TextBox x:Name="GameSymbolBox" PlaceholderText="np. demo-runner" />
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Opis" Opacity="0.55" FontSize="12" />
+            <TextBox x:Name="GameDescriptionBox" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="88" PlaceholderText="Krótki opis widoczny w sklepie" />
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Wymagania sprzętowe" Opacity="0.55" FontSize="12" />
+            <TextBox x:Name="HardwareBox" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="56" PlaceholderText="opcjonalnie" />
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Inne informacje" Opacity="0.55" FontSize="12" />
+            <TextBox x:Name="OtherInfoBox" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="56" PlaceholderText="opcjonalnie" />
+          </StackPanel>
+
+          <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="Gatunek" Opacity="0.55" FontSize="12" />
+              <ComboBox x:Name="GenreCombo" HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4">
+              <TextBlock Text="Silnik" Opacity="0.55" FontSize="12" />
+              <ComboBox x:Name="EngineCombo" HorizontalAlignment="Stretch" />
+            </StackPanel>
+          </Grid>
+
+          <TextBlock Text="Media (opcjonalne)" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0" />
+          <TextBlock Text="Wybierz pliki z dysku — skopiujemy je do folderu media/ w grze. Możesz też zostawić puste."
+                     Opacity="0.5" FontSize="12" TextWrapping="Wrap" />
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Okładka" Opacity="0.55" FontSize="12" />
+            <Grid ColumnSpacing="8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="CoverBox" Grid.Column="0" PlaceholderText="media/cover.png" IsReadOnly="True" />
+              <Button Grid.Column="1" Content="Wybierz…" Click="PickCover_Click" Padding="12,8" />
+              <Button Grid.Column="2" Content="Wyczyść" Click="ClearCover_Click" Padding="12,8" />
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Intro / trailer" Opacity="0.55" FontSize="12" />
+            <Grid ColumnSpacing="8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="IntroBox" Grid.Column="0" PlaceholderText="media/intro.mp4" IsReadOnly="True" />
+              <Button Grid.Column="1" Content="Wybierz…" Click="PickIntro_Click" Padding="12,8" />
+              <Button Grid.Column="2" Content="Wyczyść" Click="ClearIntro_Click" Padding="12,8" />
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Screeny" Opacity="0.55" FontSize="12" />
+            <TextBox x:Name="ScreenshotsBox" AcceptsReturn="True" TextWrapping="Wrap"
+                     MinHeight="72" IsReadOnly="True" PlaceholderText="Brak — kliknij Dodaj…" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Dodaj…" Click="PickScreenshots_Click" Padding="12,8" />
+              <Button Content="Wyczyść listę" Click="ClearScreenshots_Click" Padding="12,8" />
+            </StackPanel>
+          </StackPanel>
+
+          <TextBlock Text="Build" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0" />
+
+          <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="Wersja" Opacity="0.55" FontSize="12" />
+              <TextBox x:Name="VersionBox" PlaceholderText="1.0.0" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4">
+              <TextBlock Text="Plik uruchomieniowy" Opacity="0.55" FontSize="12" />
+              <TextBox x:Name="ExecutableBox" PlaceholderText="bin/Game.exe" />
+            </StackPanel>
+          </Grid>
+
+          <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Spacing="4">
+              <TextBlock Text="Platforma" Opacity="0.55" FontSize="12" />
+              <ComboBox x:Name="PlatformCombo" HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4">
+              <TextBlock Text="Architektura" Opacity="0.55" FontSize="12" />
+              <ComboBox x:Name="ArchitectureCombo" HorizontalAlignment="Stretch" />
+            </StackPanel>
+          </Grid>
+
+          <Button x:Name="PrepareButton" Content="Przygotuj paczkę" Click="Prepare_Click"
+                  Padding="14,8" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
+      <Border x:Name="SummaryBorder" Padding="18" CornerRadius="10" Background="#1AFFFFFF"
+              BorderBrush="#33FFFFFF" BorderThickness="1" Visibility="Collapsed">
+        <StackPanel Spacing="12">
+          <TextBlock Text="3. Publikacja" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock x:Name="SummaryTitleText" FontSize="20" FontWeight="SemiBold" />
+          <TextBlock x:Name="SummaryMetaText" Opacity="0.7" TextWrapping="Wrap" />
+          <Button x:Name="PublishButton" Content="Opublikuj w sklepie" Click="Publish_Click"
+                  Padding="18,12" Background="#2E7D32" Foreground="White" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
+      <StackPanel x:Name="ProgressPanel" Spacing="8" Visibility="Collapsed">
+        <TextBlock Text="Wysyłanie…" Opacity="0.7" />
+        <ProgressBar x:Name="UploadProgress" Minimum="0" Maximum="1" Height="8" />
+      </StackPanel>
+
+      <TextBlock x:Name="StatusText" Opacity="0.75" TextWrapping="Wrap" />
+      <ItemsControl x:Name="IssuesList" />
+    </StackPanel>
+  </ScrollViewer>
+</Page>
