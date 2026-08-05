@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "game": {
+    "title": "Demo Runner",
+    "symbol": "demo-runner",
+    "description": "Sample catalog game for local development.",
+    "hardwareRequirements": "RAM: 4 GB",
+    "otherInformation": null,
+    "genre": "action",
+    "engine": "custom",
+    "media": {
+      "cover": "media/cover.png",
+      "intro": "media/intro.mp4",
+      "screenshots": [
+        "media/screen-01.png",
+        "media/screen-02.png"
+      ]
+    }
+  },
+  "build": {
+    "version": "0.1.0",
+    "platform": "windows",
+    "architecture": "x64",
+    "executable": "bin/DemoRunner.exe",
+    "isDefault": true
+  },
+  "package": {
+    "include": [
+      "bin/**",
+      "data/**",
+      "media/**",
+      "sgs-manifest.json"
+    ],
+    "exclude": [
+      "**/*.pdb",
+      "**/*.obj",
+      "**/obj/**",
+      "**/.git/**",
+      "**/node_modules/**"
+    ]
+  }
+}

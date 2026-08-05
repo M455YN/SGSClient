@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://szyrgamestudio.local/schemas/sgs-manifest.v1.json",
+  "title": "SGS Game Package Manifest",
+  "description": "Manifest required at the root of every uploaded game ZIP (sgs-manifest.json).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "game", "build"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Manifest format version. Currently only 1 is accepted."
+    },
+    "game": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "symbol"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 128
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "description": "Stable slug used in URLs and storage paths. Lowercase kebab-case."
+        },
+        "description": {
+          "type": ["string", "null"],
+          "maxLength": 4000
+        },
+        "hardwareRequirements": {
+          "type": ["string", "null"],
+          "maxLength": 2000
+        },
+        "otherInformation": {
+          "type": ["string", "null"],
+          "maxLength": 2000
+        },
+        "genre": {
+          "type": ["string", "null"],
+          "enum": ["action", "adventure", "rpg", "strategy", "simulation", "sports", "racing", "puzzle", "horror", "indie", "other", null],
+          "description": "Catalog genre slug."
+        },
+        "engine": {
+          "type": ["string", "null"],
+          "enum": ["unity", "unreal", "godot", "cryengine", "custom", "other", null],
+          "description": "Game engine slug."
+        },
+        "media": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "description": "Optional store media. Paths are relative inside the ZIP (forward slashes).",
+          "properties": {
+            "cover": {
+              "type": ["string", "null"],
+              "minLength": 1,
+              "maxLength": 260,
+              "description": "Cover/hero image (.png, .jpg, .jpeg, .webp, .gif)."
+            },
+            "intro": {
+              "type": ["string", "null"],
+              "minLength": 1,
+              "maxLength": 260,
+              "description": "Intro/trailer video (.mp4, .webm)."
+            },
+            "screenshots": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 260
+              }
+            }
+          }
+        }
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "platform", "executable"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$",
+          "description": "SemVer-like version, e.g. 1.0.0 or 1.0.0-beta.1"
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["windows", "linux", "macos"]
+        },
+        "architecture": {
+          "type": ["string", "null"],
+          "enum": ["x64", "x86", "arm64", null],
+          "default": "x64"
+        },
+        "executable": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 260,
+          "description": "Relative path inside the ZIP to the launch file (forward slashes). Must exist after unpack."
+        },
+        "isDefault": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this build is the default for its platform."
+        }
+      }
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional packing hints for the SGSClient packer. Server ignores unknown globs but enforces global limits.",
+      "properties": {
+        "include": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "type": "string", "minLength": 1, "maxLength": 260 }
+        },
+        "exclude": {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "type": "string", "minLength": 1, "maxLength": 260 }
+        }
+      }
+    }
+  }
+}
