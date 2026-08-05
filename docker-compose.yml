@@ -1,0 +1,33 @@
+# Api + persistent game package volume.
+# SQL can stay on your existing host (set ConnectionStrings__SgsDatabase).
+#
+# Example:
+#   docker compose up -d --build
+#
+# On Windows/Mac host SQL: use host.docker.internal
+# On Linux: use host IP or extra_hosts.
+
+services:
+  sgs-api:
+    build:
+      context: .
+      dockerfile: src/Apps/SGSClient.Api/Dockerfile
+    ports:
+      - "7142:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__SgsDatabase: "Data Source=host.docker.internal;Initial Catalog=SGS_SGSCLIENT_TEST;User ID=sa;Password=CHANGE_ME;Encrypt=True;TrustServerCertificate=True"
+      Games__StoragePath: /data/sgs/games
+      Games__PublicBaseUrl: /api/games/packages
+      Games__MediaPublicBaseUrl: /api/games/media
+      # AzureAd__Enabled: "true"
+      # AzureAd__ClientId: "..."
+      # AzureAd__TenantName: "..."
+    volumes:
+      - sgs_games:/data/sgs/games
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  sgs_games:

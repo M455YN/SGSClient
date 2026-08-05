@@ -67,6 +67,43 @@ Data Source=db.m455yn.dev;Initial Catalog=<db>;User ID=<user>;Password=<password
 
 On Api startup: migrate + seed demo games (`GET /api/games`).
 
+## Game package manifest (`sgs-manifest.json`)
+
+Every uploaded build ZIP must contain **`sgs-manifest.json` at the archive root**.
+
+| Artifact | Path |
+|----------|------|
+| JSON Schema | `schemas/sgs-manifest.v1.json` |
+| Example | `schemas/examples/demo-runner.sgs-manifest.json` |
+| C# model + rules | `src/Core/SGSClient.Core/Packaging/` |
+
+**ZIP layout**
+
+```text
+game.zip
+  sgs-manifest.json
+  bin/DemoRunner.exe
+  data/...
+```
+
+**Server limits (v1):** max ZIP 2 GB, max uncompressed 4 GB, max 20k entries, depth ≤ 12, no `..` / absolute paths, executable must match platform (e.g. `.exe` on Windows).
+
+Client may preflight with `SgsPackageRules.ValidateManifest`; server re-validates before accepting storage.
+
+### Publish from SGSClient
+
+Nav item **Publikuj**: pick game folder (with `sgs-manifest.json`) → prepare ZIP → upload to `POST /api/Games/uploads`.
+
+### Docker (Api + game files)
+
+```bash
+docker compose up -d --build
+```
+
+- Volume `sgs_games` → `/data/sgs/games`
+- Set `ConnectionStrings__SgsDatabase` in `docker-compose.yml`
+- With B2C enabled, login is required before upload
+
 ## Prerequisites
 
 - .NET 10 SDK
