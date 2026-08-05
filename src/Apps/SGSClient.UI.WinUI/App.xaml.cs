@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media;
 using SGSClient.Core.Interfaces;
 using SGSClient.Infrastructure.Client;
 using SGSClient.Infrastructure.Client.Persistence;
+using SGSClient.Infrastructure.Client.Services;
 using SGSClient.UI.WinUI.ViewModels;
 
 namespace SGSClient.UI.WinUI;
@@ -32,12 +33,23 @@ public partial class App : Application
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
         services.AddClientInfrastructure(configuration);
+        services.AddTransient(sp => new HomeViewModel(sp.GetService<ISgsApiService>()));
         services.AddTransient(sp => new GamesViewModel(
+            sp.GetService<ISgsApiService>(),
+            sp.GetRequiredService<IServiceScopeFactory>()));
+        services.AddTransient(sp => new GameDetailsViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>()));
         services.AddTransient(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>()));
+        services.AddTransient(sp => new PublishViewModel(
+            sp.GetService<IGamePackagePacker>(),
+            sp.GetService<IGameUploadClient>(),
+            sp.GetService<IAuthSession>()));
+        services.AddTransient(sp => new SettingsViewModel(
+            sp.GetRequiredService<IConfiguration>(),
+            sp.GetRequiredService<IServiceScopeFactory>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),

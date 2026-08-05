@@ -30,11 +30,37 @@
 
       <GridView x:Name="GamesGrid"
                 SelectionMode="None"
-                IsItemClickEnabled="False">
+                IsItemClickEnabled="True"
+                ItemClick="GamesGrid_ItemClick">
+        <!-- Kill default GridViewItem hover chrome (sharp offset rectangle). -->
+        <GridView.ItemContainerStyle>
+          <Style TargetType="GridViewItem">
+            <Setter Property="Margin" Value="0,0,16,16" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+              <Setter.Value>
+                <ControlTemplate TargetType="GridViewItem">
+                  <ContentPresenter Content="{TemplateBinding Content}"
+                                    ContentTemplate="{TemplateBinding ContentTemplate}"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                </ControlTemplate>
+              </Setter.Value>
+            </Setter>
+          </Style>
+        </GridView.ItemContainerStyle>
         <GridView.ItemTemplate>
           <DataTemplate>
-            <Border Width="260" Margin="0,0,16,16" Padding="14" CornerRadius="8"
-                    Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+            <Border Width="260" Padding="14" CornerRadius="8"
+                    Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
+                    PointerEntered="GameCard_PointerEntered"
+                    PointerExited="GameCard_PointerExited">
               <StackPanel Spacing="10">
                 <Grid ColumnSpacing="12">
                   <Grid.ColumnDefinitions>

@@ -20,6 +20,15 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasGames}">
       <ItemsControl ItemsSource="{Binding Games}">
+        <ItemsControl.Styles>
+          <Style Selector="ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+          </Style>
+          <Style Selector="Border.game-card:pointerover">
+            <Setter Property="Background" Value="#33FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#55FFFFFF"/>
+          </Style>
+        </ItemsControl.Styles>
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <WrapPanel/>
@@ -27,8 +36,9 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:GameListItem">
-            <Border Width="280" Margin="0,0,16,16" Padding="14" CornerRadius="8"
-                    Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+            <Border Classes="game-card" Width="280" Margin="0,0,16,16" Padding="14" CornerRadius="8"
+                    Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
+                    Cursor="Hand" Tag="{Binding}" PointerPressed="GameCard_OnPointerPressed">
               <StackPanel Spacing="10">
                 <Grid ColumnDefinitions="56,*" ColumnSpacing="12">
                   <Border Width="56" Height="56" CornerRadius="8" Background="#333">

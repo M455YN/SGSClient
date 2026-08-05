@@ -1,0 +1,164 @@
+<Page
+    x:Class="SGSClient.UI.WinUI.Views.GameDetailsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Grid>
+    <TextBlock x:Name="EmptyStatus"
+               Opacity="0.65"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               FontSize="14" />
+
+    <ScrollViewer x:Name="ContentScroll" Visibility="Collapsed">
+      <Grid>
+        <Border Height="420" VerticalAlignment="Top" IsHitTestVisible="False">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+              <GradientStop Color="#332A4A3A" Offset="0" />
+              <GradientStop Color="#1A243828" Offset="0.45" />
+              <GradientStop Color="#00000000" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+        </Border>
+
+        <StackPanel Margin="28,20,28,32" Spacing="22">
+          <Button Content="← Sklep" Click="Back_Click" HorizontalAlignment="Left" Padding="10,6" />
+
+          <Grid ColumnSpacing="36" MinHeight="280">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="1.1*" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Spacing="14" VerticalAlignment="Top">
+              <TextBlock Text="SGS STORE" Opacity="0.55" FontSize="12" FontWeight="SemiBold" />
+              <TextBlock x:Name="TitleText" FontSize="34" FontWeight="Bold" TextWrapping="Wrap" />
+              <ItemsControl x:Name="BadgesList">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <ItemsStackPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Margin="0,0,8,8" Padding="10,5" CornerRadius="4"
+                            Background="#33FFFFFF" BorderBrush="#44FFFFFF" BorderThickness="1">
+                      <TextBlock Text="{Binding}" FontSize="11" Opacity="0.9" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock x:Name="TaglineText" FontSize="16" Opacity="0.85" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,8,0,0">
+                <Button x:Name="PrimaryActionButton"
+                        Click="AddToLibrary_Click"
+                        Padding="18,12"
+                        MinWidth="200"
+                        Background="#2E7D32"
+                        Foreground="White" />
+                <Button Content="♥" IsEnabled="False" Padding="14,12" />
+                <Button Content="⋯" IsEnabled="False" Padding="14,12" />
+              </StackPanel>
+              <TextBlock x:Name="StatusText" Opacity="0.65" FontSize="12" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Spacing="10">
+              <Border Height="220" CornerRadius="8">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#FF2A3A4A" Offset="0" />
+                    <GradientStop Color="#FF1A242E" Offset="1" />
+                  </LinearGradientBrush>
+                </Border.Background>
+                <Grid>
+                  <TextBlock x:Name="TileLabelText"
+                             FontSize="56" FontWeight="Bold" Opacity="0.35"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <Border Width="56" Height="56" CornerRadius="28" Background="#99000000"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,40,0,0">
+                    <TextBlock Text="▶" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                </Grid>
+              </Border>
+              <ItemsControl x:Name="MediaThumbsList">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <ItemsStackPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Width="92" Height="56" CornerRadius="4" Background="#334455" Margin="0,0,8,0">
+                      <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Grid>
+
+          <StackPanel Spacing="16">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Button Content="Szczegóły" Tag="Details" Click="Tab_Click" Padding="14,8" FontWeight="SemiBold" />
+              <Button Content="Recenzje" Tag="Reviews" Click="Tab_Click" Padding="14,8" />
+              <Button Content="Więcej" Tag="More" Click="Tab_Click" Padding="14,8" />
+            </StackPanel>
+            <Border Height="1" Background="#33FFFFFF" />
+
+            <StackPanel x:Name="DetailsPanel" Spacing="18">
+              <StackPanel Spacing="6">
+                <TextBlock Text="Opis" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock x:Name="DescriptionText" Opacity="0.85" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel x:Name="HardwarePanel" Spacing="6" Visibility="Collapsed">
+                <TextBlock Text="Wymagania sprzętowe" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock x:Name="HardwareText" Opacity="0.85" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel x:Name="BuildsPanel" Spacing="10" Visibility="Collapsed">
+                <TextBlock Text="Dostępne buildy" FontSize="18" FontWeight="SemiBold" />
+                <ItemsControl x:Name="BuildsList">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Margin="0,0,0,10" Padding="14" CornerRadius="8"
+                              Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+                        <Grid>
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding PlatformText}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12" />
+                          </StackPanel>
+                          <TextBlock Grid.Column="1" Text="{Binding PreferredLabel}"
+                                     FontSize="11" Foreground="#A5D6A7" VerticalAlignment="Center" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+              <StackPanel x:Name="OtherPanel" Spacing="6" Visibility="Collapsed">
+                <TextBlock Text="Dodatkowe informacje" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock x:Name="OtherText" Opacity="0.85" TextWrapping="Wrap" />
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel x:Name="ReviewsPanel" Spacing="8" Visibility="Collapsed">
+              <TextBlock Text="Recenzje" FontSize="18" FontWeight="SemiBold" />
+              <TextBlock Text="Recenzje społeczności pojawią się tutaj." Opacity="0.6" />
+            </StackPanel>
+
+            <StackPanel x:Name="MorePanel" Spacing="8" Visibility="Collapsed">
+              <TextBlock Text="Więcej" FontSize="18" FontWeight="SemiBold" />
+              <TextBlock x:Name="PlatformsText" Opacity="0.75" />
+              <TextBlock x:Name="SymbolText" Opacity="0.55" FontSize="12" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+      </Grid>
+    </ScrollViewer>
+  </Grid>
+</Page>

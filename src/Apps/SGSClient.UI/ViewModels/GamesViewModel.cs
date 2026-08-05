@@ -13,6 +13,7 @@ public partial class GamesViewModel : ViewModelBase
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
+    private Action<int>? _openDetails;
     private bool _loaded;
 
     public GamesViewModel()
@@ -20,12 +21,15 @@ public partial class GamesViewModel : ViewModelBase
         StatusText = "API not configured";
     }
 
-    public GamesViewModel(ISgsApiService? api, IServiceScopeFactory? scopes = null)
+    public GamesViewModel(ISgsApiService? api, IServiceScopeFactory? scopes = null, Action<int>? openDetails = null)
     {
         _api = api;
         _scopes = scopes;
+        _openDetails = openDetails;
         StatusText = api is null ? "API not registered" : "Ładowanie sklepu…";
     }
+
+    public void SetOpenDetailsHandler(Action<int> openDetails) => _openDetails = openDetails;
 
     public string Title { get; } = "Sklep";
 
@@ -92,6 +96,17 @@ public partial class GamesViewModel : ViewModelBase
     }
 
     public Task EnsureLoadedAsync() => _loaded && Games.Count > 0 ? RefreshOwnedFlagsAsync() : LoadAsync();
+
+    [RelayCommand]
+    private void OpenDetails(GameListItem? item)
+    {
+        if (item is null)
+        {
+            return;
+        }
+
+        _openDetails?.Invoke(item.Id);
+    }
 
     [RelayCommand]
     private async Task AddToLibraryAsync(GameListItem? item)

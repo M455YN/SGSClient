@@ -14,12 +14,12 @@
 
     <ScrollViewer IsVisible="{Binding IsLoggedIn}" HorizontalScrollBarVisibility="Disabled">
       <Panel>
-        <Border Height="280" VerticalAlignment="Top" IsHitTestVisible="False">
+        <Border Height="360" VerticalAlignment="Top" IsHitTestVisible="False">
           <Border.Background>
-            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+            <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
               <GradientStop Color="#331A3A5C" Offset="0"/>
-              <GradientStop Color="#222D5A45" Offset="0.45"/>
-              <GradientStop Color="#33401E3A" Offset="1"/>
+              <GradientStop Color="#1A243848" Offset="0.45"/>
+              <GradientStop Color="#00000000" Offset="1"/>
             </LinearGradientBrush>
           </Border.Background>
         </Border>

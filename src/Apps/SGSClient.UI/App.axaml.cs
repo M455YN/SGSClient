@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SGSClient.Core.Interfaces;
 using SGSClient.Infrastructure.Client;
 using SGSClient.Infrastructure.Client.Persistence;
+using SGSClient.Infrastructure.Client.Services;
 using SGSClient.UI.ViewModels;
 using SGSClient.UI.Views;
 
@@ -34,14 +35,23 @@ public partial class App : Application
         services.AddSingleton<IConfiguration>(configuration);
         services.AddClientInfrastructure(configuration);
 
-        services.AddTransient<HomeViewModel>();
+        services.AddTransient(sp => new HomeViewModel(sp.GetService<ISgsApiService>()));
         services.AddTransient(sp => new GamesViewModel(
+            sp.GetService<ISgsApiService>(),
+            sp.GetRequiredService<IServiceScopeFactory>()));
+        services.AddTransient(sp => new GameDetailsViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>()));
         services.AddTransient(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>()));
-        services.AddTransient<SettingsViewModel>();
+        services.AddTransient(sp => new PublishViewModel(
+            sp.GetService<IGamePackagePacker>(),
+            sp.GetService<IGameUploadClient>(),
+            sp.GetService<IAuthSession>()));
+        services.AddTransient(sp => new SettingsViewModel(
+            sp.GetRequiredService<IConfiguration>(),
+            sp.GetRequiredService<IServiceScopeFactory>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
@@ -49,7 +59,9 @@ public partial class App : Application
         services.AddTransient(sp => new MainWindowViewModel(
             sp.GetRequiredService<HomeViewModel>(),
             sp.GetRequiredService<GamesViewModel>(),
+            sp.GetRequiredService<GameDetailsViewModel>(),
             sp.GetRequiredService<LibraryViewModel>(),
+            sp.GetRequiredService<PublishViewModel>(),
             sp.GetRequiredService<SettingsViewModel>(),
             sp.GetRequiredService<AccountViewModel>()));
 
