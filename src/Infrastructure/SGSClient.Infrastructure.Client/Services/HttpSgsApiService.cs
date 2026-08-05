@@ -19,4 +19,24 @@ public sealed class HttpSgsApiService(HttpClient http) : ISgsApiService
             return [];
         }
     }
+
+    public async Task<GameDto?> GetGameAsync(int id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await http.GetAsync($"api/Games/{id}", cancellationToken)
+                .ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

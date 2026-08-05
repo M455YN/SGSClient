@@ -28,6 +28,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IGameLauncherService, ProcessGameLauncherService>();
         services.AddScoped<ILocalLibraryStore, LocalLibraryService>();
+        services.AddSingleton<IGamePackagePacker, GamePackagePacker>();
 
         if (configuration is not null)
         {
@@ -45,6 +46,12 @@ public static class DependencyInjection
             services.AddHttpClient<ISgsApiService, HttpSgsApiService>(client =>
             {
                 client.BaseAddress = new Uri(apiBase);
+            });
+
+            services.AddHttpClient<IGameUploadClient, GameUploadClient>(client =>
+            {
+                client.BaseAddress = new Uri(apiBase);
+                client.Timeout = TimeSpan.FromMinutes(30);
             });
 
             services.AddSingleton<IAuthSession>(sp =>
