@@ -69,6 +69,32 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.ToTable("game_builds", (string)null);
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Symbol")
+                        .IsUnique();
+
+                    b.ToTable("game_engines", (string)null);
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -76,6 +102,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CoverUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(8000)
@@ -93,6 +123,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<string>("HardwareRequirements")
                         .HasMaxLength(8000)
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IntroUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
 
                     b.Property<string>("OtherInformation")
                         .HasMaxLength(8000)
@@ -118,14 +152,74 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
 
                     b.HasIndex("DraftP");
 
+                    b.HasIndex("EngineId");
+
                     b.HasIndex("FeaturedP");
 
                     b.HasIndex("Symbol")
                         .IsUnique();
 
+                    b.HasIndex("TypeId");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("games", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameGenreEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Symbol")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Symbol")
+                        .IsUnique();
+
+                    b.ToTable("game_genres", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameScreenshotEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SourcePath")
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId", "SortOrder");
+
+                    b.ToTable("game_screenshots", (string)null);
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", b =>
@@ -196,7 +290,47 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", b =>
                 {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", "Engine")
+                        .WithMany("Games")
+                        .HasForeignKey("EngineId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameGenreEntity", "Genre")
+                        .WithMany("Games")
+                        .HasForeignKey("TypeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Engine");
+
+                    b.Navigation("Genre");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameScreenshotEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
+                        .WithMany("Screenshots")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", b =>
+                {
+                    b.Navigation("Games");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", b =>
+                {
                     b.Navigation("Builds");
+
+                    b.Navigation("Screenshots");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameGenreEntity", b =>
+                {
+                    b.Navigation("Games");
                 });
 #pragma warning restore 612, 618
         }

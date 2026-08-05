@@ -7,6 +7,9 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
 {
     public DbSet<GameEntity> Games => Set<GameEntity>();
     public DbSet<GameBuildEntity> GameBuilds => Set<GameBuildEntity>();
+    public DbSet<GameGenreEntity> GameGenres => Set<GameGenreEntity>();
+    public DbSet<GameEngineEntity> GameEngines => Set<GameEngineEntity>();
+    public DbSet<GameScreenshotEntity> GameScreenshots => Set<GameScreenshotEntity>();
     public DbSet<UserEntity> Users => Set<UserEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -27,6 +30,26 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.HasIndex(x => x.Email);
         });
 
+        modelBuilder.Entity<GameGenreEntity>(entity =>
+        {
+            entity.ToTable("game_genres");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Symbol).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(128).IsRequired();
+            entity.HasIndex(x => x.Symbol).IsUnique();
+        });
+
+        modelBuilder.Entity<GameEngineEntity>(entity =>
+        {
+            entity.ToTable("game_engines");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Symbol).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Name).HasMaxLength(128).IsRequired();
+            entity.HasIndex(x => x.Symbol).IsUnique();
+        });
+
         modelBuilder.Entity<GameEntity>(entity =>
         {
             entity.ToTable("games");
@@ -38,13 +61,30 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.Description).HasMaxLength(8000);
             entity.Property(x => x.HardwareRequirements).HasMaxLength(8000);
             entity.Property(x => x.OtherInformation).HasMaxLength(8000);
+            entity.Property(x => x.CoverUrl).HasMaxLength(2048);
+            entity.Property(x => x.IntroUrl).HasMaxLength(2048);
 
             entity.HasIndex(x => x.Symbol).IsUnique();
             entity.HasIndex(x => x.UserId);
             entity.HasIndex(x => x.DraftP);
             entity.HasIndex(x => x.FeaturedP);
 
+            entity.HasOne(x => x.Genre)
+                .WithMany(x => x.Games)
+                .HasForeignKey(x => x.TypeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(x => x.Engine)
+                .WithMany(x => x.Games)
+                .HasForeignKey(x => x.EngineId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             entity.HasMany(x => x.Builds)
+                .WithOne(x => x.Game)
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(x => x.Screenshots)
                 .WithOne(x => x.Game)
                 .HasForeignKey(x => x.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -64,6 +104,16 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
 
             entity.HasIndex(x => new { x.GameId, x.Platform, x.Architecture }).IsUnique();
             entity.HasIndex(x => new { x.GameId, x.IsDefault });
+        });
+
+        modelBuilder.Entity<GameScreenshotEntity>(entity =>
+        {
+            entity.ToTable("game_screenshots");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Url).HasMaxLength(2048).IsRequired();
+            entity.Property(x => x.SourcePath).HasMaxLength(260);
+            entity.HasIndex(x => new { x.GameId, x.SortOrder });
         });
     }
 }

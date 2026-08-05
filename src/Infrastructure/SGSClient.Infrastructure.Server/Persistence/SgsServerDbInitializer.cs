@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SGSClient.Core.Enums;
-using SGSClient.Infrastructure.Server.Persistence;
+using SGSClient.Core.Packaging;
 using SGSClient.Infrastructure.Server.Persistence.Entities;
 
 namespace SGSClient.Infrastructure.Server.Persistence;
@@ -11,11 +11,25 @@ public static class SgsServerDbInitializer
     public static async Task InitializeAsync(SgsServerDbContext db, CancellationToken cancellationToken = default)
     {
         await db.Database.MigrateAsync(cancellationToken);
+        await EnsureTaxonomyAsync(db, cancellationToken);
 
         if (await db.Games.AnyAsync(cancellationToken))
         {
             return;
         }
+
+        var actionGenreId = await db.GameGenres
+            .Where(g => g.Symbol == "action")
+            .Select(g => g.Id)
+            .FirstAsync(cancellationToken);
+        var adventureGenreId = await db.GameGenres
+            .Where(g => g.Symbol == "adventure")
+            .Select(g => g.Id)
+            .FirstAsync(cancellationToken);
+        var customEngineId = await db.GameEngines
+            .Where(e => e.Symbol == "custom")
+            .Select(e => e.Id)
+            .FirstAsync(cancellationToken);
 
         var demoRunner = new GameEntity
         {
@@ -25,8 +39,8 @@ public static class SgsServerDbInitializer
             Description = "Sample catalog game for local development.",
             HardwareRequirements = "RAM: 4 GB",
             OtherInformation = null,
-            EngineId = 1,
-            TypeId = 1,
+            EngineId = customEngineId,
+            TypeId = actionGenreId,
             DraftP = false,
             FeaturedP = true,
             Builds =
@@ -60,8 +74,8 @@ public static class SgsServerDbInitializer
             Description = "Another sample title seeded for API smoke tests.",
             HardwareRequirements = "RAM: 8 GB",
             OtherInformation = "Early access notes.",
-            EngineId = 1,
-            TypeId = 2,
+            EngineId = customEngineId,
+            TypeId = adventureGenreId,
             DraftP = false,
             FeaturedP = false,
             Builds =
@@ -88,6 +102,27 @@ public static class SgsServerDbInitializer
         };
 
         db.Games.AddRange(demoRunner, skyArena);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public static async Task EnsureTaxonomyAsync(SgsServerDbContext db, CancellationToken cancellationToken = default)
+    {
+        foreach (var item in SgsGameTaxonomy.Genres)
+        {
+            if (!await db.GameGenres.AnyAsync(g => g.Symbol == item.Symbol, cancellationToken))
+            {
+                db.GameGenres.Add(new GameGenreEntity { Symbol = item.Symbol, Name = item.Name });
+            }
+        }
+
+        foreach (var item in SgsGameTaxonomy.Engines)
+        {
+            if (!await db.GameEngines.AnyAsync(e => e.Symbol == item.Symbol, cancellationToken))
+            {
+                db.GameEngines.Add(new GameEngineEntity { Symbol = item.Symbol, Name = item.Name });
+            }
+        }
+
         await db.SaveChangesAsync(cancellationToken);
     }
 

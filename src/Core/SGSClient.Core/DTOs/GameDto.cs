@@ -14,6 +14,13 @@ public sealed class GameDto
     public string? OtherInformation { get; init; }
     public int? EngineId { get; init; }
     public int? TypeId { get; init; }
+    public string? GenreSymbol { get; init; }
+    public string? GenreName { get; init; }
+    public string? EngineSymbol { get; init; }
+    public string? EngineName { get; init; }
+    public string? CoverUrl { get; init; }
+    public string? IntroUrl { get; init; }
+    public IReadOnlyList<string> ScreenshotUrls { get; init; } = [];
     public bool DraftP { get; init; }
     public bool FeaturedP { get; init; }
     public IReadOnlyList<GameBuildDto> Builds { get; init; } = [];

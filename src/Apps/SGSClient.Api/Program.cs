@@ -12,6 +12,14 @@ builder.Services.Configure<AzureAdSettings>(builder.Configuration.GetSection(Azu
 var azureAd = builder.Configuration.GetSection(AzureAdSettings.SectionName).Get<AzureAdSettings>() ?? new AzureAdSettings();
 
 builder.Services.AddControllers();
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = SGSClient.Core.Packaging.SgsPackageRules.MaxZipBytes;
+});
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = SGSClient.Core.Packaging.SgsPackageRules.MaxZipBytes;
+});
 builder.Services.AddServerInfrastructure(builder.Configuration);
 builder.Services.AddAuthorization();
 
