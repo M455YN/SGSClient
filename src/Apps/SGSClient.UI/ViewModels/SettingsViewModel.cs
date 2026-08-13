@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -6,14 +7,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.Interfaces;
-using SGSClient.Infrastructure.Client;
+using SGSClient.Core.Library;
 
 namespace SGSClient.UI.ViewModels;
 
 public partial class SettingsViewModel : ViewModelBase
 {
     private readonly IServiceScopeFactory? _scopes;
-    private readonly string _dataFolder;
+    private readonly ILibraryFolderService? _libraryFolders;
 
     public SettingsViewModel()
     {
@@ -22,14 +23,17 @@ public partial class SettingsViewModel : ViewModelBase
         AccountStatus = "Logowanie wyłączone";
         AppearanceText = "Jak w systemie Windows / macOS / Linux";
         LanguageText = "Polski";
-        LibrarySummary = "Gry dodane ze sklepu są zapisywane na tym komputerze.";
+        LibrarySummary = "Dodaj foldery biblioteki jak w Steam. Każdy folder ma plik libraryfolder.json i katalog sgsapps/.";
         AboutText = $"SGSClient · {ReadVersion()}";
-        _dataFolder = Path.GetDirectoryName(DependencyInjection.GetDefaultLibraryDbPath()) ?? string.Empty;
     }
 
-    public SettingsViewModel(IConfiguration configuration, IServiceScopeFactory scopes)
+    public SettingsViewModel(
+        IConfiguration configuration,
+        IServiceScopeFactory scopes,
+        ILibraryFolderService libraryFolders)
     {
         _scopes = scopes;
+        _libraryFolders = libraryFolders;
         Title = "Ustawienia";
 
         var api = configuration.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()
@@ -47,9 +51,9 @@ public partial class SettingsViewModel : ViewModelBase
                 : "Logowanie jest wyłączone";
         AppearanceText = "Jak w systemie";
         LanguageText = "Polski";
-        LibrarySummary = "Gry dodane ze sklepu są zapisywane na tym komputerze. Możesz otworzyć folder z danymi albo wyczyścić listę.";
+        LibrarySummary = "Dodaj foldery biblioteki jak w Steam. Każdy folder ma plik libraryfolder.json i katalog sgsapps/.";
         AboutText = $"SGSClient · wersja {ReadVersion()}";
-        _dataFolder = Path.GetDirectoryName(DependencyInjection.GetDefaultLibraryDbPath()) ?? string.Empty;
+        ReloadFolders();
     }
 
     public string Title { get; }
@@ -60,39 +64,96 @@ public partial class SettingsViewModel : ViewModelBase
     public string LibrarySummary { get; }
     public string AboutText { get; }
 
+    public ObservableCollection<LibraryFolderDisplayItem> LibraryFolders { get; } = [];
+
+    [ObservableProperty]
+    private LibraryFolderDisplayItem? _selectedLibraryFolder;
+
     [ObservableProperty]
     private string _statusText = string.Empty;
 
     [ObservableProperty]
     private bool _isBusy;
 
-    [RelayCommand]
-    private void OpenDataFolder()
+    public void ReloadFolders()
     {
+        LibraryFolders.Clear();
+        if (_libraryFolders is null)
+        {
+            return;
+        }
+
+        foreach (var folder in _libraryFolders.GetFolders())
+        {
+            LibraryFolders.Add(LibraryFolderDisplayItem.FromEntry(folder));
+        }
+    }
+
+    public async Task AddLibraryFolderAsync(string folderPath)
+    {
+        if (_libraryFolders is null || _scopes is null || string.IsNullOrWhiteSpace(folderPath))
+        {
+            return;
+        }
+
+        IsBusy = true;
         try
         {
-            if (string.IsNullOrWhiteSpace(_dataFolder))
-            {
-                StatusText = "Nie znaleziono folderu z danymi.";
-                return;
-            }
+            await _libraryFolders.AddFolderAsync(folderPath);
+            ReloadFolders();
 
-            Directory.CreateDirectory(_dataFolder);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = _dataFolder,
-                UseShellExecute = true
-            });
-            StatusText = "Otwarto folder z Twoimi danymi.";
+            using var scope = _scopes.CreateScope();
+            var discovery = scope.ServiceProvider.GetRequiredService<ILibraryDiscoveryService>();
+            var result = await discovery.ScanAsync();
+
+            StatusText = result.DiscoveredInstalls + result.UpdatedEntries > 0
+                ? $"Dodano folder biblioteki. Znaleziono {result.DiscoveredInstalls} gier, zaktualizowano {result.UpdatedEntries}."
+                : "Dodano folder biblioteki.";
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się otworzyć folderu: {ex.Message}";
+            StatusText = $"Nie udało się dodać folderu biblioteki: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
     [RelayCommand]
-    private async Task ClearLibraryAsync()
+    private async Task RemoveSelectedLibraryFolderAsync()
+    {
+        if (_libraryFolders is null || SelectedLibraryFolder is null || IsBusy)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            await _libraryFolders.RemoveFolderAsync(SelectedLibraryFolder.Path);
+            ReloadFolders();
+            SelectedLibraryFolder = null;
+            StatusText = "Usunięto folder z listy bibliotek klienta. Pliki gier na dysku pozostały.";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Nie udało się usunąć folderu z listy: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenSelectedLibraryFolder()
+    {
+        OpenFolder(SelectedLibraryFolder?.Path);
+    }
+
+    [RelayCommand]
+    private async Task RescanLibraryAsync()
     {
         if (_scopes is null || IsBusy)
         {
@@ -103,20 +164,14 @@ public partial class SettingsViewModel : ViewModelBase
         try
         {
             using var scope = _scopes.CreateScope();
-            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            var items = await library.GetAllAsync();
-            foreach (var item in items)
-            {
-                await library.RemoveAsync(item.GameId);
-            }
+            var discovery = scope.ServiceProvider.GetRequiredService<ILibraryDiscoveryService>();
+            var result = await discovery.ScanAsync();
 
-            StatusText = items.Count == 0
-                ? "Biblioteka jest już pusta."
-                : $"Usunięto {items.Count} {(items.Count == 1 ? "grę" : "gier")} z biblioteki na tym komputerze.";
+            StatusText = $"Skan zakończony: {result.DiscoveredInstalls} nowych, {result.UpdatedEntries} zaktualizowanych, {result.MarkedNotInstalled} oznaczonych jako niezainstalowane.";
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się wyczyścić biblioteki: {ex.Message}";
+            StatusText = $"Skan biblioteki nie powiodł się: {ex.Message}";
         }
         finally
         {
@@ -124,15 +179,54 @@ public partial class SettingsViewModel : ViewModelBase
         }
     }
 
+    private void OpenFolder(string? path)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                StatusText = "Wybierz folder biblioteki z listy.";
+                return;
+            }
+
+            Directory.CreateDirectory(path);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = path,
+                UseShellExecute = true
+            });
+            StatusText = "Otwarto folder biblioteki.";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Nie udało się otworzyć folderu: {ex.Message}";
+        }
+    }
+
     private static string ReadVersion()
     {
         var asm = Assembly.GetExecutingAssembly();
         var version = asm.GetName().Version;
-        if (version is null)
-        {
-            return "dev";
-        }
+        return version is null ? "dev" : $"{version.Major}.{version.Minor}.{version.Build}";
+    }
+}
 
-        return $"{version.Major}.{version.Minor}.{version.Build}";
+public sealed class LibraryFolderDisplayItem
+{
+    public required string Path { get; init; }
+    public required string ContentId { get; init; }
+    public string Label { get; init; } = string.Empty;
+    public string DisplayText { get; init; } = string.Empty;
+
+    public static LibraryFolderDisplayItem FromEntry(SgsLibraryFolderEntry entry)
+    {
+        var label = string.IsNullOrWhiteSpace(entry.Label) ? entry.Path : $"{entry.Label} — {entry.Path}";
+        return new LibraryFolderDisplayItem
+        {
+            Path = entry.Path,
+            ContentId = entry.ContentId,
+            Label = entry.Label ?? string.Empty,
+            DisplayText = label
+        };
     }
 }

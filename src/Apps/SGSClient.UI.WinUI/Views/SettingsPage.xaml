@@ -40,13 +40,25 @@
 
       <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
         <StackPanel Spacing="14">
-          <TextBlock Text="Twoja biblioteka" FontSize="18" FontWeight="SemiBold" />
+          <TextBlock Text="Foldery biblioteki" FontSize="18" FontWeight="SemiBold" />
           <TextBlock x:Name="LibrarySummaryText" Opacity="0.8" TextWrapping="Wrap" />
+          <ListView x:Name="LibraryFoldersList" MinHeight="120" SelectionMode="Single">
+            <ListView.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding ContentId}" Opacity="0.5" FontSize="11" />
+                </StackPanel>
+              </DataTemplate>
+            </ListView.ItemTemplate>
+          </ListView>
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Content="Otwórz folder z danymi" Click="OpenFolder_Click" Padding="14,8" />
-            <Button x:Name="ClearLibraryButton" Content="Wyczyść bibliotekę" Click="ClearLibrary_Click" Padding="14,8" />
+            <Button x:Name="AddLibraryFolderButton" Content="Dodaj folder…" Click="AddLibraryFolder_Click" Padding="14,8" />
+            <Button x:Name="RemoveLibraryFolderButton" Content="Usuń z listy" Click="RemoveLibraryFolder_Click" Padding="14,8" />
+            <Button Content="Otwórz folder" Click="OpenLibraryFolder_Click" Padding="14,8" />
+            <Button x:Name="RescanLibraryButton" Content="Skanuj ponownie" Click="RescanLibrary_Click" Padding="14,8" />
           </StackPanel>
-          <TextBlock Text="Wyczyszczenie usuwa listę gier z tego komputera. Nie usuwa konta."
+          <TextBlock Text="Struktura: libraryfolder.json + sgsapps/common/{symbol}/{version}/ + sgsapps/manifests/ (jak Steam libraryfolder.vdf + steamapps)."
                      Opacity="0.5" FontSize="12" TextWrapping="Wrap" />
         </StackPanel>
       </Border>

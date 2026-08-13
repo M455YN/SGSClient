@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using SGSClient.UI.ViewModels;
 
 namespace SGSClient.UI.Views;
@@ -11,19 +12,53 @@ public partial class SettingsView : UserControl
         InitializeComponent();
     }
 
-    private void OpenFolder_OnClick(object? sender, RoutedEventArgs e)
+    private async void AddLibraryFolder_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is SettingsViewModel vm)
+        if (DataContext is not SettingsViewModel vm)
         {
-            vm.OpenDataFolderCommand.Execute(null);
+            return;
+        }
+
+        var top = TopLevel.GetTopLevel(this);
+        if (top?.StorageProvider is not { } storage)
+        {
+            vm.StatusText = "Wybór folderu niedostępny na tej platformie.";
+            return;
+        }
+
+        var folders = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Dodaj folder biblioteki gier",
+            AllowMultiple = false
+        });
+
+        if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } path)
+        {
+            await vm.AddLibraryFolderAsync(path);
         }
     }
 
-    private async void ClearLibrary_OnClick(object? sender, RoutedEventArgs e)
+    private async void RemoveLibraryFolder_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is SettingsViewModel vm)
         {
-            await vm.ClearLibraryCommand.ExecuteAsync(null);
+            await vm.RemoveSelectedLibraryFolderCommand.ExecuteAsync(null);
+        }
+    }
+
+    private void OpenLibraryFolder_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel vm)
+        {
+            vm.OpenSelectedLibraryFolderCommand.Execute(null);
+        }
+    }
+
+    private async void RescanLibrary_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel vm)
+        {
+            await vm.RescanLibraryCommand.ExecuteAsync(null);
         }
     }
 }

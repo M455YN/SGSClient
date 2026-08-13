@@ -4,7 +4,7 @@
              x:Class="SGSClient.UI.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="28,24,28,32" Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
+    <StackPanel Margin="28,24,28,32" Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
       <StackPanel Spacing="6">
         <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
         <TextBlock Text="Dostosuj klienta do siebie." Opacity="0.65" FontSize="13"/>
@@ -40,14 +40,30 @@
 
       <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
         <StackPanel Spacing="14">
-          <TextBlock Text="Twoja biblioteka" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="Foldery biblioteki" FontSize="18" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding LibrarySummary}" Opacity="0.8" TextWrapping="Wrap"/>
+          <ListBox ItemsSource="{Binding LibraryFolders}"
+                   SelectedItem="{Binding SelectedLibraryFolder}"
+                   MinHeight="80">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:LibraryFolderDisplayItem">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding ContentId, StringFormat=ID: {0}}" Opacity="0.5" FontSize="11"/>
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Content="Otwórz folder z danymi" Click="OpenFolder_OnClick" Padding="14,8"/>
-            <Button Content="Wyczyść bibliotekę" Click="ClearLibrary_OnClick"
+            <Button Content="Dodaj folder…" Click="AddLibraryFolder_OnClick"
+                    IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
+            <Button Content="Usuń z listy" Click="RemoveLibraryFolder_OnClick"
+                    IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
+            <Button Content="Otwórz folder" Click="OpenLibraryFolder_OnClick" Padding="14,8"/>
+            <Button Content="Skanuj ponownie" Click="RescanLibrary_OnClick"
                     IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
           </StackPanel>
-          <TextBlock Text="Wyczyszczenie usuwa listę gier z tego komputera. Nie usuwa konta."
+          <TextBlock Text="Struktura: libraryfolder.json + sgsapps/common/{symbol}/{version}/ + sgsapps/manifests/ (jak Steam libraryfolder.vdf + steamapps)."
                      Opacity="0.5" FontSize="12" TextWrapping="Wrap"/>
         </StackPanel>
       </Border>
