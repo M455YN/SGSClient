@@ -1,0 +1,192 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SGSClient.UI.ViewModels"
+        x:Class="SGSClient.UI.Views.GamePropertiesWindow"
+        x:DataType="vm:GamePropertiesViewModel"
+        Title="Właściwości gry"
+        Width="1100" Height="720"
+        MinWidth="960" MinHeight="600"
+        WindowStartupLocation="CenterOwner">
+
+  <Grid ColumnDefinitions="240,*">
+    <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+            BorderThickness="0,0,1,0">
+      <DockPanel Margin="12,16">
+        <TextBlock DockPanel.Dock="Top" Text="{Binding GameTitle}" FontWeight="SemiBold"
+                   FontSize="13" TextWrapping="Wrap" Margin="8,0,8,12"
+                   Foreground="{DynamicResource SystemAccentColor}"/>
+        <ListBox ItemsSource="{Binding NavItems}"
+                 Background="Transparent"
+                 SelectionChanged="NavList_OnSelectionChanged">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:PropertiesNavItem">
+              <TextBlock Text="{Binding Label}" Margin="4,2"/>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <ScrollViewer Grid.Column="1" Padding="24,20" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Spacing="16">
+        <StackPanel Spacing="12" IsVisible="{Binding ShowBetas}">
+          <TextBlock Text="Wersje i bety gry" FontSize="22" FontWeight="SemiBold"/>
+          <TextBlock Text="Wybrana wersja gry" FontWeight="SemiBold"/>
+          <TextBlock Text="Wersje są udostępniane przez twórców. Starsze buildy mogą być niestabilne."
+                     Opacity="0.65" TextWrapping="Wrap" FontSize="12"/>
+
+          <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+            <TextBlock Text="Tytuł i opis" Opacity="0.55" FontSize="11"/>
+            <TextBlock Grid.Column="1" Text="Ostatnia aktualizacja" Opacity="0.55" FontSize="11"/>
+          </Grid>
+
+          <ListBox ItemsSource="{Binding Versions}"
+                   SelectedItem="{Binding SelectedVersion}"
+                   Background="Transparent"
+                   MaxHeight="280">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:BetaVersionItem">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,6">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Description}" Opacity="0.65" FontSize="12"/>
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="{Binding UpdatedText}" Opacity="0.65"
+                             VerticalAlignment="Center" FontSize="12"/>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <Border Padding="12" CornerRadius="6" Margin="0,8,0,0"
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                  BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                  BorderThickness="1">
+            <StackPanel Spacing="6" Opacity="0.75">
+              <TextBlock Text="Wersje prywatne" FontWeight="SemiBold"/>
+              <TextBlock Text="Odblokowywanie prywatnych bet będzie dostępne w kolejnej wersji."
+                         FontSize="12" TextWrapping="Wrap"/>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <TextBox IsEnabled="False" PlaceholderText="Kod dostępu"/>
+                <Button Grid.Column="1" Content="Sprawdź kod" IsEnabled="False" Padding="12,8"/>
+              </Grid>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Spacing="14" IsVisible="{Binding ShowFiles}">
+          <TextBlock Text="Zainstalowane pliki" FontSize="22" FontWeight="SemiBold"/>
+          <TextBlock Text="Lokalne pliki gry na tym komputerze. Odinstalowanie usuwa pliki, ale gra zostaje w bibliotece."
+                     Opacity="0.65" TextWrapping="Wrap" FontSize="12"/>
+
+          <Border Padding="16" CornerRadius="8"
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                  BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                  BorderThickness="1">
+            <StackPanel Spacing="12">
+              <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+                <TextBlock Text="Status" Opacity="0.6"/>
+                <TextBlock Grid.Column="1" Text="{Binding InstallStateText}" FontWeight="SemiBold"/>
+                <TextBlock Grid.Row="1" Text="Wersja" Opacity="0.6"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding InstalledVersionText}"/>
+                <TextBlock Grid.Row="2" Text="Rozmiar" Opacity="0.6"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding InstallSizeText}"/>
+                <TextBlock Grid.Row="3" Text="Pliki" Opacity="0.6"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding InstallFilesText}"/>
+              </Grid>
+
+              <StackPanel Spacing="4">
+                <TextBlock Text="Folder instalacji" Opacity="0.6" FontSize="12"/>
+                <TextBlock Text="{Binding InstallPathText}" TextWrapping="Wrap" FontSize="12"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="Przeglądaj pliki lokalne…"
+                    Click="BrowseLocalFiles_OnClick"
+                    IsEnabled="{Binding CanBrowseFiles}"
+                    Classes="accent"
+                    Padding="14,10"/>
+            <Button Content="Odśwież"
+                    Click="RefreshInstallInfo_OnClick"
+                    Classes="subtle"
+                    Padding="14,10"/>
+            <Button Content="Odinstaluj…"
+                    Click="UninstallFiles_OnClick"
+                    IsEnabled="{Binding CanUninstallFiles}"
+                    Padding="14,10"/>
+          </StackPanel>
+
+          <Border Padding="14" CornerRadius="8" Margin="0,4,0,0"
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                  BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                  BorderThickness="1"
+                  IsVisible="{Binding IsInstalled}">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Przenieś pliki" FontWeight="SemiBold"/>
+              <TextBlock Text="Wybierz inny folder biblioteki (dodajesz je w Ustawieniach)."
+                         Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
+              <ComboBox ItemsSource="{Binding MoveTargets}"
+                        SelectedItem="{Binding SelectedMoveTarget}"
+                        PlaceholderText="Brak innych folderów biblioteki"
+                        HorizontalAlignment="Stretch"
+                        MinHeight="36"/>
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="Przenieś pliki…"
+                        Click="MoveFiles_OnClick"
+                        IsEnabled="{Binding CanMoveFiles}"
+                        Classes="accent"
+                        Padding="14,10"/>
+                <TextBlock Text="{Binding MoveProgressText}"
+                           VerticalAlignment="Center"
+                           Opacity="0.7"
+                           FontSize="12"
+                           IsVisible="{Binding IsMoving}"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <TextBlock Text="Weryfikacja integralności plików pojawi się w kolejnej wersji."
+                     Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <StackPanel Spacing="14" IsVisible="{Binding ShowPersonalization}">
+          <TextBlock Text="Personalizacja" FontSize="22" FontWeight="SemiBold"/>
+          <TextBlock Text="Własny obrazek kafla w bibliotece (nadpisuje okładkę ze sklepu)."
+                     Opacity="0.65" TextWrapping="Wrap" FontSize="12"/>
+
+          <Border Width="168" Height="248" CornerRadius="8" ClipToBounds="True" HorizontalAlignment="Left"
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                  BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                  BorderThickness="1">
+            <Panel>
+              <TextBlock Text="Podgląd" Opacity="0.45" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         IsVisible="{Binding !HasCustomCover}"/>
+              <Image Source="{Binding CustomCoverPreview}" Stretch="UniformToFill"
+                     IsVisible="{Binding HasCustomCover}"/>
+            </Panel>
+          </Border>
+
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="Wybierz obrazek…" Click="PickCustomCover_OnClick" Classes="accent" Padding="14,10"/>
+            <Button Content="Przywróć domyślny"
+                    Click="ClearCustomCover_OnClick"
+                    IsEnabled="{Binding HasCustomCover}"
+                    Classes="subtle"
+                    Padding="14,10"/>
+          </StackPanel>
+          <TextBlock Text="Obsługiwane: PNG, JPG, WEBP. Plik trafia do lokalnej pamięci klienta."
+                     Opacity="0.55" FontSize="11" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <StackPanel Spacing="8" IsVisible="{Binding ShowPlaceholder}">
+          <TextBlock Text="{Binding PlaceholderText}" Opacity="0.65" FontSize="14"/>
+        </StackPanel>
+
+        <TextBlock Text="{Binding StatusText}" Opacity="0.65" FontSize="12"/>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</Window>
