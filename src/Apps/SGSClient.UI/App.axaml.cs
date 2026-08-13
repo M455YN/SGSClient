@@ -44,14 +44,22 @@ public partial class App : Application
             sp.GetRequiredService<IServiceScopeFactory>()));
         services.AddTransient(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
-            sp.GetService<IGameLauncherService>()));
+            sp.GetService<IGameLauncherService>(),
+            sp.GetService<IGameInstallService>(),
+            sp.GetService<ILibraryDiscoveryService>(),
+            sp.GetService<ISgsApiService>(),
+            configuration));
+        services.AddTransient(sp => new GamePropertiesViewModel(
+            sp.GetService<ISgsApiService>(),
+            sp.GetRequiredService<IServiceScopeFactory>()));
         services.AddTransient(sp => new PublishViewModel(
             sp.GetService<IGamePackagePacker>(),
             sp.GetService<IGameUploadClient>(),
             sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new SettingsViewModel(
             sp.GetRequiredService<IConfiguration>(),
-            sp.GetRequiredService<IServiceScopeFactory>()));
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetRequiredService<ILibraryFolderService>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
@@ -68,6 +76,14 @@ public partial class App : Application
         Services = services.BuildServiceProvider();
 
         SgsClientDbInitializer.InitializeAsync(Services).GetAwaiter().GetResult();
+
+        Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
+
+        using (var scope = Services.CreateScope())
+        {
+            var discovery = scope.ServiceProvider.GetService<ILibraryDiscoveryService>();
+            discovery?.ScanAsync().GetAwaiter().GetResult();
+        }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

@@ -29,11 +29,19 @@ public static class DependencyInjection
         services.AddSingleton<IGameLauncherService, ProcessGameLauncherService>();
         services.AddScoped<ILocalLibraryStore, LocalLibraryService>();
         services.AddSingleton<IGamePackagePacker, GamePackagePacker>();
+        services.AddSingleton<IClientUserSettingsStore, ClientUserSettingsStore>();
+        services.AddSingleton<ILibraryFoldersStore, LibraryFoldersStore>();
+        services.AddSingleton<ILibraryFolderService, LibraryFolderService>();
+        services.AddSingleton<ILibraryPathProvider, LibraryPathProvider>();
+        services.AddScoped<ILibraryDiscoveryService, LibraryDiscoveryService>();
+        services.Configure<ClientInstallSettings>(_ => { });
+        services.Configure<ApiClientSettings>(_ => { });
 
         if (configuration is not null)
         {
             services.Configure<AzureAdSettings>(configuration.GetSection(AzureAdSettings.SectionName));
             services.Configure<ApiClientSettings>(configuration.GetSection(ApiClientSettings.SectionName));
+            services.Configure<ClientInstallSettings>(configuration.GetSection(ClientInstallSettings.SectionName));
 
             var apiBase = configuration.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
                 ?? new ApiClientSettings().BaseUrl;
@@ -52,6 +60,12 @@ public static class DependencyInjection
             {
                 client.BaseAddress = new Uri(apiBase);
                 client.Timeout = TimeSpan.FromMinutes(30);
+            });
+
+            services.AddHttpClient<IGameInstallService, GameInstallService>(client =>
+            {
+                client.BaseAddress = new Uri(apiBase);
+                client.Timeout = TimeSpan.FromMinutes(60);
             });
 
             services.AddSingleton<IAuthSession>(sp =>

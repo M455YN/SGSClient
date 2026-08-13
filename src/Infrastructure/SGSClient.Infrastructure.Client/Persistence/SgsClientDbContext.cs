@@ -20,6 +20,9 @@ public sealed class SgsClientDbContext(DbContextOptions<SgsClientDbContext> opti
             entity.Property(x => x.InstallPath).HasMaxLength(1024);
             entity.Property(x => x.ExecutablePath).HasMaxLength(1024);
             entity.Property(x => x.InstalledVersion).HasMaxLength(64);
+            entity.Property(x => x.TargetVersion).HasMaxLength(64);
+            entity.Property(x => x.CoverUrl).HasMaxLength(2048);
+            entity.Property(x => x.CustomCoverPath).HasMaxLength(2048);
             entity.Property(x => x.InstallState).HasConversion<int>();
             entity.HasIndex(x => x.GameId);
             entity.HasIndex(x => x.Symbol);

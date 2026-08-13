@@ -9,11 +9,11 @@ public static class SgsClientDbInitializer
     public static async Task InitializeAsync(SgsClientDbContext db, CancellationToken cancellationToken = default)
     {
         await db.Database.EnsureCreatedAsync(cancellationToken);
+        await ApplyAdditiveMigrationsAsync(db, cancellationToken);
 
-        if (!await HasCompatibleSchemaAsync(db, cancellationToken))
+        if (!await HasRequiredSchemaAsync(db, cancellationToken))
         {
-            await db.Database.EnsureDeletedAsync(cancellationToken);
-            await db.Database.EnsureCreatedAsync(cancellationToken);
+            await RecreateDatabaseAsync(db, cancellationToken);
         }
     }
 
@@ -24,42 +24,150 @@ public static class SgsClientDbInitializer
         await InitializeAsync(db, cancellationToken);
     }
 
-    private static async Task<bool> HasCompatibleSchemaAsync(
+    private static async Task ApplyAdditiveMigrationsAsync(
+        SgsClientDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (!await TableExistsAsync(db, "local_installs", cancellationToken))
+        {
+            return;
+        }
+
+        if (!await ColumnExistsAsync(db, "local_installs", "TargetVersion", cancellationToken))
+        {
+            await ExecuteNonQueryAsync(
+                db,
+                "ALTER TABLE local_installs ADD COLUMN TargetVersion TEXT NULL;",
+                cancellationToken);
+        }
+
+        if (!await ColumnExistsAsync(db, "local_installs", "CoverUrl", cancellationToken))
+        {
+            await ExecuteNonQueryAsync(
+                db,
+                "ALTER TABLE local_installs ADD COLUMN CoverUrl TEXT NULL;",
+                cancellationToken);
+        }
+
+        if (!await ColumnExistsAsync(db, "local_installs", "CustomCoverPath", cancellationToken))
+        {
+            await ExecuteNonQueryAsync(
+                db,
+                "ALTER TABLE local_installs ADD COLUMN CustomCoverPath TEXT NULL;",
+                cancellationToken);
+        }
+    }
+
+    private static async Task<bool> HasRequiredSchemaAsync(
         SgsClientDbContext db,
         CancellationToken cancellationToken)
     {
         try
         {
-            var connection = db.Database.GetDbConnection();
-            if (connection.State != System.Data.ConnectionState.Open)
-            {
-                await connection.OpenAsync(cancellationToken);
-            }
-
-            await using var command = connection.CreateCommand();
-            command.CommandText =
-                """
-                SELECT COUNT(1)
-                FROM sqlite_master
-                WHERE type = 'table' AND name = 'local_installs';
-                """;
-            var tableExists = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken)) > 0;
-            if (!tableExists)
+            if (!await TableExistsAsync(db, "local_installs", cancellationToken))
             {
                 return true;
             }
 
-            command.CommandText =
-                """
-                SELECT COUNT(1)
-                FROM pragma_table_info('local_installs')
-                WHERE name = 'BuildId';
-                """;
-            return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken)) > 0;
+            return await ColumnExistsAsync(db, "local_installs", "BuildId", cancellationToken);
         }
         catch (SqliteException)
         {
             return false;
         }
+    }
+
+    private static async Task RecreateDatabaseAsync(
+        SgsClientDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Closed)
+        {
+            await connection.CloseAsync();
+        }
+
+        SqliteConnection.ClearAllPools();
+
+        await db.Database.EnsureDeletedAsync(cancellationToken);
+        await db.Database.EnsureCreatedAsync(cancellationToken);
+    }
+
+    private static async Task<bool> TableExistsAsync(
+        SgsClientDbContext db,
+        string tableName,
+        CancellationToken cancellationToken)
+    {
+        var count = await ExecuteScalarAsync(
+            db,
+            """
+            SELECT COUNT(1)
+            FROM sqlite_master
+            WHERE type = 'table' AND name = $name;
+            """,
+            cancellationToken,
+            ("$name", tableName));
+        return count > 0;
+    }
+
+    private static async Task<bool> ColumnExistsAsync(
+        SgsClientDbContext db,
+        string tableName,
+        string columnName,
+        CancellationToken cancellationToken)
+    {
+        // pragma_table_info does not accept bound parameters for table name.
+        var safeTable = tableName.Replace("'", "''", StringComparison.Ordinal);
+        var count = await ExecuteScalarAsync(
+            db,
+            $"""
+            SELECT COUNT(1)
+            FROM pragma_table_info('{safeTable}')
+            WHERE name = $name;
+            """,
+            cancellationToken,
+            ("$name", columnName));
+        return count > 0;
+    }
+
+    private static async Task ExecuteNonQueryAsync(
+        SgsClientDbContext db,
+        string sql,
+        CancellationToken cancellationToken)
+    {
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task<int> ExecuteScalarAsync(
+        SgsClientDbContext db,
+        string sql,
+        CancellationToken cancellationToken,
+        params (string Name, object Value)[] parameters)
+    {
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        foreach (var (name, value) in parameters)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            parameter.Value = value;
+            command.Parameters.Add(parameter);
+        }
+
+        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
     }
 }

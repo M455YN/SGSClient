@@ -14,5 +14,8 @@ public sealed class LocalInstallEntity
     public string? InstallPath { get; set; }
     public string? ExecutablePath { get; set; }
     public string? InstalledVersion { get; set; }
+    public string? TargetVersion { get; set; }
+    public string? CoverUrl { get; set; }
+    public string? CustomCoverPath { get; set; }
     public DateTimeOffset? LastPlayedUtc { get; set; }
 }
