@@ -62,7 +62,7 @@ public sealed partial class GamesPage : Page
     {
         if (e.ClickedItem is GameListItem item)
         {
-            Frame.Navigate(typeof(GameDetailsPage), item.Id);
+            Frame.Navigate(typeof(GameDetailsPage), new GameDetailsNavArgs(item.Id, "Games"));
         }
     }
 

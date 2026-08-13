@@ -72,6 +72,6 @@ public sealed partial class HomePage : Page
 
     private void OnOpenGameRequested(int gameId)
     {
-        App.MainWindow?.NavigateTo(typeof(GameDetailsPage), parameter: gameId, selectTag: "Games");
+        App.MainWindow?.NavigateTo(typeof(GameDetailsPage), parameter: new GameDetailsNavArgs(gameId, "Games"), selectTag: "Games");
     }
 }

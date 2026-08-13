@@ -14,6 +14,9 @@ public partial class GameDetailsViewModel : ViewModelBase
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
     private Action? _close;
+    private string? _coverUrl;
+    private GameLibraryItem? _libraryItem;
+    private Action<GameLibraryItem>? _openProperties;
 
     public GameDetailsViewModel()
     {
@@ -29,6 +32,7 @@ public partial class GameDetailsViewModel : ViewModelBase
     }
 
     public void SetCloseHandler(Action close) => _close = close;
+    public void SetOpenPropertiesHandler(Action<GameLibraryItem> open) => _openProperties = open;
 
     public ObservableCollection<string> Badges { get; } = [];
     public ObservableCollection<MediaThumbItem> MediaThumbs { get; } = [];
@@ -94,6 +98,36 @@ public partial class GameDetailsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _showBuilds;
 
+    [ObservableProperty]
+    private bool _fromLibrary;
+
+    [ObservableProperty]
+    private string _backLabel = "← Sklep";
+
+    [ObservableProperty]
+    private string _contextLabel = "SGS STORE";
+
+    [ObservableProperty]
+    private bool _canLaunch;
+
+    [ObservableProperty]
+    private bool _canInstall;
+
+    [ObservableProperty]
+    private bool _canUninstall;
+
+    [ObservableProperty]
+    private bool _showLibraryActions;
+
+    [ObservableProperty]
+    private bool _isInstalling;
+
+    [ObservableProperty]
+    private double _installProgressFraction;
+
+    [ObservableProperty]
+    private string _installProgressText = string.Empty;
+
     public bool ShowDetailsTab => SelectedTab == "Details";
     public bool ShowReviewsTab => SelectedTab == "Reviews";
     public bool ShowMoreTab => SelectedTab == "More";
@@ -105,9 +139,12 @@ public partial class GameDetailsViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowMoreTab));
     }
 
-    public async Task LoadAsync(int gameId)
+    public async Task LoadAsync(int gameId, bool fromLibrary = false)
     {
         GameId = gameId;
+        FromLibrary = fromLibrary;
+        BackLabel = fromLibrary ? "← Biblioteka" : "← Sklep";
+        ContextLabel = fromLibrary ? "BIBLIOTEKA" : "SGS STORE";
         if (_api is null)
         {
             StatusText = "Brak klienta API.";
@@ -128,7 +165,8 @@ public partial class GameDetailsViewModel : ViewModelBase
             }
 
             ApplyGame(game);
-            InLibrary = await IsInLibraryAsync(game.Id);
+            await EnrichBuildHistoryAsync(game.Id);
+            await RefreshLibraryStateAsync(game.Id);
             UpdateActionState(game);
             HasContent = true;
             StatusText = string.Empty;
@@ -171,6 +209,8 @@ public partial class GameDetailsViewModel : ViewModelBase
             return;
         }
 
+        var selectedVersion = preferred.SelectedVersion?.Version ?? preferred.Version;
+
         try
         {
             using var scope = _scopes.CreateScope();
@@ -184,7 +224,9 @@ public partial class GameDetailsViewModel : ViewModelBase
                 Platform = preferred.Platform,
                 Architecture = preferred.Architecture,
                 InstallState = InstallState.NotInstalled,
-                InstalledVersion = preferred.Version,
+                InstalledVersion = null,
+                TargetVersion = selectedVersion,
+                CoverUrl = _coverUrl,
                 ExecutablePath = null,
                 InstallPath = null
             });
@@ -192,7 +234,10 @@ public partial class GameDetailsViewModel : ViewModelBase
             InLibrary = true;
             CanAdd = false;
             PrimaryActionLabel = "W bibliotece";
-            StatusText = "Dodano do biblioteki.";
+            StatusText = preferred.SelectedVersion?.IsCurrent == true || preferred.SelectedVersion is null
+                ? "Dodano do biblioteki (najnowsza wersja)."
+                : $"Dodano do biblioteki (wersja {selectedVersion}).";
+            await RefreshLibraryStateAsync(GameId);
         }
         catch (Exception ex)
         {
@@ -200,10 +245,133 @@ public partial class GameDetailsViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
+    private async Task LaunchAsync()
+    {
+        if (_scopes is null || _libraryItem is null || string.IsNullOrWhiteSpace(_libraryItem.ExecutablePath))
+        {
+            StatusText = "Gra nie jest zainstalowana.";
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var launcher = scope.ServiceProvider.GetRequiredService<IGameLauncherService>();
+            await launcher.LaunchAsync(_libraryItem.ExecutablePath);
+            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            _libraryItem.LastPlayedUtc = DateTimeOffset.UtcNow;
+            await library.UpsertAsync(_libraryItem);
+            StatusText = "Uruchomiono.";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Nie udało się uruchomić: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallAsync()
+    {
+        if (_scopes is null || _libraryItem is null || IsInstalling)
+        {
+            return;
+        }
+
+        IsInstalling = true;
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var installer = scope.ServiceProvider.GetRequiredService<IGameInstallService>();
+            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            var model = await library.GetByGameIdAsync(GameId);
+            if (model is null)
+            {
+                StatusText = "Nie znaleziono gry w bibliotece.";
+                return;
+            }
+
+            var progress = new Progress<InstallProgress>(p =>
+            {
+                InstallProgressFraction = p.Fraction;
+                InstallProgressText = p.Message ?? string.Empty;
+            });
+
+            var result = await installer.InstallAsync(model, version: model.TargetVersion, progress: progress);
+            await library.UpsertAsync(model);
+            _libraryItem = model;
+            ApplyLibraryActions(model);
+            StatusText = result.Success
+                ? $"Zainstalowano: {model.Title}"
+                : result.Errors.FirstOrDefault() ?? "Instalacja nie powiodła się.";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Instalacja nie powiodła się: {ex.Message}";
+        }
+        finally
+        {
+            IsInstalling = false;
+            InstallProgressFraction = 0;
+            InstallProgressText = string.Empty;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UninstallAsync()
+    {
+        if (_scopes is null || _libraryItem is null || IsInstalling)
+        {
+            return;
+        }
+
+        IsInstalling = true;
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var installer = scope.ServiceProvider.GetRequiredService<IGameInstallService>();
+            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            var model = await library.GetByGameIdAsync(GameId);
+            if (model is null)
+            {
+                StatusText = "Nie znaleziono gry w bibliotece.";
+                return;
+            }
+
+            var result = await installer.UninstallAsync(model);
+            await library.UpsertAsync(model);
+            _libraryItem = model;
+            ApplyLibraryActions(model);
+            StatusText = result.Success
+                ? $"Odinstalowano: {model.Title}"
+                : result.Errors.FirstOrDefault() ?? "Odinstalowanie nie powiodło się.";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Odinstalowanie nie powiodło się: {ex.Message}";
+        }
+        finally
+        {
+            IsInstalling = false;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenProperties()
+    {
+        if (_libraryItem is null)
+        {
+            return;
+        }
+
+        _openProperties?.Invoke(_libraryItem);
+    }
+
     private void ApplyGame(GameDto game)
     {
         Title = game.Title;
         Symbol = game.Symbol;
+        _coverUrl = game.CoverUrl;
         TileLabel = string.IsNullOrWhiteSpace(game.Symbol)
             ? game.Title[..Math.Min(2, game.Title.Length)].ToUpperInvariant()
             : game.Symbol[..Math.Min(3, game.Symbol.Length)].ToUpperInvariant();
@@ -288,7 +456,7 @@ public partial class GameDetailsViewModel : ViewModelBase
         Builds.Clear();
         foreach (var build in game.Builds)
         {
-            Builds.Add(new BuildRowItem
+            var row = new BuildRowItem
             {
                 BuildId = build.Id,
                 Platform = build.Platform,
@@ -296,13 +464,42 @@ public partial class GameDetailsViewModel : ViewModelBase
                 Version = build.CurrentVersion,
                 ExeName = build.ExeName,
                 PlatformText = FormatPlatform(build.Platform, build.Architecture),
-                MetaText = $"v{build.CurrentVersion} · {build.ExeName}" + (build.IsDefault ? " · domyślny" : ""),
+                MetaText = build.ExeName + (build.IsDefault ? " · domyślny" : ""),
                 IsPreferred = build.Platform == preferredPlatform
-            });
+            };
+            row.Versions.Add(VersionOptionItem.FromCurrent(build.CurrentVersion));
+            row.SelectedVersion = row.Versions[0];
+            Builds.Add(row);
         }
 
         ShowBuilds = Builds.Count > 0;
         SelectedTab = "Details";
+    }
+
+    private async Task EnrichBuildHistoryAsync(int gameId)
+    {
+        if (_api is null || Builds.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var row in Builds)
+        {
+            var versions = await _api.GetBuildVersionsAsync(gameId, row.BuildId);
+            if (versions.Count == 0)
+            {
+                continue;
+            }
+
+            row.Versions.Clear();
+            foreach (var version in versions.OrderByDescending(v => v.IsCurrent).ThenByDescending(v => v.PublishedAtUtc))
+            {
+                row.Versions.Add(VersionOptionItem.FromDto(version));
+            }
+
+            row.SelectedVersion = row.Versions.FirstOrDefault(v => v.IsCurrent) ?? row.Versions.FirstOrDefault();
+            row.HasVersionPicker = row.Versions.Count > 0;
+        }
     }
 
     private void UpdateActionState(GameDto game)
@@ -314,25 +511,53 @@ public partial class GameDetailsViewModel : ViewModelBase
             : preferred is null
                 ? "Brak builda"
                 : "Dodaj do biblioteki";
+        ShowLibraryActions = InLibrary;
     }
 
-    private async Task<bool> IsInLibraryAsync(int gameId)
+    private async Task RefreshLibraryStateAsync(int gameId)
     {
+        _libraryItem = null;
+        ShowLibraryActions = false;
+        CanLaunch = false;
+        CanInstall = false;
+        CanUninstall = false;
+
         if (_scopes is null)
         {
-            return false;
+            InLibrary = false;
+            return;
         }
 
         try
         {
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            return await library.GetByGameIdAsync(gameId) is not null;
+            _libraryItem = await library.GetByGameIdAsync(gameId);
+            InLibrary = _libraryItem is not null;
+            if (_libraryItem is not null)
+            {
+                ApplyLibraryActions(_libraryItem);
+            }
         }
         catch
         {
-            return false;
+            InLibrary = false;
         }
+    }
+
+    private void ApplyLibraryActions(GameLibraryItem item)
+    {
+        ShowLibraryActions = true;
+        CanLaunch = item.InstallState == InstallState.Installed
+            && !string.IsNullOrWhiteSpace(item.ExecutablePath);
+        CanInstall = item.InstallState is InstallState.NotInstalled or InstallState.Failed;
+        CanUninstall = item.InstallState == InstallState.Installed;
+    }
+
+    private async Task<bool> IsInLibraryAsync(int gameId)
+    {
+        await RefreshLibraryStateAsync(gameId);
+        return InLibrary;
     }
 
     private static GamePlatform DetectCurrentPlatform()
@@ -376,7 +601,7 @@ public sealed class MediaThumbItem
     public string? ImageUrl { get; init; }
 }
 
-public sealed class BuildRowItem
+public partial class BuildRowItem : ObservableObject
 {
     public required int BuildId { get; init; }
     public required GamePlatform Platform { get; init; }
@@ -384,6 +609,40 @@ public sealed class BuildRowItem
     public required string Version { get; init; }
     public required string ExeName { get; init; }
     public required string PlatformText { get; init; }
-    public required string MetaText { get; init; }
+    public string MetaText { get; set; } = string.Empty;
     public bool IsPreferred { get; init; }
+
+    public ObservableCollection<VersionOptionItem> Versions { get; } = [];
+
+    [ObservableProperty]
+    private VersionOptionItem? _selectedVersion;
+
+    [ObservableProperty]
+    private bool _hasVersionPicker;
+}
+
+public sealed class VersionOptionItem
+{
+    public required string Version { get; init; }
+    public required string DisplayText { get; init; }
+    public bool IsCurrent { get; init; }
+    public DateTimeOffset PublishedAtUtc { get; init; }
+
+    public static VersionOptionItem FromCurrent(string version) => new()
+    {
+        Version = version,
+        DisplayText = $"v{version} (najnowsza)",
+        IsCurrent = true,
+        PublishedAtUtc = DateTimeOffset.UtcNow
+    };
+
+    public static VersionOptionItem FromDto(GameBuildVersionDto dto) => new()
+    {
+        Version = dto.Version,
+        DisplayText = dto.IsCurrent
+            ? $"v{dto.Version} (najnowsza)"
+            : $"v{dto.Version} · {dto.PublishedAtUtc.LocalDateTime:g}",
+        IsCurrent = dto.IsCurrent,
+        PublishedAtUtc = dto.PublishedAtUtc
+    };
 }

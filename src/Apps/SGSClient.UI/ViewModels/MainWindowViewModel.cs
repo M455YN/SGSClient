@@ -44,7 +44,8 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentPage = _home;
         SelectedNavTag = "Home";
 
-        _games.SetOpenDetailsHandler(OpenGameDetails);
+        _games.SetOpenDetailsHandler(id => OpenGameDetails(id, "Games"));
+        _library.SetOpenDetailsHandler(id => OpenGameDetails(id, "Library"));
         _gameDetails.SetCloseHandler(CloseGameDetails);
         _home.SetNavigateHandler(NavigateFromHome);
     }
@@ -56,6 +57,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _selectedNavTag = "Home";
+
+    private string _detailsReturnTag = "Games";
 
     [RelayCommand]
     private void Navigate(string? tag)
@@ -69,7 +72,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             if (int.TryParse(tag.AsSpan(5), out var gameId))
             {
-                OpenGameDetails(gameId);
+                OpenGameDetails(gameId, "Games");
             }
 
             return;
@@ -90,22 +93,41 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _publish.RefreshAuthHint();
         }
+
+        if (tag == "Library")
+        {
+            _ = _library.LoadAsync();
+        }
     }
 
     private void NavigateFromHome(string tag) => Navigate(tag);
 
-    public void OpenGameDetails(int gameId)
+    public void OpenGameDetails(int gameId, string returnTag = "Games")
     {
-        SelectedNavTag = "Games";
+        _detailsReturnTag = string.IsNullOrWhiteSpace(returnTag) ? "Games" : returnTag;
+        SelectedNavTag = _detailsReturnTag == "Library" ? "Library" : "Games";
         CurrentPage = _gameDetails;
-        _ = _gameDetails.LoadAsync(gameId);
+        _ = _gameDetails.LoadAsync(gameId, fromLibrary: _detailsReturnTag == "Library");
     }
 
     public void CloseGameDetails()
     {
-        SelectedNavTag = "Games";
-        CurrentPage = _games;
-        _ = _games.EnsureLoadedAsync();
+        var tag = _detailsReturnTag;
+        SelectedNavTag = tag;
+        CurrentPage = tag switch
+        {
+            "Library" => _library,
+            _ => _games
+        };
+
+        if (tag == "Library")
+        {
+            _ = _library.LoadAsync();
+        }
+        else
+        {
+            _ = _games.EnsureLoadedAsync();
+        }
     }
 
     public async Task InitializeAsync()

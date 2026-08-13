@@ -23,7 +23,7 @@
         </Border>
 
         <StackPanel Margin="28,20,28,32" Spacing="22">
-          <Button Content="← Sklep" Click="Back_Click" HorizontalAlignment="Left" Padding="10,6" />
+          <Button x:Name="BackButton" Content="← Sklep" Click="Back_Click" HorizontalAlignment="Left" Padding="10,6" />
 
           <Grid ColumnSpacing="36" MinHeight="280">
             <Grid.ColumnDefinitions>
@@ -32,7 +32,7 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel Spacing="14" VerticalAlignment="Top">
-              <TextBlock Text="SGS STORE" Opacity="0.55" FontSize="12" FontWeight="SemiBold" />
+              <TextBlock x:Name="ContextLabelText" Text="SGS STORE" Opacity="0.55" FontSize="12" FontWeight="SemiBold" />
               <TextBlock x:Name="TitleText" FontSize="34" FontWeight="Bold" TextWrapping="Wrap" />
               <ItemsControl x:Name="BadgesList">
                 <ItemsControl.ItemsPanel>
@@ -55,10 +55,34 @@
                         Click="AddToLibrary_Click"
                         Padding="18,12"
                         MinWidth="200"
-                        Background="#2E7D32"
-                        Foreground="White" />
-                <Button Content="♥" IsEnabled="False" Padding="14,12" />
-                <Button Content="⋯" IsEnabled="False" Padding="14,12" />
+                        Style="{StaticResource AccentButtonStyle}" />
+                <Button x:Name="LaunchButton"
+                        Content="Graj"
+                        Click="Launch_Click"
+                        Visibility="Collapsed"
+                        Padding="18,12"
+                        MinWidth="120"
+                        Style="{StaticResource AccentButtonStyle}" />
+                <Button x:Name="InstallButton"
+                        Content="Zainstaluj"
+                        Click="Install_Click"
+                        Visibility="Collapsed"
+                        Padding="14,12" />
+                <Button x:Name="UninstallButton"
+                        Content="Odinstaluj"
+                        Click="Uninstall_Click"
+                        Visibility="Collapsed"
+                        Padding="14,12" />
+                <Button x:Name="PropertiesButton"
+                        Content="Właściwości"
+                        Click="Properties_Click"
+                        Visibility="Collapsed"
+                        Padding="14,12"
+                        Style="{StaticResource SubtleButtonStyle}" />
+              </StackPanel>
+              <StackPanel x:Name="InstallProgressPanel" Spacing="4" Visibility="Collapsed">
+                <TextBlock x:Name="InstallProgressText" Opacity="0.7" FontSize="12" />
+                <ProgressBar x:Name="InstallProgressBar" Minimum="0" Maximum="1" Height="4" />
               </StackPanel>
               <TextBlock x:Name="StatusText" Opacity="0.65" FontSize="12" />
             </StackPanel>
@@ -117,24 +141,36 @@
                 <TextBlock x:Name="HardwareText" Opacity="0.85" TextWrapping="Wrap" />
               </StackPanel>
               <StackPanel x:Name="BuildsPanel" Spacing="10" Visibility="Collapsed">
-                <TextBlock Text="Dostępne buildy" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Text="Właściwości wersji" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Text="Wybierz wersję do pobrania (jak Betas w Steam). Domyślnie zaznaczona jest najnowsza."
+                           Opacity="0.6" FontSize="12" TextWrapping="Wrap" />
                 <ItemsControl x:Name="BuildsList">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <Border Margin="0,0,0,10" Padding="14" CornerRadius="8"
                               Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-                        <Grid>
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                          </Grid.ColumnDefinitions>
-                          <StackPanel Spacing="2">
-                            <TextBlock Text="{Binding PlatformText}" FontWeight="SemiBold" />
-                            <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12" />
+                        <StackPanel Spacing="10">
+                          <Grid>
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                              <TextBlock Text="{Binding PlatformText}" FontWeight="SemiBold" />
+                              <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding PreferredLabel}"
+                                       FontSize="11" Foreground="#A5D6A7" VerticalAlignment="Center" />
+                          </Grid>
+                          <StackPanel Spacing="4">
+                            <TextBlock Text="Wersja" Opacity="0.7" FontSize="11" />
+                            <ComboBox ItemsSource="{Binding Versions}"
+                                      SelectedItem="{Binding SelectedVersion, Mode=TwoWay}"
+                                      DisplayMemberPath="DisplayText"
+                                      MinWidth="260"
+                                      HorizontalAlignment="Left" />
                           </StackPanel>
-                          <TextBlock Grid.Column="1" Text="{Binding PreferredLabel}"
-                                     FontSize="11" Foreground="#A5D6A7" VerticalAlignment="Center" />
-                        </Grid>
+                        </StackPanel>
                       </Border>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>

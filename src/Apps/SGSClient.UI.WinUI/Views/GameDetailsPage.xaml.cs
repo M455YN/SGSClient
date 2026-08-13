@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using SGSClient.Core.Models;
 using SGSClient.UI.WinUI.ViewModels;
 
 namespace SGSClient.UI.WinUI.Views;
@@ -14,22 +15,29 @@ public sealed partial class GameDetailsPage : Page
     {
         ViewModel = App.Services.GetRequiredService<GameDetailsViewModel>();
         InitializeComponent();
+        ViewModel.SetOpenPropertiesHandler(OpenProperties);
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        if (e.Parameter is int gameId)
+        var (gameId, fromLibrary) = e.Parameter switch
         {
-            await ViewModel.LoadAsync(gameId);
-            RefreshUi();
-        }
-        else
+            GameDetailsNavArgs args => (args.GameId, args.ReturnTag == "Library"),
+            int id => (id, false),
+            _ => (0, false)
+        };
+
+        if (gameId <= 0)
         {
             EmptyStatus.Text = "Brak identyfikatora gry.";
             ContentScroll.Visibility = Visibility.Collapsed;
+            return;
         }
+
+        await ViewModel.LoadAsync(gameId, fromLibrary);
+        RefreshUi();
     }
 
     private void RefreshUi()
@@ -38,6 +46,8 @@ public sealed partial class GameDetailsPage : Page
         EmptyStatus.Visibility = ViewModel.HasContent ? Visibility.Collapsed : Visibility.Visible;
         ContentScroll.Visibility = ViewModel.HasContent ? Visibility.Visible : Visibility.Collapsed;
 
+        BackButton.Content = ViewModel.BackLabel;
+        ContextLabelText.Text = ViewModel.ContextLabel;
         TitleText.Text = ViewModel.Title;
         TaglineText.Text = ViewModel.Tagline;
         TileLabelText.Text = ViewModel.TileLabel;
@@ -50,6 +60,19 @@ public sealed partial class GameDetailsPage : Page
 
         PrimaryActionButton.Content = ViewModel.PrimaryActionLabel;
         PrimaryActionButton.IsEnabled = ViewModel.CanAdd;
+        PrimaryActionButton.Visibility = ViewModel.ShowStoreActions ? Visibility.Visible : Visibility.Collapsed;
+
+        LaunchButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
+        LaunchButton.IsEnabled = ViewModel.CanLaunch;
+        InstallButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
+        InstallButton.IsEnabled = ViewModel.CanInstall;
+        UninstallButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
+        UninstallButton.IsEnabled = ViewModel.CanUninstall;
+        PropertiesButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
+
+        InstallProgressPanel.Visibility = ViewModel.IsInstalling ? Visibility.Visible : Visibility.Collapsed;
+        InstallProgressText.Text = ViewModel.InstallProgressText;
+        InstallProgressBar.Value = ViewModel.InstallProgressFraction;
 
         BadgesList.ItemsSource = ViewModel.Badges;
         MediaThumbsList.ItemsSource = ViewModel.MediaThumbs;
@@ -66,20 +89,49 @@ public sealed partial class GameDetailsPage : Page
 
     private void Back_Click(object sender, RoutedEventArgs e)
     {
+        var returnTag = ViewModel.ReturnTag;
+        if (returnTag == "Library")
+        {
+            App.MainWindow?.NavigateTo(typeof(LibraryPage), selectTag: "Library");
+            return;
+        }
+
         if (Frame.CanGoBack)
         {
             Frame.GoBack();
+            return;
         }
-        else
-        {
-            Frame.Navigate(typeof(GamesPage));
-        }
+
+        App.MainWindow?.NavigateTo(typeof(GamesPage), selectTag: "Games");
     }
 
     private async void AddToLibrary_Click(object sender, RoutedEventArgs e)
     {
         await ViewModel.AddToLibraryCommand.ExecuteAsync(null);
         RefreshUi();
+    }
+
+    private async void Launch_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.LaunchCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private async void Install_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.InstallCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private async void Uninstall_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.UninstallCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private void Properties_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenPropertiesCommand.Execute(null);
     }
 
     private void Tab_Click(object sender, RoutedEventArgs e)
@@ -89,5 +141,11 @@ public sealed partial class GameDetailsPage : Page
             ViewModel.SelectTabCommand.Execute(tab);
             RefreshUi();
         }
+    }
+
+    private async void OpenProperties(GameLibraryItem item)
+    {
+        var dialog = new GamePropertiesDialog();
+        await dialog.ShowForGameAsync(item.GameId, item.BuildId, item.Title, XamlRoot);
     }
 }

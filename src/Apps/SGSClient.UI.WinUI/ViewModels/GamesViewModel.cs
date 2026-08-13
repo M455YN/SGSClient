@@ -115,7 +115,9 @@ public partial class GamesViewModel : ObservableObject
                 Platform = item.Platform,
                 Architecture = item.Architecture,
                 InstallState = InstallState.NotInstalled,
-                InstalledVersion = item.Version,
+                InstalledVersion = null,
+                TargetVersion = item.Version,
+                CoverUrl = item.CoverUrl,
                 ExecutablePath = null,
                 InstallPath = null
             });
@@ -175,6 +177,7 @@ public partial class GameListItem : ObservableObject
     public GamePlatform Platform { get; init; }
     public string? Architecture { get; init; }
     public string? Version { get; init; }
+    public string? CoverUrl { get; init; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanAdd))]
@@ -209,6 +212,7 @@ public partial class GameListItem : ObservableObject
             Platform = build?.Platform ?? DetectCurrentPlatform(),
             Architecture = build?.Architecture,
             Version = build?.CurrentVersion,
+            CoverUrl = dto.CoverUrl,
             InLibrary = inLibrary
         };
     }
