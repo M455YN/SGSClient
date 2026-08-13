@@ -6,4 +6,8 @@ public interface ISgsApiService
 {
     Task<IReadOnlyList<GameDto>> GetGamesAsync(CancellationToken cancellationToken = default);
     Task<GameDto?> GetGameAsync(int id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<GameBuildVersionDto>> GetBuildVersionsAsync(
+        int gameId,
+        int buildId,
+        CancellationToken cancellationToken = default);
 }

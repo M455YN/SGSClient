@@ -69,6 +69,50 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.ToTable("game_builds", (string)null);
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildVersionEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ExeName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("GameBuildId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("PublishedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ZipLink")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameBuildId", "PublishedAtUtc");
+
+                    b.HasIndex("GameBuildId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("game_build_versions", (string)null);
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -288,6 +332,17 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("Game");
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildVersionEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildEntity", "GameBuild")
+                        .WithMany("Versions")
+                        .HasForeignKey("GameBuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GameBuild");
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", b =>
                 {
                     b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", "Engine")
@@ -314,6 +369,11 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Game");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildEntity", b =>
+                {
+                    b.Navigation("Versions");
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", b =>

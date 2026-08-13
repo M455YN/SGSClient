@@ -37,6 +37,25 @@ public sealed class GamesController(
         return result is null ? NotFound() : Ok(result);
     }
 
+    [HttpGet("{id:int}/builds/{buildId:int}/versions")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<GameBuildVersionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<GameBuildVersionDto>>> GetBuildVersions(
+        int id,
+        int buildId,
+        CancellationToken cancellationToken)
+    {
+        var game = await games.GetPublishedGameByIdAsync(id, cancellationToken);
+        if (game is null || game.Builds.All(b => b.Id != buildId))
+        {
+            return NotFound();
+        }
+
+        var versions = await games.GetBuildVersionHistoryAsync(id, buildId, cancellationToken);
+        return Ok(versions);
+    }
+
     [HttpPost("uploads")]
     [RequestSizeLimit(SgsPackageRules.MaxZipBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxZipBytes)]

@@ -28,6 +28,39 @@ public sealed class EfGameRepository(SgsServerDbContext db) : IGameRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<GameBuildVersionDto>> GetBuildVersionHistoryAsync(
+        int gameId,
+        int buildId,
+        CancellationToken cancellationToken = default)
+    {
+        var build = await db.GameBuilds
+            .AsNoTracking()
+            .Where(b => b.Id == buildId && b.GameId == gameId)
+            .Select(b => new { b.Id, b.CurrentVersion, b.Game!.DraftP })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (build is null || build.DraftP)
+        {
+            return [];
+        }
+
+        return await db.GameBuildVersions
+            .AsNoTracking()
+            .Where(v => v.GameBuildId == buildId)
+            .OrderByDescending(v => v.PublishedAtUtc)
+            .Select(v => new GameBuildVersionDto
+            {
+                Id = v.Id,
+                GameBuildId = v.GameBuildId,
+                Version = v.Version,
+                ExeName = v.ExeName,
+                ZipLink = v.ZipLink,
+                PublishedAtUtc = v.PublishedAtUtc,
+                IsCurrent = v.Version == build.CurrentVersion
+            })
+            .ToListAsync(cancellationToken);
+    }
+
     private static System.Linq.Expressions.Expression<Func<GameEntity, GameDto>> ProjectGame() =>
         g => new GameDto
         {

@@ -7,6 +7,7 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
 {
     public DbSet<GameEntity> Games => Set<GameEntity>();
     public DbSet<GameBuildEntity> GameBuilds => Set<GameBuildEntity>();
+    public DbSet<GameBuildVersionEntity> GameBuildVersions => Set<GameBuildVersionEntity>();
     public DbSet<GameGenreEntity> GameGenres => Set<GameGenreEntity>();
     public DbSet<GameEngineEntity> GameEngines => Set<GameEngineEntity>();
     public DbSet<GameScreenshotEntity> GameScreenshots => Set<GameScreenshotEntity>();
@@ -104,6 +105,26 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
 
             entity.HasIndex(x => new { x.GameId, x.Platform, x.Architecture }).IsUnique();
             entity.HasIndex(x => new { x.GameId, x.IsDefault });
+
+            entity.HasMany(x => x.Versions)
+                .WithOne(x => x.GameBuild)
+                .HasForeignKey(x => x.GameBuildId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameBuildVersionEntity>(entity =>
+        {
+            entity.ToTable("game_build_versions");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+
+            entity.Property(x => x.Version).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.ExeName).HasMaxLength(256).IsRequired();
+            entity.Property(x => x.ZipLink).HasMaxLength(2048).IsRequired();
+            entity.Property(x => x.FileName).HasMaxLength(128).IsRequired();
+
+            entity.HasIndex(x => new { x.GameBuildId, x.Version }).IsUnique();
+            entity.HasIndex(x => new { x.GameBuildId, x.PublishedAtUtc });
         });
 
         modelBuilder.Entity<GameScreenshotEntity>(entity =>

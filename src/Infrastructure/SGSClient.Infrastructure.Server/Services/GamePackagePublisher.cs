@@ -13,6 +13,7 @@ namespace SGSClient.Infrastructure.Server.Services;
 
 public sealed class GamePackagePublisher(
     SgsServerDbContext db,
+    GameBuildVersionService versionService,
     IOptions<GameStorageSettings> storageOptions) : IGamePackagePublisher
 {
     public async Task<GamePackagePublishResult> PublishZipAsync(
@@ -180,6 +181,15 @@ public sealed class GamePackagePublisher(
             }
 
             await db.SaveChangesAsync(cancellationToken);
+
+            await versionService.RecordPublishedVersionAsync(
+                build,
+                manifest.Game.Symbol,
+                manifest.Build.Version,
+                exePath,
+                zipLink,
+                fileName,
+                cancellationToken);
 
             var dto = await db.Games.AsNoTracking()
                 .Where(g => g.Id == game.Id)

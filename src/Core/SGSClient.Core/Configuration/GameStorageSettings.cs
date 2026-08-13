@@ -10,6 +10,9 @@ public sealed class GameStorageSettings
     /// <summary>Public base URL used in ZipLink (e.g. https://api.example/api/games/packages).</summary>
     public string PublicBaseUrl { get; set; } = "/api/games/packages";
 
+    /// <summary>How many ZIP versions to keep per platform/arch build slot (older ones are deleted).</summary>
+    public int RetentionCount { get; set; } = 3;
+
     /// <summary>Public base URL for cover/intro/screenshots (e.g. /api/games/media).</summary>
     public string MediaPublicBaseUrl { get; set; } = "/api/games/media";
 }

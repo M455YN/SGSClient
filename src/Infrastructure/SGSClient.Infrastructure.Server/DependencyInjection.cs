@@ -26,6 +26,7 @@ public static class DependencyInjection
 
         services.AddScoped<IGameRepository, EfGameRepository>();
         services.AddScoped<IUserService, EfUserService>();
+        services.AddScoped<GameBuildVersionService>();
         services.AddScoped<IGamePackagePublisher, GamePackagePublisher>();
 
         return services;

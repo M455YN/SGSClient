@@ -39,4 +39,30 @@ public sealed class HttpSgsApiService(HttpClient http) : ISgsApiService
             return null;
         }
     }
+
+    public async Task<IReadOnlyList<GameBuildVersionDto>> GetBuildVersionsAsync(
+        int gameId,
+        int buildId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await http
+                .GetAsync($"api/Games/{gameId}/builds/{buildId}/versions", cancellationToken)
+                .ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return [];
+            }
+
+            var versions = await response.Content
+                .ReadFromJsonAsync<List<GameBuildVersionDto>>(cancellationToken)
+                .ConfigureAwait(false);
+            return versions ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
 }

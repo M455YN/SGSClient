@@ -14,4 +14,6 @@ public sealed class GameBuildEntity
     public required string ExeName { get; set; }
     public required string ZipLink { get; set; }
     public bool IsDefault { get; set; }
+
+    public ICollection<GameBuildVersionEntity> Versions { get; set; } = [];
 }
