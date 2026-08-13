@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using SGSClient.UI.ViewModels;
 
@@ -13,6 +14,7 @@ public partial class LibraryView : UserControl
         {
             if (DataContext is LibraryViewModel vm)
             {
+                vm.SetOpenPropertiesHandler(OpenProperties);
                 await vm.LoadAsync();
             }
         };
@@ -26,11 +28,28 @@ public partial class LibraryView : UserControl
         }
     }
 
-    private async void Remove_OnClick(object? sender, RoutedEventArgs e)
+    private void Home_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is LibraryViewModel vm)
         {
-            await vm.RemoveCommand.ExecuteAsync((sender as Control)?.Tag as LibraryGameItem);
+            vm.SelectHomeCommand.Execute(null);
+        }
+    }
+
+    private void Sidebar_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (DataContext is LibraryViewModel vm && sender is ListBox { SelectedItem: LibraryGameItem item })
+        {
+            vm.SelectGameCommand.Execute(item);
+        }
+    }
+
+    private void Poster_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is LibraryViewModel vm
+            && (sender as Control)?.Tag is LibraryGameItem item)
+        {
+            vm.SelectGameCommand.Execute(item);
         }
     }
 
@@ -38,7 +57,29 @@ public partial class LibraryView : UserControl
     {
         if (DataContext is LibraryViewModel vm)
         {
+            e.Handled = true;
             await vm.LaunchCommand.ExecuteAsync((sender as Control)?.Tag as LibraryGameItem);
+        }
+    }
+
+    private void OpenProperties(LibraryGameItem item)
+    {
+        var window = new GamePropertiesWindow();
+        window.SetGame(item.GameId, item.BuildId, item.Title);
+        window.Closed += async (_, _) =>
+        {
+            if (DataContext is LibraryViewModel vm)
+            {
+                await vm.LoadAsync();
+            }
+        };
+        if (TopLevel.GetTopLevel(this) is Window owner)
+        {
+            window.Show(owner);
+        }
+        else
+        {
+            window.Show();
         }
     }
 }

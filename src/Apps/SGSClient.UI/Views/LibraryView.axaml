@@ -3,52 +3,149 @@
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
-  <DockPanel Margin="28,24">
-    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,18">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
-        <Button Grid.Column="1" Content="Odśwież" Click="Refresh_OnClick" Padding="12,6"/>
-      </Grid>
-      <TextBlock Text="{Binding StatusText}" Opacity="0.65" FontSize="13"/>
-    </StackPanel>
+  <Grid ColumnDefinitions="300,*">
+    <!-- Sidebar -->
+    <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+            BorderThickness="0,0,1,0">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="16,16,16,8" Spacing="10">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Biblioteka" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <Button Grid.Column="1" ToolTip.Tip="Odśwież" Click="Refresh_OnClick"
+                    Classes="subtle" Padding="8">
+              <TextBlock Text="↻"/>
+            </Button>
+          </Grid>
+          <TextBox PlaceholderText="Szukaj w bibliotece" Text="{Binding SearchText}"/>
+          <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  Padding="12,8" Click="Home_OnClick" Classes="subtle">
+            <TextBlock Text="Strona główna"/>
+          </Button>
+        </StackPanel>
 
-    <TextBlock Text="{Binding StatusText}"
-               IsVisible="{Binding ShowEmpty}"
-               Opacity="0.6"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"/>
+        <TextBlock DockPanel.Dock="Bottom" Margin="16,8,16,12"
+                   Text="{Binding StatusText}" Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasGames}">
-      <ItemsControl ItemsSource="{Binding Games}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="vm:LibraryGameItem">
-            <Border Margin="0,0,0,12" Padding="14" CornerRadius="8"
-                    Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-              <Grid ColumnDefinitions="56,*,Auto" ColumnSpacing="14">
-                <Border Width="56" Height="56" CornerRadius="8" Background="#333">
-                  <TextBlock Text="{Binding TileLabel}" FontWeight="Bold"
-                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <ListBox ItemsSource="{Binding FilteredGames}"
+                 SelectedItem="{Binding SelectedGame}"
+                 Background="Transparent"
+                 SelectionChanged="Sidebar_OnSelectionChanged"
+                 Margin="4,0">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:LibraryGameItem">
+              <Grid ColumnDefinitions="40,*" ColumnSpacing="12" Margin="4,4">
+                <Border Width="40" Height="40" CornerRadius="4" ClipToBounds="True"
+                        Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                  <Panel>
+                    <TextBlock Text="{Binding TileLabel}" FontWeight="SemiBold" FontSize="12"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsVisible="{Binding !HasCover}" Opacity="0.7"/>
+                    <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                           IsVisible="{Binding HasCover}"/>
+                  </Panel>
                 </Border>
-                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="16"/>
-                  <TextBlock Opacity="0.65" FontSize="12">
-                    <Run Text="{Binding PlatformText}"/>
-                    <Run Text=" · "/>
-                    <Run Text="{Binding VersionText}"/>
-                  </TextBlock>
-                  <TextBlock Text="{Binding StateText}" Opacity="0.7" FontSize="12"/>
-                  <TextBlock Text="{Binding LastPlayedText}" Opacity="0.5" FontSize="11"/>
-                </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                  <Button Content="Graj" Tag="{Binding}" Click="Launch_OnClick"
-                          IsEnabled="{Binding CanLaunch}" Padding="12,8"/>
-                  <Button Content="Usuń" Tag="{Binding}" Click="Remove_OnClick" Padding="12,8"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                  <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="{Binding StateText}" Opacity="0.6" FontSize="11" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
               </Grid>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </ScrollViewer>
-  </DockPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+
+    <!-- Main -->
+    <Panel Grid.Column="1">
+      <TextBlock Text="{Binding StatusText}"
+                 IsVisible="{Binding ShowEmpty}"
+                 Opacity="0.65"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 FontSize="14"/>
+
+      <ScrollViewer IsVisible="{Binding ShowHome}" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="28,24,28,32" Spacing="28" IsVisible="{Binding HasGames}">
+          <StackPanel Spacing="12" IsVisible="{Binding ShowRecent}">
+            <TextBlock Text="Niedawne gry" FontSize="20" FontWeight="SemiBold"/>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding RecentGames}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="12"/>
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:LibraryGameItem">
+                    <Border Width="168" Height="248" CornerRadius="8" ClipToBounds="True"
+                            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1" Cursor="Hand"
+                            PointerPressed="Poster_OnPointerPressed" Tag="{Binding}">
+                      <Panel>
+                        <TextBlock Text="{Binding TileLabel}" FontSize="32" FontWeight="SemiBold" Opacity="0.35"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsVisible="{Binding !HasCover}"/>
+                        <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                               IsVisible="{Binding HasCover}"/>
+                        <Border VerticalAlignment="Bottom" Padding="12,10"
+                                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                          <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding LastPlayedText}" Opacity="0.65" FontSize="11"/>
+                            <Button Content="Graj" Tag="{Binding}" Click="Launch_OnClick"
+                                    IsEnabled="{Binding CanLaunch}"
+                                    Classes="accent" Padding="12,6"
+                                    HorizontalAlignment="Left"/>
+                          </StackPanel>
+                        </Border>
+                      </Panel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </StackPanel>
+
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding AllGamesHeader}" FontSize="20" FontWeight="SemiBold"/>
+              <TextBlock Grid.Column="1" Text="Sortuj: alfabetycznie" Opacity="0.55"
+                         VerticalAlignment="Center" FontSize="12"/>
+            </Grid>
+            <ItemsControl ItemsSource="{Binding AllGames}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:LibraryGameItem">
+                  <Border Width="132" Height="198" Margin="0,0,12,12" CornerRadius="8" ClipToBounds="True"
+                          Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                          BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                          BorderThickness="1" Cursor="Hand"
+                          PointerPressed="Poster_OnPointerPressed" Tag="{Binding}">
+                    <Panel>
+                      <TextBlock Text="{Binding TileLabel}" FontSize="26" FontWeight="SemiBold" Opacity="0.35"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 IsVisible="{Binding !HasCover}"/>
+                      <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                             IsVisible="{Binding HasCover}"/>
+                      <Border VerticalAlignment="Bottom" Padding="8,8"
+                              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"/>
+                      </Border>
+                    </Panel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Panel>
+  </Grid>
 </UserControl>
