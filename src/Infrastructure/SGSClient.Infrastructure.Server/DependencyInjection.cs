@@ -28,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<IUserService, EfUserService>();
         services.AddScoped<GameBuildVersionService>();
         services.AddScoped<IGamePackagePublisher, GamePackagePublisher>();
+        services.AddSingleton<IRofwLegacyService, RofwLegacyService>();
+        services.AddSingleton<IReportingoLegacyService, ReportingoLegacyService>();
 
         return services;
     }

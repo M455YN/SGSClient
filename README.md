@@ -112,7 +112,9 @@ Portainer stack file to paste: **`deploy/portainer-stack.yml`**. Image: `ghcr.io
 |-------|---------|
 | Network | external `frontend` (already used by `npm`) |
 | Packages | volume or bind `SGS_GAMES_VOLUME=/opt/sgs/games` |
-| SQL | `SGS_SQL_CONNECTION` — SGS uses SQL Server, not `npm-db` |
+| SQL | `SGS_SQL_CONNECTION` — SGS catalog (SQL Server, not `npm-db`) |
+| ROFW | `SGS_ROFW_SQL_CONNECTION` — existing `SZYRROGI_AUTOBATTLER` catalog so `/api/rofw/*` keeps working |
+| Reportingo | `SGS_REPORTINGO_SQL_CONNECTION` — existing `REPORTINGO` catalog so `/api/reportingo/report-bug` keeps working |
 | Desktop client | `appsettings.local.json` → `"Api": { "BaseUrl": "https://api.your-domain/" }` |
 
 Leave `SGS_AZUREAD_ENABLED=false` for the first upload test. Cloudflare orange-cloud caps large ZIPs — DNS-only for the API host.

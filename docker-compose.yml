@@ -14,6 +14,8 @@ services:
       ASPNETCORE_URLS: http://+:8080
       HttpsRedirection__Enabled: "false"
       ConnectionStrings__SgsDatabase: ${SGS_SQL_CONNECTION}
+      ConnectionStrings__RofwDatabase: ${SGS_ROFW_SQL_CONNECTION:-}
+      ConnectionStrings__ReportingoDatabase: ${SGS_REPORTINGO_SQL_CONNECTION:-}
       Games__StoragePath: /data/sgs/games
       Games__PublicBaseUrl: /api/games/packages
       Games__MediaPublicBaseUrl: /api/games/media

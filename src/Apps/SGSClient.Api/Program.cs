@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using SGSClient.Core.Configuration;
+using SGSClient.Core.Interfaces;
 using SGSClient.Infrastructure.Server;
 using SGSClient.Infrastructure.Server.Persistence;
 
@@ -78,6 +79,17 @@ app.UseCors();
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
+LogLegacyApi(
+    app,
+    app.Services.GetRequiredService<IRofwLegacyService>().IsConfigured,
+    "ROFW compatibility API is enabled (/api/rofw/*).",
+    "ROFW compatibility API is disabled. Set ConnectionStrings:RofwDatabase to keep Realm of Five Winds working.");
+LogLegacyApi(
+    app,
+    app.Services.GetRequiredService<IReportingoLegacyService>().IsConfigured,
+    "Reportingo compatibility API is enabled (/api/reportingo/*).",
+    "Reportingo compatibility API is disabled. Set ConnectionStrings:ReportingoDatabase to keep bug reports working.");
+
 if (azureAd.IsConfigured)
 {
     app.UseAuthentication();
@@ -88,4 +100,17 @@ app.MapControllers();
 
 app.Run();
 
-public partial class Program;
+public partial class Program
+{
+    private static void LogLegacyApi(WebApplication app, bool enabled, string enabledMessage, string disabledMessage)
+    {
+        if (enabled)
+        {
+            app.Logger.LogInformation(enabledMessage);
+        }
+        else
+        {
+            app.Logger.LogWarning(disabledMessage);
+        }
+    }
+}
