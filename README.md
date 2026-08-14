@@ -94,15 +94,28 @@ Client may preflight with `SgsPackageRules.ValidateManifest`; server re-validate
 
 Nav item **Publikuj**: pick game folder (with `sgs-manifest.json`) → prepare ZIP → upload to `POST /api/Games/uploads`.
 
-### Docker (Api + game files)
+### Docker / Portainer (OVH + Nginx Proxy Manager)
+
+Existing NPM (`npm` on external networks `frontend` / `backend`) proxies TLS.
+`sgs-api` joins **`frontend`** only — NPM forwards to `http://sgs-api:8080`. Do not publish API ports on the host.
 
 ```bash
+cp deploy/portainer.env.example .env   # SGS_SQL_CONNECTION (SQL Server, not NPM MariaDB)
 docker compose up -d --build
 ```
 
-- Volume `sgs_games` → `/data/sgs/games`
-- Set `ConnectionStrings__SgsDatabase` in `docker-compose.yml`
-- With B2C enabled, login is required before upload
+Then in NPM UI (port 81) add a Proxy Host — copy-paste Advanced nginx from `deploy/nginx-proxy-manager.txt` (`client_max_body_size 2048m`).
+
+Portainer stack file to paste: **`deploy/portainer-stack.yml`**. Image: `ghcr.io/m455yn/sgsclient-api:latest` (GitHub Actions on push to `master`, or `.\deploy\build-api-image.ps1 -Push`). If the package is private, add a GitHub registry in Portainer (`read:packages` PAT) and recreate with pull.
+
+| Piece | Setting |
+|-------|---------|
+| Network | external `frontend` (already used by `npm`) |
+| Packages | volume or bind `SGS_GAMES_VOLUME=/opt/sgs/games` |
+| SQL | `SGS_SQL_CONNECTION` — SGS uses SQL Server, not `npm-db` |
+| Desktop client | `appsettings.local.json` → `"Api": { "BaseUrl": "https://api.your-domain/" }` |
+
+Leave `SGS_AZUREAD_ENABLED=false` for the first upload test. Cloudflare orange-cloud caps large ZIPs — DNS-only for the API host.
 
 ## Prerequisites
 
@@ -122,6 +135,8 @@ Run (Visual Studio): open `SGSClient.slnx`, then in the toolbar startup dropdown
 - **Api + Avalonia UI**
 - **Api + WinUI**
 - **Api only**
+
+Docker image for OVH (linux/amd64): set startup project `SGSClient.Api`, profile **Container (linux/amd64)** (needs Docker Desktop). To tag `sgsclient-api:latest` without debugging: right-click the API project → **Publish** → profile `docker-linux-amd64`, or `.\deploy\build-api-image.ps1`.
 
 Or Solution → **Configure Startup Projects…** → Multiple startup projects.
 

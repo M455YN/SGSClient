@@ -74,6 +74,7 @@ appsettings.*.local.json
 *.local.json
 .env
 .env.*
+sgsclient-api-linux-amd64.tar
 
 ## Build noise
 *.binlog

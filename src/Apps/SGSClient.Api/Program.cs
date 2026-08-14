@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using SGSClient.Core.Configuration;
 using SGSClient.Infrastructure.Server;
@@ -45,6 +46,14 @@ if (azureAd.IsConfigured)
         });
 }
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Traefik / nginx / Portainer proxy sits in another container.
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -57,8 +66,17 @@ var app = builder.Build();
 
 await SgsServerDbInitializer.InitializeAsync(app.Services);
 
-app.UseHttpsRedirection();
+app.UseForwardedHeaders();
+
+var httpsRedirect = app.Configuration.GetValue("HttpsRedirection:Enabled", app.Environment.IsDevelopment());
+if (httpsRedirect)
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseCors();
+
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 if (azureAd.IsConfigured)
 {

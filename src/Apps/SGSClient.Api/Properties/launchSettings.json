@@ -18,6 +18,20 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "Container (linux/amd64)": {
+      "commandName": "Docker",
+      "launchBrowser": false,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/health",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Production",
+        "ASPNETCORE_HTTP_PORTS": "8080",
+        "HttpsRedirection__Enabled": "false"
+      },
+      "publishAllPorts": true,
+      "useSSL": false,
+      "httpPort": 7142,
+      "DockerfileRunArguments": "--platform linux/amd64"
     }
   }
 }

@@ -1,0 +1,39 @@
+# Nginx Proxy Manager — Proxy Host for SGS API
+#
+# Your NPM container (`npm`) is already on networks `frontend` and `backend`.
+# `sgs-api` joins `frontend`, so the hostname `sgs-api` resolves inside NPM.
+#
+# Portainer → Nginx Proxy Manager UI (port 81) → Hosts → Proxy Hosts → Add:
+
+# Details
+#   Domain Names:      api.your-domain.tld
+#   Scheme:            http
+#   Forward Hostname / IP:  sgs-api
+#   Forward Port:      8080
+#   Cache Assets:      off
+#   Block Common Exploits: off
+#   Websockets Support: off
+#
+# SSL
+#   SSL Certificate:   Request a new SSL Certificate (Let's Encrypt)
+#   Force SSL:         on
+#   HTTP/2:            on
+#
+# Advanced → Custom Nginx Configuration (required for 2 GB game ZIPs):
+
+client_max_body_size 2048m;
+client_body_timeout 3600s;
+proxy_read_timeout 3600s;
+proxy_send_timeout 3600s;
+proxy_request_buffering off;
+proxy_buffering off;
+proxy_set_header Host $host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+
+# DNS: A/AAAA for api.your-domain.tld → OVH VPS. If using Cloudflare, grey-cloud
+# (DNS only) or large uploads will be capped.
+#
+# Desktop client appsettings.local.json:
+#   "Api": { "BaseUrl": "https://api.your-domain.tld/" }

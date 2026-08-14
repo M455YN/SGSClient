@@ -1,0 +1,46 @@
+# Drop this into the existing nginx container (same Docker network as sgs-api).
+# Typical Portainer bind: /opt/nginx/conf.d/sgs-api.conf → /etc/nginx/conf.d/sgs-api.conf
+#
+# Upstream MUST be the compose service/container name on the shared network,
+# not 127.0.0.1 — nginx is not on the host network.
+
+# http → https (optional if you terminate TLS elsewhere)
+server {
+    listen 80;
+    server_name api.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name api.example.com;
+
+    ssl_certificate     /etc/nginx/certs/api.example.com/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/api.example.com/privkey.pem;
+
+    # Game ZIP uploads are up to 2 GB. Default nginx limit is 1m.
+    client_max_body_size 2048m;
+    client_body_timeout 3600s;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+    proxy_connect_timeout 60s;
+    proxy_request_buffering off;
+    proxy_buffering off;
+
+    location /health {
+        proxy_pass http://sgs-api:8080/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        proxy_pass http://sgs-api:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+    }
+}

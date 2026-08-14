@@ -33,7 +33,10 @@ public sealed class GamePackagePublisher(
                 $"Paczka jest za duża (max {SgsPackageRules.MaxZipBytes / (1024 * 1024)} MB).");
         }
 
-        var tempZip = Path.Combine(Path.GetTempPath(), $"sgs-upload-{Guid.NewGuid():N}.zip");
+        var storage = storageOptions.Value;
+        var stagingDir = Path.Combine(storage.StoragePath, ".tmp");
+        Directory.CreateDirectory(stagingDir);
+        var tempZip = Path.Combine(stagingDir, $"sgs-upload-{Guid.NewGuid():N}.zip");
         try
         {
             await using (var fs = File.Create(tempZip))
@@ -57,7 +60,6 @@ public sealed class GamePackagePublisher(
             SgsPackageRules.TryParsePlatform(manifest.Build.Platform, out var platform);
             SgsPackageRules.TryNormalizeEntryPath(manifest.Build.Executable, out var exePath, out _);
 
-            var storage = storageOptions.Value;
             Directory.CreateDirectory(storage.StoragePath);
 
             var fileName = $"{SgsPackageRules.ToManifestPlatform(platform)}-{(manifest.Build.Architecture ?? "x64")}.zip";
