@@ -257,6 +257,10 @@ public sealed class GamePackagePublisher(
                         .OrderBy(s => s.SortOrder)
                         .Select(s => s.Url)
                         .ToList(),
+                    Screenshots = g.Screenshots
+                        .OrderBy(s => s.SortOrder)
+                        .Select(s => new GameScreenshotDto { Id = s.Id, Url = s.Url })
+                        .ToList(),
                     DraftP = g.DraftP,
                     FeaturedP = g.FeaturedP,
                     Kind = g.Kind,

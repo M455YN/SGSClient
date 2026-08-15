@@ -158,11 +158,75 @@ public partial class AdminViewModel : ViewModelBase
             FeaturedP = item.EditFeatured
         });
 
-        StatusText = updated is null ? "Nie udało się zapisać." : $"Zapisano: {updated.Title}";
-        if (updated is not null)
+        if (updated is null)
         {
-            await LoadAsync();
+            StatusText = "Nie udało się zapisać metadanych.";
+            return;
         }
+
+        var mediaOk = await ApplyMediaEditsAsync(item.Id, item, asAdmin: true);
+        StatusText = mediaOk
+            ? $"Zapisano: {updated.Title}"
+            : $"Zapisano metadane „{updated.Title}”, ale część mediów się nie udała.";
+        await LoadAsync();
+    }
+
+    private async Task<bool> ApplyMediaEditsAsync(int gameId, AdminGameItem item, bool asAdmin)
+    {
+        if (_api is null)
+        {
+            return false;
+        }
+
+        var ok = true;
+
+        foreach (var screenshotId in item.ScreenshotIdsToRemove.Where(id => id > 0).Distinct())
+        {
+            if (await _api.RemoveGameScreenshotAsync(gameId, screenshotId, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+
+        foreach (var path in item.PendingScreenshotPaths)
+        {
+            if (await _api.AddGameScreenshotAsync(gameId, path, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+
+        if (item.ClearCover)
+        {
+            if (await _api.ClearGameCoverAsync(gameId, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(item.PendingCoverPath))
+        {
+            if (await _api.UploadGameCoverAsync(gameId, item.PendingCoverPath, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+
+        if (item.ClearIntro)
+        {
+            if (await _api.ClearGameIntroAsync(gameId, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(item.PendingIntroPath))
+        {
+            if (await _api.UploadGameIntroAsync(gameId, item.PendingIntroPath, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+
+        return ok;
     }
 
     [RelayCommand]
@@ -247,6 +311,9 @@ public sealed class AdminGameItem
     public string? OtherInformation { get; init; }
     public string? GenreSymbol { get; init; }
     public string? EngineSymbol { get; init; }
+    public string? CoverUrl { get; init; }
+    public string? IntroUrl { get; init; }
+    public List<GameScreenshotDto> Screenshots { get; init; } = [];
     public bool DraftP { get; init; }
     public bool FeaturedP { get; init; }
     public bool IsDlc { get; init; }
@@ -268,6 +335,13 @@ public sealed class AdminGameItem
     public bool EditDraft { get; set; }
     public bool EditFeatured { get; set; }
 
+    public string? PendingCoverPath { get; set; }
+    public bool ClearCover { get; set; }
+    public string? PendingIntroPath { get; set; }
+    public bool ClearIntro { get; set; }
+    public List<string> PendingScreenshotPaths { get; } = [];
+    public List<int> ScreenshotIdsToRemove { get; } = [];
+
     public static AdminGameItem FromDto(GameDto game) => new()
     {
         Id = game.Id,
@@ -278,6 +352,10 @@ public sealed class AdminGameItem
         OtherInformation = game.OtherInformation,
         GenreSymbol = game.GenreSymbol,
         EngineSymbol = game.EngineSymbol,
+        CoverUrl = game.CoverUrl,
+        IntroUrl = game.IntroUrl,
+        Screenshots = game.Screenshots?.ToList()
+            ?? game.ScreenshotUrls.Select((url, i) => new GameScreenshotDto { Id = -(i + 1), Url = url }).ToList(),
         DraftP = game.DraftP,
         FeaturedP = game.FeaturedP,
         IsDlc = game.Kind == GameContentKind.Dlc,

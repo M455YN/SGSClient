@@ -151,12 +151,74 @@ public partial class StudioViewModel : ObservableObject
 
         if (updated is null)
         {
-            StatusText = "Nie udało się zapisać zmian.";
+            StatusText = "Nie udało się zapisać metadanych.";
             return;
         }
 
-        StatusText = $"Zapisano: {updated.Title}";
+        var mediaOk = await ApplyMediaEditsAsync(item);
+        StatusText = mediaOk
+            ? $"Zapisano: {updated.Title}"
+            : $"Zapisano metadane „{updated.Title}”, ale część mediów się nie udała.";
         await LoadAsync();
+    }
+
+    private async Task<bool> ApplyMediaEditsAsync(StudioContentItem item)
+    {
+        if (_api is null)
+        {
+            return false;
+        }
+
+        var ok = true;
+        const bool asAdmin = false;
+
+        foreach (var screenshotId in item.ScreenshotIdsToRemove.Where(id => id > 0).Distinct())
+        {
+            if (await _api.RemoveGameScreenshotAsync(item.Id, screenshotId, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+
+        foreach (var path in item.PendingScreenshotPaths)
+        {
+            if (await _api.AddGameScreenshotAsync(item.Id, path, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+
+        if (item.ClearCover)
+        {
+            if (await _api.ClearGameCoverAsync(item.Id, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(item.PendingCoverPath))
+        {
+            if (await _api.UploadGameCoverAsync(item.Id, item.PendingCoverPath, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+
+        if (item.ClearIntro)
+        {
+            if (await _api.ClearGameIntroAsync(item.Id, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(item.PendingIntroPath))
+        {
+            if (await _api.UploadGameIntroAsync(item.Id, item.PendingIntroPath, asAdmin) is null)
+            {
+                ok = false;
+            }
+        }
+
+        return ok;
     }
 
     [RelayCommand]
@@ -209,6 +271,9 @@ public partial class StudioContentItem : ObservableObject
     public string? OtherInformation { get; init; }
     public string? GenreSymbol { get; init; }
     public string? EngineSymbol { get; init; }
+    public string? CoverUrl { get; init; }
+    public string? IntroUrl { get; init; }
+    public List<GameScreenshotDto> Screenshots { get; init; } = [];
     public bool DraftP { get; init; }
     public bool IsDlc { get; init; }
     public string? ParentSymbol { get; init; }
@@ -229,6 +294,13 @@ public partial class StudioContentItem : ObservableObject
     public string? EditEngine { get; set; }
     public bool EditDraft { get; set; }
 
+    public string? PendingCoverPath { get; set; }
+    public bool ClearCover { get; set; }
+    public string? PendingIntroPath { get; set; }
+    public bool ClearIntro { get; set; }
+    public List<string> PendingScreenshotPaths { get; } = [];
+    public List<int> ScreenshotIdsToRemove { get; } = [];
+
     public static StudioContentItem FromGame(GameDto game) => new()
     {
         Id = game.Id,
@@ -239,6 +311,10 @@ public partial class StudioContentItem : ObservableObject
         OtherInformation = game.OtherInformation,
         GenreSymbol = game.GenreSymbol,
         EngineSymbol = game.EngineSymbol,
+        CoverUrl = game.CoverUrl,
+        IntroUrl = game.IntroUrl,
+        Screenshots = game.Screenshots?.ToList()
+            ?? game.ScreenshotUrls.Select((url, i) => new GameScreenshotDto { Id = -(i + 1), Url = url }).ToList(),
         DraftP = game.DraftP,
         IsDlc = game.Kind == GameContentKind.Dlc,
         ParentSymbol = game.ParentSymbol,
@@ -261,6 +337,9 @@ public partial class StudioContentItem : ObservableObject
         OtherInformation = null,
         GenreSymbol = null,
         EngineSymbol = null,
+        CoverUrl = dlc.CoverUrl,
+        IntroUrl = null,
+        Screenshots = [],
         DraftP = parentDraft,
         IsDlc = true,
         ParentSymbol = parentSymbol,

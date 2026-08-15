@@ -14,6 +14,7 @@ namespace SGSClient.Api.Controllers;
 public sealed class GamesController(
     IGameRepository games,
     IGamePackagePublisher publisher,
+    IGameMediaService media,
     IUserService users,
     IOptions<GameStorageSettings> storageOptions,
     IOptions<AzureAdSettings> azureOptions) : ControllerBase
@@ -123,6 +124,69 @@ public sealed class GamesController(
         }
     }
 
+    [HttpPut("{id:int}/media/cover")]
+    [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> UploadCover(int id, IFormFile? file, CancellationToken cancellationToken) =>
+        UploadOwnedMediaAsync(id, file, OwnedMediaKind.Cover, cancellationToken);
+
+    [HttpDelete("{id:int}/media/cover")]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> ClearCover(int id, CancellationToken cancellationToken) =>
+        ClearOwnedMediaAsync(id, OwnedMediaKind.Cover, cancellationToken);
+
+    [HttpPut("{id:int}/media/intro")]
+    [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> UploadIntro(int id, IFormFile? file, CancellationToken cancellationToken) =>
+        UploadOwnedMediaAsync(id, file, OwnedMediaKind.Intro, cancellationToken);
+
+    [HttpDelete("{id:int}/media/intro")]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> ClearIntro(int id, CancellationToken cancellationToken) =>
+        ClearOwnedMediaAsync(id, OwnedMediaKind.Intro, cancellationToken);
+
+    [HttpPost("{id:int}/media/screenshots")]
+    [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> AddScreenshot(int id, IFormFile? file, CancellationToken cancellationToken) =>
+        UploadOwnedMediaAsync(id, file, OwnedMediaKind.Screenshot, cancellationToken);
+
+    [HttpDelete("{id:int}/media/screenshots/{screenshotId:int}")]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameDto>> RemoveScreenshot(
+        int id,
+        int screenshotId,
+        CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var updated = await media.RemoveScreenshotAsync(id, screenshotId, ownerUserId.Value, cancellationToken);
+        return updated is null ? NotFound() : Ok(updated);
+    }
+
     [HttpPost("uploads")]
     [RequestSizeLimit(SgsPackageRules.MaxZipBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxZipBytes)]
@@ -157,6 +221,64 @@ public sealed class GamesController(
         }
 
         return Ok(result.Game);
+    }
+
+    private async Task<ActionResult<GameDto>> UploadOwnedMediaAsync(
+        int id,
+        IFormFile? file,
+        OwnedMediaKind kind,
+        CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { errors = new[] { "Dodaj plik media." } });
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            var updated = kind switch
+            {
+                OwnedMediaKind.Cover => await media.SetCoverAsync(id, stream, file.FileName, ownerUserId.Value, cancellationToken),
+                OwnedMediaKind.Intro => await media.SetIntroAsync(id, stream, file.FileName, ownerUserId.Value, cancellationToken),
+                _ => await media.AddScreenshotAsync(id, stream, file.FileName, ownerUserId.Value, cancellationToken)
+            };
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    private async Task<ActionResult<GameDto>> ClearOwnedMediaAsync(
+        int id,
+        OwnedMediaKind kind,
+        CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var updated = kind == OwnedMediaKind.Cover
+            ? await media.ClearCoverAsync(id, ownerUserId.Value, cancellationToken)
+            : await media.ClearIntroAsync(id, ownerUserId.Value, cancellationToken);
+        return updated is null ? NotFound() : Ok(updated);
+    }
+
+    private enum OwnedMediaKind
+    {
+        Cover,
+        Intro,
+        Screenshot
     }
 
     private async Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken)

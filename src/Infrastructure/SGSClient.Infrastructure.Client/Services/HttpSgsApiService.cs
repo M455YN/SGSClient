@@ -214,6 +214,69 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
         }
     }
 
+    public Task<GameDto?> UploadGameCoverAsync(
+        int gameId,
+        string localFilePath,
+        bool asAdmin,
+        CancellationToken cancellationToken = default) =>
+        UploadMediaFileAsync(
+            asAdmin ? $"api/admin/games/{gameId}/media/cover" : $"api/Games/{gameId}/media/cover",
+            HttpMethod.Put,
+            localFilePath,
+            cancellationToken);
+
+    public Task<GameDto?> ClearGameCoverAsync(
+        int gameId,
+        bool asAdmin,
+        CancellationToken cancellationToken = default) =>
+        SendMediaAsync(
+            asAdmin ? $"api/admin/games/{gameId}/media/cover" : $"api/Games/{gameId}/media/cover",
+            HttpMethod.Delete,
+            cancellationToken);
+
+    public Task<GameDto?> UploadGameIntroAsync(
+        int gameId,
+        string localFilePath,
+        bool asAdmin,
+        CancellationToken cancellationToken = default) =>
+        UploadMediaFileAsync(
+            asAdmin ? $"api/admin/games/{gameId}/media/intro" : $"api/Games/{gameId}/media/intro",
+            HttpMethod.Put,
+            localFilePath,
+            cancellationToken);
+
+    public Task<GameDto?> ClearGameIntroAsync(
+        int gameId,
+        bool asAdmin,
+        CancellationToken cancellationToken = default) =>
+        SendMediaAsync(
+            asAdmin ? $"api/admin/games/{gameId}/media/intro" : $"api/Games/{gameId}/media/intro",
+            HttpMethod.Delete,
+            cancellationToken);
+
+    public Task<GameDto?> AddGameScreenshotAsync(
+        int gameId,
+        string localFilePath,
+        bool asAdmin,
+        CancellationToken cancellationToken = default) =>
+        UploadMediaFileAsync(
+            asAdmin ? $"api/admin/games/{gameId}/media/screenshots" : $"api/Games/{gameId}/media/screenshots",
+            HttpMethod.Post,
+            localFilePath,
+            cancellationToken);
+
+    public Task<GameDto?> RemoveGameScreenshotAsync(
+        int gameId,
+        int screenshotId,
+        bool asAdmin,
+        CancellationToken cancellationToken = default) =>
+        SendMediaAsync(
+            asAdmin
+                ? $"api/admin/games/{gameId}/media/screenshots/{screenshotId}"
+                : $"api/Games/{gameId}/media/screenshots/{screenshotId}",
+            HttpMethod.Delete,
+            cancellationToken);
+
     public async Task<IReadOnlyList<GameBuildVersionDto>> GetBuildVersionsAsync(
         int gameId,
         int buildId,
@@ -249,6 +312,60 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
+        }
+    }
+
+    private async Task<GameDto?> UploadMediaFileAsync(
+        string url,
+        HttpMethod method,
+        string localFilePath,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using var stream = File.OpenRead(localFilePath);
+            using var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(stream);
+            content.Add(fileContent, "file", Path.GetFileName(localFilePath));
+
+            using var message = new HttpRequestMessage(method, url) { Content = content };
+            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private async Task<GameDto?> SendMediaAsync(
+        string url,
+        HttpMethod method,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var message = new HttpRequestMessage(method, url);
+            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
         }
     }
 }

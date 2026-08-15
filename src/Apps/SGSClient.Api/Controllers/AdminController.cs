@@ -6,6 +6,7 @@ using SGSClient.Core.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Packaging;
 
 namespace SGSClient.Api.Controllers;
 
@@ -13,6 +14,7 @@ namespace SGSClient.Api.Controllers;
 [Route("api/admin")]
 public sealed class AdminController(
     IGameRepository games,
+    IGameMediaService media,
     IUserService users,
     IAdminAuthorization adminAuth,
     IOptions<AzureAdSettings> azureOptions) : ControllerBase
@@ -100,6 +102,136 @@ public sealed class AdminController(
 
         var result = await users.GetAllUsersAsync(cancellationToken);
         return Ok(result);
+    }
+
+    [HttpPut("games/{id:int}/media/cover")]
+    [AllowAnonymous]
+    [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> UploadCover(int id, IFormFile? file, CancellationToken cancellationToken) =>
+        UploadMediaAsync(id, file, AdminMediaKind.Cover, cancellationToken);
+
+    [HttpDelete("games/{id:int}/media/cover")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> ClearCover(int id, CancellationToken cancellationToken) =>
+        ClearMediaAsync(id, AdminMediaKind.Cover, cancellationToken);
+
+    [HttpPut("games/{id:int}/media/intro")]
+    [AllowAnonymous]
+    [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> UploadIntro(int id, IFormFile? file, CancellationToken cancellationToken) =>
+        UploadMediaAsync(id, file, AdminMediaKind.Intro, cancellationToken);
+
+    [HttpDelete("games/{id:int}/media/intro")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> ClearIntro(int id, CancellationToken cancellationToken) =>
+        ClearMediaAsync(id, AdminMediaKind.Intro, cancellationToken);
+
+    [HttpPost("games/{id:int}/media/screenshots")]
+    [AllowAnonymous]
+    [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> AddScreenshot(int id, IFormFile? file, CancellationToken cancellationToken) =>
+        UploadMediaAsync(id, file, AdminMediaKind.Screenshot, cancellationToken);
+
+    [HttpDelete("games/{id:int}/media/screenshots/{screenshotId:int}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameDto>> RemoveScreenshot(
+        int id,
+        int screenshotId,
+        CancellationToken cancellationToken)
+    {
+        if (!await EnsureAdminAsync(cancellationToken))
+        {
+            return ForbidOrUnauthorized();
+        }
+
+        var updated = await media.RemoveScreenshotAsync(id, screenshotId, requireOwnerUserId: null, cancellationToken);
+        return updated is null ? NotFound() : Ok(updated);
+    }
+
+    private async Task<ActionResult<GameDto>> UploadMediaAsync(
+        int id,
+        IFormFile? file,
+        AdminMediaKind kind,
+        CancellationToken cancellationToken)
+    {
+        if (!await EnsureAdminAsync(cancellationToken))
+        {
+            return ForbidOrUnauthorized();
+        }
+
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { errors = new[] { "Dodaj plik media." } });
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            var updated = kind switch
+            {
+                AdminMediaKind.Cover => await media.SetCoverAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken),
+                AdminMediaKind.Intro => await media.SetIntroAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken),
+                _ => await media.AddScreenshotAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken)
+            };
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    private async Task<ActionResult<GameDto>> ClearMediaAsync(
+        int id,
+        AdminMediaKind kind,
+        CancellationToken cancellationToken)
+    {
+        if (!await EnsureAdminAsync(cancellationToken))
+        {
+            return ForbidOrUnauthorized();
+        }
+
+        var updated = kind == AdminMediaKind.Cover
+            ? await media.ClearCoverAsync(id, requireOwnerUserId: null, cancellationToken)
+            : await media.ClearIntroAsync(id, requireOwnerUserId: null, cancellationToken);
+        return updated is null ? NotFound() : Ok(updated);
+    }
+
+    private enum AdminMediaKind
+    {
+        Cover,
+        Intro,
+        Screenshot
     }
 
     private async Task<bool> EnsureAdminAsync(CancellationToken cancellationToken)

@@ -2,8 +2,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using SGSClient.Core.DTOs;
 using SGSClient.Core.Packaging;
 using SGSClient.UI.WinUI.ViewModels;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace SGSClient.UI.WinUI.Views;
 
@@ -159,6 +162,138 @@ public sealed partial class AdminPage : Page
             Margin = new Thickness(0, 8, 0, 0)
         };
 
+        item.PendingCoverPath = null;
+        item.PendingIntroPath = null;
+        item.ClearCover = false;
+        item.ClearIntro = false;
+        item.PendingScreenshotPaths.Clear();
+        item.ScreenshotIdsToRemove.Clear();
+
+        var coverLabel = new TextBlock
+        {
+            Text = MediaLabel("Okładka", item.CoverUrl, null),
+            Opacity = 0.85,
+            TextWrapping = TextWrapping.Wrap
+        };
+        var introLabel = new TextBlock
+        {
+            Text = MediaLabel("Intro", item.IntroUrl, null),
+            Opacity = 0.85,
+            TextWrapping = TextWrapping.Wrap
+        };
+        var screensPanel = new StackPanel { Spacing = 6 };
+        void RebuildScreens()
+        {
+            screensPanel.Children.Clear();
+            foreach (var shot in item.Screenshots.Where(s => !item.ScreenshotIdsToRemove.Contains(s.Id)))
+            {
+                var row = new Grid { ColumnSpacing = 8 };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                var name = new TextBlock
+                {
+                    Text = Path.GetFileName(shot.Url.Replace('\\', '/')),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextWrapping = TextWrapping.Wrap
+                };
+                var remove = new Button { Content = "Usuń", Tag = shot.Id, Padding = new Thickness(10, 4, 10, 4) };
+                remove.Click += (_, _) =>
+                {
+                    if (remove.Tag is int id)
+                    {
+                        item.ScreenshotIdsToRemove.Add(id);
+                        RebuildScreens();
+                    }
+                };
+                Grid.SetColumn(remove, 1);
+                row.Children.Add(name);
+                row.Children.Add(remove);
+                screensPanel.Children.Add(row);
+            }
+
+            foreach (var pending in item.PendingScreenshotPaths)
+            {
+                screensPanel.Children.Add(new TextBlock
+                {
+                    Text = $"+ {Path.GetFileName(pending)}",
+                    Opacity = 0.7
+                });
+            }
+        }
+
+        RebuildScreens();
+
+        var coverPick = new Button { Content = "Wybierz…", Padding = new Thickness(12, 6, 12, 6) };
+        var coverClear = new Button { Content = "Usuń", Padding = new Thickness(12, 6, 12, 6) };
+        coverPick.Click += async (_, _) =>
+        {
+            var path = await PickSingleFileAsync([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
+            if (path is null)
+            {
+                return;
+            }
+
+            item.PendingCoverPath = path;
+            item.ClearCover = false;
+            coverLabel.Text = MediaLabel("Okładka", item.CoverUrl, path);
+        };
+        coverClear.Click += (_, _) =>
+        {
+            item.PendingCoverPath = null;
+            item.ClearCover = true;
+            coverLabel.Text = "Okładka: (do usunięcia)";
+        };
+
+        var introPick = new Button { Content = "Wybierz…", Padding = new Thickness(12, 6, 12, 6) };
+        var introClear = new Button { Content = "Usuń", Padding = new Thickness(12, 6, 12, 6) };
+        introPick.Click += async (_, _) =>
+        {
+            var path = await PickSingleFileAsync([".mp4", ".webm"]);
+            if (path is null)
+            {
+                return;
+            }
+
+            item.PendingIntroPath = path;
+            item.ClearIntro = false;
+            introLabel.Text = MediaLabel("Intro", item.IntroUrl, path);
+        };
+        introClear.Click += (_, _) =>
+        {
+            item.PendingIntroPath = null;
+            item.ClearIntro = true;
+            introLabel.Text = "Intro: (do usunięcia)";
+        };
+
+        var addShots = new Button
+        {
+            Content = "Dodaj screeny…",
+            Padding = new Thickness(12, 6, 12, 6),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(0, 4, 0, 0)
+        };
+        addShots.Click += async (_, _) =>
+        {
+            var paths = await PickMultipleImageFilesAsync();
+            if (paths.Count == 0)
+            {
+                return;
+            }
+
+            var remaining = SgsPackageRules.MaxScreenshots
+                - item.Screenshots.Count(s => !item.ScreenshotIdsToRemove.Contains(s.Id))
+                - item.PendingScreenshotPaths.Count;
+            foreach (var path in paths.Take(Math.Max(0, remaining)))
+            {
+                if (!item.PendingScreenshotPaths.Contains(path, StringComparer.OrdinalIgnoreCase))
+                {
+                    item.PendingScreenshotPaths.Add(path);
+                }
+            }
+
+            RebuildScreens();
+        };
+
         var panel = new StackPanel { Spacing = 4 };
         panel.Children.Add(new TextBlock
         {
@@ -182,6 +317,23 @@ public sealed partial class AdminPage : Page
         panel.Children.Add(draftBox);
         panel.Children.Add(featuredBox);
 
+        panel.Children.Add(new TextBlock
+        {
+            Text = "Media",
+            FontSize = 16,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Margin = new Thickness(0, 16, 0, 4)
+        });
+        panel.Children.Add(new TextBlock { Text = "Okładka", Opacity = 0.55, FontSize = 12 });
+        panel.Children.Add(coverLabel);
+        panel.Children.Add(BuildButtonRow(coverPick, coverClear));
+        panel.Children.Add(new TextBlock { Text = "Intro / trailer", Opacity = 0.55, FontSize = 12, Margin = new Thickness(0, 8, 0, 0) });
+        panel.Children.Add(introLabel);
+        panel.Children.Add(BuildButtonRow(introPick, introClear));
+        panel.Children.Add(new TextBlock { Text = "Screeny", Opacity = 0.55, FontSize = 12, Margin = new Thickness(0, 8, 0, 0) });
+        panel.Children.Add(screensPanel);
+        panel.Children.Add(addShots);
+
         var dialog = new ContentDialog
         {
             Title = $"Admin — {item.Symbol}",
@@ -192,7 +344,7 @@ public sealed partial class AdminPage : Page
             Content = new ScrollViewer
             {
                 Content = panel,
-                MaxHeight = 520,
+                MaxHeight = 560,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto
             }
         };
@@ -212,6 +364,68 @@ public sealed partial class AdminPage : Page
         item.EditDraft = draftBox.IsChecked == true;
         item.EditFeatured = featuredBox.IsChecked == true;
         return true;
+    }
+
+    private static StackPanel BuildButtonRow(params Button[] buttons)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        foreach (var button in buttons)
+        {
+            row.Children.Add(button);
+        }
+
+        return row;
+    }
+
+    private static string MediaLabel(string kind, string? currentUrl, string? pendingPath)
+    {
+        if (!string.IsNullOrWhiteSpace(pendingPath))
+        {
+            return $"{kind}: {Path.GetFileName(pendingPath)} (nowy plik)";
+        }
+
+        if (string.IsNullOrWhiteSpace(currentUrl))
+        {
+            return $"{kind}: (brak)";
+        }
+
+        return $"{kind}: {Path.GetFileName(currentUrl.Replace('\\', '/'))}";
+    }
+
+    private async Task<string?> PickSingleFileAsync(IEnumerable<string> extensions)
+    {
+        var picker = new FileOpenPicker
+        {
+            ViewMode = PickerViewMode.Thumbnail,
+            SuggestedStartLocation = PickerLocationId.PicturesLibrary
+        };
+        foreach (var ext in extensions)
+        {
+            picker.FileTypeFilter.Add(ext);
+        }
+
+        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
+        InitializeWithWindow.Initialize(picker, hwnd);
+        var file = await picker.PickSingleFileAsync();
+        return file?.Path;
+    }
+
+    private async Task<IReadOnlyList<string>> PickMultipleImageFilesAsync()
+    {
+        var picker = new FileOpenPicker
+        {
+            ViewMode = PickerViewMode.Thumbnail,
+            SuggestedStartLocation = PickerLocationId.PicturesLibrary
+        };
+        foreach (var ext in new[] { ".png", ".jpg", ".jpeg", ".webp", ".gif" })
+        {
+            picker.FileTypeFilter.Add(ext);
+        }
+
+        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
+        InitializeWithWindow.Initialize(picker, hwnd);
+        var files = await picker.PickMultipleFilesAsync();
+        return files?.Select(f => f.Path).ToArray() ?? [];
     }
 
     private async Task<bool> ConfirmDeleteAsync(AdminGameItem item)

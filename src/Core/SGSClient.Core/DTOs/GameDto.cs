@@ -25,6 +25,7 @@ public sealed class GameDto
     public string? CoverUrl { get; init; }
     public string? IntroUrl { get; init; }
     public IReadOnlyList<string> ScreenshotUrls { get; init; } = [];
+    public IReadOnlyList<GameScreenshotDto> Screenshots { get; init; } = [];
     public bool DraftP { get; init; }
     public bool FeaturedP { get; init; }
     public GameContentKind Kind { get; init; } = GameContentKind.Game;

@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddSingleton<IAdminAuthorization, AdminAuthorization>();
         services.AddScoped<GameBuildVersionService>();
         services.AddScoped<IGamePackagePublisher, GamePackagePublisher>();
+        services.AddScoped<IGameMediaService, GameMediaService>();
         services.AddSingleton<IRofwLegacyService, RofwLegacyService>();
         services.AddSingleton<IReportingoLegacyService, ReportingoLegacyService>();
 
