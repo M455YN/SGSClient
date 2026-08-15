@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
 using SGSClient.UI.WinUI.ViewModels;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
@@ -15,19 +16,33 @@ public sealed partial class SettingsPage : Page
     {
         ViewModel = App.Services.GetRequiredService<SettingsViewModel>();
         InitializeComponent();
-        ViewModel.PropertyChanged += (_, _) => RefreshUi();
+        ViewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(SettingsViewModel.AccountStatus) or nameof(SettingsViewModel.StatusText)
+                or nameof(SettingsViewModel.IsBusy))
+            {
+                RefreshUi();
+            }
+        };
         TitleText.Text = ViewModel.Title;
         AppearanceText.Text = ViewModel.AppearanceText;
         LanguageText.Text = ViewModel.LanguageText;
-        AccountStatusText.Text = ViewModel.AccountStatus;
         StoreStatusText.Text = ViewModel.StoreStatus;
         LibrarySummaryText.Text = ViewModel.LibrarySummary;
         AboutText.Text = ViewModel.AboutText;
         RefreshUi();
     }
 
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        ViewModel.RefreshAccountStatus();
+        RefreshUi();
+    }
+
     private void RefreshUi()
     {
+        AccountStatusText.Text = ViewModel.AccountStatus;
         StatusText.Text = ViewModel.StatusText;
         LibraryFoldersList.ItemsSource = ViewModel.LibraryFolders;
         AddLibraryFolderButton.IsEnabled = !ViewModel.IsBusy;

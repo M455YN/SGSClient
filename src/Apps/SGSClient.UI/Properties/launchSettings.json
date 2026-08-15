@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "Production API": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Production",
+        "SGS_Api__BaseUrl": "https://api.m455yn.dev/"
+      }
+    },
+    "Local API": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development",
+        "SGS_Api__BaseUrl": "https://localhost:7142/"
+      }
+    }
+  }
+}

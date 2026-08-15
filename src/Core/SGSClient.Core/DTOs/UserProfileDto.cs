@@ -11,4 +11,5 @@ public sealed class UserProfileDto
     public string? Location { get; init; }
     public DateTimeOffset CreatedAtUtc { get; init; }
     public DateTimeOffset? LastLoginUtc { get; init; }
+    public bool IsAdmin { get; init; }
 }

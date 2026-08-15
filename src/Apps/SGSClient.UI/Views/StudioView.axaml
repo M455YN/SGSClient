@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.StudioView"
+             x:DataType="vm:StudioViewModel">
+  <Grid Margin="28,24,28,24" RowDefinitions="Auto,*,Auto" RowSpacing="18">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="6">
+        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
+        <TextBlock Text="Zarządzaj swoimi grami i DLC — edytuj metadane, dodawaj treści lub usuwaj wpisy."
+                   Opacity="0.65" TextWrapping="Wrap"/>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+        <Button Content="Dodaj grę" Click="AddGame_OnClick" Padding="14,8"/>
+        <Button Content="Odśwież" Click="Refresh_OnClick" Padding="12,6"/>
+      </StackPanel>
+    </Grid>
+
+    <Panel Grid.Row="1">
+      <TextBlock Text="{Binding StatusText}"
+                 IsVisible="{Binding ShowEmpty}"
+                 Opacity="0.6"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap"
+                 MaxWidth="420"/>
+
+      <ScrollViewer IsVisible="{Binding HasGames}" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding Games}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StudioContentItem">
+              <Border Padding="16" Margin="0,0,0,12" CornerRadius="10"
+                      Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+                <StackPanel Spacing="12">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                      <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12"/>
+                      <TextBlock Text="{Binding Description}" Opacity="0.7" FontSize="13"
+                                 TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                      <Button Content="Edytuj" Padding="12,6" Tag="{Binding}" Click="Edit_OnClick"/>
+                      <Button Content="Dodaj DLC" Padding="12,6" Tag="{Binding}" Click="AddDlc_OnClick"/>
+                      <Button Content="Usuń" Padding="12,6" Tag="{Binding}" Click="Delete_OnClick"/>
+                    </StackPanel>
+                  </Grid>
+
+                  <ItemsControl ItemsSource="{Binding Dlcs}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:StudioContentItem">
+                        <Border Padding="12" Margin="0,0,0,6" CornerRadius="8"
+                                Background="#14FFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1">
+                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Spacing="2">
+                              <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                              <TextBlock Text="{Binding MetaText}" Opacity="0.55" FontSize="11"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                              <Button Content="Edytuj" Padding="10,4" Tag="{Binding}" Click="Edit_OnClick"/>
+                              <Button Content="Usuń" Padding="10,4" Tag="{Binding}" Click="Delete_OnClick"/>
+                            </StackPanel>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Panel>
+
+    <TextBlock Grid.Row="2" Text="{Binding StatusText}" Opacity="0.7" TextWrapping="Wrap"/>
+  </Grid>
+</UserControl>

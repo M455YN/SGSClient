@@ -83,6 +83,29 @@ public sealed class GamePackagePublisher(
                 return GamePackagePublishResult.Fail(mediaResult.Errors);
             }
 
+            var isDlc = string.Equals(
+                SgsPackageRules.NormalizeContentKind(manifest.Game.Kind),
+                "dlc",
+                StringComparison.Ordinal);
+            int? parentGameId = null;
+            if (isDlc)
+            {
+                var parent = await db.Games.AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        g => g.Symbol == manifest.Game.ParentSymbol
+                             && g.Kind == GameContentKind.Game,
+                        cancellationToken);
+                if (parent is null)
+                {
+                    return GamePackagePublishResult.Fail(
+                        $"Nie znaleziono gry bazowej o symbolu '{manifest.Game.ParentSymbol}'.");
+                }
+
+                parentGameId = parent.Id;
+            }
+
+            var packageSize = new FileInfo(absoluteZip).Length;
+
             var game = await db.Games
                 .Include(g => g.Builds)
                 .Include(g => g.Screenshots)
@@ -103,7 +126,10 @@ public sealed class GamePackagePublisher(
                     CoverUrl = mediaResult.CoverUrl,
                     IntroUrl = mediaResult.IntroUrl,
                     DraftP = false,
-                    FeaturedP = false
+                    FeaturedP = false,
+                    Kind = isDlc ? GameContentKind.Dlc : GameContentKind.Game,
+                    ParentGameId = parentGameId,
+                    CreatedAtUtc = DateTimeOffset.UtcNow
                 };
                 db.Games.Add(game);
             }
@@ -113,6 +139,19 @@ public sealed class GamePackagePublisher(
                 {
                     return GamePackagePublishResult.Fail(
                         "Ta gra należy do innego autora. Nie możesz nadpisać cudzej paczki.");
+                }
+
+                var existingKind = isDlc ? GameContentKind.Dlc : GameContentKind.Game;
+                if (game.Kind != existingKind)
+                {
+                    return GamePackagePublishResult.Fail(
+                        "Nie można zmienić rodzaju pozycji (gra ↔ DLC) przy republishu.");
+                }
+
+                if (isDlc && game.ParentGameId != parentGameId)
+                {
+                    return GamePackagePublishResult.Fail(
+                        "Nie można zmienić gry bazowej DLC przy republishu.");
                 }
 
                 game.Title = manifest.Game.Title.Trim();
@@ -162,6 +201,7 @@ public sealed class GamePackagePublisher(
                     CurrentVersion = manifest.Build.Version,
                     ExeName = exePath,
                     ZipLink = zipLink,
+                    PackageSizeBytes = packageSize,
                     IsDefault = manifest.Build.IsDefault
                 };
                 db.GameBuilds.Add(build);
@@ -171,6 +211,7 @@ public sealed class GamePackagePublisher(
                 build.CurrentVersion = manifest.Build.Version;
                 build.ExeName = exePath;
                 build.ZipLink = zipLink;
+                build.PackageSizeBytes = packageSize;
                 build.IsDefault = manifest.Build.IsDefault;
             }
 
@@ -218,6 +259,14 @@ public sealed class GamePackagePublisher(
                         .ToList(),
                     DraftP = g.DraftP,
                     FeaturedP = g.FeaturedP,
+                    Kind = g.Kind,
+                    ParentGameId = g.ParentGameId,
+                    ParentSymbol = g.ParentGame != null ? g.ParentGame.Symbol : null,
+                    CreatedAtUtc = g.CreatedAtUtc,
+                    PackageSizeBytes = g.Builds
+                        .OrderByDescending(b => b.IsDefault)
+                        .Select(b => b.PackageSizeBytes)
+                        .FirstOrDefault(),
                     Builds = g.Builds
                         .OrderByDescending(b => b.IsDefault)
                         .ThenBy(b => b.Platform)

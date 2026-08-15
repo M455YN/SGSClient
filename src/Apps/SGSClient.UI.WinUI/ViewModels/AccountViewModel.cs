@@ -239,11 +239,18 @@ public partial class AccountViewModel : ObservableObject
         Location = user.Location ?? string.Empty;
         AvatarInitials = MakeInitials(user.DisplayName);
         LastActivityText = FormatLastActivity(user.LastLoginUtc);
-        AccountStatus = $"Signed in as {user.DisplayName}";
+        AccountStatus = string.IsNullOrWhiteSpace(user.Email)
+            ? $"Signed in as {user.DisplayName}"
+            : $"Signed in as {user.DisplayName} · {user.Email}";
+        if (user.IsAdmin)
+        {
+            AccountStatus += " · admin";
+        }
         FriendsCount = FollowingCount = FollowersCount = 0;
         await LoadRecentGamesAsync();
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
+        App.MainWindow?.SetAdminNavVisible(user.IsAdmin);
     }
 
     private void ApplySignedOut()
@@ -257,6 +264,7 @@ public partial class AccountViewModel : ObservableObject
         AccountStatus = "Not signed in";
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
+        App.MainWindow?.SetAdminNavVisible(false);
     }
 
     private async Task LoadRecentGamesAsync()

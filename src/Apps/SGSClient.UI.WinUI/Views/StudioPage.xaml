@@ -1,0 +1,116 @@
+<Page
+    x:Class="SGSClient.UI.WinUI.Views.StudioPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <Grid Padding="28,24" RowSpacing="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <StackPanel Spacing="6">
+        <TextBlock x:Name="TitleText" FontSize="28" FontWeight="SemiBold" />
+        <TextBlock Text="Zarządzaj swoimi grami i DLC — edytuj metadane, dodawaj treści lub usuwaj wpisy."
+                   Opacity="0.65" TextWrapping="Wrap" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+        <Button Content="Dodaj grę" Click="AddGame_Click" Padding="14,8" />
+        <Button Content="Odśwież" Click="Refresh_Click" Padding="12,6" />
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="1">
+      <TextBlock x:Name="EmptyText"
+                 Opacity="0.6"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap"
+                 Visibility="Collapsed" />
+
+      <ListView x:Name="GamesList"
+                SelectionMode="None"
+                Background="Transparent"
+                BorderThickness="0">
+        <ListView.ItemContainerStyle>
+          <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0,0,0,12" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+              <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                  <ContentPresenter Content="{TemplateBinding Content}"
+                                    ContentTemplate="{TemplateBinding ContentTemplate}"
+                                    HorizontalAlignment="Stretch" />
+                </ControlTemplate>
+              </Setter.Value>
+            </Setter>
+          </Style>
+        </ListView.ItemContainerStyle>
+        <ListView.ItemTemplate>
+          <DataTemplate>
+            <Border Padding="16" CornerRadius="10"
+                    Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+              <StackPanel Spacing="12">
+                <Grid ColumnSpacing="12">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12" />
+                    <TextBlock Text="{Binding Description}" Opacity="0.7" FontSize="13"
+                               TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                              VerticalAlignment="Top">
+                    <Button Content="Edytuj" Click="Edit_Click" Tag="{Binding}" Padding="12,6" />
+                    <Button Content="Dodaj DLC" Click="AddDlc_Click" Tag="{Binding}" Padding="12,6" />
+                    <Button Content="Usuń" Click="Delete_Click" Tag="{Binding}" Padding="12,6" />
+                  </StackPanel>
+                </Grid>
+
+                <ItemsControl ItemsSource="{Binding Dlcs}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border Padding="12" Margin="0,0,0,6" CornerRadius="8"
+                                Background="#14FFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1">
+                          <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                              <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                              <TextBlock Text="{Binding MetaText}" Opacity="0.55" FontSize="11" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                              <Button Content="Edytuj" Click="Edit_Click" Tag="{Binding}" Padding="10,4" />
+                              <Button Content="Usuń" Click="Delete_Click" Tag="{Binding}" Padding="10,4" />
+                            </StackPanel>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ListView.ItemTemplate>
+      </ListView>
+    </Grid>
+
+    <TextBlock x:Name="StatusText" Grid.Row="2" Opacity="0.7" TextWrapping="Wrap" />
+  </Grid>
+</Page>

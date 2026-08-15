@@ -64,11 +64,20 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.OtherInformation).HasMaxLength(8000);
             entity.Property(x => x.CoverUrl).HasMaxLength(2048);
             entity.Property(x => x.IntroUrl).HasMaxLength(2048);
+            entity.Property(x => x.Kind).HasConversion<int>();
+            entity.Property(x => x.CreatedAtUtc).HasDefaultValueSql("GETUTCDATE()");
 
             entity.HasIndex(x => x.Symbol).IsUnique();
             entity.HasIndex(x => x.UserId);
             entity.HasIndex(x => x.DraftP);
             entity.HasIndex(x => x.FeaturedP);
+            entity.HasIndex(x => x.ParentGameId);
+            entity.HasIndex(x => x.Kind);
+
+            entity.HasOne(x => x.ParentGame)
+                .WithMany(x => x.Dlcs)
+                .HasForeignKey(x => x.ParentGameId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(x => x.Genre)
                 .WithMany(x => x.Games)
@@ -102,6 +111,7 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.CurrentVersion).HasMaxLength(64).IsRequired();
             entity.Property(x => x.ExeName).HasMaxLength(256).IsRequired();
             entity.Property(x => x.ZipLink).HasMaxLength(2048).IsRequired();
+            entity.Property(x => x.PackageSizeBytes);
 
             entity.HasIndex(x => new { x.GameId, x.Platform, x.Architecture }).IsUnique();
             entity.HasIndex(x => new { x.GameId, x.IsDefault });

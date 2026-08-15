@@ -17,4 +17,6 @@ public interface IUserService
         string azureSub,
         UpdateProfileRequestDto request,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AdminUserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default);
 }

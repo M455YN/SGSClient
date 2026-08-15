@@ -1,12 +1,29 @@
 {
+  "$schema": "https://json.schemastore.org/launchsettings.json",
   "profiles": {
-    "SGSClient.UI.WinUI (Package)": {
-      "commandName": "MsixPackage",
-      "nativeDebugging": false
-    },
-    "SGSClient.UI.WinUI (Unpackaged)": {
+    "Unpackaged (Production API)": {
       "commandName": "Project",
-      "nativeDebugging": false
+      "nativeDebugging": false,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Production",
+        "SGS_Api__BaseUrl": "https://api.m455yn.dev/"
+      }
+    },
+    "Unpackaged (Local API)": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development",
+        "SGS_Api__BaseUrl": "https://localhost:7142/"
+      }
+    },
+    "Package (Production API)": {
+      "commandName": "MsixPackage",
+      "nativeDebugging": false,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Production",
+        "SGS_Api__BaseUrl": "https://api.m455yn.dev/"
+      }
     }
   }
 }

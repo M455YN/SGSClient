@@ -30,6 +30,8 @@
           <StackPanel Spacing="4">
             <TextBlock Text="Konto" Opacity="0.55" FontSize="12" />
             <TextBlock x:Name="AccountStatusText" TextWrapping="Wrap" />
+            <TextBlock Text="E-mail z logowania musi być na liście Admin:Emails w API (np. m455yn@outlook.com), żeby pojawił się panel Admin."
+                       Opacity="0.45" FontSize="11" TextWrapping="Wrap" />
           </StackPanel>
           <StackPanel Spacing="4">
             <TextBlock Text="Sklep" Opacity="0.55" FontSize="12" />

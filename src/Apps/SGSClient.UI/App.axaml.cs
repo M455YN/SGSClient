@@ -23,10 +23,14 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? "Production";
+
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
             .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables(prefix: "SGS_")
             .Build();
@@ -38,10 +42,12 @@ public partial class App : Application
         services.AddTransient(sp => new HomeViewModel(sp.GetService<ISgsApiService>()));
         services.AddTransient(sp => new GamesViewModel(
             sp.GetService<ISgsApiService>(),
-            sp.GetRequiredService<IServiceScopeFactory>()));
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            configuration: configuration));
         services.AddTransient(sp => new GameDetailsViewModel(
             sp.GetService<ISgsApiService>(),
-            sp.GetRequiredService<IServiceScopeFactory>()));
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            configuration: configuration));
         services.AddTransient(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
@@ -55,11 +61,19 @@ public partial class App : Application
         services.AddTransient(sp => new PublishViewModel(
             sp.GetService<IGamePackagePacker>(),
             sp.GetService<IGameUploadClient>(),
+            sp.GetService<IAuthSession>(),
+            sp.GetService<ISgsApiService>()));
+        services.AddTransient(sp => new StudioViewModel(
+            sp.GetService<ISgsApiService>(),
+            sp.GetService<IAuthSession>()));
+        services.AddTransient(sp => new AdminViewModel(
+            sp.GetService<ISgsApiService>(),
             sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new SettingsViewModel(
             sp.GetRequiredService<IConfiguration>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
-            sp.GetRequiredService<ILibraryFolderService>()));
+            sp.GetRequiredService<ILibraryFolderService>(),
+            sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
@@ -70,6 +84,8 @@ public partial class App : Application
             sp.GetRequiredService<GameDetailsViewModel>(),
             sp.GetRequiredService<LibraryViewModel>(),
             sp.GetRequiredService<PublishViewModel>(),
+            sp.GetRequiredService<StudioViewModel>(),
+            sp.GetRequiredService<AdminViewModel>(),
             sp.GetRequiredService<SettingsViewModel>(),
             sp.GetRequiredService<AccountViewModel>()));
 

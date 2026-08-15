@@ -1,5 +1,8 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using LibVLCSharp.Avalonia;
+using LibVLCSharp.Shared;
 using SGSClient.Core.Models;
 using SGSClient.UI.ViewModels;
 
@@ -7,6 +10,10 @@ namespace SGSClient.UI.Views;
 
 public partial class GameDetailsView : UserControl
 {
+    private LibVLC? _libVlc;
+    private MediaPlayer? _mediaPlayer;
+    private VideoView? _videoView;
+
     public GameDetailsView()
     {
         InitializeComponent();
@@ -17,10 +24,12 @@ public partial class GameDetailsView : UserControl
                 vm.SetOpenPropertiesHandler(OpenProperties);
             }
         };
+        DetachedFromVisualTree += (_, _) => StopIntro();
     }
 
     private void Back_OnClick(object? sender, RoutedEventArgs e)
     {
+        StopIntro();
         if (DataContext is GameDetailsViewModel vm)
         {
             vm.CloseCommand.Execute(null);
@@ -75,9 +84,84 @@ public partial class GameDetailsView : UserControl
         }
     }
 
+    private void PlayOverlay_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is not GameDetailsViewModel { IntroMediaUrl: { Length: > 0 } url })
+        {
+            return;
+        }
+
+        StartIntro(url);
+        e.Handled = true;
+    }
+
+    private void StartIntro(string mediaUrl)
+    {
+        EnsurePlayer();
+        if (_videoView is null || _mediaPlayer is null || _libVlc is null)
+        {
+            return;
+        }
+
+        SetHeroPlaybackUi(playing: true);
+
+        using var media = new Media(_libVlc, mediaUrl, FromType.FromLocation);
+        _mediaPlayer.Play(media);
+    }
+
+    private void EnsurePlayer()
+    {
+        if (_videoView is not null)
+        {
+            return;
+        }
+
+        LibVLCSharp.Shared.Core.Initialize();
+        _libVlc = new LibVLC("--no-video-title-show");
+        _mediaPlayer = new MediaPlayer(_libVlc);
+        _mediaPlayer.EndReached += (_, _) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(StopIntro);
+        };
+
+        _videoView = new VideoView
+        {
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
+            MediaPlayer = _mediaPlayer
+        };
+        IntroHost.Children.Add(_videoView);
+    }
+
+    private void StopIntro()
+    {
+        if (_mediaPlayer is not null)
+        {
+            _mediaPlayer.Stop();
+        }
+
+        SetHeroPlaybackUi(playing: false);
+    }
+
+    private void SetHeroPlaybackUi(bool playing)
+    {
+        IntroHost.IsVisible = playing;
+        CoverImage.IsVisible = !playing && DataContext is GameDetailsViewModel { HasCover: true };
+        TileLabelText.IsVisible = !playing && DataContext is GameDetailsViewModel { HasCover: false };
+        PlayOverlay.IsVisible = !playing && DataContext is GameDetailsViewModel { HasIntro: true };
+    }
+
     private void OpenProperties(GameLibraryItem item)
     {
         var window = new GamePropertiesWindow();
+        window.ViewModel.ViewInStoreRequested += (_, _) =>
+        {
+            window.Close();
+            if (TopLevel.GetTopLevel(this)?.DataContext is MainWindowViewModel main)
+            {
+                main.OpenGameDetails(item.GameId, "Library");
+            }
+        };
         window.SetGame(item.GameId, item.BuildId, item.Title);
         if (TopLevel.GetTopLevel(this) is Window owner)
         {

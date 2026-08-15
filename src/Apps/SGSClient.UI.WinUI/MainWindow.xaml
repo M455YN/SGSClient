@@ -34,9 +34,19 @@
             <FontIcon Glyph="&#xE898;" />
           </NavigationViewItem.Icon>
         </NavigationViewItem>
+        <NavigationViewItem Content="Moje gry" Tag="Studio">
+          <NavigationViewItem.Icon>
+            <FontIcon Glyph="&#xE7C3;" />
+          </NavigationViewItem.Icon>
+        </NavigationViewItem>
       </NavigationView.MenuItems>
 
       <NavigationView.FooterMenuItems>
+        <NavigationViewItem x:Name="AdminNavItem" Content="Admin" Tag="Admin" Visibility="Collapsed">
+          <NavigationViewItem.Icon>
+            <FontIcon Glyph="&#xE7EF;" />
+          </NavigationViewItem.Icon>
+        </NavigationViewItem>
         <NavigationViewItem Content="Profil" Tag="Account">
           <NavigationViewItem.Icon>
             <FontIcon Glyph="&#xE77B;" />

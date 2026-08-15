@@ -181,6 +181,51 @@
                      Opacity="0.55" FontSize="11" TextWrapping="Wrap"/>
         </StackPanel>
 
+        <StackPanel Spacing="14" IsVisible="{Binding ShowDlc}">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <TextBlock Text="DLC" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <Button Grid.Column="1" Content="Zobacz więcej w sklepie"
+                    Command="{Binding ViewMoreInStoreCommand}"
+                    Classes="subtle" Padding="12,8"/>
+          </Grid>
+
+          <TextBox Text="{Binding DlcSearchText}" PlaceholderText="Szukaj DLC…"/>
+
+          <Grid ColumnDefinitions="56,*,120,100" ColumnSpacing="12" Margin="0,4,0,0">
+            <TextBlock Text="Instaluj" Opacity="0.55" FontSize="11"/>
+            <TextBlock Grid.Column="1" Text="Nazwa" Opacity="0.55" FontSize="11"/>
+            <TextBlock Grid.Column="2" Text="Dodano" Opacity="0.55" FontSize="11"/>
+            <TextBlock Grid.Column="3" Text="Rozmiar" Opacity="0.55" FontSize="11" HorizontalAlignment="Right"/>
+          </Grid>
+
+          <ItemsControl ItemsSource="{Binding FilteredDlcRows}" MaxHeight="360">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:DlcRowItem">
+                <Grid ColumnDefinitions="56,*,120,100" ColumnSpacing="12" Margin="0,6">
+                  <CheckBox IsChecked="{Binding IsInstalled}"
+                            IsEnabled="{Binding !IsBusy}"
+                            Click="DlcInstallCheck_OnClick"
+                            Tag="{Binding}"/>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <Border Width="40" Height="40" CornerRadius="4" ClipToBounds="True"
+                            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                      <Image Source="{Binding CoverPreviewUri}" Stretch="UniformToFill"/>
+                    </Border>
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center"
+                               TextWrapping="Wrap"/>
+                  </StackPanel>
+                  <TextBlock Grid.Column="2" Text="{Binding AddedText}" Opacity="0.65"
+                             VerticalAlignment="Center" FontSize="12"/>
+                  <TextBlock Grid.Column="3" Text="{Binding SizeText}" Opacity="0.65"
+                             VerticalAlignment="Center" FontSize="12" HorizontalAlignment="Right"/>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Text="{Binding DlcStatusText}" Opacity="0.65" FontSize="12"/>
+        </StackPanel>
+
         <StackPanel Spacing="8" IsVisible="{Binding ShowPlaceholder}">
           <TextBlock Text="{Binding PlaceholderText}" Opacity="0.65" FontSize="14"/>
         </StackPanel>

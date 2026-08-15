@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
+using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
 
@@ -13,12 +16,18 @@ public partial class GamesViewModel : ObservableObject
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
+    private readonly string _apiBaseUrl;
     private bool _loaded;
 
-    public GamesViewModel(ISgsApiService? api, IServiceScopeFactory? scopes = null)
+    public GamesViewModel(
+        ISgsApiService? api,
+        IServiceScopeFactory? scopes = null,
+        IConfiguration? configuration = null)
     {
         _api = api;
         _scopes = scopes;
+        _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
+            ?? new ApiClientSettings().BaseUrl;
         StatusText = api is null ? "API not registered" : "Ładowanie sklepu…";
     }
 
@@ -64,7 +73,7 @@ public partial class GamesViewModel : ObservableObject
             Games.Clear();
             foreach (var game in games)
             {
-                Games.Add(GameListItem.FromDto(game, owned.Contains(game.Id)));
+                Games.Add(GameListItem.FromDto(game, owned.Contains(game.Id), _apiBaseUrl));
             }
 
             _loaded = true;
@@ -178,6 +187,8 @@ public partial class GameListItem : ObservableObject
     public string? Architecture { get; init; }
     public string? Version { get; init; }
     public string? CoverUrl { get; init; }
+    public string? CoverImageUrl { get; init; }
+    public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanAdd))]
@@ -187,13 +198,17 @@ public partial class GameListItem : ObservableObject
     public bool CanAdd => !InLibrary && BuildId > 0;
     public string ActionLabel => InLibrary ? "W bibliotece" : (BuildId > 0 ? "Dodaj do biblioteki" : "Brak builda");
 
-    public static GameListItem FromDto(GameDto dto, bool inLibrary)
+    public static GameListItem FromDto(GameDto dto, bool inLibrary, string apiBaseUrl)
     {
         var build = PickPreferredBuild(dto.Builds);
         var platforms = dto.Builds
             .Select(b => FormatPlatform(b.Platform, b.Architecture))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+
+        var coverImageUrl = string.IsNullOrWhiteSpace(dto.CoverUrl)
+            ? null
+            : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, dto.CoverUrl);
 
         return new GameListItem
         {
@@ -213,6 +228,7 @@ public partial class GameListItem : ObservableObject
             Architecture = build?.Architecture,
             Version = build?.CurrentVersion,
             CoverUrl = dto.CoverUrl,
+            CoverImageUrl = string.IsNullOrWhiteSpace(coverImageUrl) ? null : coverImageUrl,
             InLibrary = inLibrary
         };
     }

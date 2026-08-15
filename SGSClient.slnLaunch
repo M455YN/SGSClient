@@ -1,27 +1,51 @@
 [
   {
-    "Name": "Api + Avalonia UI",
+    "Name": "WinUI · Production API",
     "Projects": [
       {
-        "Path": "src\\Apps\\SGSClient.Api\\SGSClient.Api.csproj",
-        "Action": "Start"
-      },
-      {
-        "Path": "src\\Apps\\SGSClient.UI\\SGSClient.UI.csproj",
-        "Action": "Start"
+        "Path": "src\\Apps\\SGSClient.UI.WinUI\\SGSClient.UI.WinUI.csproj",
+        "Action": "Start",
+        "DebugTarget": "Unpackaged (Production API)"
       }
     ]
   },
   {
-    "Name": "Api + WinUI",
+    "Name": "Avalonia · Production API",
+    "Projects": [
+      {
+        "Path": "src\\Apps\\SGSClient.UI\\SGSClient.UI.csproj",
+        "Action": "Start",
+        "DebugTarget": "Production API"
+      }
+    ]
+  },
+  {
+    "Name": "Api + WinUI · Local",
     "Projects": [
       {
         "Path": "src\\Apps\\SGSClient.Api\\SGSClient.Api.csproj",
-        "Action": "Start"
+        "Action": "Start",
+        "DebugTarget": "https"
       },
       {
         "Path": "src\\Apps\\SGSClient.UI.WinUI\\SGSClient.UI.WinUI.csproj",
-        "Action": "Start"
+        "Action": "Start",
+        "DebugTarget": "Unpackaged (Local API)"
+      }
+    ]
+  },
+  {
+    "Name": "Api + Avalonia · Local",
+    "Projects": [
+      {
+        "Path": "src\\Apps\\SGSClient.Api\\SGSClient.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "src\\Apps\\SGSClient.UI\\SGSClient.UI.csproj",
+        "Action": "Start",
+        "DebugTarget": "Local API"
       }
     ]
   },
@@ -30,7 +54,8 @@
     "Projects": [
       {
         "Path": "src\\Apps\\SGSClient.Api\\SGSClient.Api.csproj",
-        "Action": "Start"
+        "Action": "Start",
+        "DebugTarget": "https"
       }
     ]
   }

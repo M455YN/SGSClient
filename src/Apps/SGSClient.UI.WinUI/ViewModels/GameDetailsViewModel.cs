@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
+using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
 
@@ -13,14 +16,20 @@ public partial class GameDetailsViewModel : ObservableObject
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
+    private readonly string _apiBaseUrl;
     private string? _coverUrl;
     private GameLibraryItem? _libraryItem;
     private Action<GameLibraryItem>? _openProperties;
 
-    public GameDetailsViewModel(ISgsApiService? api, IServiceScopeFactory? scopes)
+    public GameDetailsViewModel(
+        ISgsApiService? api,
+        IServiceScopeFactory? scopes,
+        IConfiguration? configuration = null)
     {
         _api = api;
         _scopes = scopes;
+        _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
+            ?? new ApiClientSettings().BaseUrl;
         StatusText = "Ładowanie…";
     }
 
@@ -41,6 +50,18 @@ public partial class GameDetailsViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string TileLabel { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string? CoverImageUrl { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasCover { get; set; }
+
+    [ObservableProperty]
+    public partial string? IntroMediaUrl { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasIntro { get; set; }
 
     [ObservableProperty]
     public partial string Tagline { get; set; } = string.Empty;
@@ -98,6 +119,9 @@ public partial class GameDetailsViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool CanLaunch { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsDlc { get; set; }
 
     [ObservableProperty]
     public partial bool CanInstall { get; set; }
@@ -363,7 +387,12 @@ public partial class GameDetailsViewModel : ObservableObject
     {
         Title = game.Title;
         Symbol = game.Symbol;
+        IsDlc = game.Kind == GameContentKind.Dlc;
         _coverUrl = game.CoverUrl;
+        CoverImageUrl = ResolveMediaUrl(game.CoverUrl);
+        HasCover = !string.IsNullOrWhiteSpace(CoverImageUrl);
+        IntroMediaUrl = ResolveMediaUrl(game.IntroUrl);
+        HasIntro = !string.IsNullOrWhiteSpace(IntroMediaUrl);
         TileLabel = string.IsNullOrWhiteSpace(game.Symbol)
             ? game.Title[..Math.Min(2, game.Title.Length)].ToUpperInvariant()
             : game.Symbol[..Math.Min(3, game.Symbol.Length)].ToUpperInvariant();
@@ -410,20 +439,21 @@ public partial class GameDetailsViewModel : ObservableObject
                 .Distinct(StringComparer.OrdinalIgnoreCase));
 
         MediaThumbs.Clear();
-        if (!string.IsNullOrWhiteSpace(game.CoverUrl))
+        if (!string.IsNullOrWhiteSpace(CoverImageUrl))
         {
-            MediaThumbs.Add(new MediaThumbItem { Label = "Okładka", ImageUrl = game.CoverUrl });
-        }
-
-        if (!string.IsNullOrWhiteSpace(game.IntroUrl))
-        {
-            MediaThumbs.Add(new MediaThumbItem { Label = "Intro", ImageUrl = game.IntroUrl });
+            MediaThumbs.Add(new MediaThumbItem { Label = "Okładka", ImageUrl = CoverImageUrl, IsImage = true });
         }
 
         var shotIndex = 1;
         foreach (var url in game.ScreenshotUrls)
         {
-            MediaThumbs.Add(new MediaThumbItem { Label = $"Screen {shotIndex++}", ImageUrl = url });
+            var absolute = ResolveMediaUrl(url);
+            if (string.IsNullOrWhiteSpace(absolute))
+            {
+                continue;
+            }
+
+            MediaThumbs.Add(new MediaThumbItem { Label = $"Screen {shotIndex++}", ImageUrl = absolute, IsImage = true });
         }
 
         if (MediaThumbs.Count == 0)
@@ -535,7 +565,8 @@ public partial class GameDetailsViewModel : ObservableObject
     {
         ShowLibraryActions = true;
         ShowStoreActions = false;
-        CanLaunch = item.InstallState == InstallState.Installed
+        CanLaunch = !IsDlc
+            && item.InstallState == InstallState.Installed
             && !string.IsNullOrWhiteSpace(item.ExecutablePath);
         CanInstall = item.InstallState is InstallState.NotInstalled or InstallState.Failed;
         CanUninstall = item.InstallState == InstallState.Installed;
@@ -545,6 +576,17 @@ public partial class GameDetailsViewModel : ObservableObject
     {
         await RefreshLibraryStateAsync(gameId);
         return InLibrary;
+    }
+
+    private string? ResolveMediaUrl(string? relativeOrAbsolute)
+    {
+        if (string.IsNullOrWhiteSpace(relativeOrAbsolute))
+        {
+            return null;
+        }
+
+        var resolved = InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, relativeOrAbsolute);
+        return string.IsNullOrWhiteSpace(resolved) ? null : resolved;
     }
 
     private static string FormatPlatform(GamePlatform platform, string? architecture)
@@ -565,6 +607,8 @@ public sealed class MediaThumbItem
 {
     public required string Label { get; init; }
     public string? ImageUrl { get; init; }
+    public bool IsImage { get; init; }
+    public bool HasMedia => !string.IsNullOrWhiteSpace(ImageUrl);
 }
 
 public partial class BuildRowItem : ObservableObject

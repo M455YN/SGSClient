@@ -61,7 +61,14 @@ public sealed partial class GamePropertiesDialog : UserControl
         BetasPanel.Visibility = ViewModel.ShowBetas ? Visibility.Visible : Visibility.Collapsed;
         FilesPanel.Visibility = ViewModel.ShowFiles ? Visibility.Visible : Visibility.Collapsed;
         PersonalizationPanel.Visibility = ViewModel.ShowPersonalization ? Visibility.Visible : Visibility.Collapsed;
+        DlcPanel.Visibility = ViewModel.ShowDlc ? Visibility.Visible : Visibility.Collapsed;
         PlaceholderPanel.Visibility = ViewModel.ShowPlaceholder ? Visibility.Visible : Visibility.Collapsed;
+        DlcList.ItemsSource = ViewModel.FilteredDlcRows;
+        DlcStatusText.Text = ViewModel.DlcStatusText;
+        if (DlcSearchBox.Text != ViewModel.DlcSearchText)
+        {
+            DlcSearchBox.Text = ViewModel.DlcSearchText;
+        }
         if (PlaceholderInfo is not null)
         {
             PlaceholderInfo.Message = ViewModel.PlaceholderText;
@@ -163,6 +170,31 @@ public sealed partial class GamePropertiesDialog : UserControl
     {
         await ViewModel.ClearCustomCoverCommand.ExecuteAsync(null);
         RefreshUi();
+    }
+
+    private void DlcSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        ViewModel.DlcSearchText = DlcSearchBox.Text ?? string.Empty;
+        RefreshUi();
+    }
+
+    private async void DlcInstallCheck_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox box || box.Tag is not DlcRowItem row)
+        {
+            return;
+        }
+
+        var wantInstalled = box.IsChecked == true;
+        await ViewModel.SetDlcInstalledAsync(row, wantInstalled);
+        box.IsChecked = row.IsInstalled;
+        RefreshUi();
+    }
+
+    private void ViewMoreInStore_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ViewMoreInStoreCommand.Execute(null);
+        App.MainWindow?.NavigateTo(typeof(GameDetailsPage), ViewModel.GameId, "Games");
     }
 
     private void BrowseLocalFiles_Click(object sender, RoutedEventArgs e)

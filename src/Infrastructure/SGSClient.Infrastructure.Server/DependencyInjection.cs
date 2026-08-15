@@ -21,11 +21,13 @@ public static class DependencyInjection
                 "Connection string 'SgsDatabase' is missing. Set ConnectionStrings:SgsDatabase in appsettings.");
 
         services.Configure<GameStorageSettings>(configuration.GetSection(GameStorageSettings.SectionName));
+        services.Configure<AdminSettings>(configuration.GetSection(AdminSettings.SectionName));
         services.AddDbContext<SgsServerDbContext>(options =>
             options.UseSqlServer(connectionString));
 
         services.AddScoped<IGameRepository, EfGameRepository>();
         services.AddScoped<IUserService, EfUserService>();
+        services.AddSingleton<IAdminAuthorization, AdminAuthorization>();
         services.AddScoped<GameBuildVersionService>();
         services.AddScoped<IGamePackagePublisher, GamePackagePublisher>();
         services.AddSingleton<IRofwLegacyService, RofwLegacyService>();

@@ -100,12 +100,21 @@
                   </LinearGradientBrush>
                 </Border.Background>
                 <Panel>
-                  <TextBlock Text="{Binding TileLabel}"
+                  <TextBlock x:Name="TileLabelText"
+                             Text="{Binding TileLabel}"
                              FontSize="56" FontWeight="Bold" Opacity="0.35"
-                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                  <Border Width="56" Height="56" CornerRadius="28" Background="#99000000"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             IsVisible="{Binding !HasCover}"/>
+                  <Image x:Name="CoverImage"
+                         Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                         IsVisible="{Binding HasCover}"/>
+                  <Panel x:Name="IntroHost" IsVisible="False" />
+                  <Border x:Name="PlayOverlay"
+                          Width="56" Height="56" CornerRadius="28" Background="#99000000"
                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                          Margin="0,40,0,0">
+                          IsVisible="{Binding HasIntro}"
+                          Cursor="Hand"
+                          PointerPressed="PlayOverlay_OnPointerPressed">
                     <TextBlock Text="▶" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                   </Border>
                 </Panel>
@@ -119,9 +128,13 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:MediaThumbItem">
-                    <Border Width="92" Height="56" CornerRadius="4" Background="#334455">
-                      <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
-                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Border Width="92" Height="56" CornerRadius="4" Background="#334455" ClipToBounds="True">
+                      <Panel>
+                        <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Image Source="{Binding Bitmap}" Stretch="UniformToFill"
+                               IsVisible="{Binding HasBitmap}"/>
+                      </Panel>
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

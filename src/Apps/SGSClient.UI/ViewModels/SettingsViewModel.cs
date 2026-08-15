@@ -15,12 +15,15 @@ public partial class SettingsViewModel : ViewModelBase
 {
     private readonly IServiceScopeFactory? _scopes;
     private readonly ILibraryFolderService? _libraryFolders;
+    private readonly IAuthSession? _auth;
+    private readonly string _accountStatusFallback;
 
     public SettingsViewModel()
     {
         Title = "Ustawienia";
         StoreStatus = "Nie skonfigurowano";
-        AccountStatus = "Logowanie wyłączone";
+        _accountStatusFallback = "Logowanie wyłączone";
+        AccountStatus = _accountStatusFallback;
         AppearanceText = "Jak w systemie Windows / macOS / Linux";
         LanguageText = "Polski";
         LibrarySummary = "Dodaj foldery biblioteki jak w Steam. Każdy folder ma plik libraryfolder.json i katalog sgsapps/.";
@@ -30,10 +33,12 @@ public partial class SettingsViewModel : ViewModelBase
     public SettingsViewModel(
         IConfiguration configuration,
         IServiceScopeFactory scopes,
-        ILibraryFolderService libraryFolders)
+        ILibraryFolderService libraryFolders,
+        IAuthSession? auth = null)
     {
         _scopes = scopes;
         _libraryFolders = libraryFolders;
+        _auth = auth;
         Title = "Ustawienia";
 
         var api = configuration.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()
@@ -43,22 +48,27 @@ public partial class SettingsViewModel : ViewModelBase
 
         StoreStatus = string.IsNullOrWhiteSpace(api.BaseUrl)
             ? "Sklep niedostępny — brak adresu serwera"
-            : "Sklep skonfigurowany";
-        AccountStatus = azure.IsConfigured
+            : $"Sklep: {api.BaseUrl.TrimEnd('/')}";
+        _accountStatusFallback = azure.IsConfigured
             ? "Możesz zalogować się w zakładce Profil"
             : azure.Enabled
                 ? "Logowanie wymaga dokończenia konfiguracji"
                 : "Logowanie jest wyłączone";
+        AccountStatus = _accountStatusFallback;
         AppearanceText = "Jak w systemie";
         LanguageText = "Polski";
         LibrarySummary = "Dodaj foldery biblioteki jak w Steam. Każdy folder ma plik libraryfolder.json i katalog sgsapps/.";
         AboutText = $"SGSClient · wersja {ReadVersion()}";
         ReloadFolders();
+        RefreshAccountStatus();
     }
 
     public string Title { get; }
     public string StoreStatus { get; }
-    public string AccountStatus { get; }
+
+    [ObservableProperty]
+    private string _accountStatus = string.Empty;
+
     public string AppearanceText { get; }
     public string LanguageText { get; }
     public string LibrarySummary { get; }
@@ -74,6 +84,27 @@ public partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isBusy;
+
+    public void RefreshAccountStatus()
+    {
+        if (_auth?.IsAvailable != true)
+        {
+            AccountStatus = _accountStatusFallback;
+            return;
+        }
+
+        if (_auth.IsLoggedIn && _auth.CurrentUser is not null)
+        {
+            var user = _auth.CurrentUser;
+            var email = string.IsNullOrWhiteSpace(user.Email) ? "(brak e-maila w tokenie)" : user.Email;
+            AccountStatus = user.IsAdmin
+                ? $"Zalogowano jako: {email} · admin"
+                : $"Zalogowano jako: {email}";
+            return;
+        }
+
+        AccountStatus = "Niezalogowany — zaloguj się w Profilu";
+    }
 
     public void ReloadFolders()
     {

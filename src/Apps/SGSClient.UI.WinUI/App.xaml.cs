@@ -22,10 +22,14 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? "Production";
+
         var configuration = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
             .AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: true)
             .AddEnvironmentVariables(prefix: "SGS_")
             .Build();
@@ -36,10 +40,12 @@ public partial class App : Application
         services.AddTransient(sp => new HomeViewModel(sp.GetService<ISgsApiService>()));
         services.AddTransient(sp => new GamesViewModel(
             sp.GetService<ISgsApiService>(),
-            sp.GetRequiredService<IServiceScopeFactory>()));
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            configuration));
         services.AddTransient(sp => new GameDetailsViewModel(
             sp.GetService<ISgsApiService>(),
-            sp.GetRequiredService<IServiceScopeFactory>()));
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            configuration));
         services.AddTransient(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
@@ -53,11 +59,19 @@ public partial class App : Application
         services.AddTransient(sp => new PublishViewModel(
             sp.GetService<IGamePackagePacker>(),
             sp.GetService<IGameUploadClient>(),
+            sp.GetService<IAuthSession>(),
+            sp.GetService<ISgsApiService>()));
+        services.AddTransient(sp => new StudioViewModel(
+            sp.GetService<ISgsApiService>(),
+            sp.GetService<IAuthSession>()));
+        services.AddTransient(sp => new AdminViewModel(
+            sp.GetService<ISgsApiService>(),
             sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new SettingsViewModel(
             sp.GetRequiredService<IConfiguration>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
-            sp.GetRequiredService<ILibraryFolderService>()));
+            sp.GetRequiredService<ILibraryFolderService>(),
+            sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
@@ -78,6 +92,12 @@ public partial class App : Application
         MainWindow.SystemBackdrop = new MicaBackdrop();
         MainWindow.Activate();
 
+        var auth = Services.GetService<IAuthSession>();
+        if (auth?.IsAvailable != true)
+        {
+            MainWindow.SetAdminNavVisible(true);
+        }
+
         _ = WarmSilentLoginAsync();
     }
 
@@ -87,6 +107,16 @@ public partial class App : Application
         if (auth?.IsAvailable == true)
         {
             await auth.TrySilentLoginAsync();
+            if (auth.IsLoggedIn)
+            {
+                var users = Services.GetService<IUserApiClient>();
+                var profile = users is null ? auth.CurrentUser : await users.GetMeAsync();
+                if (profile is not null)
+                {
+                    auth.SetCurrentUser(profile);
+                    MainWindow?.SetAdminNavVisible(profile.IsAdmin);
+                }
+            }
         }
     }
 }

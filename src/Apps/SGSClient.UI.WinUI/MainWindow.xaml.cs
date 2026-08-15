@@ -13,6 +13,11 @@ public sealed partial class MainWindow : Window
         ContentFrame.Navigate(typeof(HomePage));
     }
 
+    public void SetAdminNavVisible(bool visible)
+    {
+        AdminNavItem.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     public void NavigateTo(Type pageType, object? parameter = null, string? selectTag = null)
     {
         if (selectTag is not null)
@@ -58,6 +63,8 @@ public sealed partial class MainWindow : Window
             "Games" => typeof(GamesPage),
             "Library" => typeof(LibraryPage),
             "Publish" => typeof(PublishPage),
+            "Studio" => typeof(StudioPage),
+            "Admin" => typeof(AdminPage),
             "Settings" => typeof(SettingsPage),
             "Account" => typeof(AccountPage),
             _ => typeof(HomePage)

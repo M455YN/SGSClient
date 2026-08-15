@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Packaging;
 using SGSClient.Infrastructure.Client.Services;
@@ -12,14 +13,20 @@ public partial class PublishViewModel : ObservableObject
     private readonly IGamePackagePacker? _packer;
     private readonly IGameUploadClient? _upload;
     private readonly IAuthSession? _auth;
+    private readonly ISgsApiService? _api;
     private string? _packedZipPath;
     private SgsPackageHints? _packageHints;
 
-    public PublishViewModel(IGamePackagePacker? packer, IGameUploadClient? upload, IAuthSession? auth)
+    public PublishViewModel(
+        IGamePackagePacker? packer,
+        IGameUploadClient? upload,
+        IAuthSession? auth,
+        ISgsApiService? api = null)
     {
         _packer = packer;
         _upload = upload;
         _auth = auth;
+        _api = api;
         Title = "Publikuj grę";
         StatusText = "Wybierz folder z grą (musi zawierać sgs-manifest.json).";
         RefreshAuthHint();
@@ -27,6 +34,7 @@ public partial class PublishViewModel : ObservableObject
 
     public string Title { get; }
     public ObservableCollection<string> Issues { get; } = [];
+    public ObservableCollection<string> ParentGameOptions { get; } = [];
     public IReadOnlyList<string> PlatformOptions { get; } = ["windows", "linux", "macos"];
     public IReadOnlyList<string> ArchitectureOptions { get; } = ["x64", "x86", "arm64"];
     public IReadOnlyList<string> GenreOptions { get; } =
@@ -37,6 +45,8 @@ public partial class PublishViewModel : ObservableObject
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
     [ObservableProperty] public partial string SelectedFolder { get; set; } = string.Empty;
     [ObservableProperty] public partial bool HasManifestForm { get; set; }
+    [ObservableProperty] public partial bool IsDlc { get; set; }
+    [ObservableProperty] public partial string ParentSymbol { get; set; } = string.Empty;
     [ObservableProperty] public partial string GameTitle { get; set; } = string.Empty;
     [ObservableProperty] public partial string GameSymbol { get; set; } = string.Empty;
     [ObservableProperty] public partial string GameDescription { get; set; } = string.Empty;
@@ -60,6 +70,17 @@ public partial class PublishViewModel : ObservableObject
     [ObservableProperty] public partial bool ShowProgress { get; set; }
     [ObservableProperty] public partial string AuthHint { get; set; } = string.Empty;
 
+    public bool ShowParentField => IsDlc;
+
+    partial void OnIsDlcChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowParentField));
+        if (value)
+        {
+            _ = LoadParentOptionsAsync();
+        }
+    }
+
     public async Task SetFolderAsync(string folder)
     {
         SelectedFolder = folder;
@@ -68,7 +89,11 @@ public partial class PublishViewModel : ObservableObject
         HasManifestForm = false;
         Issues.Clear();
         CleanupPackedZip();
+        var keepDlc = IsDlc;
+        var keepParent = ParentSymbol;
         ClearForm();
+        IsDlc = keepDlc;
+        ParentSymbol = keepParent;
         _packageHints = null;
 
         if (string.IsNullOrWhiteSpace(folder))
@@ -78,6 +103,7 @@ public partial class PublishViewModel : ObservableObject
         }
 
         StatusText = $"Wybrano: {folder}";
+        _ = LoadParentOptionsAsync();
         if (_packer is null)
         {
             return;
@@ -98,7 +124,7 @@ public partial class PublishViewModel : ObservableObject
                 return;
             }
 
-            ApplyManifestToForm(loaded.Manifest);
+            ApplyManifestToForm(loaded.Manifest, preferExistingDlc: keepDlc);
             HasManifestForm = true;
             StatusText = "Uzupełnij lub popraw dane gry, potem przygotuj paczkę.";
         }
@@ -117,12 +143,70 @@ public partial class PublishViewModel : ObservableObject
         if (_auth?.IsAvailable != true)
         {
             AuthHint = "Logowanie jest wyłączone — lokalnie upload pójdzie bez konta.";
+        }
+        else
+        {
+            AuthHint = _auth.IsLoggedIn
+                ? $"Zalogowano jako {_auth.CurrentUser?.DisplayName ?? "gracz"}."
+                : "Zaloguj się w Profilu przed publikacją (wymagane na serwerze z B2C).";
+        }
+
+        _ = LoadParentOptionsAsync();
+    }
+
+    public void PrepareForDlc(string parentSymbol)
+    {
+        IsDlc = true;
+        ParentSymbol = parentSymbol?.Trim() ?? string.Empty;
+        StatusText = string.IsNullOrWhiteSpace(ParentSymbol)
+            ? "Tryb DLC — wybierz grę bazową i folder z paczką."
+            : $"Tryb DLC dla gry bazowej: {ParentSymbol}. Wybierz folder z paczką.";
+        _ = LoadParentOptionsAsync();
+    }
+
+    public void PrepareForNewGame()
+    {
+        IsDlc = false;
+        ParentSymbol = string.Empty;
+        StatusText = "Wybierz folder z grą (musi zawierać sgs-manifest.json).";
+    }
+
+    public async Task LoadParentOptionsAsync()
+    {
+        if (_api is null)
+        {
             return;
         }
 
-        AuthHint = _auth.IsLoggedIn
-            ? $"Zalogowano jako {_auth.CurrentUser?.DisplayName ?? "gracz"}."
-            : "Zaloguj się w Profilu przed publikacją (wymagane na serwerze z B2C).";
+        try
+        {
+            var games = await _api.GetMyGamesAsync();
+            var symbols = games
+                .Where(g => g.Kind == GameContentKind.Game)
+                .Select(g => g.Symbol)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            ParentGameOptions.Clear();
+            foreach (var symbol in symbols)
+            {
+                ParentGameOptions.Add(symbol);
+            }
+
+            if (IsDlc
+                && !string.IsNullOrWhiteSpace(ParentSymbol)
+                && !ParentGameOptions.Contains(ParentSymbol, StringComparer.OrdinalIgnoreCase)
+                && ParentGameOptions.Count > 0)
+            {
+                // keep typed/deep-linked value even if not yet in list
+            }
+        }
+        catch
+        {
+            // best-effort
+        }
     }
 
     [RelayCommand]
@@ -374,8 +458,24 @@ public partial class PublishViewModel : ObservableObject
         return true;
     }
 
-    private void ApplyManifestToForm(SgsPackageManifest manifest)
+    private void ApplyManifestToForm(SgsPackageManifest manifest, bool preferExistingDlc = false)
     {
+        var rawKind = manifest.Game.Kind;
+        var kind = SgsPackageRules.NormalizeContentKind(rawKind);
+        var manifestIsDlc = string.Equals(kind, "dlc", StringComparison.OrdinalIgnoreCase);
+        if (manifestIsDlc)
+        {
+            IsDlc = true;
+            ParentSymbol = string.IsNullOrWhiteSpace(manifest.Game.ParentSymbol)
+                ? ParentSymbol
+                : manifest.Game.ParentSymbol!;
+        }
+        else if (!preferExistingDlc || !string.IsNullOrWhiteSpace(rawKind))
+        {
+            IsDlc = false;
+            ParentSymbol = string.Empty;
+        }
+
         GameTitle = manifest.Game.Title ?? string.Empty;
         GameSymbol = manifest.Game.Symbol ?? string.Empty;
         GameDescription = manifest.Game.Description ?? string.Empty;
@@ -422,6 +522,8 @@ public partial class PublishViewModel : ObservableObject
             {
                 Title = GameTitle.Trim(),
                 Symbol = GameSymbol.Trim(),
+                Kind = IsDlc ? "dlc" : "game",
+                ParentSymbol = IsDlc ? NullIfWhiteSpace(ParentSymbol) : null,
                 Description = NullIfWhiteSpace(GameDescription),
                 HardwareRequirements = NullIfWhiteSpace(HardwareRequirements),
                 OtherInformation = NullIfWhiteSpace(OtherInformation),
@@ -443,6 +545,8 @@ public partial class PublishViewModel : ObservableObject
 
     private void ClearForm()
     {
+        IsDlc = false;
+        ParentSymbol = string.Empty;
         GameTitle = string.Empty;
         GameSymbol = string.Empty;
         GameDescription = string.Empty;

@@ -88,19 +88,23 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Spacing="10">
-              <Border Height="220" CornerRadius="8">
+              <Border x:Name="HeroBorder" Height="220" CornerRadius="8">
                 <Border.Background>
                   <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                     <GradientStop Color="#FF2A3A4A" Offset="0" />
                     <GradientStop Color="#FF1A242E" Offset="1" />
                   </LinearGradientBrush>
                 </Border.Background>
-                <Grid>
+                <Grid x:Name="HeroGrid">
                   <TextBlock x:Name="TileLabelText"
                              FontSize="56" FontWeight="Bold" Opacity="0.35"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  <Border Width="56" Height="56" CornerRadius="28" Background="#99000000"
-                          HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,40,0,0">
+                  <Image x:Name="CoverImage" Stretch="UniformToFill" />
+                  <Border x:Name="IntroHost" Visibility="Collapsed" />
+                  <Border x:Name="PlayOverlay"
+                          Width="56" Height="56" CornerRadius="28" Background="#99000000"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          PointerPressed="PlayOverlay_PointerPressed">
                     <TextBlock Text="▶" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                 </Grid>
@@ -114,8 +118,11 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
                     <Border Width="92" Height="56" CornerRadius="4" Background="#334455" Margin="0,0,8,0">
-                      <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
-                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <Grid>
+                        <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Image Source="{Binding ImageUrl}" Stretch="UniformToFill" />
+                      </Grid>
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

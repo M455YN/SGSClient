@@ -10,6 +10,20 @@ public partial class SettingsView : UserControl
     public SettingsView()
     {
         InitializeComponent();
+        AttachedToVisualTree += (_, _) =>
+        {
+            if (DataContext is SettingsViewModel vm)
+            {
+                vm.RefreshAccountStatus();
+            }
+        };
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is SettingsViewModel vm)
+            {
+                vm.RefreshAccountStatus();
+            }
+        };
     }
 
     private async void AddLibraryFolder_OnClick(object? sender, RoutedEventArgs e)

@@ -15,7 +15,8 @@ public sealed class GameInstallService(
     HttpClient http,
     ISgsApiService api,
     IOptions<ApiClientSettings> apiOptions,
-    ILibraryPathProvider libraryPaths) : IGameInstallService
+    ILibraryPathProvider libraryPaths,
+    ILocalLibraryStore library) : IGameInstallService
 {
     private readonly string _apiBaseUrl = apiOptions.Value.BaseUrl;
 
@@ -34,6 +35,27 @@ public sealed class GameInstallService(
         if (game is null)
         {
             return FailItem(item, InstallState.Failed, "Nie znaleziono gry w sklepie.");
+        }
+
+        if (game.Kind == GameContentKind.Dlc)
+        {
+            if (game.ParentGameId is not int parentId || parentId <= 0)
+            {
+                return FailItem(item, InstallState.Failed, "DLC nie ma powiązanej gry bazowej.");
+            }
+
+            var parent = await library.GetByGameIdAsync(parentId, cancellationToken).ConfigureAwait(false);
+            var parentInstalled = parent is not null
+                && parent.InstallState == InstallState.Installed
+                && !string.IsNullOrWhiteSpace(parent.InstallPath)
+                && Directory.Exists(parent.InstallPath);
+            if (!parentInstalled)
+            {
+                return FailItem(
+                    item,
+                    InstallState.Failed,
+                    "Najpierw zainstaluj grę bazową, zanim zainstalujesz DLC.");
+            }
         }
 
         var build = game.Builds.FirstOrDefault(b => b.Id == item.BuildId)

@@ -65,6 +65,14 @@ public partial class LibraryView : UserControl
     private void OpenProperties(LibraryGameItem item)
     {
         var window = new GamePropertiesWindow();
+        window.ViewModel.ViewInStoreRequested += (_, _) =>
+        {
+            window.Close();
+            if (TopLevel.GetTopLevel(this)?.DataContext is MainWindowViewModel main)
+            {
+                main.OpenGameDetails(item.GameId, "Library");
+            }
+        };
         window.SetGame(item.GameId, item.BuildId, item.Title);
         window.Closed += async (_, _) =>
         {

@@ -20,6 +20,7 @@ public sealed partial class PublishPage : Page
         ArchitectureCombo.ItemsSource = ViewModel.ArchitectureOptions;
         GenreCombo.ItemsSource = ViewModel.GenreOptions;
         EngineCombo.ItemsSource = ViewModel.EngineOptions;
+        ParentSymbolCombo.ItemsSource = ViewModel.ParentGameOptions;
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
         TitleText.Text = ViewModel.Title;
         RefreshUi();
@@ -28,7 +29,13 @@ public sealed partial class PublishPage : Page
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        if (e.Parameter is string parentSymbol && !string.IsNullOrWhiteSpace(parentSymbol))
+        {
+            ViewModel.PrepareForDlc(parentSymbol);
+        }
+
         ViewModel.RefreshAuthHint();
+        PushFormFromViewModel();
         RefreshUi();
     }
 
@@ -49,6 +56,37 @@ public sealed partial class PublishPage : Page
         ProgressPanel.Visibility = ViewModel.ShowProgress ? Visibility.Visible : Visibility.Collapsed;
         UploadProgress.Value = ViewModel.Progress;
         IssuesList.ItemsSource = ViewModel.Issues.ToList();
+        ParentSymbolPanel.Visibility = ViewModel.ShowParentField ? Visibility.Visible : Visibility.Collapsed;
+        ParentSymbolCombo.ItemsSource = ViewModel.ParentGameOptions;
+
+        if (KindGameRadio.IsChecked != !ViewModel.IsDlc)
+        {
+            KindGameRadio.IsChecked = !ViewModel.IsDlc;
+        }
+
+        if (KindDlcRadio.IsChecked != ViewModel.IsDlc)
+        {
+            KindDlcRadio.IsChecked = ViewModel.IsDlc;
+        }
+
+        if (ViewModel.HasManifestForm)
+        {
+            PushFormFromViewModel();
+        }
+    }
+
+    private void ContentKind_Changed(object sender, RoutedEventArgs e)
+    {
+        if (KindDlcRadio.IsChecked == true)
+        {
+            ViewModel.IsDlc = true;
+        }
+        else if (KindGameRadio.IsChecked == true)
+        {
+            ViewModel.IsDlc = false;
+        }
+
+        ParentSymbolPanel.Visibility = ViewModel.ShowParentField ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void PushFormFromViewModel()
@@ -122,10 +160,26 @@ public sealed partial class PublishPage : Page
         {
             EngineCombo.SelectedItem = ViewModel.GameEngine;
         }
+
+        var parentText = ParentSymbolCombo.Text ?? string.Empty;
+        if (!string.Equals(parentText, ViewModel.ParentSymbol, StringComparison.Ordinal))
+        {
+            ParentSymbolCombo.Text = ViewModel.ParentSymbol;
+        }
+
+        if (!Equals(ParentSymbolCombo.SelectedItem, ViewModel.ParentSymbol)
+            && ViewModel.ParentGameOptions.Contains(ViewModel.ParentSymbol))
+        {
+            ParentSymbolCombo.SelectedItem = ViewModel.ParentSymbol;
+        }
     }
 
     private void PullFormIntoViewModel()
     {
+        ViewModel.IsDlc = KindDlcRadio.IsChecked == true;
+        ViewModel.ParentSymbol = ParentSymbolCombo.Text?.Trim()
+            ?? ParentSymbolCombo.SelectedItem as string
+            ?? string.Empty;
         ViewModel.GameTitle = GameTitleBox.Text ?? string.Empty;
         ViewModel.GameSymbol = GameSymbolBox.Text ?? string.Empty;
         ViewModel.GameDescription = GameDescriptionBox.Text ?? string.Empty;

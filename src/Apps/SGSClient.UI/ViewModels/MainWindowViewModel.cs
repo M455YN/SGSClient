@@ -10,6 +10,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly GameDetailsViewModel _gameDetails;
     private readonly LibraryViewModel _library;
     private readonly PublishViewModel _publish;
+    private readonly StudioViewModel _studio;
+    private readonly AdminViewModel _admin;
     private readonly SettingsViewModel _settings;
     private readonly AccountViewModel _account;
 
@@ -20,6 +22,8 @@ public partial class MainWindowViewModel : ViewModelBase
             new GameDetailsViewModel(),
             new LibraryViewModel(),
             new PublishViewModel(),
+            new StudioViewModel(),
+            new AdminViewModel(),
             new SettingsViewModel(),
             new AccountViewModel())
     {
@@ -31,6 +35,8 @@ public partial class MainWindowViewModel : ViewModelBase
         GameDetailsViewModel gameDetails,
         LibraryViewModel library,
         PublishViewModel publish,
+        StudioViewModel studio,
+        AdminViewModel admin,
         SettingsViewModel settings,
         AccountViewModel account)
     {
@@ -39,6 +45,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _gameDetails = gameDetails;
         _library = library;
         _publish = publish;
+        _studio = studio;
+        _admin = admin;
         _settings = settings;
         _account = account;
         CurrentPage = _home;
@@ -48,6 +56,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _library.SetOpenDetailsHandler(id => OpenGameDetails(id, "Library"));
         _gameDetails.SetCloseHandler(CloseGameDetails);
         _home.SetNavigateHandler(NavigateFromHome);
+        _account.SetAdminVisibilityHandler(visible => IsAdminVisible = visible);
     }
 
     public AccountViewModel Account => _account;
@@ -57,6 +66,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _selectedNavTag = "Home";
+
+    [ObservableProperty]
+    private bool _isAdminVisible;
 
     private string _detailsReturnTag = "Games";
 
@@ -84,6 +96,8 @@ public partial class MainWindowViewModel : ViewModelBase
             "Games" => _games,
             "Library" => _library,
             "Publish" => _publish,
+            "Studio" => _studio,
+            "Admin" => _admin,
             "Settings" => _settings,
             "Account" => _account,
             _ => _home
@@ -98,6 +112,30 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _ = _library.LoadAsync();
         }
+
+        if (tag == "Studio")
+        {
+            _ = _studio.LoadAsync();
+        }
+
+        if (tag == "Admin")
+        {
+            _ = _admin.LoadAsync();
+        }
+    }
+
+    public void NavigateToPublish(string? parentSymbol = null)
+    {
+        if (!string.IsNullOrWhiteSpace(parentSymbol))
+        {
+            _publish.PrepareForDlc(parentSymbol);
+        }
+        else
+        {
+            _publish.PrepareForNewGame();
+        }
+
+        Navigate("Publish");
     }
 
     private void NavigateFromHome(string tag) => Navigate(tag);

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SGSClient.Core.Auth;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
 using SGSClient.Infrastructure.Server.Persistence.Entities;
@@ -17,6 +18,7 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
         ArgumentException.ThrowIfNullOrWhiteSpace(azureSub);
 
         var now = DateTimeOffset.UtcNow;
+        var normalizedEmail = EmailClaimHelper.Normalize(email);
         var user = await db.Users.FirstOrDefaultAsync(u => u.AzureSub == azureSub, cancellationToken);
 
         if (user is null)
@@ -25,7 +27,7 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
             {
                 AzureSub = azureSub,
                 DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Player" : displayName,
-                Email = email,
+                Email = normalizedEmail,
                 AvatarUrl = avatarUrl,
                 CreatedAtUtc = now,
                 LastLoginUtc = now
@@ -34,17 +36,14 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
         }
         else
         {
-            // Prefer claim display name / email / avatar only when local profile has not customized them yet,
-            // except LastLogin which always updates. DisplayName from claims still refreshes for B2C name changes
-            // unless Bio is set as a weak signal of an edited profile — keep simple: claims refresh name/email/avatar.
             if (!string.IsNullOrWhiteSpace(displayName))
             {
                 user.DisplayName = displayName;
             }
 
-            if (!string.IsNullOrWhiteSpace(email))
+            if (normalizedEmail is not null)
             {
-                user.Email = email;
+                user.Email = normalizedEmail;
             }
 
             if (!string.IsNullOrWhiteSpace(avatarUrl))
@@ -88,6 +87,11 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
             }
         }
 
+        if (request.Email is not null)
+        {
+            user.Email = EmailClaimHelper.Normalize(request.Email);
+        }
+
         if (request.Bio is not null)
         {
             user.Bio = string.IsNullOrWhiteSpace(request.Bio) ? null : request.Bio.Trim();
@@ -113,6 +117,22 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
 
         await db.SaveChangesAsync(cancellationToken);
         return Map(user);
+    }
+
+    public async Task<IReadOnlyList<AdminUserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default)
+    {
+        return await db.Users
+            .AsNoTracking()
+            .OrderBy(u => u.DisplayName)
+            .Select(u => new AdminUserDto
+            {
+                Id = u.Id,
+                DisplayName = u.DisplayName,
+                Email = u.Email,
+                CreatedAtUtc = u.CreatedAtUtc,
+                LastLoginUtc = u.LastLoginUtc
+            })
+            .ToListAsync(cancellationToken);
     }
 
     private static UserProfileDto Map(UserEntity user) => new()

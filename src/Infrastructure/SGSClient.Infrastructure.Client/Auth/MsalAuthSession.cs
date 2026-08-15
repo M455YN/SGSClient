@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
+using SGSClient.Core.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
@@ -218,13 +219,19 @@ public sealed class MsalAuthSession : IAuthSession
     {
         try
         {
-            CurrentUser = await _userApiFactory().GetMeAsync(cancellationToken).ConfigureAwait(false);
+            var api = _userApiFactory();
+            CurrentUser = await api.GetMeAsync(cancellationToken).ConfigureAwait(false);
+            var fromIdToken = TryParseProfileFromIdToken(_authResult);
+            fromIdToken = EnrichEmailFromAccount(fromIdToken, _authResult);
+
             if (CurrentUser is not null)
             {
+                CurrentUser = await EnsureEmailSyncedAsync(api, CurrentUser, fromIdToken, cancellationToken)
+                    .ConfigureAwait(false);
                 return true;
             }
 
-            CurrentUser = TryParseProfileFromIdToken(_authResult);
+            CurrentUser = fromIdToken;
             if (CurrentUser is not null)
             {
                 LastError = "Signed in locally, but API /api/me failed. Start Api with the same AzureAd settings.";
@@ -248,6 +255,80 @@ public sealed class MsalAuthSession : IAuthSession
         }
     }
 
+    /// <summary>
+    /// B2C often puts email only in the ID token, not the access token used by /api/me.
+    /// Sync it to the profile so admin checks and UI can see the address.
+    /// </summary>
+    private static async Task<UserProfileDto> EnsureEmailSyncedAsync(
+        IUserApiClient api,
+        UserProfileDto profile,
+        UserProfileDto? fromIdToken,
+        CancellationToken cancellationToken)
+    {
+        var idEmail = EmailClaimHelper.Normalize(fromIdToken?.Email);
+        var profileEmail = EmailClaimHelper.Normalize(profile.Email);
+
+        if (profileEmail is not null)
+        {
+            return string.Equals(profile.Email, profileEmail, StringComparison.Ordinal)
+                ? profile
+                : CloneProfile(profile, profileEmail, profile.IsAdmin);
+        }
+
+        if (idEmail is null)
+        {
+            return profile;
+        }
+
+        var updated = await api.UpdateMeAsync(
+                new UpdateProfileRequestDto { Email = idEmail },
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        return updated ?? CloneProfile(profile, idEmail, isAdmin: false);
+    }
+
+    private static UserProfileDto CloneProfile(UserProfileDto source, string? email, bool isAdmin) => new()
+    {
+        Id = source.Id,
+        AzureSub = source.AzureSub,
+        DisplayName = source.DisplayName,
+        Email = email,
+        AvatarUrl = source.AvatarUrl,
+        Bio = source.Bio,
+        Location = source.Location,
+        CreatedAtUtc = source.CreatedAtUtc,
+        LastLoginUtc = source.LastLoginUtc,
+        IsAdmin = isAdmin
+    };
+
+    private static UserProfileDto? EnrichEmailFromAccount(UserProfileDto? profile, AuthenticationResult? result)
+    {
+        var accountEmail = EmailClaimHelper.Normalize(result?.Account?.Username);
+        if (accountEmail is null)
+        {
+            return profile;
+        }
+
+        if (profile is null)
+        {
+            return new UserProfileDto
+            {
+                AzureSub = result?.Account?.HomeAccountId?.ObjectId ?? "unknown",
+                DisplayName = result?.Account?.Username ?? "Player",
+                Email = accountEmail,
+                CreatedAtUtc = DateTimeOffset.UtcNow
+            };
+        }
+
+        if (EmailClaimHelper.Normalize(profile.Email) is not null)
+        {
+            return profile;
+        }
+
+        return CloneProfile(profile, accountEmail, profile.IsAdmin);
+    }
+
     private static UserProfileDto? TryParseProfileFromIdToken(AuthenticationResult? result)
     {
         var token = result?.IdToken;
@@ -269,7 +350,7 @@ public sealed class MsalAuthSession : IAuthSession
             {
                 AzureSub = sub,
                 DisplayName = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value ?? "Player",
-                Email = jwt.Claims.FirstOrDefault(c => c.Type is "emails" or "email")?.Value,
+                Email = SGSClient.Core.Auth.EmailClaimHelper.FromClaims(jwt.Claims),
                 AvatarUrl = jwt.Claims.FirstOrDefault(c => c.Type == "picture")?.Value,
                 CreatedAtUtc = DateTimeOffset.UtcNow
             };

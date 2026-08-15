@@ -22,6 +22,12 @@ public sealed class SgsPackageGameInfo
     public string? HardwareRequirements { get; set; }
     public string? OtherInformation { get; set; }
 
+    /// <summary>game | dlc (default game).</summary>
+    public string? Kind { get; set; }
+
+    /// <summary>Parent base-game symbol when <see cref="Kind"/> is dlc.</summary>
+    public string? ParentSymbol { get; set; }
+
     /// <summary>Genre slug from <see cref="SgsGameTaxonomy.Genres"/> (e.g. action).</summary>
     public string? Genre { get; set; }
 

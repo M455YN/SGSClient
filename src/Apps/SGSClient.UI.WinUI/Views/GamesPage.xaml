@@ -62,20 +62,17 @@
                     PointerEntered="GameCard_PointerEntered"
                     PointerExited="GameCard_PointerExited">
               <StackPanel Spacing="10">
-                <Grid ColumnSpacing="12">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="56" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <Border Width="56" Height="56" CornerRadius="8" Background="#333">
-                    <TextBlock Text="{Binding TileLabel}" FontWeight="Bold"
+                <Border Height="140" CornerRadius="8" Background="#333">
+                  <Grid>
+                    <TextBlock Text="{Binding TileLabel}" FontWeight="Bold" FontSize="28" Opacity="0.35"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  </Border>
-                  <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding FeaturedBadge}" FontSize="11" Opacity="0.7" />
-                  </StackPanel>
-                </Grid>
+                    <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill" />
+                  </Grid>
+                </Border>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding FeaturedBadge}" FontSize="11" Opacity="0.7" />
+                </StackPanel>
                 <TextBlock Text="{Binding Description}" Opacity="0.7" FontSize="12"
                            TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis" />
                 <TextBlock Text="{Binding PlatformsText}" Opacity="0.55" FontSize="11" />

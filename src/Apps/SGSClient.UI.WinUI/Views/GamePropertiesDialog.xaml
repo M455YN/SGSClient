@@ -231,6 +231,85 @@
                      TextWrapping="Wrap" />
         </StackPanel>
 
+        <StackPanel x:Name="DlcPanel" Spacing="14" Visibility="Collapsed">
+          <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="DLC" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" />
+            <Button Grid.Column="1"
+                    Content="Zobacz więcej w sklepie"
+                    Click="ViewMoreInStore_Click"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    Padding="12,8" />
+          </Grid>
+
+          <TextBox x:Name="DlcSearchBox"
+                   PlaceholderText="Szukaj DLC…"
+                   TextChanged="DlcSearchBox_TextChanged" />
+
+          <Grid Margin="0,4,0,0" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="56" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="120" />
+              <ColumnDefinition Width="100" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Instaluj" Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <TextBlock Grid.Column="1" Text="Nazwa" Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <TextBlock Grid.Column="2" Text="Dodano" Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <TextBlock Grid.Column="3" Text="Rozmiar" Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       HorizontalAlignment="Right" />
+          </Grid>
+
+          <ListView x:Name="DlcList"
+                    SelectionMode="None"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    MaxHeight="360">
+            <ListView.ItemTemplate>
+              <DataTemplate>
+                <Grid Padding="0,8" ColumnSpacing="12">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="56" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="100" />
+                  </Grid.ColumnDefinitions>
+                  <CheckBox IsChecked="{Binding IsInstalled}"
+                            MinWidth="0"
+                            Click="DlcInstallCheck_Click"
+                            Tag="{Binding}" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <Border Width="40" Height="40" CornerRadius="4"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                      <Image Source="{Binding CoverPreviewUri}" Stretch="UniformToFill" />
+                    </Border>
+                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center"
+                               Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="2" Text="{Binding AddedText}" VerticalAlignment="Center"
+                             Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  <TextBlock Grid.Column="3" Text="{Binding SizeText}" VerticalAlignment="Center"
+                             HorizontalAlignment="Right"
+                             Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </Grid>
+              </DataTemplate>
+            </ListView.ItemTemplate>
+          </ListView>
+
+          <TextBlock x:Name="DlcStatusText"
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+
         <StackPanel x:Name="PlaceholderPanel" Spacing="8" Visibility="Collapsed">
           <InfoBar x:Name="PlaceholderInfo"
                    IsOpen="True"

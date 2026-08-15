@@ -13,6 +13,7 @@ public partial class AccountViewModel : ViewModelBase
     private readonly IUserApiClient? _userApi;
     private readonly IServiceScopeFactory? _scopes;
     private Func<nint>? _parentWindowHandle;
+    private Action<bool>? _adminVisibility;
 
     public AccountViewModel()
     {
@@ -29,6 +30,15 @@ public partial class AccountViewModel : ViewModelBase
             : auth.IsAvailable
                 ? "Not signed in"
                 : auth.LastError ?? "Azure AD B2C is disabled in appsettings.";
+    }
+
+    public void SetAdminVisibilityHandler(Action<bool> handler)
+    {
+        _adminVisibility = handler;
+        if (_auth?.IsAvailable != true)
+        {
+            _adminVisibility(true);
+        }
     }
 
     public ObservableCollection<RecentGameItem> RecentGames { get; } = [];
@@ -252,13 +262,20 @@ public partial class AccountViewModel : ViewModelBase
         Location = user.Location ?? string.Empty;
         AvatarInitials = MakeInitials(user.DisplayName);
         LastActivityText = FormatLastActivity(user.LastLoginUtc);
-        AccountStatus = $"Signed in as {user.DisplayName}";
+        AccountStatus = string.IsNullOrWhiteSpace(user.Email)
+            ? $"Signed in as {user.DisplayName}"
+            : $"Signed in as {user.DisplayName} · {user.Email}";
+        if (user.IsAdmin)
+        {
+            AccountStatus += " · admin";
+        }
         FriendsCount = 0;
         FollowingCount = 0;
         FollowersCount = 0;
         await LoadRecentGamesAsync();
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
+        _adminVisibility?.Invoke(user.IsAdmin);
     }
 
     private void ApplySignedOut()
@@ -279,6 +296,7 @@ public partial class AccountViewModel : ViewModelBase
         AccountStatus = "Not signed in";
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
+        _adminVisibility?.Invoke(_auth?.IsAvailable != true);
     }
 
     private async Task LoadRecentGamesAsync()

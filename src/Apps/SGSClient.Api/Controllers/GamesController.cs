@@ -37,6 +37,22 @@ public sealed class GamesController(
         return result is null ? NotFound() : Ok(result);
     }
 
+    [HttpGet("{id:int}/dlcs")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<GameDlcDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<GameDlcDto>>> GetDlcs(int id, CancellationToken cancellationToken)
+    {
+        var game = await games.GetPublishedGameByIdAsync(id, cancellationToken);
+        if (game is null || game.Kind != Core.Enums.GameContentKind.Game)
+        {
+            return NotFound();
+        }
+
+        var dlcs = await games.GetPublishedDlcsAsync(id, cancellationToken);
+        return Ok(dlcs);
+    }
+
     [HttpGet("{id:int}/builds/{buildId:int}/versions")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<GameBuildVersionDto>), StatusCodes.Status200OK)]
@@ -56,6 +72,57 @@ public sealed class GamesController(
         return Ok(versions);
     }
 
+    [HttpPatch("{id:int}")]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameDto>> UpdateGame(
+        int id,
+        [FromBody] UpdateGameRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var updated = await games.UpdateOwnedGameAsync(id, ownerUserId.Value, request, cancellationToken);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteGame(int id, CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var deleted = await games.DeleteOwnedGameAsync(id, ownerUserId.Value, cancellationToken);
+            return deleted ? NoContent() : NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
     [HttpPost("uploads")]
     [RequestSizeLimit(SgsPackageRules.MaxZipBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxZipBytes)]
@@ -66,28 +133,10 @@ public sealed class GamesController(
         IFormFile? package,
         CancellationToken cancellationToken)
     {
-        var azure = azureOptions.Value;
-        var ownerUserId = 1;
-
-        if (azure.IsConfigured)
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
         {
-            if (User.Identity?.IsAuthenticated != true)
-            {
-                return Unauthorized();
-            }
-
-            var sub = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(sub))
-            {
-                return Unauthorized();
-            }
-
-            var displayName = User.FindFirstValue("name") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Player";
-            var email = User.FindFirstValue("emails")
-                ?? User.FindFirstValue("email")
-                ?? User.FindFirstValue(ClaimTypes.Email);
-            var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatarUrl: null, cancellationToken);
-            ownerUserId = profile.Id;
+            return Unauthorized();
         }
 
         if (package is null || package.Length == 0)
@@ -101,13 +150,40 @@ public sealed class GamesController(
         }
 
         await using var stream = package.OpenReadStream();
-        var result = await publisher.PublishZipAsync(stream, package.Length, ownerUserId, cancellationToken);
+        var result = await publisher.PublishZipAsync(stream, package.Length, ownerUserId.Value, cancellationToken);
         if (!result.Success || result.Game is null)
         {
             return BadRequest(new { errors = result.Errors });
         }
 
         return Ok(result.Game);
+    }
+
+    private async Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken)
+    {
+        var azure = azureOptions.Value;
+        if (!azure.IsConfigured)
+        {
+            return 1;
+        }
+
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        var sub = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(sub))
+        {
+            return null;
+        }
+
+        var displayName = User.FindFirstValue("name") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Player";
+        var email = User.FindFirstValue("emails")
+            ?? User.FindFirstValue("email")
+            ?? User.FindFirstValue(ClaimTypes.Email);
+        var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatarUrl: null, cancellationToken);
+        return profile.Id;
     }
 
     [HttpGet("packages/{symbol}/{version}/{fileName}")]

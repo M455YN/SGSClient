@@ -131,7 +131,8 @@ public class GameInstallServiceTests
                 new HttpClient(),
                 new NullSgsApiService(),
                 Options.Create(new ApiClientSettings { BaseUrl = "https://localhost:7142/" }),
-                new FixedLibraryPathProvider(sourceRoot, destRoot));
+                new FixedLibraryPathProvider(sourceRoot, destRoot),
+                new NullLibraryStore());
 
             var result = await service.MoveAsync(item, destRoot);
 
@@ -162,13 +163,32 @@ public class GameInstallServiceTests
             new HttpClient(),
             new NullSgsApiService(),
             Options.Create(new ApiClientSettings { BaseUrl = "https://localhost:7142/" }),
-            new FixedLibraryPathProvider(gamesRoot));
+            new FixedLibraryPathProvider(gamesRoot),
+            new NullLibraryStore());
 
     private sealed class FixedLibraryPathProvider(params string[] folders) : ILibraryPathProvider
     {
         public IReadOnlyList<string> GetLibraryFolders() => folders;
 
         public string GetPrimaryLibraryFolder() => folders[0];
+    }
+
+    private sealed class NullLibraryStore : ILocalLibraryStore
+    {
+        public Task<IReadOnlyList<GameLibraryItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameLibraryItem>>([]);
+
+        public Task<GameLibraryItem?> GetByGameIdAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameLibraryItem?>(null);
+
+        public Task<GameLibraryItem?> GetBySymbolAsync(string symbol, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameLibraryItem?>(null);
+
+        public Task UpsertAsync(GameLibraryItem item, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task RemoveAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class NullSgsApiService : ISgsApiService
@@ -178,6 +198,30 @@ public class GameInstallServiceTests
 
         public Task<GameDto?> GetGameAsync(int id, CancellationToken cancellationToken = default) =>
             Task.FromResult<GameDto?>(null);
+
+        public Task<IReadOnlyList<GameDlcDto>> GetGameDlcsAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameDlcDto>>([]);
+
+        public Task<IReadOnlyList<GameDto>> GetMyGamesAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameDto>>([]);
+
+        public Task<GameDto?> UpdateGameAsync(int gameId, UpdateGameRequestDto request, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<bool> DeleteGameAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<IReadOnlyList<GameDto>> GetAdminGamesAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameDto>>([]);
+
+        public Task<GameDto?> UpdateAdminGameAsync(int gameId, UpdateGameRequestDto request, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<bool> DeleteAdminGameAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<IReadOnlyList<AdminUserDto>> GetAdminUsersAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AdminUserDto>>([]);
 
         public Task<IReadOnlyList<GameBuildVersionDto>> GetBuildVersionsAsync(
             int gameId,

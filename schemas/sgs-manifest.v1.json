@@ -29,6 +29,18 @@
           "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
           "description": "Stable slug used in URLs and storage paths. Lowercase kebab-case."
         },
+        "kind": {
+          "type": ["string", "null"],
+          "enum": ["game", "dlc", null],
+          "description": "Catalog kind. Use dlc with parentSymbol for downloadable content."
+        },
+        "parentSymbol": {
+          "type": ["string", "null"],
+          "minLength": 2,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "description": "Base game symbol required when kind is dlc."
+        },
         "description": {
           "type": ["string", "null"],
           "maxLength": 4000

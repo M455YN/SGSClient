@@ -50,6 +50,9 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<bool>("IsDefault")
                         .HasColumnType("bit");
 
+                    b.Property<long>("PackageSizeBytes")
+                        .HasColumnType("bigint");
+
                     b.Property<int>("Platform")
                         .HasColumnType("int");
 
@@ -151,6 +154,11 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
 
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
                     b.Property<string>("Description")
                         .HasMaxLength(8000)
                         .HasColumnType("nvarchar(max)");
@@ -172,9 +180,15 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
 
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
                     b.Property<string>("OtherInformation")
                         .HasMaxLength(8000)
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ParentGameId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Symbol")
                         .IsRequired()
@@ -199,6 +213,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.HasIndex("EngineId");
 
                     b.HasIndex("FeaturedP");
+
+                    b.HasIndex("Kind");
+
+                    b.HasIndex("ParentGameId");
 
                     b.HasIndex("Symbol")
                         .IsUnique();
@@ -350,6 +368,11 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasForeignKey("EngineId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "ParentGame")
+                        .WithMany("Dlcs")
+                        .HasForeignKey("ParentGameId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameGenreEntity", "Genre")
                         .WithMany("Games")
                         .HasForeignKey("TypeId")
@@ -358,6 +381,8 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("Engine");
 
                     b.Navigation("Genre");
+
+                    b.Navigation("ParentGame");
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameScreenshotEntity", b =>
@@ -384,6 +409,8 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", b =>
                 {
                     b.Navigation("Builds");
+
+                    b.Navigation("Dlcs");
 
                     b.Navigation("Screenshots");
                 });

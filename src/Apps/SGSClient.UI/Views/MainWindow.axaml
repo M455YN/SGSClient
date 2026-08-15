@@ -42,9 +42,19 @@
           <ui:FASymbolIconSource Symbol="Upload"/>
         </ui:FANavigationViewItem.IconSource>
       </ui:FANavigationViewItem>
+      <ui:FANavigationViewItem Content="Moje gry" Tag="Studio">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="Library"/>
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
     </ui:FANavigationView.MenuItems>
 
     <ui:FANavigationView.FooterMenuItems>
+      <ui:FANavigationViewItem Content="Admin" Tag="Admin" IsVisible="{Binding IsAdminVisible}">
+        <ui:FANavigationViewItem.IconSource>
+          <ui:FASymbolIconSource Symbol="Important"/>
+        </ui:FANavigationViewItem.IconSource>
+      </ui:FANavigationViewItem>
       <ui:FANavigationViewItem Content="Profil" Tag="Account">
         <ui:FANavigationViewItem.IconSource>
           <ui:FASymbolIconSource Symbol="Contact"/>

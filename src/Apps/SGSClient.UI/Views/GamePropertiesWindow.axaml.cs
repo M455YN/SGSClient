@@ -63,6 +63,18 @@ public partial class GamePropertiesWindow : Window
         await ViewModel.ClearCustomCoverCommand.ExecuteAsync(null);
     }
 
+    private async void DlcInstallCheck_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox box || box.Tag is not DlcRowItem row)
+        {
+            return;
+        }
+
+        var wantInstalled = box.IsChecked == true;
+        await ViewModel.SetDlcInstalledAsync(row, wantInstalled);
+        box.IsChecked = row.IsInstalled;
+    }
+
     private void BrowseLocalFiles_OnClick(object? sender, RoutedEventArgs e)
     {
         ViewModel.BrowseLocalFilesCommand.Execute(null);

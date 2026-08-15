@@ -1,9 +1,13 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
+using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
 
@@ -13,6 +17,7 @@ public partial class GameDetailsViewModel : ViewModelBase
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
+    private readonly string _apiBaseUrl;
     private Action? _close;
     private string? _coverUrl;
     private GameLibraryItem? _libraryItem;
@@ -21,13 +26,20 @@ public partial class GameDetailsViewModel : ViewModelBase
     public GameDetailsViewModel()
     {
         StatusText = "Brak API";
+        _apiBaseUrl = new ApiClientSettings().BaseUrl;
     }
 
-    public GameDetailsViewModel(ISgsApiService? api, IServiceScopeFactory? scopes, Action? close = null)
+    public GameDetailsViewModel(
+        ISgsApiService? api,
+        IServiceScopeFactory? scopes,
+        Action? close = null,
+        IConfiguration? configuration = null)
     {
         _api = api;
         _scopes = scopes;
         _close = close;
+        _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
+            ?? new ApiClientSettings().BaseUrl;
         StatusText = "Ładowanie…";
     }
 
@@ -49,6 +61,18 @@ public partial class GameDetailsViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _tileLabel = string.Empty;
+
+    [ObservableProperty]
+    private Bitmap? _coverBitmap;
+
+    [ObservableProperty]
+    private bool _hasCover;
+
+    [ObservableProperty]
+    private string? _introMediaUrl;
+
+    [ObservableProperty]
+    private bool _hasIntro;
 
     [ObservableProperty]
     private string _tagline = string.Empty;
@@ -109,6 +133,9 @@ public partial class GameDetailsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _canLaunch;
+
+    [ObservableProperty]
+    private bool _isDlc;
 
     [ObservableProperty]
     private bool _canInstall;
@@ -371,6 +398,7 @@ public partial class GameDetailsViewModel : ViewModelBase
     {
         Title = game.Title;
         Symbol = game.Symbol;
+        IsDlc = game.Kind == GameContentKind.Dlc;
         _coverUrl = game.CoverUrl;
         TileLabel = string.IsNullOrWhiteSpace(game.Symbol)
             ? game.Title[..Math.Min(2, game.Title.Length)].ToUpperInvariant()
@@ -423,24 +451,30 @@ public partial class GameDetailsViewModel : ViewModelBase
                 .Distinct(StringComparer.OrdinalIgnoreCase));
 
         MediaThumbs.Clear();
-        if (!string.IsNullOrWhiteSpace(game.CoverUrl))
-        {
-            MediaThumbs.Add(new MediaThumbItem { Label = "Okładka", Accent = "#3A5A80", ImageUrl = game.CoverUrl });
-        }
+        var coverUrl = ResolveMediaUrl(game.CoverUrl);
+        IntroMediaUrl = ResolveMediaUrl(game.IntroUrl);
+        HasIntro = !string.IsNullOrWhiteSpace(IntroMediaUrl);
+        _ = LoadCoverAsync(coverUrl);
 
-        if (!string.IsNullOrWhiteSpace(game.IntroUrl))
+        if (!string.IsNullOrWhiteSpace(coverUrl))
         {
-            MediaThumbs.Add(new MediaThumbItem { Label = "Intro", Accent = "#5A3A50", ImageUrl = game.IntroUrl });
+            MediaThumbs.Add(new MediaThumbItem { Label = "Okładka", Accent = "#3A5A80", ImageUrl = coverUrl });
         }
 
         var shotIndex = 1;
         foreach (var url in game.ScreenshotUrls)
         {
+            var absolute = ResolveMediaUrl(url);
+            if (string.IsNullOrWhiteSpace(absolute))
+            {
+                continue;
+            }
+
             MediaThumbs.Add(new MediaThumbItem
             {
                 Label = $"Screen {shotIndex++}",
                 Accent = "#2D5A45",
-                ImageUrl = url
+                ImageUrl = absolute
             });
         }
 
@@ -451,6 +485,8 @@ public partial class GameDetailsViewModel : ViewModelBase
             MediaThumbs.Add(new MediaThumbItem { Label = "Świat", Accent = "#5A3A50" });
             MediaThumbs.Add(new MediaThumbItem { Label = "UI", Accent = "#4A4A2D" });
         }
+
+        _ = LoadThumbBitmapsAsync();
 
         var preferredPlatform = DetectCurrentPlatform();
         Builds.Clear();
@@ -548,7 +584,8 @@ public partial class GameDetailsViewModel : ViewModelBase
     private void ApplyLibraryActions(GameLibraryItem item)
     {
         ShowLibraryActions = true;
-        CanLaunch = item.InstallState == InstallState.Installed
+        CanLaunch = !IsDlc
+            && item.InstallState == InstallState.Installed
             && !string.IsNullOrWhiteSpace(item.ExecutablePath);
         CanInstall = item.InstallState is InstallState.NotInstalled or InstallState.Failed;
         CanUninstall = item.InstallState == InstallState.Installed;
@@ -580,6 +617,63 @@ public partial class GameDetailsViewModel : ViewModelBase
         return GamePlatform.Windows;
     }
 
+    private string? ResolveMediaUrl(string? relativeOrAbsolute)
+    {
+        if (string.IsNullOrWhiteSpace(relativeOrAbsolute))
+        {
+            return null;
+        }
+
+        var resolved = InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, relativeOrAbsolute);
+        return string.IsNullOrWhiteSpace(resolved) ? null : resolved;
+    }
+
+    private async Task LoadCoverAsync(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            CoverBitmap = null;
+            HasCover = false;
+            return;
+        }
+
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            await using var stream = await http.GetStreamAsync(url);
+            await using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            memory.Position = 0;
+            CoverBitmap = new Bitmap(memory);
+            HasCover = true;
+        }
+        catch
+        {
+            CoverBitmap = null;
+            HasCover = false;
+        }
+    }
+
+    private async Task LoadThumbBitmapsAsync()
+    {
+        foreach (var thumb in MediaThumbs.Where(t => !string.IsNullOrWhiteSpace(t.ImageUrl)))
+        {
+            try
+            {
+                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+                await using var stream = await http.GetStreamAsync(thumb.ImageUrl);
+                await using var memory = new MemoryStream();
+                await stream.CopyToAsync(memory);
+                memory.Position = 0;
+                thumb.Bitmap = new Bitmap(memory);
+            }
+            catch
+            {
+                // keep label fallback
+            }
+        }
+    }
+
     private static string FormatPlatform(GamePlatform platform, string? architecture)
     {
         var name = platform switch
@@ -594,11 +688,17 @@ public partial class GameDetailsViewModel : ViewModelBase
     }
 }
 
-public sealed class MediaThumbItem
+public sealed partial class MediaThumbItem : ObservableObject
 {
     public required string Label { get; init; }
     public required string Accent { get; init; }
     public string? ImageUrl { get; init; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasBitmap))]
+    private Bitmap? _bitmap;
+
+    public bool HasBitmap => Bitmap is not null;
 }
 
 public partial class BuildRowItem : ObservableObject

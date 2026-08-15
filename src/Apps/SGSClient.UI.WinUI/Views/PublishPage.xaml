@@ -27,6 +27,22 @@
           <TextBlock Text="2. Dane gry w sklepie" FontSize="18" FontWeight="SemiBold" />
 
           <StackPanel Spacing="4">
+            <TextBlock Text="Typ treści" Opacity="0.55" FontSize="12" />
+            <StackPanel Orientation="Horizontal" Spacing="16">
+              <RadioButton x:Name="KindGameRadio" Content="Gra" GroupName="ContentKind"
+                           Checked="ContentKind_Changed" />
+              <RadioButton x:Name="KindDlcRadio" Content="DLC" GroupName="ContentKind"
+                           Checked="ContentKind_Changed" />
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel x:Name="ParentSymbolPanel" Spacing="4" Visibility="Collapsed">
+            <TextBlock Text="Symbol gry bazowej (parentSymbol)" Opacity="0.55" FontSize="12" />
+            <ComboBox x:Name="ParentSymbolCombo" IsEditable="True" HorizontalAlignment="Stretch"
+                      PlaceholderText="np. demo-runner" />
+          </StackPanel>
+
+          <StackPanel Spacing="4">
             <TextBlock Text="Nazwa" Opacity="0.55" FontSize="12" />
             <TextBox x:Name="GameTitleBox" PlaceholderText="np. Demo Runner" />
           </StackPanel>

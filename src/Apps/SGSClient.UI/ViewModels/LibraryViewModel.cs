@@ -26,7 +26,7 @@ public partial class LibraryViewModel : ViewModelBase
     public LibraryViewModel()
     {
         StatusText = "Biblioteka niedostępna";
-        _apiBaseUrl = "https://localhost:7001/";
+        _apiBaseUrl = "https://api.m455yn.dev/";
     }
 
     public LibraryViewModel(

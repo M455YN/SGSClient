@@ -1,3 +1,5 @@
+using SGSClient.Core.Enums;
+
 namespace SGSClient.Core.DTOs;
 
 /// <summary>
@@ -7,6 +9,8 @@ public sealed class GameDto
 {
     public int Id { get; init; }
     public int UserId { get; init; }
+    public string? OwnerDisplayName { get; set; }
+    public string? OwnerEmail { get; set; }
     public required string Title { get; init; }
     public required string Symbol { get; init; }
     public string? Description { get; init; }
@@ -23,5 +27,11 @@ public sealed class GameDto
     public IReadOnlyList<string> ScreenshotUrls { get; init; } = [];
     public bool DraftP { get; init; }
     public bool FeaturedP { get; init; }
+    public GameContentKind Kind { get; init; } = GameContentKind.Game;
+    public int? ParentGameId { get; init; }
+    public string? ParentSymbol { get; init; }
+    public DateTimeOffset CreatedAtUtc { get; init; }
+    public long PackageSizeBytes { get; init; }
     public IReadOnlyList<GameBuildDto> Builds { get; init; } = [];
+    public IReadOnlyList<GameDlcDto> Dlcs { get; init; } = [];
 }

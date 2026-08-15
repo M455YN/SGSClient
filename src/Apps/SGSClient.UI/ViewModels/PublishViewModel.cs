@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Packaging;
 using SGSClient.Infrastructure.Client.Services;
@@ -12,6 +13,7 @@ public partial class PublishViewModel : ViewModelBase
     private readonly IGamePackagePacker? _packer;
     private readonly IGameUploadClient? _upload;
     private readonly IAuthSession? _auth;
+    private readonly ISgsApiService? _api;
     private string? _packedZipPath;
     private SgsPackageHints? _packageHints;
 
@@ -21,11 +23,16 @@ public partial class PublishViewModel : ViewModelBase
         StatusText = "Wybierz folder z grą (musi zawierać sgs-manifest.json).";
     }
 
-    public PublishViewModel(IGamePackagePacker? packer, IGameUploadClient? upload, IAuthSession? auth)
+    public PublishViewModel(
+        IGamePackagePacker? packer,
+        IGameUploadClient? upload,
+        IAuthSession? auth,
+        ISgsApiService? api = null)
     {
         _packer = packer;
         _upload = upload;
         _auth = auth;
+        _api = api;
         Title = "Publikuj grę";
         StatusText = "Wybierz folder z grą (musi zawierać sgs-manifest.json).";
         RefreshAuthHint();
@@ -34,6 +41,8 @@ public partial class PublishViewModel : ViewModelBase
     public string Title { get; }
 
     public ObservableCollection<string> Issues { get; } = [];
+
+    public ObservableCollection<string> ParentGameOptions { get; } = [];
 
     public IReadOnlyList<string> PlatformOptions { get; } = ["windows", "linux", "macos"];
 
@@ -53,6 +62,12 @@ public partial class PublishViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _hasManifestForm;
+
+    [ObservableProperty]
+    private bool _isDlc;
+
+    [ObservableProperty]
+    private string _parentSymbol = string.Empty;
 
     [ObservableProperty]
     private string _gameTitle = string.Empty;
@@ -120,6 +135,17 @@ public partial class PublishViewModel : ViewModelBase
     [ObservableProperty]
     private string _authHint = string.Empty;
 
+    public bool ShowParentField => IsDlc;
+
+    partial void OnIsDlcChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowParentField));
+        if (value)
+        {
+            _ = LoadParentOptionsAsync();
+        }
+    }
+
     public async Task SetFolderAsync(string folder)
     {
         SelectedFolder = folder;
@@ -128,7 +154,11 @@ public partial class PublishViewModel : ViewModelBase
         HasManifestForm = false;
         Issues.Clear();
         CleanupPackedZip();
+        var keepDlc = IsDlc;
+        var keepParent = ParentSymbol;
         ClearForm();
+        IsDlc = keepDlc;
+        ParentSymbol = keepParent;
         _packageHints = null;
 
         if (string.IsNullOrWhiteSpace(folder))
@@ -138,6 +168,7 @@ public partial class PublishViewModel : ViewModelBase
         }
 
         StatusText = $"Wybrano: {folder}";
+        _ = LoadParentOptionsAsync();
         if (_packer is null)
         {
             return;
@@ -158,7 +189,7 @@ public partial class PublishViewModel : ViewModelBase
                 return;
             }
 
-            ApplyManifestToForm(loaded.Manifest);
+            ApplyManifestToForm(loaded.Manifest, preferExistingDlc: keepDlc);
             HasManifestForm = true;
             StatusText = "Uzupełnij lub popraw dane gry, potem przygotuj paczkę.";
         }
@@ -177,12 +208,62 @@ public partial class PublishViewModel : ViewModelBase
         if (_auth?.IsAvailable != true)
         {
             AuthHint = "Logowanie jest wyłączone — lokalnie upload pójdzie bez konta.";
+        }
+        else
+        {
+            AuthHint = _auth.IsLoggedIn
+                ? $"Zalogowano jako {_auth.CurrentUser?.DisplayName ?? "gracz"}."
+                : "Zaloguj się w Profilu przed publikacją (wymagane na serwerze z B2C).";
+        }
+
+        _ = LoadParentOptionsAsync();
+    }
+
+    public void PrepareForDlc(string parentSymbol)
+    {
+        IsDlc = true;
+        ParentSymbol = parentSymbol?.Trim() ?? string.Empty;
+        StatusText = string.IsNullOrWhiteSpace(ParentSymbol)
+            ? "Tryb DLC — wybierz grę bazową i folder z paczką."
+            : $"Tryb DLC dla gry bazowej: {ParentSymbol}. Wybierz folder z paczką.";
+        _ = LoadParentOptionsAsync();
+    }
+
+    public void PrepareForNewGame()
+    {
+        IsDlc = false;
+        ParentSymbol = string.Empty;
+        StatusText = "Wybierz folder z grą (musi zawierać sgs-manifest.json).";
+    }
+
+    public async Task LoadParentOptionsAsync()
+    {
+        if (_api is null)
+        {
             return;
         }
 
-        AuthHint = _auth.IsLoggedIn
-            ? $"Zalogowano jako {_auth.CurrentUser?.DisplayName ?? "gracz"}."
-            : "Zaloguj się w Profilu przed publikacją (wymagane na serwerze z B2C).";
+        try
+        {
+            var games = await _api.GetMyGamesAsync();
+            var symbols = games
+                .Where(g => g.Kind == GameContentKind.Game)
+                .Select(g => g.Symbol)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            ParentGameOptions.Clear();
+            foreach (var symbol in symbols)
+            {
+                ParentGameOptions.Add(symbol);
+            }
+        }
+        catch
+        {
+            // best-effort
+        }
     }
 
     [RelayCommand]
@@ -436,8 +517,24 @@ public partial class PublishViewModel : ViewModelBase
         return true;
     }
 
-    private void ApplyManifestToForm(SgsPackageManifest manifest)
+    private void ApplyManifestToForm(SgsPackageManifest manifest, bool preferExistingDlc = false)
     {
+        var rawKind = manifest.Game.Kind;
+        var kind = SgsPackageRules.NormalizeContentKind(rawKind);
+        var manifestIsDlc = string.Equals(kind, "dlc", StringComparison.OrdinalIgnoreCase);
+        if (manifestIsDlc)
+        {
+            IsDlc = true;
+            ParentSymbol = string.IsNullOrWhiteSpace(manifest.Game.ParentSymbol)
+                ? ParentSymbol
+                : manifest.Game.ParentSymbol!;
+        }
+        else if (!preferExistingDlc || !string.IsNullOrWhiteSpace(rawKind))
+        {
+            IsDlc = false;
+            ParentSymbol = string.Empty;
+        }
+
         GameTitle = manifest.Game.Title ?? string.Empty;
         GameSymbol = manifest.Game.Symbol ?? string.Empty;
         GameDescription = manifest.Game.Description ?? string.Empty;
@@ -484,6 +581,8 @@ public partial class PublishViewModel : ViewModelBase
             {
                 Title = GameTitle.Trim(),
                 Symbol = GameSymbol.Trim(),
+                Kind = IsDlc ? "dlc" : "game",
+                ParentSymbol = IsDlc ? NullIfWhiteSpace(ParentSymbol) : null,
                 Description = NullIfWhiteSpace(GameDescription),
                 HardwareRequirements = NullIfWhiteSpace(HardwareRequirements),
                 OtherInformation = NullIfWhiteSpace(OtherInformation),
@@ -505,6 +604,8 @@ public partial class PublishViewModel : ViewModelBase
 
     private void ClearForm()
     {
+        IsDlc = false;
+        ParentSymbol = string.Empty;
         GameTitle = string.Empty;
         GameSymbol = string.Empty;
         GameDescription = string.Empty;

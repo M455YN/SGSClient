@@ -50,8 +50,10 @@ Config (Api + UI `appsettings.json` / `appsettings.example.json`):
 UI also needs:
 
 ```json
-"Api": { "BaseUrl": "https://localhost:7142/" }
+"Api": { "BaseUrl": "https://api.m455yn.dev/" }
 ```
+
+The desktop client defaults to `https://api.m455yn.dev/`. Visual Studio profile **Local API** sets `SGS_Api__BaseUrl=https://localhost:7142/` (overrides `appsettings.local.json`). Do not put `localhost:7142` in `appsettings.local.json` unless you always want local API.
 
 B2C app registration: public client / native, redirect `http://localhost`. Set `AzureAd:Enabled` to `true` on both Api and UI.
 
@@ -115,7 +117,7 @@ Portainer stack file to paste: **`deploy/portainer-stack.yml`**. Image: `ghcr.io
 | SQL | `SGS_SQL_CONNECTION` — SGS catalog (SQL Server, not `npm-db`) |
 | ROFW | `SGS_ROFW_SQL_CONNECTION` — existing `SZYRROGI_AUTOBATTLER` catalog so `/api/rofw/*` keeps working |
 | Reportingo | `SGS_REPORTINGO_SQL_CONNECTION` — existing `REPORTINGO` catalog so `/api/reportingo/report-bug` keeps working |
-| Desktop client | `appsettings.local.json` → `"Api": { "BaseUrl": "https://api.your-domain/" }` |
+| Desktop client | default `Api:BaseUrl` = `https://api.m455yn.dev/` (override via VS profile Local or `appsettings.local.json`) |
 
 Leave `SGS_AZUREAD_ENABLED=false` for the first upload test. Cloudflare orange-cloud caps large ZIPs — DNS-only for the API host.
 
@@ -134,9 +136,11 @@ dotnet test SGSClient.slnx
 
 Run (Visual Studio): open `SGSClient.slnx`, then in the toolbar startup dropdown choose a profile from `SGSClient.slnLaunch`:
 
-- **Api + Avalonia UI**
-- **Api + WinUI**
+- **WinUI · Production API** / **Avalonia · Production API** — client → `https://api.m455yn.dev/`
+- **Api + WinUI · Local** / **Api + Avalonia · Local** — local Api + client → `https://localhost:7142/`
 - **Api only**
+
+Project launch profiles (dropdown next to Start when a single UI project is selected): **Unpackaged (Production API)** / **Unpackaged (Local API)** (WinUI), **Production API** / **Local API** (Avalonia).
 
 Docker image for OVH (linux/amd64): set startup project `SGSClient.Api`, profile **Container (linux/amd64)** (needs Docker Desktop). To tag `sgsclient-api:latest` without debugging: right-click the API project → **Publish** → profile `docker-linux-amd64`, or `.\deploy\build-api-image.ps1`.
 

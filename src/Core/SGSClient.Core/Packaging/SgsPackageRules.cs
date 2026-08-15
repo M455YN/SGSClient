@@ -61,6 +61,22 @@ public static partial class SgsPackageRules
         && version.Length <= MaxVersionLength
         && VersionRegex().IsMatch(version);
 
+    /// <summary>Returns "game" or "dlc", or null if invalid. Null/empty kind defaults to game.</summary>
+    public static string? NormalizeContentKind(string? kind)
+    {
+        if (string.IsNullOrWhiteSpace(kind))
+        {
+            return "game";
+        }
+
+        return kind.Trim().ToLowerInvariant() switch
+        {
+            "game" => "game",
+            "dlc" => "dlc",
+            _ => null
+        };
+    }
+
     public static bool TryParsePlatform(string? value, out GamePlatform platform)
     {
         platform = default;
@@ -214,6 +230,35 @@ public static partial class SgsPackageRules
             if (game.OtherInformation?.Length > 2000)
             {
                 errors.Add("Pole 'otherInformation' jest za długie.");
+            }
+
+            var kind = NormalizeContentKind(game.Kind);
+            if (kind is null)
+            {
+                errors.Add("Pole 'kind' musi być: game lub dlc.");
+            }
+            else
+            {
+                game.Kind = kind;
+                if (kind == "dlc")
+                {
+                    if (!IsValidSymbol(game.ParentSymbol))
+                    {
+                        errors.Add("DLC wymaga parentSymbol (kebab-case symbol gry bazowej).");
+                    }
+                    else if (string.Equals(game.ParentSymbol, game.Symbol, StringComparison.OrdinalIgnoreCase))
+                    {
+                        errors.Add("parentSymbol nie może być taki sam jak symbol DLC.");
+                    }
+                    else
+                    {
+                        game.ParentSymbol = game.ParentSymbol!.Trim().ToLowerInvariant();
+                    }
+                }
+                else
+                {
+                    game.ParentSymbol = null;
+                }
             }
 
             var genre = SgsGameTaxonomy.NormalizeSlug(game.Genre);

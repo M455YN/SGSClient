@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
+using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
 
@@ -13,19 +16,27 @@ public partial class GamesViewModel : ViewModelBase
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
+    private readonly string _apiBaseUrl;
     private Action<int>? _openDetails;
     private bool _loaded;
 
     public GamesViewModel()
     {
         StatusText = "API not configured";
+        _apiBaseUrl = new ApiClientSettings().BaseUrl;
     }
 
-    public GamesViewModel(ISgsApiService? api, IServiceScopeFactory? scopes = null, Action<int>? openDetails = null)
+    public GamesViewModel(
+        ISgsApiService? api,
+        IServiceScopeFactory? scopes = null,
+        Action<int>? openDetails = null,
+        IConfiguration? configuration = null)
     {
         _api = api;
         _scopes = scopes;
         _openDetails = openDetails;
+        _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
+            ?? new ApiClientSettings().BaseUrl;
         StatusText = api is null ? "API not registered" : "Ładowanie sklepu…";
     }
 
@@ -73,7 +84,7 @@ public partial class GamesViewModel : ViewModelBase
             Games.Clear();
             foreach (var game in games)
             {
-                Games.Add(GameListItem.FromDto(game, owned.Contains(game.Id)));
+                Games.Add(GameListItem.FromDto(game, owned.Contains(game.Id), _apiBaseUrl));
             }
 
             _loaded = true;
@@ -198,6 +209,13 @@ public partial class GameListItem : ObservableObject
     public string? Architecture { get; init; }
     public string? Version { get; init; }
     public string? CoverUrl { get; init; }
+    public string? CoverImageUrl { get; init; }
+
+    [ObservableProperty]
+    private Avalonia.Media.Imaging.Bitmap? _coverBitmap;
+
+    [ObservableProperty]
+    private bool _hasCover;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanAdd))]
@@ -207,7 +225,7 @@ public partial class GameListItem : ObservableObject
     public bool CanAdd => !InLibrary && BuildId > 0;
     public string ActionLabel => InLibrary ? "W bibliotece" : (BuildId > 0 ? "Dodaj do biblioteki" : "Brak builda");
 
-    public static GameListItem FromDto(GameDto dto, bool inLibrary)
+    public static GameListItem FromDto(GameDto dto, bool inLibrary, string apiBaseUrl)
     {
         var build = PickPreferredBuild(dto.Builds);
         var platforms = dto.Builds
@@ -215,7 +233,11 @@ public partial class GameListItem : ObservableObject
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        return new GameListItem
+        var coverImageUrl = string.IsNullOrWhiteSpace(dto.CoverUrl)
+            ? null
+            : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, dto.CoverUrl);
+
+        var item = new GameListItem
         {
             Id = dto.Id,
             Title = dto.Title,
@@ -233,8 +255,37 @@ public partial class GameListItem : ObservableObject
             Architecture = build?.Architecture,
             Version = build?.CurrentVersion,
             CoverUrl = dto.CoverUrl,
+            CoverImageUrl = string.IsNullOrWhiteSpace(coverImageUrl) ? null : coverImageUrl,
             InLibrary = inLibrary
         };
+        _ = item.LoadCoverAsync();
+        return item;
+    }
+
+    private async Task LoadCoverAsync()
+    {
+        if (string.IsNullOrWhiteSpace(CoverImageUrl))
+        {
+            CoverBitmap = null;
+            HasCover = false;
+            return;
+        }
+
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            await using var stream = await http.GetStreamAsync(CoverImageUrl);
+            await using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            memory.Position = 0;
+            CoverBitmap = new Avalonia.Media.Imaging.Bitmap(memory);
+            HasCover = true;
+        }
+        catch
+        {
+            CoverBitmap = null;
+            HasCover = false;
+        }
     }
 
     public static GameBuildDto? PickPreferredBuild(IReadOnlyList<GameBuildDto> builds)

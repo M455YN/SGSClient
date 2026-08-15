@@ -55,6 +55,7 @@ public partial class GamePropertiesViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(ShowBetas))]
     [NotifyPropertyChangedFor(nameof(ShowPersonalization))]
     [NotifyPropertyChangedFor(nameof(ShowFiles))]
+    [NotifyPropertyChangedFor(nameof(ShowDlc))]
     [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
     public partial string SelectedSection { get; set; } = "betas";
 
@@ -112,10 +113,22 @@ public partial class GamePropertiesViewModel : ObservableObject
     [ObservableProperty]
     public partial string MoveProgressText { get; set; } = string.Empty;
 
+    [ObservableProperty]
+    public partial string DlcSearchText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string DlcStatusText { get; set; } = string.Empty;
+
+    public ObservableCollection<DlcRowItem> DlcRows { get; } = [];
+    public ObservableCollection<DlcRowItem> FilteredDlcRows { get; } = [];
+
+    public event EventHandler? ViewInStoreRequested;
+
     public bool ShowBetas => SelectedSection == "betas";
     public bool ShowPersonalization => SelectedSection == "personalization";
     public bool ShowFiles => SelectedSection == "files";
-    public bool ShowPlaceholder => SelectedSection is not ("betas" or "personalization" or "files");
+    public bool ShowDlc => SelectedSection == "dlc";
+    public bool ShowPlaceholder => SelectedSection is not ("betas" or "personalization" or "files" or "dlc");
     public string PlaceholderText => "Ta sekcja pojawi się w kolejnej wersji klienta.";
 
     partial void OnSelectedSectionChanged(string value)
@@ -124,7 +137,14 @@ public partial class GamePropertiesViewModel : ObservableObject
         {
             nav.IsSelected = nav.Id == value;
         }
+
+        if (value == "dlc" && DlcRows.Count == 0 && GameId > 0)
+        {
+            _ = LoadDlcsAsync();
+        }
     }
+
+    partial void OnDlcSearchTextChanged(string value) => ApplyDlcFilter();
 
     partial void OnSelectedVersionChanged(BetaVersionItem? value)
     {
@@ -153,6 +173,10 @@ public partial class GamePropertiesViewModel : ObservableObject
             HasCustomCover = false;
             CustomCoverPreviewUri = null;
             ClearInstallInfo();
+            DlcRows.Clear();
+            FilteredDlcRows.Clear();
+            DlcSearchText = string.Empty;
+            DlcStatusText = string.Empty;
 
             if (_scopes is not null)
             {
@@ -430,6 +454,171 @@ public partial class GamePropertiesViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void ViewMoreInStore() => ViewInStoreRequested?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private async Task ToggleDlcInstallAsync(DlcRowItem? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        await SetDlcInstalledAsync(row, !row.IsInstalled);
+    }
+
+    public async Task SetDlcInstalledAsync(DlcRowItem row, bool wantInstalled)
+    {
+        if (_scopes is null || row.IsBusy || row.PreferredBuildId <= 0)
+        {
+            return;
+        }
+
+        if (row.IsInstalled == wantInstalled)
+        {
+            return;
+        }
+
+        row.IsBusy = true;
+        DlcStatusText = string.Empty;
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            var installer = scope.ServiceProvider.GetRequiredService<IGameInstallService>();
+
+            if (!wantInstalled)
+            {
+                var model = await library.GetByGameIdAsync(row.Id);
+                if (model is null)
+                {
+                    row.IsInstalled = false;
+                    return;
+                }
+
+                var result = await installer.UninstallAsync(model);
+                if (!result.Success)
+                {
+                    DlcStatusText = result.Errors.FirstOrDefault() ?? "Nie udało się odinstalować DLC.";
+                    row.IsInstalled = true;
+                    return;
+                }
+
+                await library.UpsertAsync(model);
+                row.IsInstalled = false;
+                DlcStatusText = $"Odinstalowano: {row.Title}";
+                return;
+            }
+
+            var existing = await library.GetByGameIdAsync(row.Id);
+            var item = existing ?? new GameLibraryItem
+            {
+                GameId = row.Id,
+                BuildId = row.PreferredBuildId,
+                Symbol = row.Symbol,
+                Title = row.Title,
+                Platform = row.PreferredPlatform,
+                Architecture = row.PreferredArchitecture,
+                CoverUrl = row.CoverUrl,
+                InstallState = InstallState.NotInstalled
+            };
+
+            if (existing is null)
+            {
+                await library.UpsertAsync(item);
+            }
+
+            var install = await installer.InstallAsync(item);
+            if (!install.Success)
+            {
+                DlcStatusText = install.Errors.FirstOrDefault()
+                    ?? "Nie udało się zainstalować DLC.";
+                row.IsInstalled = false;
+                return;
+            }
+
+            await library.UpsertAsync(item);
+            row.IsInstalled = true;
+            DlcStatusText = $"Zainstalowano: {row.Title}";
+        }
+        catch (Exception ex)
+        {
+            DlcStatusText = ex.Message;
+            row.IsInstalled = !wantInstalled;
+        }
+        finally
+        {
+            row.IsBusy = false;
+        }
+    }
+
+    private async Task LoadDlcsAsync()
+    {
+        if (_api is null || GameId <= 0)
+        {
+            DlcStatusText = "Brak API.";
+            return;
+        }
+
+        try
+        {
+            DlcStatusText = "Ładowanie DLC…";
+            var apiBase = string.Empty;
+            if (_scopes is not null)
+            {
+                using var scope = _scopes.CreateScope();
+                apiBase = scope.ServiceProvider
+                    .GetService<Microsoft.Extensions.Options.IOptions<SGSClient.Core.Configuration.ApiClientSettings>>()
+                    ?.Value.BaseUrl ?? string.Empty;
+            }
+
+            var dlcs = await _api.GetGameDlcsAsync(GameId);
+            DlcRows.Clear();
+            foreach (var dlc in dlcs.OrderBy(d => d.Title))
+            {
+                var installed = false;
+                if (_scopes is not null)
+                {
+                    using var scope = _scopes.CreateScope();
+                    var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+                    var item = await library.GetByGameIdAsync(dlc.Id);
+                    installed = item is not null
+                        && item.InstallState == InstallState.Installed
+                        && !string.IsNullOrWhiteSpace(item.InstallPath)
+                        && Directory.Exists(item.InstallPath);
+                }
+
+                var cover = string.IsNullOrWhiteSpace(dlc.CoverUrl)
+                    ? null
+                    : InstallPathHelper.ResolveDownloadUrl(apiBase, dlc.CoverUrl);
+                DlcRows.Add(DlcRowItem.FromDto(dlc, installed, cover));
+            }
+
+            ApplyDlcFilter();
+            DlcStatusText = DlcRows.Count == 0 ? "Brak DLC dla tej gry." : string.Empty;
+        }
+        catch (Exception ex)
+        {
+            DlcStatusText = $"Błąd DLC: {ex.Message}";
+        }
+    }
+
+    private void ApplyDlcFilter()
+    {
+        FilteredDlcRows.Clear();
+        var q = DlcSearchText?.Trim() ?? string.Empty;
+        foreach (var row in DlcRows)
+        {
+            if (q.Length == 0
+                || row.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
+                || row.Symbol.Contains(q, StringComparison.OrdinalIgnoreCase))
+            {
+                FilteredDlcRows.Add(row);
+            }
+        }
+    }
+
     private void ClearInstallInfo()
     {
         _installPath = null;
@@ -638,4 +827,39 @@ public sealed class MoveTargetFolderItem
     public required string DisplayName { get; init; }
 
     public override string ToString() => DisplayName;
+}
+
+public partial class DlcRowItem : ObservableObject
+{
+    public int Id { get; init; }
+    public required string Title { get; init; }
+    public required string Symbol { get; init; }
+    public string? CoverPreviewUri { get; init; }
+    public string? CoverUrl { get; init; }
+    public int PreferredBuildId { get; init; }
+    public GamePlatform PreferredPlatform { get; init; }
+    public string? PreferredArchitecture { get; init; }
+    public string AddedText { get; init; } = "—";
+    public string SizeText { get; init; } = "—";
+
+    [ObservableProperty]
+    public partial bool IsInstalled { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsBusy { get; set; }
+
+    public static DlcRowItem FromDto(GameDlcDto dto, bool installed, string? coverPreview) => new()
+    {
+        Id = dto.Id,
+        Title = dto.Title,
+        Symbol = dto.Symbol,
+        CoverUrl = dto.CoverUrl,
+        CoverPreviewUri = coverPreview,
+        PreferredBuildId = dto.PreferredBuildId,
+        PreferredPlatform = dto.PreferredPlatform,
+        PreferredArchitecture = dto.PreferredArchitecture,
+        AddedText = dto.CreatedAtUtc.LocalDateTime.ToString("d MMM yyyy"),
+        SizeText = InstallFolderInfo.FormatSize(dto.PackageSizeBytes),
+        IsInstalled = installed
+    };
 }

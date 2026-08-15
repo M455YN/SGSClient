@@ -4,11 +4,16 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using SGSClient.Core.Models;
 using SGSClient.UI.WinUI.ViewModels;
+using Windows.Media.Core;
 
 namespace SGSClient.UI.WinUI.Views;
 
 public sealed partial class GameDetailsPage : Page
 {
+    private MediaPlayerElement? _introPlayer;
+    private Uri? _introUri;
+    private bool _introPlaying;
+
     public GameDetailsViewModel ViewModel { get; }
 
     public GameDetailsPage()
@@ -17,11 +22,14 @@ public sealed partial class GameDetailsPage : Page
         InitializeComponent();
         ViewModel.SetOpenPropertiesHandler(OpenProperties);
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
+        Unloaded += (_, _) => StopIntro();
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        StopIntro();
+
         var (gameId, fromLibrary) = e.Parameter switch
         {
             GameDetailsNavArgs args => (args.GameId, args.ReturnTag == "Library"),
@@ -40,6 +48,12 @@ public sealed partial class GameDetailsPage : Page
         RefreshUi();
     }
 
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        StopIntro();
+        base.OnNavigatedFrom(e);
+    }
+
     private void RefreshUi()
     {
         EmptyStatus.Text = ViewModel.StatusText;
@@ -51,6 +65,20 @@ public sealed partial class GameDetailsPage : Page
         TitleText.Text = ViewModel.Title;
         TaglineText.Text = ViewModel.Tagline;
         TileLabelText.Text = ViewModel.TileLabel;
+
+        _introUri = ViewModel.HasIntro
+            && !string.IsNullOrWhiteSpace(ViewModel.IntroMediaUrl)
+            && Uri.TryCreate(ViewModel.IntroMediaUrl, UriKind.Absolute, out var introUri)
+            ? introUri
+            : null;
+
+        if (_introUri is null)
+        {
+            StopIntro();
+        }
+
+        RefreshHeroMedia();
+
         StatusText.Text = ViewModel.StatusText;
         DescriptionText.Text = ViewModel.Description;
         HardwareText.Text = ViewModel.HardwareRequirements;
@@ -87,8 +115,111 @@ public sealed partial class GameDetailsPage : Page
         MorePanel.Visibility = ViewModel.ShowMoreTab ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void RefreshHeroMedia()
+    {
+        if (_introPlaying)
+        {
+            CoverImage.Visibility = Visibility.Collapsed;
+            TileLabelText.Visibility = Visibility.Collapsed;
+            PlayOverlay.Visibility = Visibility.Collapsed;
+            IntroHost.Visibility = Visibility.Visible;
+            return;
+        }
+
+        IntroHost.Visibility = Visibility.Collapsed;
+
+        if (!string.IsNullOrWhiteSpace(ViewModel.CoverImageUrl)
+            && Uri.TryCreate(ViewModel.CoverImageUrl, UriKind.Absolute, out var coverUri))
+        {
+            CoverImage.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(coverUri);
+            CoverImage.Visibility = Visibility.Visible;
+            TileLabelText.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            CoverImage.Source = null;
+            CoverImage.Visibility = Visibility.Collapsed;
+            TileLabelText.Visibility = Visibility.Visible;
+        }
+
+        // Show play button on the banner whenever intro exists (Steam-like).
+        PlayOverlay.Visibility = _introUri is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void PlayOverlay_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (_introUri is null)
+        {
+            return;
+        }
+
+        StartIntroPlayback();
+        e.Handled = true;
+    }
+
+    private void StartIntroPlayback()
+    {
+        if (_introUri is null)
+        {
+            return;
+        }
+
+        EnsureIntroPlayer();
+        _introPlaying = true;
+        RefreshHeroMedia();
+
+        _introPlayer!.Source = MediaSource.CreateFromUri(_introUri);
+        _introPlayer.MediaPlayer?.Play();
+    }
+
+    private void EnsureIntroPlayer()
+    {
+        if (_introPlayer is not null)
+        {
+            return;
+        }
+
+        _introPlayer = new MediaPlayerElement
+        {
+            AreTransportControlsEnabled = true,
+            AutoPlay = true,
+            Stretch = Microsoft.UI.Xaml.Media.Stretch.UniformToFill,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+        _introPlayer.SetMediaPlayer(new Windows.Media.Playback.MediaPlayer());
+        _introPlayer.TransportControls.IsCompact = true;
+        _introPlayer.TransportControls.IsZoomButtonVisible = false;
+        _introPlayer.MediaPlayer!.MediaEnded += (_, _) =>
+        {
+            DispatcherQueue.TryEnqueue(StopIntro);
+        };
+        IntroHost.Child = _introPlayer;
+    }
+
+    private void StopIntro()
+    {
+        if (_introPlayer?.MediaPlayer is { } player)
+        {
+            player.Pause();
+            player.Source = null;
+        }
+
+        if (_introPlayer is not null)
+        {
+            _introPlayer.Source = null;
+        }
+
+        _introPlaying = false;
+        if (IntroHost is not null)
+        {
+            RefreshHeroMedia();
+        }
+    }
+
     private void Back_Click(object sender, RoutedEventArgs e)
     {
+        StopIntro();
         var returnTag = ViewModel.ReturnTag;
         if (returnTag == "Library")
         {
