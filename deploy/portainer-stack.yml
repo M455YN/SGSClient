@@ -34,6 +34,8 @@ services:
       AzureAd__SigninPolicy: ${SGS_AZUREAD_SIGNIN_POLICY:-B2C_1_SGSClient_SignInUp}
       AzureAd__PasswordResetPolicy: ${SGS_AZUREAD_PASSWORD_RESET_POLICY:-B2C_1_SGSClient_PassRESET}
       AzureAd__ApiAudience: ${SGS_AZUREAD_API_AUDIENCE:-}
+      # Must match the email shown in client Settings (case-insensitive).
+      Admin__Emails__0: ${SGS_ADMIN_EMAIL:-m455yn@outlook.com}
     volumes:
       - ${SGS_GAMES_VOLUME:-sgs_games}:/data/sgs/games
     extra_hosts:

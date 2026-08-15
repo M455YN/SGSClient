@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using SGSClient.Core.Packaging;
 using SGSClient.UI.WinUI.ViewModels;
 
 namespace SGSClient.UI.WinUI.Views;
@@ -85,20 +86,59 @@ public sealed partial class StudioPage : Page
 
     private async Task<bool> ShowEditDialogAsync(StudioContentItem item)
     {
+        var genreOptions = SgsGameTaxonomy.Genres.Select(g => g.Symbol).Prepend("").ToArray();
+        var engineOptions = SgsGameTaxonomy.Engines.Select(e => e.Symbol).Prepend("").ToArray();
+
         var titleBox = new TextBox
         {
             Text = item.Title,
-            PlaceholderText = "Tytuł",
-            Margin = new Thickness(0, 0, 0, 12)
+            PlaceholderText = "np. Demo Runner",
+            Margin = new Thickness(0, 0, 0, 8)
         };
         var descBox = new TextBox
         {
             Text = item.Description ?? string.Empty,
-            PlaceholderText = "Opis",
+            PlaceholderText = "Krótki opis widoczny w sklepie",
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
-            MinHeight = 96,
-            Margin = new Thickness(0, 0, 0, 12)
+            MinHeight = 88,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        var hardwareBox = new TextBox
+        {
+            Text = item.HardwareRequirements ?? string.Empty,
+            PlaceholderText = "opcjonalnie",
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            MinHeight = 56,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        var otherBox = new TextBox
+        {
+            Text = item.OtherInformation ?? string.Empty,
+            PlaceholderText = "opcjonalnie",
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            MinHeight = 56,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        var genreCombo = new ComboBox
+        {
+            ItemsSource = genreOptions,
+            SelectedItem = genreOptions.Contains(item.GenreSymbol ?? string.Empty)
+                ? item.GenreSymbol ?? string.Empty
+                : string.Empty,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        var engineCombo = new ComboBox
+        {
+            ItemsSource = engineOptions,
+            SelectedItem = engineOptions.Contains(item.EngineSymbol ?? string.Empty)
+                ? item.EngineSymbol ?? string.Empty
+                : string.Empty,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Margin = new Thickness(0, 0, 0, 8)
         };
         var draftBox = new CheckBox
         {
@@ -107,10 +147,25 @@ public sealed partial class StudioPage : Page
         };
 
         var panel = new StackPanel { Spacing = 4 };
-        panel.Children.Add(new TextBlock { Text = "Tytuł", Opacity = 0.55, FontSize = 12 });
+        panel.Children.Add(new TextBlock
+        {
+            Text = $"Symbol: {item.Symbol} (bez zmian)",
+            Opacity = 0.55,
+            FontSize = 12,
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+        panel.Children.Add(new TextBlock { Text = "Nazwa", Opacity = 0.55, FontSize = 12 });
         panel.Children.Add(titleBox);
         panel.Children.Add(new TextBlock { Text = "Opis", Opacity = 0.55, FontSize = 12 });
         panel.Children.Add(descBox);
+        panel.Children.Add(new TextBlock { Text = "Wymagania sprzętowe", Opacity = 0.55, FontSize = 12 });
+        panel.Children.Add(hardwareBox);
+        panel.Children.Add(new TextBlock { Text = "Inne informacje", Opacity = 0.55, FontSize = 12 });
+        panel.Children.Add(otherBox);
+        panel.Children.Add(new TextBlock { Text = "Gatunek", Opacity = 0.55, FontSize = 12 });
+        panel.Children.Add(genreCombo);
+        panel.Children.Add(new TextBlock { Text = "Silnik", Opacity = 0.55, FontSize = 12 });
+        panel.Children.Add(engineCombo);
         panel.Children.Add(draftBox);
 
         var dialog = new ContentDialog
@@ -120,7 +175,12 @@ public sealed partial class StudioPage : Page
             CloseButtonText = "Anuluj",
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = XamlRoot,
-            Content = panel
+            Content = new ScrollViewer
+            {
+                Content = panel,
+                MaxHeight = 520,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            }
         };
 
         var result = await dialog.ShowAsync();
@@ -131,6 +191,10 @@ public sealed partial class StudioPage : Page
 
         item.EditTitle = titleBox.Text ?? string.Empty;
         item.EditDescription = descBox.Text;
+        item.EditHardwareRequirements = hardwareBox.Text;
+        item.EditOtherInformation = otherBox.Text;
+        item.EditGenre = genreCombo.SelectedItem as string ?? string.Empty;
+        item.EditEngine = engineCombo.SelectedItem as string ?? string.Empty;
         item.EditDraft = draftBox.IsChecked == true;
         return true;
     }

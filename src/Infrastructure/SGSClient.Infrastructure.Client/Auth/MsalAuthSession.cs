@@ -285,7 +285,20 @@ public sealed class MsalAuthSession : IAuthSession
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return updated ?? CloneProfile(profile, idEmail, isAdmin: false);
+        if (updated is not null)
+        {
+            return updated;
+        }
+
+        // PATCH may have applied even if the body failed to deserialize — refresh IsAdmin from API.
+        var refreshed = await api.GetMeAsync(cancellationToken).ConfigureAwait(false);
+        if (refreshed is not null)
+        {
+            var refreshedEmail = EmailClaimHelper.Normalize(refreshed.Email) ?? idEmail;
+            return CloneProfile(refreshed, refreshedEmail, refreshed.IsAdmin);
+        }
+
+        return CloneProfile(profile, idEmail, profile.IsAdmin);
     }
 
     private static UserProfileDto CloneProfile(UserProfileDto source, string? email, bool isAdmin) => new()

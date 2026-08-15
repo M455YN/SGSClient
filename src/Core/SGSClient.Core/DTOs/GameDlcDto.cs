@@ -18,13 +18,17 @@ public sealed class GameDlcDto
     public string? PreferredVersion { get; init; }
 }
 
-/// <summary>Owner metadata update for creator panel.</summary>
+/// <summary>Owner/admin metadata update (partial — null fields are left unchanged).</summary>
 public sealed class UpdateGameRequestDto
 {
     public string? Title { get; init; }
     public string? Description { get; init; }
     public string? HardwareRequirements { get; init; }
     public string? OtherInformation { get; init; }
+    /// <summary>Genre slug from taxonomy; empty string clears.</summary>
+    public string? Genre { get; init; }
+    /// <summary>Engine slug from taxonomy; empty string clears.</summary>
+    public string? Engine { get; init; }
     public bool? DraftP { get; init; }
     public bool? FeaturedP { get; init; }
 }

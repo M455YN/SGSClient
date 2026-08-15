@@ -4,6 +4,7 @@ using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Packaging;
 using SGSClient.Infrastructure.Server.Persistence;
 using SGSClient.Infrastructure.Server.Persistence.Entities;
 
@@ -75,7 +76,7 @@ public sealed class EfGameRepository(
             return null;
         }
 
-        ApplyMetadataUpdates(game, request);
+        await ApplyMetadataUpdatesAsync(game, request, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         return await db.Games.AsNoTracking()
             .Where(g => g.Id == gameId)
@@ -151,7 +152,7 @@ public sealed class EfGameRepository(
             return null;
         }
 
-        ApplyMetadataUpdates(game, request);
+        await ApplyMetadataUpdatesAsync(game, request, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         return await db.Games.AsNoTracking()
             .Where(g => g.Id == gameId)
@@ -232,7 +233,10 @@ public sealed class EfGameRepository(
         }
     }
 
-    private static void ApplyMetadataUpdates(GameEntity game, UpdateGameRequestDto request)
+    private async Task ApplyMetadataUpdatesAsync(
+        GameEntity game,
+        UpdateGameRequestDto request,
+        CancellationToken cancellationToken)
     {
         if (request.Title is not null)
         {
@@ -264,6 +268,22 @@ public sealed class EfGameRepository(
                 : request.OtherInformation.Trim();
         }
 
+        if (request.Genre is not null)
+        {
+            game.TypeId = await ResolveTaxonomyIdAsync(
+                request.Genre,
+                isGenre: true,
+                cancellationToken);
+        }
+
+        if (request.Engine is not null)
+        {
+            game.EngineId = await ResolveTaxonomyIdAsync(
+                request.Engine,
+                isGenre: false,
+                cancellationToken);
+        }
+
         if (request.DraftP is not null)
         {
             game.DraftP = request.DraftP.Value;
@@ -273,6 +293,42 @@ public sealed class EfGameRepository(
         {
             game.FeaturedP = request.FeaturedP.Value;
         }
+    }
+
+    private async Task<int?> ResolveTaxonomyIdAsync(string raw, bool isGenre, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        var symbol = SgsGameTaxonomy.NormalizeSlug(raw)
+            ?? throw new ArgumentException(isGenre ? "Nieprawidłowy gatunek." : "Nieprawidłowy silnik.");
+
+        if (isGenre)
+        {
+            if (!SgsGameTaxonomy.IsValidGenre(symbol))
+            {
+                throw new ArgumentException($"Nieznany gatunek '{raw}'.");
+            }
+
+            var id = await db.GameGenres
+                .Where(g => g.Symbol == symbol)
+                .Select(g => (int?)g.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+            return id ?? throw new ArgumentException($"Gatunek '{symbol}' nie istnieje w bazie.");
+        }
+
+        if (!SgsGameTaxonomy.IsValidEngine(symbol))
+        {
+            throw new ArgumentException($"Nieznany silnik '{raw}'.");
+        }
+
+        var engineId = await db.GameEngines
+            .Where(e => e.Symbol == symbol)
+            .Select(e => (int?)e.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        return engineId ?? throw new ArgumentException($"Silnik '{symbol}' nie istnieje w bazie.");
     }
 
     private static System.Linq.Expressions.Expression<Func<GameEntity, GameDto>> ProjectGame(bool includeDlcs) =>

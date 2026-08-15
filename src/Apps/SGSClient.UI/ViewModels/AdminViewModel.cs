@@ -150,6 +150,10 @@ public partial class AdminViewModel : ViewModelBase
         {
             Title = item.EditTitle?.Trim(),
             Description = item.EditDescription,
+            HardwareRequirements = item.EditHardwareRequirements,
+            OtherInformation = item.EditOtherInformation,
+            Genre = item.EditGenre,
+            Engine = item.EditEngine,
             DraftP = item.EditDraft,
             FeaturedP = item.EditFeatured
         });
@@ -239,6 +243,10 @@ public sealed class AdminGameItem
     public required string Title { get; init; }
     public required string Symbol { get; init; }
     public string? Description { get; init; }
+    public string? HardwareRequirements { get; init; }
+    public string? OtherInformation { get; init; }
+    public string? GenreSymbol { get; init; }
+    public string? EngineSymbol { get; init; }
     public bool DraftP { get; init; }
     public bool FeaturedP { get; init; }
     public bool IsDlc { get; init; }
@@ -253,6 +261,10 @@ public sealed class AdminGameItem
 
     public string? EditTitle { get; set; }
     public string? EditDescription { get; set; }
+    public string? EditHardwareRequirements { get; set; }
+    public string? EditOtherInformation { get; set; }
+    public string? EditGenre { get; set; }
+    public string? EditEngine { get; set; }
     public bool EditDraft { get; set; }
     public bool EditFeatured { get; set; }
 
@@ -262,6 +274,10 @@ public sealed class AdminGameItem
         Title = game.Title,
         Symbol = game.Symbol,
         Description = game.Description,
+        HardwareRequirements = game.HardwareRequirements,
+        OtherInformation = game.OtherInformation,
+        GenreSymbol = game.GenreSymbol,
+        EngineSymbol = game.EngineSymbol,
         DraftP = game.DraftP,
         FeaturedP = game.FeaturedP,
         IsDlc = game.Kind == GameContentKind.Dlc,
@@ -269,6 +285,10 @@ public sealed class AdminGameItem
         OwnerEmail = game.OwnerEmail,
         EditTitle = game.Title,
         EditDescription = game.Description,
+        EditHardwareRequirements = game.HardwareRequirements,
+        EditOtherInformation = game.OtherInformation,
+        EditGenre = game.GenreSymbol ?? string.Empty,
+        EditEngine = game.EngineSymbol ?? string.Empty,
         EditDraft = game.DraftP,
         EditFeatured = game.FeaturedP
     };
