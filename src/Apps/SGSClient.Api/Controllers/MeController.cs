@@ -21,30 +21,32 @@ public sealed class MeController(
     IOptions<AzureAdSettings> azureOptions,
     IOptions<GameStorageSettings> storageOptions) : ControllerBase
 {
+    // Do NOT use [Authorize] here: when AzureAd is disabled, no auth scheme is registered
+    // and [Authorize] throws 500. Mirror GamesController — AllowAnonymous + ResolveAzureSubAsync.
+
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserProfileDto>> GetMe(CancellationToken cancellationToken)
     {
-        var sub = GetSub();
-        if (sub is null)
+        var resolved = await ResolveIdentityAsync(cancellationToken);
+        if (resolved is null)
         {
             return Unauthorized();
         }
 
-        var displayName = User.FindFirstValue("name")
-            ?? User.FindFirstValue(ClaimTypes.Name)
-            ?? "Player";
-        var email = EmailClaimHelper.FromPrincipal(User);
-        var avatar = User.FindFirstValue("picture");
-
-        var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatar, cancellationToken);
+        var profile = await users.UpsertFromClaimsAsync(
+            resolved.AzureSub,
+            resolved.DisplayName,
+            resolved.Email,
+            resolved.AvatarFromIdp,
+            cancellationToken);
         return Ok(WithAdminFlag(profile));
     }
 
     [HttpPatch]
-    [Authorize]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -52,30 +54,30 @@ public sealed class MeController(
         [FromBody] UpdateProfileRequestDto request,
         CancellationToken cancellationToken)
     {
-        var sub = GetSub();
-        if (sub is null)
+        var resolved = await ResolveIdentityAsync(cancellationToken);
+        if (resolved is null)
         {
             return Unauthorized();
         }
 
-        var profile = await users.UpdateProfileAsync(sub, request, cancellationToken);
+        var profile = await users.UpdateProfileAsync(resolved.AzureSub, request, cancellationToken);
         return profile is null ? NotFound() : Ok(WithAdminFlag(profile));
     }
 
     [HttpPut("avatar")]
-    [Authorize]
-    // Multipart overhead — limit must be above MaxAvatarBytes.
+    [AllowAnonymous]
     [RequestSizeLimit(UserAvatarService.MaxAvatarBytes + (1L * 1024 * 1024))]
+    [RequestFormLimits(MultipartBodyLengthLimit = UserAvatarService.MaxAvatarBytes + (1L * 1024 * 1024))]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserProfileDto>> UploadAvatar(
-        [FromForm] IFormFile? file,
+        IFormFile? file,
         CancellationToken cancellationToken)
     {
-        var sub = GetSub();
-        if (sub is null)
+        var resolved = await ResolveIdentityAsync(cancellationToken);
+        if (resolved is null)
         {
             return Unauthorized();
         }
@@ -85,10 +87,22 @@ public sealed class MeController(
             return BadRequest(new { errors = new[] { "Dodaj plik zdjęcia." } });
         }
 
+        // Ensure the user row exists before writing the file (same as GetMe).
+        await users.UpsertFromClaimsAsync(
+            resolved.AzureSub,
+            resolved.DisplayName,
+            resolved.Email,
+            avatarUrl: null,
+            cancellationToken);
+
         try
         {
             await using var stream = file.OpenReadStream();
-            var profile = await avatars.SetAvatarAsync(sub, stream, file.FileName, cancellationToken);
+            var profile = await avatars.SetAvatarAsync(
+                resolved.AzureSub,
+                stream,
+                file.FileName,
+                cancellationToken);
             return profile is null ? NotFound() : Ok(WithAdminFlag(profile));
         }
         catch (ArgumentException ex)
@@ -102,19 +116,19 @@ public sealed class MeController(
     }
 
     [HttpDelete("avatar")]
-    [Authorize]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserProfileDto>> ClearAvatar(CancellationToken cancellationToken)
     {
-        var sub = GetSub();
-        if (sub is null)
+        var resolved = await ResolveIdentityAsync(cancellationToken);
+        if (resolved is null)
         {
             return Unauthorized();
         }
 
-        var profile = await avatars.ClearAvatarAsync(sub, cancellationToken);
+        var profile = await avatars.ClearAvatarAsync(resolved.AzureSub, cancellationToken);
         return profile is null ? NotFound() : Ok(WithAdminFlag(profile));
     }
 
@@ -189,6 +203,40 @@ public sealed class MeController(
         IsAdmin = adminAuth.IsAdmin(User, profile.Email)
     };
 
+    private async Task<ResolvedIdentity?> ResolveIdentityAsync(CancellationToken cancellationToken)
+    {
+        var azure = azureOptions.Value;
+        if (!azure.IsConfigured)
+        {
+            // Same fallback as GamesController (owner user id 1).
+            var local = await users.GetByIdAsync(1, cancellationToken);
+            if (local is not null)
+            {
+                return new ResolvedIdentity(local.AzureSub, local.DisplayName, local.Email, AvatarFromIdp: null);
+            }
+
+            return new ResolvedIdentity("local-dev", "Player", Email: null, AvatarFromIdp: null);
+        }
+
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        var sub = GetSub();
+        if (sub is null)
+        {
+            return null;
+        }
+
+        var displayName = User.FindFirstValue("name")
+            ?? User.FindFirstValue(ClaimTypes.Name)
+            ?? "Player";
+        var email = EmailClaimHelper.FromPrincipal(User);
+        var avatar = User.FindFirstValue("picture");
+        return new ResolvedIdentity(sub, displayName, email, avatar);
+    }
+
     private async Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken)
     {
         var azure = azureOptions.Value;
@@ -218,4 +266,10 @@ public sealed class MeController(
 
     private string? GetSub() =>
         User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    private sealed record ResolvedIdentity(
+        string AzureSub,
+        string DisplayName,
+        string? Email,
+        string? AvatarFromIdp);
 }

@@ -66,6 +66,13 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
         return user is null ? null : Map(user);
     }
 
+    public async Task<UserProfileDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var user = await db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+        return user is null ? null : Map(user);
+    }
+
     public async Task<UserProfileDto?> UpdateProfileAsync(
         string azureSub,
         UpdateProfileRequestDto request,

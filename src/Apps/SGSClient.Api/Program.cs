@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
+using SGSClient.Api.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.Interfaces;
 using SGSClient.Infrastructure.Server;
@@ -47,6 +48,16 @@ if (azureAd.IsConfigured)
             };
         });
 }
+else
+{
+    // Always register a default scheme so AuthorizationMiddleware Challenge does not 500
+    // when AzureAd is disabled (see MeController / [Authorize] without JwtBearer).
+    builder.Services
+        .AddAuthentication("Disabled")
+        .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, DisabledAuthenticationHandler>(
+            "Disabled",
+            _ => { });
+}
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -91,11 +102,7 @@ LogLegacyApi(
     "Reportingo compatibility API is enabled (/api/reportingo/*).",
     "Reportingo compatibility API is disabled. Set ConnectionStrings:ReportingoDatabase to keep bug reports working.");
 
-if (azureAd.IsConfigured)
-{
-    app.UseAuthentication();
-}
-
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

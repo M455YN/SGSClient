@@ -13,6 +13,8 @@ public interface IUserService
 
     Task<UserProfileDto?> GetByAzureSubAsync(string azureSub, CancellationToken cancellationToken = default);
 
+    Task<UserProfileDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
+
     Task<UserProfileDto?> UpdateProfileAsync(
         string azureSub,
         UpdateProfileRequestDto request,
