@@ -112,7 +112,7 @@ public partial class ShellSidebarViewModel : ObservableObject
                 : (user.IsAdmin ? $"{user.Email} · admin" : user.Email!);
             ProfileAvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
                 ? null
-                : InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl);
+                : CacheBust(InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl));
             HasAvatar = !string.IsNullOrWhiteSpace(ProfileAvatarUrl);
             IsAdminVisible = user.IsAdmin;
             return;
@@ -126,6 +126,17 @@ public partial class ShellSidebarViewModel : ObservableObject
     }
 
     public void SetAdminVisible(bool visible) => IsAdminVisible = visible;
+
+    private static string CacheBust(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return url;
+        }
+
+        var sep = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{url}{sep}v={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+    }
 
     public void SelectNav(string tag)
     {

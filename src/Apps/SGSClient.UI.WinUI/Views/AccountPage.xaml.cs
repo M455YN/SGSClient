@@ -58,9 +58,14 @@ public sealed partial class AccountPage : Page
             EditLocationBox.Text = ViewModel.EditLocation;
         }
 
+        AvatarActionStatusText.Text = ViewModel.ProfileActionStatus;
+
         if (ViewModel.HasAvatar && Uri.TryCreate(ViewModel.AvatarUrl, UriKind.Absolute, out var uri))
         {
-            AvatarBrush.ImageSource = new BitmapImage(uri);
+            var image = new BitmapImage();
+            image.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
+            image.UriSource = uri;
+            AvatarBrush.ImageSource = image;
             AvatarInitialsText.Visibility = Visibility.Collapsed;
         }
         else
@@ -131,7 +136,9 @@ public sealed partial class AccountPage : Page
             return;
         }
 
-        await ViewModel.UploadAvatarFromPathAsync(file.Path);
+        // WinUI often returns empty Path for picked files — stream the content instead.
+        await using var stream = await file.OpenStreamForReadAsync();
+        await ViewModel.UploadAvatarFromStreamAsync(stream, file.Name);
         RefreshUi();
     }
 

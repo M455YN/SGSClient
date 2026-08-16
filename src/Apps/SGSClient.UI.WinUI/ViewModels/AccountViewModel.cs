@@ -104,6 +104,9 @@ public partial class AccountViewModel : ObservableObject
     [ObservableProperty]
     public partial string AvatarInitials { get; set; } = "?";
 
+    [ObservableProperty]
+    public partial string ProfileActionStatus { get; set; } = string.Empty;
+
     public void SetParentWindowHandleProvider(Func<nint> provider) => _parentWindowHandle = provider;
 
     public async Task InitializeAsync()
@@ -198,6 +201,7 @@ public partial class AccountViewModel : ObservableObject
         EditDisplayName = DisplayName;
         EditBio = Bio;
         EditLocation = Location;
+        ProfileActionStatus = string.Empty;
         IsEditing = true;
     }
 
@@ -242,24 +246,38 @@ public partial class AccountViewModel : ObservableObject
 
     public async Task UploadAvatarFromPathAsync(string? localFilePath)
     {
-        if (_userApi is null || !IsLoggedIn || string.IsNullOrWhiteSpace(localFilePath))
+        if (string.IsNullOrWhiteSpace(localFilePath) || !File.Exists(localFilePath))
         {
-            AccountStatus = "Nie można wgrać zdjęcia.";
+            ProfileActionStatus = "Nie można odczytać wybranego pliku.";
+            return;
+        }
+
+        await using var stream = File.OpenRead(localFilePath);
+        await UploadAvatarFromStreamAsync(stream, Path.GetFileName(localFilePath));
+    }
+
+    public async Task UploadAvatarFromStreamAsync(Stream content, string fileName)
+    {
+        if (_userApi is null || !IsLoggedIn)
+        {
+            ProfileActionStatus = "Zaloguj się, aby wgrać zdjęcie.";
             return;
         }
 
         IsBusy = true;
+        ProfileActionStatus = "Wgrywanie zdjęcia…";
         try
         {
-            var updated = await _userApi.UploadAvatarAsync(localFilePath);
+            var updated = await _userApi.UploadAvatarAsync(content, fileName);
             if (updated is null)
             {
-                AccountStatus = "Upload nieudany. Sprawdź format (png/jpg/webp/gif, max 5 MB) i API.";
+                ProfileActionStatus = "Upload nieudany. Sprawdź format (png/jpg/webp/gif, max 5 MB) i czy API ma najnowszy deploy.";
                 return;
             }
 
             _auth?.SetCurrentUser(updated);
             await ApplyProfileAsync(updated);
+            ProfileActionStatus = "Zdjęcie zaktualizowane.";
             App.MainWindow?.RefreshSidebar();
         }
         finally
@@ -282,12 +300,13 @@ public partial class AccountViewModel : ObservableObject
             var updated = await _userApi.ClearAvatarAsync();
             if (updated is null)
             {
-                AccountStatus = "Nie udało się usunąć zdjęcia.";
+                ProfileActionStatus = "Nie udało się usunąć zdjęcia.";
                 return;
             }
 
             _auth?.SetCurrentUser(updated);
             await ApplyProfileAsync(updated);
+            ProfileActionStatus = "Zdjęcie usunięte.";
             App.MainWindow?.RefreshSidebar();
         }
         finally
@@ -303,7 +322,7 @@ public partial class AccountViewModel : ObservableObject
         Email = user.Email ?? string.Empty;
         AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
             ? string.Empty
-            : InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl);
+            : CacheBust(InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl));
         Bio = user.Bio ?? string.Empty;
         Location = user.Location ?? string.Empty;
         AvatarInitials = MakeInitials(user.DisplayName);
@@ -363,6 +382,17 @@ public partial class AccountViewModel : ObservableObject
         catch
         {
         }
+    }
+
+    private static string CacheBust(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return url;
+        }
+
+        var sep = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{url}{sep}v={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
     }
 
     private static string MakeInitials(string name)

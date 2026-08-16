@@ -155,6 +155,7 @@
                   <Button Content="Zmień zdjęcie" Click="ChangeAvatar_OnClick" Padding="12,8"/>
                   <Button Content="Usuń" Click="ClearAvatar_OnClick" Padding="12,8"/>
                 </StackPanel>
+                <TextBlock Text="{Binding ProfileActionStatus}" Opacity="0.7" FontSize="12" TextWrapping="Wrap"/>
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
                 <Button Content="Zapisz" Click="SaveButton_OnClick" Padding="16,8"/>

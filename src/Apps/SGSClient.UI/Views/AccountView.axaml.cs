@@ -92,13 +92,23 @@ public partial class AccountView : UserControl
             ]
         });
 
-        var path = files.FirstOrDefault()?.TryGetLocalPath();
-        if (string.IsNullOrWhiteSpace(path))
+        var file = files.FirstOrDefault();
+        if (file is null)
         {
             return;
         }
 
-        await vm.UploadAvatarFromPathAsync(path);
+        var path = file.TryGetLocalPath();
+        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+        {
+            await vm.UploadAvatarFromPathAsync(path);
+        }
+        else
+        {
+            await using var stream = await file.OpenReadAsync();
+            await vm.UploadAvatarFromStreamAsync(stream, file.Name ?? "avatar.png");
+        }
+
         RefreshSidebar();
     }
 
