@@ -1,8 +1,11 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
+using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 
 namespace SGSClient.UI.ViewModels;
@@ -12,19 +15,26 @@ public partial class AccountViewModel : ViewModelBase
     private readonly IAuthSession? _auth;
     private readonly IUserApiClient? _userApi;
     private readonly IServiceScopeFactory? _scopes;
+    private readonly string _apiBaseUrl;
     private Func<nint>? _parentWindowHandle;
     private Action<bool>? _adminVisibility;
 
     public AccountViewModel()
+        : this(null, null, null, null)
     {
-        AccountStatus = "Auth not configured";
     }
 
-    public AccountViewModel(IAuthSession? auth, IUserApiClient? userApi = null, IServiceScopeFactory? scopes = null)
+    public AccountViewModel(
+        IAuthSession? auth,
+        IUserApiClient? userApi = null,
+        IServiceScopeFactory? scopes = null,
+        IConfiguration? configuration = null)
     {
         _auth = auth;
         _userApi = userApi;
         _scopes = scopes;
+        _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
+            ?? new ApiClientSettings().BaseUrl;
         AccountStatus = auth is null
             ? "Auth not registered"
             : auth.IsAvailable
@@ -46,6 +56,7 @@ public partial class AccountViewModel : ViewModelBase
     public bool ShowSignedOut => !IsLoggedIn;
     public bool ShowProfile => IsLoggedIn && !IsEditing;
     public bool HasAvatar => !string.IsNullOrWhiteSpace(AvatarUrl);
+    public bool ShowAvatarImage => AvatarBitmap is not null;
     public bool HasRecentGames => RecentGames.Count > 0;
     public bool ShowEmptyRecentGames => IsLoggedIn && RecentGames.Count == 0;
     public string BioDisplay => string.IsNullOrWhiteSpace(Bio) ? "Dodaj bio w Dostosuj profil" : Bio;
@@ -74,7 +85,12 @@ public partial class AccountViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasAvatar))]
+    [NotifyPropertyChangedFor(nameof(ShowAvatarImage))]
     private string _avatarUrl = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowAvatarImage))]
+    private Avalonia.Media.Imaging.Bitmap? _avatarBitmap;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BioDisplay))]
@@ -252,12 +268,69 @@ public partial class AccountViewModel : ViewModelBase
         }
     }
 
+    public async Task UploadAvatarFromPathAsync(string? localFilePath)
+    {
+        if (_userApi is null || !IsLoggedIn || string.IsNullOrWhiteSpace(localFilePath))
+        {
+            AccountStatus = "Nie można wgrać zdjęcia.";
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var updated = await _userApi.UploadAvatarAsync(localFilePath);
+            if (updated is null)
+            {
+                AccountStatus = "Upload nieudany. Sprawdź format (png/jpg/webp/gif, max 5 MB) i API.";
+                return;
+            }
+
+            _auth?.SetCurrentUser(updated);
+            await ApplyProfileAsync(updated);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ClearAvatarAsync()
+    {
+        if (_userApi is null || !IsLoggedIn)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var updated = await _userApi.ClearAvatarAsync();
+            if (updated is null)
+            {
+                AccountStatus = "Nie udało się usunąć zdjęcia.";
+                return;
+            }
+
+            _auth?.SetCurrentUser(updated);
+            await ApplyProfileAsync(updated);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     private async Task ApplyProfileAsync(UserProfileDto user)
     {
         IsLoggedIn = true;
         DisplayName = user.DisplayName;
         Email = user.Email ?? string.Empty;
-        AvatarUrl = user.AvatarUrl ?? string.Empty;
+        AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
+            ? string.Empty
+            : InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl);
+        _ = LoadAvatarBitmapAsync(AvatarUrl);
         Bio = user.Bio ?? string.Empty;
         Location = user.Location ?? string.Empty;
         AvatarInitials = MakeInitials(user.DisplayName);
@@ -285,6 +358,7 @@ public partial class AccountViewModel : ViewModelBase
         DisplayName = string.Empty;
         Email = string.Empty;
         AvatarUrl = string.Empty;
+        AvatarBitmap = null;
         Bio = string.Empty;
         Location = string.Empty;
         LastActivityText = string.Empty;
@@ -297,6 +371,35 @@ public partial class AccountViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
         _adminVisibility?.Invoke(_auth?.IsAvailable != true);
+    }
+
+    private async Task LoadAvatarBitmapAsync(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            AvatarBitmap = null;
+            return;
+        }
+
+        try
+        {
+            if (File.Exists(url))
+            {
+                AvatarBitmap = new Avalonia.Media.Imaging.Bitmap(url);
+                return;
+            }
+
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            await using var stream = await http.GetStreamAsync(url);
+            await using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            memory.Position = 0;
+            AvatarBitmap = new Avalonia.Media.Imaging.Bitmap(memory);
+        }
+        catch
+        {
+            AvatarBitmap = null;
+        }
     }
 
     private async Task LoadRecentGamesAsync()

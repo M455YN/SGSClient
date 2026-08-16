@@ -1,0 +1,175 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             x:Class="SGSClient.UI.Views.ShellSidebar"
+             x:DataType="vm:ShellSidebarViewModel"
+             Width="280">
+
+  <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+          BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+          BorderThickness="0,0,1,0">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="4">
+      <StackPanel Grid.Row="0" Spacing="4" Margin="0,4,0,4">
+        <Button x:Name="PaneToggleButton"
+                Click="PaneToggle_OnClick"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                MinHeight="40"
+                Padding="0"
+                CornerRadius="4"
+                BorderThickness="0"
+                Background="Transparent"
+                ToolTip.Tip="Zwiń / rozwiń nawigację">
+          <ui:FASymbolIcon Symbol="List" FontSize="16" />
+        </Button>
+
+        <Button x:Name="ProfileButton"
+                Click="Profile_OnClick"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Left"
+                Background="Transparent"
+                BorderThickness="0"
+                Padding="8"
+                MinHeight="48"
+                CornerRadius="4"
+                ToolTip.Tip="Profil">
+          <Grid x:Name="ProfileContentGrid" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Border x:Name="AvatarHost" Width="32" Height="32" CornerRadius="16"
+                    HorizontalAlignment="Center"
+                    Background="{DynamicResource SystemAccentColor}">
+              <Panel>
+                <ui:FASymbolIcon x:Name="ProfileIcon" Symbol="Contact" FontSize="14"
+                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Border x:Name="AvatarBorder" CornerRadius="16" ClipToBounds="True" IsVisible="False">
+                  <Image x:Name="AvatarImage" Stretch="UniformToFill" Width="32" Height="32" />
+                </Border>
+              </Panel>
+            </Border>
+            <StackPanel x:Name="ProfileDetails" Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+              <TextBlock x:Name="ProfileNameText" FontWeight="SemiBold" FontSize="13"
+                         TextTrimming="CharacterEllipsis" />
+              <TextBlock x:Name="ProfileStatusText" FontSize="11" Opacity="0.65"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Grid>
+        </Button>
+      </StackPanel>
+
+      <Grid Grid.Row="1" RowDefinitions="Auto,*">
+        <StackPanel x:Name="NavPanel" Spacing="2">
+          <Button x:Name="NavHome" Tag="Home" Click="Nav_OnClick"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Home">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Home" FontSize="16" />
+              <TextBlock x:Name="NavHomeLabel" Text="Home" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="NavGames" Tag="Games" Click="Nav_OnClick"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Sklep">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Shop" FontSize="16" />
+              <TextBlock x:Name="NavGamesLabel" Text="Sklep" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="NavLibrary" Tag="Library" Click="Nav_OnClick"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Biblioteka">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Library" FontSize="16" />
+              <TextBlock x:Name="NavLibraryLabel" Text="Biblioteka" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="NavPublish" Tag="Publish" Click="Nav_OnClick"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Publikuj">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Upload" FontSize="16" />
+              <TextBlock x:Name="NavPublishLabel" Text="Publikuj" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="NavStudio" Tag="Studio" Click="Nav_OnClick"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Moje gry">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Library" FontSize="16" />
+              <TextBlock x:Name="NavStudioLabel" Text="Moje gry" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="NavAdmin" Tag="Admin" Click="Nav_OnClick" IsVisible="False"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Admin">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Important" FontSize="16" />
+              <TextBlock x:Name="NavAdminLabel" Text="Admin" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <Grid x:Name="InstalledSection" Grid.Row="1" RowDefinitions="Auto,*" Margin="4,8,4,0">
+          <TextBlock x:Name="InstalledHeaderText"
+                     FontSize="11" FontWeight="SemiBold" Opacity="0.55"
+                     Margin="8,0,8,8" Text="0 ZAINSTALOWANYCH" />
+          <ListBox x:Name="InstalledList"
+                   Grid.Row="1"
+                   Background="Transparent"
+                   DoubleTapped="Installed_OnDoubleTapped">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:SidebarInstalledGame">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="4,2" MinHeight="48">
+                  <Border Width="36" Height="36" CornerRadius="4" ClipToBounds="True"
+                          Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+                    <Panel>
+                      <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" FontSize="10" FontWeight="SemiBold"
+                                 Opacity="0.7" />
+                      <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                             IsVisible="{Binding HasCover}" />
+                    </Panel>
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding StateText}" FontSize="11" Opacity="0.55"
+                               TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
+                              VerticalAlignment="Center">
+                    <Button Padding="8" ToolTip.Tip="Uruchom"
+                            Tag="{Binding}" Click="Play_OnClick"
+                            IsEnabled="{Binding CanLaunch}">
+                      <ui:FASymbolIcon Symbol="Play" FontSize="14" />
+                    </Button>
+                    <Button Padding="8" ToolTip.Tip="Więcej" Tag="{Binding}" Click="More_OnClick">
+                      <ui:FASymbolIcon Symbol="More" FontSize="14" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Grid>
+
+      <Button x:Name="NavSettings" Tag="Settings" Click="Nav_OnClick"
+              Grid.Row="2"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+              MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+              ToolTip.Tip="Ustawienia"
+              Margin="0,4,0,4">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <ui:FASymbolIcon Symbol="Setting" FontSize="16" />
+          <TextBlock x:Name="NavSettingsLabel" Text="Ustawienia" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </Grid>
+  </Border>
+</UserControl>

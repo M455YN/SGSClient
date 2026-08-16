@@ -77,7 +77,14 @@ public partial class App : Application
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
-            sp.GetRequiredService<IServiceScopeFactory>()));
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            configuration));
+        services.AddSingleton(sp => new ShellSidebarViewModel(
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetService<IGameLauncherService>(),
+            sp.GetService<ILibraryDiscoveryService>(),
+            sp.GetService<IAuthSession>(),
+            configuration));
         services.AddTransient(sp => new MainWindowViewModel(
             sp.GetRequiredService<HomeViewModel>(),
             sp.GetRequiredService<GamesViewModel>(),
@@ -87,7 +94,8 @@ public partial class App : Application
             sp.GetRequiredService<StudioViewModel>(),
             sp.GetRequiredService<AdminViewModel>(),
             sp.GetRequiredService<SettingsViewModel>(),
-            sp.GetRequiredService<AccountViewModel>()));
+            sp.GetRequiredService<AccountViewModel>(),
+            sp.GetRequiredService<ShellSidebarViewModel>()));
 
         Services = services.BuildServiceProvider();
 

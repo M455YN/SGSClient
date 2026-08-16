@@ -6,6 +6,8 @@ using SGSClient.Core.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Packaging;
+using SGSClient.Infrastructure.Server.Services;
 
 namespace SGSClient.Api.Controllers;
 
@@ -13,9 +15,11 @@ namespace SGSClient.Api.Controllers;
 [Route("api/me")]
 public sealed class MeController(
     IUserService users,
+    IUserAvatarService avatars,
     IGameRepository games,
     IAdminAuthorization adminAuth,
-    IOptions<AzureAdSettings> azureOptions) : ControllerBase
+    IOptions<AzureAdSettings> azureOptions,
+    IOptions<GameStorageSettings> storageOptions) : ControllerBase
 {
     [HttpGet]
     [Authorize]
@@ -56,6 +60,98 @@ public sealed class MeController(
 
         var profile = await users.UpdateProfileAsync(sub, request, cancellationToken);
         return profile is null ? NotFound() : Ok(WithAdminFlag(profile));
+    }
+
+    [HttpPut("avatar")]
+    [Authorize]
+    [RequestSizeLimit(UserAvatarService.MaxAvatarBytes)]
+    [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserProfileDto>> UploadAvatar(
+        IFormFile? file,
+        CancellationToken cancellationToken)
+    {
+        var sub = GetSub();
+        if (sub is null)
+        {
+            return Unauthorized();
+        }
+
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new { errors = new[] { "Dodaj plik zdjęcia." } });
+        }
+
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            var profile = await avatars.SetAvatarAsync(sub, stream, file.FileName, cancellationToken);
+            return profile is null ? NotFound() : Ok(WithAdminFlag(profile));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    [HttpDelete("avatar")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserProfileDto>> ClearAvatar(CancellationToken cancellationToken)
+    {
+        var sub = GetSub();
+        if (sub is null)
+        {
+            return Unauthorized();
+        }
+
+        var profile = await avatars.ClearAvatarAsync(sub, cancellationToken);
+        return profile is null ? NotFound() : Ok(WithAdminFlag(profile));
+    }
+
+    [HttpGet("avatars/{userId:int}/{fileName}")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult DownloadAvatar(int userId, string fileName)
+    {
+        if (userId <= 0
+            || string.IsNullOrWhiteSpace(fileName)
+            || fileName.Contains("..", StringComparison.Ordinal)
+            || fileName.Contains('/')
+            || fileName.Contains('\\')
+            || !fileName.StartsWith("avatar.", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound();
+        }
+
+        var ext = Path.GetExtension(fileName);
+        if (string.IsNullOrWhiteSpace(ext) || !SgsPackageRules.AllowedImageExtensions.Contains(ext))
+        {
+            return NotFound();
+        }
+
+        var root = Path.GetFullPath(Path.Combine(storageOptions.Value.StoragePath, "users", userId.ToString()));
+        var path = Path.GetFullPath(Path.Combine(root, fileName));
+        if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
+        {
+            return NotFound();
+        }
+
+        var contentType = ext.ToLowerInvariant() switch
+        {
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".webp" => "image/webp",
+            ".gif" => "image/gif",
+            _ => "application/octet-stream"
+        };
+
+        return PhysicalFile(path, contentType);
     }
 
     [HttpGet("games")]

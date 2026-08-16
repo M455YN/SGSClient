@@ -1,5 +1,6 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using SGSClient.UI.WinUI.ViewModels;
 using SGSClient.UI.WinUI.Views;
 
 namespace SGSClient.UI.WinUI;
@@ -10,19 +11,31 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         Title = "SGSClient";
+
+        Sidebar.ViewModel.SetNavigateHandler(NavigateByTag);
+        Sidebar.ViewModel.SetOpenDetailsHandler(OpenGameDetails);
+        Sidebar.ViewModel.SetOpenPropertiesHandler(OpenGameProperties);
         ContentFrame.Navigate(typeof(HomePage));
+        _ = Sidebar.InitializeAsync();
+    }
+
+    public void RefreshSidebar()
+    {
+        Sidebar.ViewModel.RefreshProfile();
+        _ = Sidebar.ViewModel.LoadInstalledAsync();
     }
 
     public void SetAdminNavVisible(bool visible)
     {
-        AdminNavItem.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        Sidebar.ViewModel.SetAdminVisible(visible);
+        Sidebar.ViewModel.RefreshProfile();
     }
 
     public void NavigateTo(Type pageType, object? parameter = null, string? selectTag = null)
     {
         if (selectTag is not null)
         {
-            SelectNavTag(selectTag);
+            Sidebar.ViewModel.SelectNav(selectTag);
         }
 
         if (parameter is null)
@@ -36,28 +49,15 @@ public sealed partial class MainWindow : Window
         {
             ContentFrame.Navigate(pageType, parameter);
         }
-    }
 
-    private void SelectNavTag(string tag)
-    {
-        foreach (var item in NavView.MenuItems.OfType<NavigationViewItem>()
-                     .Concat(NavView.FooterMenuItems.OfType<NavigationViewItem>()))
+        if (selectTag is "Library" or "Home" || pageType == typeof(LibraryPage))
         {
-            if (item.Tag as string == tag)
-            {
-                NavView.SelectedItem = item;
-                return;
-            }
+            _ = Sidebar.ViewModel.LoadInstalledAsync();
         }
     }
 
-    private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    private void NavigateByTag(string tag)
     {
-        if (args.SelectedItem is not NavigationViewItem item || item.Tag is not string tag)
-        {
-            return;
-        }
-
         var pageType = tag switch
         {
             "Games" => typeof(GamesPage),
@@ -74,5 +74,25 @@ public sealed partial class MainWindow : Window
         {
             ContentFrame.Navigate(pageType);
         }
+
+        if (tag is "Library" or "Home")
+        {
+            _ = Sidebar.ViewModel.LoadInstalledAsync();
+        }
+    }
+
+    private void OpenGameDetails(int gameId)
+    {
+        NavigateTo(
+            typeof(GameDetailsPage),
+            parameter: new GameDetailsNavArgs(gameId, "Library"),
+            selectTag: "Library");
+    }
+
+    private async void OpenGameProperties(SidebarInstalledGame item)
+    {
+        var dialog = new GamePropertiesDialog();
+        await dialog.ShowForGameAsync(item.GameId, item.BuildId, item.Title, Content.XamlRoot);
+        await Sidebar.ViewModel.LoadInstalledAsync();
     }
 }

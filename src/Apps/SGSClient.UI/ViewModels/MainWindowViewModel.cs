@@ -25,7 +25,8 @@ public partial class MainWindowViewModel : ViewModelBase
             new StudioViewModel(),
             new AdminViewModel(),
             new SettingsViewModel(),
-            new AccountViewModel())
+            new AccountViewModel(),
+            new ShellSidebarViewModel())
     {
     }
 
@@ -38,7 +39,8 @@ public partial class MainWindowViewModel : ViewModelBase
         StudioViewModel studio,
         AdminViewModel admin,
         SettingsViewModel settings,
-        AccountViewModel account)
+        AccountViewModel account,
+        ShellSidebarViewModel sidebar)
     {
         _home = home;
         _games = games;
@@ -49,6 +51,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _admin = admin;
         _settings = settings;
         _account = account;
+        Sidebar = sidebar;
         CurrentPage = _home;
         SelectedNavTag = "Home";
 
@@ -56,10 +59,17 @@ public partial class MainWindowViewModel : ViewModelBase
         _library.SetOpenDetailsHandler(id => OpenGameDetails(id, "Library"));
         _gameDetails.SetCloseHandler(CloseGameDetails);
         _home.SetNavigateHandler(NavigateFromHome);
-        _account.SetAdminVisibilityHandler(visible => IsAdminVisible = visible);
+        _account.SetAdminVisibilityHandler(visible =>
+        {
+            IsAdminVisible = visible;
+            Sidebar.SetAdminVisible(visible);
+            Sidebar.RefreshProfile();
+        });
+        Sidebar.SelectNav("Home");
     }
 
     public AccountViewModel Account => _account;
+    public ShellSidebarViewModel Sidebar { get; }
 
     [ObservableProperty]
     private ViewModelBase _currentPage;
@@ -91,6 +101,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         SelectedNavTag = tag;
+        Sidebar.SelectNav(tag);
         CurrentPage = tag switch
         {
             "Games" => _games,
@@ -111,6 +122,12 @@ public partial class MainWindowViewModel : ViewModelBase
         if (tag == "Library")
         {
             _ = _library.LoadAsync();
+            _ = Sidebar.LoadInstalledAsync();
+        }
+
+        if (tag is "Home")
+        {
+            _ = Sidebar.LoadInstalledAsync();
         }
 
         if (tag == "Studio")
@@ -121,6 +138,11 @@ public partial class MainWindowViewModel : ViewModelBase
         if (tag == "Admin")
         {
             _ = _admin.LoadAsync();
+        }
+
+        if (tag == "Account")
+        {
+            Sidebar.RefreshProfile();
         }
     }
 
@@ -144,6 +166,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _detailsReturnTag = string.IsNullOrWhiteSpace(returnTag) ? "Games" : returnTag;
         SelectedNavTag = _detailsReturnTag == "Library" ? "Library" : "Games";
+        Sidebar.SelectNav(SelectedNavTag);
         CurrentPage = _gameDetails;
         _ = _gameDetails.LoadAsync(gameId, fromLibrary: _detailsReturnTag == "Library");
     }
@@ -152,6 +175,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var tag = _detailsReturnTag;
         SelectedNavTag = tag;
+        Sidebar.SelectNav(tag);
         CurrentPage = tag switch
         {
             "Library" => _library,
@@ -161,6 +185,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (tag == "Library")
         {
             _ = _library.LoadAsync();
+            _ = Sidebar.LoadInstalledAsync();
         }
         else
         {
@@ -171,5 +196,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public async Task InitializeAsync()
     {
         await _account.InitializeAsync();
+        Sidebar.RefreshProfile();
+        await Sidebar.LoadInstalledAsync();
     }
 }

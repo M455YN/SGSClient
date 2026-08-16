@@ -6,4 +6,6 @@ public interface IUserApiClient
 {
     Task<UserProfileDto?> GetMeAsync(CancellationToken cancellationToken = default);
     Task<UserProfileDto?> UpdateMeAsync(UpdateProfileRequestDto request, CancellationToken cancellationToken = default);
+    Task<UserProfileDto?> UploadAvatarAsync(string localFilePath, CancellationToken cancellationToken = default);
+    Task<UserProfileDto?> ClearAvatarAsync(CancellationToken cancellationToken = default);
 }

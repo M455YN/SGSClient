@@ -46,7 +46,8 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
                 user.Email = normalizedEmail;
             }
 
-            if (!string.IsNullOrWhiteSpace(avatarUrl))
+            // Keep uploaded/custom AvatarUrl — only fill from IdP when empty.
+            if (string.IsNullOrWhiteSpace(user.AvatarUrl) && !string.IsNullOrWhiteSpace(avatarUrl))
             {
                 user.AvatarUrl = avatarUrl;
             }

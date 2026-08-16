@@ -28,10 +28,16 @@
           <StackPanel Grid.Column="0" Spacing="20">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
               <Border Width="96" Height="96" CornerRadius="48"
-                      Background="#2A2A2A" BorderBrush="#55FFFFFF" BorderThickness="2">
-                <TextBlock Text="{Binding AvatarInitials}"
-                           FontSize="32" FontWeight="SemiBold"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      Background="#2A2A2A" BorderBrush="#55FFFFFF" BorderThickness="2"
+                      ClipToBounds="True">
+                <Panel>
+                  <TextBlock Text="{Binding AvatarInitials}"
+                             FontSize="32" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             IsVisible="{Binding !ShowAvatarImage}"/>
+                  <Image Source="{Binding AvatarBitmap}" Stretch="UniformToFill"
+                         IsVisible="{Binding ShowAvatarImage}"/>
+                </Panel>
               </Border>
 
               <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
@@ -142,6 +148,13 @@
               <StackPanel Spacing="6">
                 <TextBlock Text="Lokalizacja" Opacity="0.6" FontSize="12"/>
                 <TextBox Text="{Binding EditLocation}" MinHeight="36"/>
+              </StackPanel>
+              <StackPanel Spacing="6">
+                <TextBlock Text="Zdjęcie profilowe" Opacity="0.6" FontSize="12"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="Zmień zdjęcie" Click="ChangeAvatar_OnClick" Padding="12,8"/>
+                  <Button Content="Usuń" Click="ClearAvatar_OnClick" Padding="12,8"/>
+                </StackPanel>
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
                 <Button Content="Zapisz" Click="SaveButton_OnClick" Padding="16,8"/>

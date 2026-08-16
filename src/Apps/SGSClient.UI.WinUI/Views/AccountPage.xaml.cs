@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SGSClient.UI.WinUI.ViewModels;
+using Windows.Storage.Pickers;
 using WinRT.Interop;
 
 namespace SGSClient.UI.WinUI.Views;
@@ -47,7 +48,6 @@ public sealed partial class AccountPage : Page
         EmailText.Text = ViewModel.Email;
         AvatarInitialsText.Text = ViewModel.AvatarInitials;
 
-        ProfileInfoPanel.Visibility = Visibility.Visible;
         RightRail.Visibility = ViewModel.ShowProfile ? Visibility.Visible : Visibility.Collapsed;
         EditPanel.Visibility = ViewModel.IsEditing ? Visibility.Visible : Visibility.Collapsed;
 
@@ -78,12 +78,14 @@ public sealed partial class AccountPage : Page
     {
         await ViewModel.LoginCommand.ExecuteAsync(null);
         RefreshUi();
+        App.MainWindow?.RefreshSidebar();
     }
 
     private async void SignOut_Click(object sender, RoutedEventArgs e)
     {
         await ViewModel.LogoutCommand.ExecuteAsync(null);
         RefreshUi();
+        App.MainWindow?.RefreshSidebar();
     }
 
     private void Edit_Click(object sender, RoutedEventArgs e)
@@ -104,6 +106,38 @@ public sealed partial class AccountPage : Page
         ViewModel.EditBio = EditBioBox.Text ?? string.Empty;
         ViewModel.EditLocation = EditLocationBox.Text ?? string.Empty;
         await ViewModel.SaveProfileCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private async void ChangeAvatar_Click(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileOpenPicker();
+        if (App.MainWindow is not null)
+        {
+            InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(App.MainWindow));
+        }
+
+        picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+        picker.ViewMode = PickerViewMode.Thumbnail;
+        picker.FileTypeFilter.Add(".png");
+        picker.FileTypeFilter.Add(".jpg");
+        picker.FileTypeFilter.Add(".jpeg");
+        picker.FileTypeFilter.Add(".webp");
+        picker.FileTypeFilter.Add(".gif");
+
+        var file = await picker.PickSingleFileAsync();
+        if (file is null)
+        {
+            return;
+        }
+
+        await ViewModel.UploadAvatarFromPathAsync(file.Path);
+        RefreshUi();
+    }
+
+    private async void ClearAvatar_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.ClearAvatarCommand.ExecuteAsync(null);
         RefreshUi();
     }
 }

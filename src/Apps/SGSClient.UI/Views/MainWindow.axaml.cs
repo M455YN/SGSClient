@@ -1,70 +1,74 @@
 using Avalonia.Controls;
-using FluentAvalonia.UI.Controls;
 using SGSClient.UI.ViewModels;
 
 namespace SGSClient.UI.Views;
 
 public partial class MainWindow : Window
 {
-    private bool _suppressNavCallback;
+    private bool _wired;
 
     public MainWindow()
     {
         InitializeComponent();
-        DataContextChanged += (_, _) =>
+        DataContextChanged += (_, _) => Wire();
+        Opened += async (_, _) =>
         {
+            Wire();
             if (DataContext is MainWindowViewModel vm)
             {
-                vm.PropertyChanged += (_, e) =>
-                {
-                    if (e.PropertyName == nameof(MainWindowViewModel.SelectedNavTag))
-                    {
-                        SyncNavSelection(vm.SelectedNavTag);
-                    }
-                };
+                await vm.InitializeAsync();
             }
         };
     }
 
-    private void SyncNavSelection(string tag)
+    private void Wire()
     {
-        FANavigationViewItem? match = null;
-        foreach (var item in NavView.MenuItems.OfType<FANavigationViewItem>()
-                     .Concat(NavView.FooterMenuItems.OfType<FANavigationViewItem>()))
-        {
-            if (item.Tag as string == tag)
-            {
-                match = item;
-                break;
-            }
-        }
-
-        if (match is null || ReferenceEquals(NavView.SelectedItem, match))
+        if (DataContext is not MainWindowViewModel main || _wired)
         {
             return;
         }
 
-        _suppressNavCallback = true;
-        try
+        _wired = true;
+        main.Sidebar.SetNavigateHandler(tag => main.NavigateCommand.Execute(tag));
+        main.Sidebar.SetOpenDetailsHandler(id => main.OpenGameDetails(id, "Library"));
+        main.Sidebar.SetOpenPropertiesHandler(OpenProperties);
+        main.PropertyChanged += (_, e) =>
         {
-            NavView.SelectedItem = match;
-        }
-        finally
-        {
-            _suppressNavCallback = false;
-        }
+            if (e.PropertyName == nameof(MainWindowViewModel.SelectedNavTag))
+            {
+                main.Sidebar.SelectNav(main.SelectedNavTag);
+            }
+
+            if (e.PropertyName == nameof(MainWindowViewModel.IsAdminVisible))
+            {
+                main.Sidebar.SetAdminVisible(main.IsAdminVisible);
+                main.Sidebar.RefreshProfile();
+            }
+        };
+        main.Sidebar.SelectNav(main.SelectedNavTag);
+        main.Sidebar.SetAdminVisible(main.IsAdminVisible);
+        main.Sidebar.RefreshProfile();
     }
 
-    private void NavView_OnSelectionChanged(object? sender, FANavigationViewSelectionChangedEventArgs e)
+    private void OpenProperties(SidebarInstalledGame item)
     {
-        if (_suppressNavCallback || DataContext is not MainWindowViewModel vm)
+        var window = new GamePropertiesWindow();
+        window.ViewModel.ViewInStoreRequested += (_, _) =>
         {
-            return;
-        }
-
-        if (e.SelectedItem is FANavigationViewItem item && item.Tag is string tag)
+            window.Close();
+            if (DataContext is MainWindowViewModel main)
+            {
+                main.OpenGameDetails(item.GameId, "Library");
+            }
+        };
+        window.SetGame(item.GameId, item.BuildId, item.Title);
+        window.Closed += async (_, _) =>
         {
-            vm.NavigateCommand.Execute(tag);
-        }
+            if (DataContext is MainWindowViewModel main)
+            {
+                await main.Sidebar.LoadInstalledAsync();
+            }
+        };
+        window.Show(this);
     }
 }

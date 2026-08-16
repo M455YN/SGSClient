@@ -16,6 +16,7 @@ public partial class LibraryView : UserControl
             {
                 vm.SetOpenPropertiesHandler(OpenProperties);
                 await vm.LoadAsync();
+                await RefreshMainSidebarAsync();
             }
         };
     }
@@ -25,6 +26,7 @@ public partial class LibraryView : UserControl
         if (DataContext is LibraryViewModel vm)
         {
             await vm.LoadCommand.ExecuteAsync(null);
+            await RefreshMainSidebarAsync();
         }
     }
 
@@ -80,6 +82,8 @@ public partial class LibraryView : UserControl
             {
                 await vm.LoadAsync();
             }
+
+            await RefreshMainSidebarAsync();
         };
         if (TopLevel.GetTopLevel(this) is Window owner)
         {
@@ -88,6 +92,14 @@ public partial class LibraryView : UserControl
         else
         {
             window.Show();
+        }
+    }
+
+    private async Task RefreshMainSidebarAsync()
+    {
+        if (TopLevel.GetTopLevel(this)?.DataContext is MainWindowViewModel main)
+        {
+            await main.Sidebar.LoadInstalledAsync();
         }
     }
 }

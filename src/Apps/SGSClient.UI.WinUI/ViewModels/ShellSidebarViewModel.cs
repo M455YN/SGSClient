@@ -1,0 +1,317 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using SGSClient.Core.Configuration;
+using SGSClient.Core.Enums;
+using SGSClient.Core.Install;
+using SGSClient.Core.Interfaces;
+using SGSClient.Core.Models;
+
+namespace SGSClient.UI.WinUI.ViewModels;
+
+public partial class ShellSidebarViewModel : ObservableObject
+{
+    private readonly IServiceScopeFactory? _scopes;
+    private readonly IGameLauncherService? _launcher;
+    private readonly ILibraryDiscoveryService? _discovery;
+    private readonly IAuthSession? _auth;
+    private readonly string _apiBaseUrl;
+    private Action<string>? _navigate;
+    private Action<int>? _openDetails;
+    private Action<SidebarInstalledGame>? _openProperties;
+
+    public ShellSidebarViewModel(
+        IServiceScopeFactory? scopes = null,
+        IGameLauncherService? launcher = null,
+        ILibraryDiscoveryService? discovery = null,
+        IAuthSession? auth = null,
+        IConfiguration? configuration = null)
+    {
+        _scopes = scopes;
+        _launcher = launcher;
+        _discovery = discovery;
+        _auth = auth;
+        _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
+            ?? new ApiClientSettings().BaseUrl;
+        RefreshProfile();
+    }
+
+    public void SetNavigateHandler(Action<string> navigate) => _navigate = navigate;
+    public void SetOpenDetailsHandler(Action<int> open) => _openDetails = open;
+    public void SetOpenPropertiesHandler(Action<SidebarInstalledGame> open) => _openProperties = open;
+
+    public ObservableCollection<SidebarInstalledGame> InstalledGames { get; } = [];
+
+    [ObservableProperty]
+    public partial string SelectedNavTag { get; set; } = "Home";
+
+    [ObservableProperty]
+    public partial bool IsAdminVisible { get; set; }
+
+    [ObservableProperty]
+    public partial string ProfileDisplayName { get; set; } = "Gość";
+
+    [ObservableProperty]
+    public partial string ProfileStatus { get; set; } = "Niezalogowany";
+
+    [ObservableProperty]
+    public partial string? ProfileAvatarUrl { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasAvatar { get; set; }
+
+    [ObservableProperty]
+    public partial string InstalledHeader { get; set; } = "0 zainstalowanych";
+
+    [ObservableProperty]
+    public partial bool HasInstalledGames { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsPaneOpen { get; set; } = true;
+
+    public bool IsHomeSelected => SelectedNavTag == "Home";
+    public bool IsGamesSelected => SelectedNavTag == "Games";
+    public bool IsLibrarySelected => SelectedNavTag == "Library";
+    public bool IsPublishSelected => SelectedNavTag == "Publish";
+    public bool IsStudioSelected => SelectedNavTag == "Studio";
+    public bool IsAdminSelected => SelectedNavTag == "Admin";
+    public bool IsSettingsSelected => SelectedNavTag == "Settings";
+    public bool IsAccountSelected => SelectedNavTag == "Account";
+
+    partial void OnSelectedNavTagChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsHomeSelected));
+        OnPropertyChanged(nameof(IsGamesSelected));
+        OnPropertyChanged(nameof(IsLibrarySelected));
+        OnPropertyChanged(nameof(IsPublishSelected));
+        OnPropertyChanged(nameof(IsStudioSelected));
+        OnPropertyChanged(nameof(IsAdminSelected));
+        OnPropertyChanged(nameof(IsSettingsSelected));
+        OnPropertyChanged(nameof(IsAccountSelected));
+    }
+
+    public void RefreshProfile()
+    {
+        if (_auth?.IsAvailable != true)
+        {
+            ProfileDisplayName = "Lokalnie";
+            ProfileStatus = "Logowanie wyłączone";
+            ProfileAvatarUrl = null;
+            HasAvatar = false;
+            return;
+        }
+
+        if (_auth.IsLoggedIn && _auth.CurrentUser is not null)
+        {
+            var user = _auth.CurrentUser;
+            ProfileDisplayName = string.IsNullOrWhiteSpace(user.DisplayName) ? "Gracz" : user.DisplayName;
+            ProfileStatus = string.IsNullOrWhiteSpace(user.Email)
+                ? (user.IsAdmin ? "Zalogowany · admin" : "Zalogowany")
+                : (user.IsAdmin ? $"{user.Email} · admin" : user.Email!);
+            ProfileAvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
+                ? null
+                : InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl);
+            HasAvatar = !string.IsNullOrWhiteSpace(ProfileAvatarUrl);
+            IsAdminVisible = user.IsAdmin;
+            return;
+        }
+
+        ProfileDisplayName = "Gość";
+        ProfileStatus = "Zaloguj się w Profilu";
+        ProfileAvatarUrl = null;
+        HasAvatar = false;
+        IsAdminVisible = false;
+    }
+
+    public void SetAdminVisible(bool visible) => IsAdminVisible = visible;
+
+    public void SelectNav(string tag)
+    {
+        if (!string.IsNullOrWhiteSpace(tag))
+        {
+            SelectedNavTag = tag;
+        }
+    }
+
+    [RelayCommand]
+    private void Navigate(string? tag)
+    {
+        if (string.IsNullOrWhiteSpace(tag))
+        {
+            return;
+        }
+
+        SelectedNavTag = tag;
+        _navigate?.Invoke(tag);
+        if (tag is "Library" or "Home")
+        {
+            _ = LoadInstalledAsync();
+        }
+    }
+
+    [RelayCommand]
+    private void OpenProfile() => Navigate("Account");
+
+    [RelayCommand]
+    private void TogglePane() => IsPaneOpen = !IsPaneOpen;
+
+    [RelayCommand]
+    public async Task LoadInstalledAsync()
+    {
+        if (_scopes is null)
+        {
+            InstalledGames.Clear();
+            HasInstalledGames = false;
+            InstalledHeader = "0 zainstalowanych";
+            return;
+        }
+
+        try
+        {
+            if (_discovery is not null)
+            {
+                using var scanScope = _scopes.CreateScope();
+                var scanner = scanScope.ServiceProvider.GetRequiredService<ILibraryDiscoveryService>();
+                await scanner.ScanAsync();
+            }
+
+            using var scope = _scopes.CreateScope();
+            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            var items = await library.GetAllAsync();
+
+            InstalledGames.Clear();
+            foreach (var item in items
+                         .Where(x => x.InstallState == InstallState.Installed)
+                         .OrderBy(x => x.Title))
+            {
+                InstalledGames.Add(SidebarInstalledGame.FromModel(item, _apiBaseUrl));
+            }
+
+            HasInstalledGames = InstalledGames.Count > 0;
+            InstalledHeader = $"{InstalledGames.Count} zainstalowanych";
+        }
+        catch
+        {
+            // keep previous list on transient failures
+        }
+    }
+
+    [RelayCommand]
+    private async Task LaunchAsync(SidebarInstalledGame? item)
+    {
+        if (item is null || _launcher is null || string.IsNullOrWhiteSpace(item.ExecutablePath) || _scopes is null)
+        {
+            return;
+        }
+
+        await _launcher.LaunchAsync(item.ExecutablePath);
+
+        using var scope = _scopes.CreateScope();
+        var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+        var existing = await library.GetByGameIdAsync(item.GameId);
+        if (existing is null)
+        {
+            return;
+        }
+
+        existing.LastPlayedUtc = DateTimeOffset.UtcNow;
+        await library.UpsertAsync(existing);
+        await LoadInstalledAsync();
+    }
+
+    [RelayCommand]
+    private void OpenDetails(SidebarInstalledGame? item)
+    {
+        if (item is not null)
+        {
+            _openDetails?.Invoke(item.GameId);
+        }
+    }
+
+    [RelayCommand]
+    private void OpenProperties(SidebarInstalledGame? item)
+    {
+        if (item is not null)
+        {
+            _openProperties?.Invoke(item);
+        }
+    }
+}
+
+public sealed class SidebarInstalledGame
+{
+    public required int GameId { get; init; }
+    public required int BuildId { get; init; }
+    public required string Title { get; init; }
+    public required string Symbol { get; init; }
+    public string? ExecutablePath { get; init; }
+    public string? CoverImageUrl { get; init; }
+    public Microsoft.UI.Xaml.Media.Imaging.BitmapImage? CoverImage { get; init; }
+    public bool HasCover { get; init; }
+    public string StateText { get; init; } = string.Empty;
+    public bool CanLaunch { get; init; }
+    public string TileLabel { get; init; } = string.Empty;
+
+    public static SidebarInstalledGame FromModel(GameLibraryItem item, string apiBaseUrl)
+    {
+        var canLaunch = item.InstallState == InstallState.Installed
+            && !string.IsNullOrWhiteSpace(item.ExecutablePath);
+        string? cover = null;
+        if (!string.IsNullOrWhiteSpace(item.CustomCoverPath) && File.Exists(item.CustomCoverPath))
+        {
+            cover = new Uri(item.CustomCoverPath).AbsoluteUri;
+        }
+        else if (!string.IsNullOrWhiteSpace(item.CoverUrl))
+        {
+            cover = InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, item.CoverUrl);
+        }
+
+        var bitmap = TryCreateBitmap(cover);
+        return new SidebarInstalledGame
+        {
+            GameId = item.GameId,
+            BuildId = item.BuildId,
+            Title = item.Title,
+            Symbol = item.Symbol,
+            ExecutablePath = item.ExecutablePath,
+            CoverImageUrl = cover,
+            CoverImage = bitmap,
+            HasCover = bitmap is not null,
+            CanLaunch = canLaunch,
+            StateText = canLaunch ? "Gotowa do uruchomienia" : "Brak pliku wykonywalnego",
+            TileLabel = string.IsNullOrWhiteSpace(item.Symbol)
+                ? item.Title[..Math.Min(2, item.Title.Length)].ToUpperInvariant()
+                : item.Symbol[..Math.Min(3, item.Symbol.Length)].ToUpperInvariant()
+        };
+    }
+
+    private static Microsoft.UI.Xaml.Media.Imaging.BitmapImage? TryCreateBitmap(string? cover)
+    {
+        if (string.IsNullOrWhiteSpace(cover))
+        {
+            return null;
+        }
+
+        try
+        {
+            if (!Uri.TryCreate(cover, UriKind.Absolute, out var uri))
+            {
+                return null;
+            }
+
+            // WinUI Image Source conversion rejects many non-http absolute URIs at bind time.
+            if (uri.IsFile || uri.Scheme is "http" or "https" or "ms-appx" or "ms-appdata")
+            {
+                return new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(uri);
+            }
+        }
+        catch
+        {
+            // leave without cover
+        }
+
+        return null;
+    }
+}

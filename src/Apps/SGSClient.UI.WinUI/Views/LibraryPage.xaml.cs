@@ -24,6 +24,7 @@ public sealed partial class LibraryPage : Page
         base.OnNavigatedTo(e);
         await ViewModel.LoadAsync();
         RefreshUi();
+        App.MainWindow?.RefreshSidebar();
     }
 
     private void RefreshUi()
@@ -94,5 +95,6 @@ public sealed partial class LibraryPage : Page
         await dialog.ShowForGameAsync(item.GameId, item.BuildId, item.Title, XamlRoot);
         await ViewModel.LoadAsync();
         RefreshUi();
+        App.MainWindow?.RefreshSidebar();
     }
 }

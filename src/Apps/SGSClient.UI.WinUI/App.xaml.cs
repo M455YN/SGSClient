@@ -75,7 +75,14 @@ public partial class App : Application
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
-            sp.GetRequiredService<IServiceScopeFactory>()));
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            configuration));
+        services.AddSingleton(sp => new ShellSidebarViewModel(
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetService<IGameLauncherService>(),
+            sp.GetService<ILibraryDiscoveryService>(),
+            sp.GetService<IAuthSession>(),
+            configuration));
 
         Services = services.BuildServiceProvider();
         SgsClientDbInitializer.InitializeAsync(Services).GetAwaiter().GetResult();
@@ -115,6 +122,7 @@ public partial class App : Application
                 {
                     auth.SetCurrentUser(profile);
                     MainWindow?.SetAdminNavVisible(profile.IsAdmin);
+                    MainWindow?.RefreshSidebar();
                 }
             }
         }

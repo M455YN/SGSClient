@@ -1,8 +1,11 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
+using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 
 namespace SGSClient.UI.WinUI.ViewModels;
@@ -12,13 +15,20 @@ public partial class AccountViewModel : ObservableObject
     private readonly IAuthSession? _auth;
     private readonly IUserApiClient? _userApi;
     private readonly IServiceScopeFactory? _scopes;
+    private readonly string _apiBaseUrl;
     private Func<nint>? _parentWindowHandle;
 
-    public AccountViewModel(IAuthSession? auth, IUserApiClient? userApi = null, IServiceScopeFactory? scopes = null)
+    public AccountViewModel(
+        IAuthSession? auth = null,
+        IUserApiClient? userApi = null,
+        IServiceScopeFactory? scopes = null,
+        IConfiguration? configuration = null)
     {
         _auth = auth;
         _userApi = userApi;
         _scopes = scopes;
+        _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
+            ?? new ApiClientSettings().BaseUrl;
         AccountStatus = auth is null
             ? "Auth not registered"
             : auth.IsAvailable
@@ -222,6 +232,63 @@ public partial class AccountViewModel : ObservableObject
             _auth?.SetCurrentUser(updated);
             await ApplyProfileAsync(updated);
             IsEditing = false;
+            App.MainWindow?.RefreshSidebar();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    public async Task UploadAvatarFromPathAsync(string? localFilePath)
+    {
+        if (_userApi is null || !IsLoggedIn || string.IsNullOrWhiteSpace(localFilePath))
+        {
+            AccountStatus = "Nie można wgrać zdjęcia.";
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var updated = await _userApi.UploadAvatarAsync(localFilePath);
+            if (updated is null)
+            {
+                AccountStatus = "Upload nieudany. Sprawdź format (png/jpg/webp/gif, max 5 MB) i API.";
+                return;
+            }
+
+            _auth?.SetCurrentUser(updated);
+            await ApplyProfileAsync(updated);
+            App.MainWindow?.RefreshSidebar();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ClearAvatarAsync()
+    {
+        if (_userApi is null || !IsLoggedIn)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var updated = await _userApi.ClearAvatarAsync();
+            if (updated is null)
+            {
+                AccountStatus = "Nie udało się usunąć zdjęcia.";
+                return;
+            }
+
+            _auth?.SetCurrentUser(updated);
+            await ApplyProfileAsync(updated);
+            App.MainWindow?.RefreshSidebar();
         }
         finally
         {
@@ -234,7 +301,9 @@ public partial class AccountViewModel : ObservableObject
         IsLoggedIn = true;
         DisplayName = user.DisplayName;
         Email = user.Email ?? string.Empty;
-        AvatarUrl = user.AvatarUrl ?? string.Empty;
+        AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
+            ? string.Empty
+            : InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl);
         Bio = user.Bio ?? string.Empty;
         Location = user.Location ?? string.Empty;
         AvatarInitials = MakeInitials(user.DisplayName);

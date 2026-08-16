@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<GameBuildVersionService>();
         services.AddScoped<IGamePackagePublisher, GamePackagePublisher>();
         services.AddScoped<IGameMediaService, GameMediaService>();
+        services.AddScoped<IUserAvatarService, UserAvatarService>();
         services.AddSingleton<IRofwLegacyService, RofwLegacyService>();
         services.AddSingleton<IReportingoLegacyService, ReportingoLegacyService>();
 
