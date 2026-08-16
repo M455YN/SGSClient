@@ -75,6 +75,51 @@ public partial class GameDetailsViewModel : ViewModelBase
     private bool _hasIntro;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PreviewCounterText))]
+    [NotifyPropertyChangedFor(nameof(CanPreviewPrevious))]
+    [NotifyPropertyChangedFor(nameof(CanPreviewNext))]
+    [NotifyPropertyChangedFor(nameof(PreviewHintText))]
+    private bool _isMediaPreviewOpen;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PreviewCounterText))]
+    [NotifyPropertyChangedFor(nameof(CanPreviewPrevious))]
+    [NotifyPropertyChangedFor(nameof(CanPreviewNext))]
+    [NotifyPropertyChangedFor(nameof(PreviewHintText))]
+    private int _mediaPreviewIndex;
+
+    [ObservableProperty]
+    private string? _mediaPreviewUrl;
+
+    [ObservableProperty]
+    private Bitmap? _mediaPreviewBitmap;
+
+    [ObservableProperty]
+    private string _mediaPreviewLabel = string.Empty;
+
+    public string PreviewCounterText
+    {
+        get
+        {
+            var count = PreviewableThumbs.Count;
+            return count == 0 ? string.Empty : $"{MediaPreviewIndex + 1} / {count}";
+        }
+    }
+
+    public bool CanPreviewPrevious => IsMediaPreviewOpen && MediaPreviewIndex > 0;
+
+    public bool CanPreviewNext =>
+        IsMediaPreviewOpen && MediaPreviewIndex < PreviewableThumbs.Count - 1;
+
+    public string PreviewHintText =>
+        PreviewableThumbs.Count > 1
+            ? "Kliknij strzałkę lub tło, żeby zobaczyć kolejne zdjęcie"
+            : "Kliknij tło lub ✕, żeby zamknąć";
+
+    private IReadOnlyList<MediaThumbItem> PreviewableThumbs =>
+        MediaThumbs.Where(t => !string.IsNullOrWhiteSpace(t.ImageUrl)).ToList();
+
+    [ObservableProperty]
     private string _tagline = string.Empty;
 
     [ObservableProperty]
@@ -168,6 +213,7 @@ public partial class GameDetailsViewModel : ViewModelBase
 
     public async Task LoadAsync(int gameId, bool fromLibrary = false)
     {
+        CloseMediaPreview();
         GameId = gameId;
         FromLibrary = fromLibrary;
         BackLabel = fromLibrary ? "← Biblioteka" : "← Sklep";
@@ -218,6 +264,113 @@ public partial class GameDetailsViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(tab))
         {
             SelectedTab = tab;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenMediaPreview(MediaThumbItem? thumb)
+    {
+        if (thumb is null || string.IsNullOrWhiteSpace(thumb.ImageUrl))
+        {
+            return;
+        }
+
+        var items = PreviewableThumbs;
+        var index = items.ToList().FindIndex(t =>
+            string.Equals(t.ImageUrl, thumb.ImageUrl, StringComparison.OrdinalIgnoreCase));
+        if (index < 0)
+        {
+            return;
+        }
+
+        ShowPreviewAt(index);
+    }
+
+    [RelayCommand]
+    private void OpenCoverPreview()
+    {
+        var items = PreviewableThumbs;
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        ShowPreviewAt(0);
+    }
+
+    [RelayCommand]
+    private void CloseMediaPreview()
+    {
+        IsMediaPreviewOpen = false;
+        MediaPreviewBitmap = null;
+        MediaPreviewUrl = null;
+    }
+
+    [RelayCommand]
+    private void PreviewPrevious()
+    {
+        if (!CanPreviewPrevious)
+        {
+            return;
+        }
+
+        ShowPreviewAt(MediaPreviewIndex - 1);
+    }
+
+    [RelayCommand]
+    private void PreviewNext()
+    {
+        if (!CanPreviewNext)
+        {
+            return;
+        }
+
+        ShowPreviewAt(MediaPreviewIndex + 1);
+    }
+
+    private void ShowPreviewAt(int index)
+    {
+        var items = PreviewableThumbs;
+        if (index < 0 || index >= items.Count)
+        {
+            return;
+        }
+
+        var item = items[index];
+        MediaPreviewIndex = index;
+        MediaPreviewUrl = item.ImageUrl;
+        MediaPreviewLabel = item.Label;
+        MediaPreviewBitmap = item.Bitmap ?? CoverBitmap;
+        IsMediaPreviewOpen = true;
+        OnPropertyChanged(nameof(PreviewCounterText));
+        OnPropertyChanged(nameof(CanPreviewPrevious));
+        OnPropertyChanged(nameof(CanPreviewNext));
+        OnPropertyChanged(nameof(PreviewHintText));
+
+        if (item.Bitmap is null && !string.IsNullOrWhiteSpace(item.ImageUrl))
+        {
+            _ = LoadPreviewBitmapAsync(item.ImageUrl);
+        }
+    }
+
+    private async Task LoadPreviewBitmapAsync(string url)
+    {
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(12) };
+            await using var stream = await http.GetStreamAsync(url);
+            await using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            memory.Position = 0;
+            var bitmap = new Bitmap(memory);
+            if (string.Equals(MediaPreviewUrl, url, StringComparison.OrdinalIgnoreCase))
+            {
+                MediaPreviewBitmap = bitmap;
+            }
+        }
+        catch
+        {
+            // keep current preview / cover fallback
         }
     }
 

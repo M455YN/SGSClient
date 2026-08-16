@@ -21,8 +21,27 @@ public sealed partial class GameDetailsPage : Page
         ViewModel = App.Services.GetRequiredService<GameDetailsViewModel>();
         InitializeComponent();
         ViewModel.SetOpenPropertiesHandler(OpenProperties);
-        ViewModel.PropertyChanged += (_, _) => RefreshUi();
-        Unloaded += (_, _) => StopIntro();
+        ViewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(GameDetailsViewModel.IsMediaPreviewOpen)
+                or nameof(GameDetailsViewModel.MediaPreviewUrl)
+                or nameof(GameDetailsViewModel.MediaPreviewLabel)
+                or nameof(GameDetailsViewModel.PreviewCounterText)
+                or nameof(GameDetailsViewModel.CanPreviewPrevious)
+                or nameof(GameDetailsViewModel.CanPreviewNext)
+                or nameof(GameDetailsViewModel.PreviewHintText))
+            {
+                RefreshMediaPreview();
+                return;
+            }
+
+            RefreshUi();
+        };
+        Unloaded += (_, _) =>
+        {
+            StopIntro();
+            ViewModel.CloseMediaPreviewCommand.Execute(null);
+        };
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -51,6 +70,7 @@ public sealed partial class GameDetailsPage : Page
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         StopIntro();
+        ViewModel.CloseMediaPreviewCommand.Execute(null);
         base.OnNavigatedFrom(e);
     }
 
@@ -113,6 +133,117 @@ public sealed partial class GameDetailsPage : Page
         DetailsPanel.Visibility = ViewModel.ShowDetailsTab ? Visibility.Visible : Visibility.Collapsed;
         ReviewsPanel.Visibility = ViewModel.ShowReviewsTab ? Visibility.Visible : Visibility.Collapsed;
         MorePanel.Visibility = ViewModel.ShowMoreTab ? Visibility.Visible : Visibility.Collapsed;
+
+        RefreshMediaPreview();
+    }
+
+    private void RefreshMediaPreview()
+    {
+        MediaPreviewOverlay.Visibility = ViewModel.IsMediaPreviewOpen ? Visibility.Visible : Visibility.Collapsed;
+        if (!ViewModel.IsMediaPreviewOpen)
+        {
+            MediaPreviewImage.Source = null;
+            return;
+        }
+
+        MediaPreviewLabelText.Text = ViewModel.MediaPreviewLabel;
+        MediaPreviewCounterText.Text = ViewModel.PreviewCounterText;
+        MediaPreviewHintText.Text = ViewModel.PreviewHintText;
+        PreviewPrevButton.IsEnabled = ViewModel.CanPreviewPrevious;
+        PreviewNextButton.IsEnabled = ViewModel.CanPreviewNext;
+        PreviewPrevButton.Opacity = ViewModel.CanPreviewPrevious ? 1 : 0.35;
+        PreviewNextButton.Opacity = ViewModel.CanPreviewNext ? 1 : 0.35;
+
+        if (!string.IsNullOrWhiteSpace(ViewModel.MediaPreviewUrl)
+            && Uri.TryCreate(ViewModel.MediaPreviewUrl, UriKind.Absolute, out var uri))
+        {
+            MediaPreviewImage.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(uri);
+        }
+        else
+        {
+            MediaPreviewImage.Source = null;
+        }
+    }
+
+    private void Cover_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (_introPlaying || IsDescendantOf(e.OriginalSource as DependencyObject, PlayOverlay))
+        {
+            return;
+        }
+
+        if (ViewModel.HasCover)
+        {
+            ViewModel.OpenCoverPreviewCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private void MediaThumb_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is MediaThumbItem thumb)
+        {
+            ViewModel.OpenMediaPreviewCommand.Execute(thumb);
+            e.Handled = true;
+        }
+    }
+
+    private void CloseMediaPreview_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.CloseMediaPreviewCommand.Execute(null);
+
+    private void PreviewPrevious_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.PreviewPreviousCommand.Execute(null);
+
+    private void PreviewNext_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.PreviewNextCommand.Execute(null);
+
+    private void MediaPreviewBackdrop_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        // Clicking dimmed backdrop advances to next (or closes when on last).
+        if (!ReferenceEquals(e.OriginalSource, MediaPreviewOverlay))
+        {
+            return;
+        }
+
+        if (ViewModel.CanPreviewNext)
+        {
+            ViewModel.PreviewNextCommand.Execute(null);
+        }
+        else
+        {
+            ViewModel.CloseMediaPreviewCommand.Execute(null);
+        }
+
+        e.Handled = true;
+    }
+
+    private void MediaPreviewImage_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (ViewModel.CanPreviewNext)
+        {
+            ViewModel.PreviewNextCommand.Execute(null);
+        }
+        else
+        {
+            ViewModel.CloseMediaPreviewCommand.Execute(null);
+        }
+
+        e.Handled = true;
+    }
+
+    private static bool IsDescendantOf(DependencyObject? node, DependencyObject? ancestor)
+    {
+        while (node is not null)
+        {
+            if (ReferenceEquals(node, ancestor))
+            {
+                return true;
+            }
+
+            node = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(node);
+        }
+
+        return false;
     }
 
     private void RefreshHeroMedia()

@@ -92,7 +92,9 @@
 
             <!-- Right: media -->
             <StackPanel Grid.Column="1" Spacing="10">
-              <Border Height="220" CornerRadius="8" ClipToBounds="True">
+              <Border Height="220" CornerRadius="8" ClipToBounds="True"
+                      Cursor="Hand"
+                      PointerPressed="Cover_OnPointerPressed">
                 <Border.Background>
                   <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                     <GradientStop Color="#FF2A3A4A" Offset="0"/>
@@ -128,7 +130,10 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:MediaThumbItem">
-                    <Border Width="92" Height="56" CornerRadius="4" Background="#334455" ClipToBounds="True">
+                    <Border Width="92" Height="56" CornerRadius="4" Background="#334455" ClipToBounds="True"
+                            Cursor="Hand"
+                            PointerPressed="MediaThumb_OnPointerPressed"
+                            Tag="{Binding}">
                       <Panel>
                         <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -223,5 +228,39 @@
         </StackPanel>
       </Panel>
     </ScrollViewer>
+
+    <!-- Fullscreen media preview -->
+    <Border IsVisible="{Binding IsMediaPreviewOpen}"
+            Background="#E6000000"
+            ZIndex="100"
+            PointerPressed="MediaPreviewBackdrop_OnPointerPressed">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="0">
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="20,16">
+          <TextBlock Text="{Binding MediaPreviewLabel}" FontSize="16" FontWeight="SemiBold"
+                     VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="1" Text="{Binding PreviewCounterText}"
+                     Opacity="0.7" VerticalAlignment="Center" Margin="0,0,12,0"/>
+          <Button Grid.Column="2" Content="✕" Command="{Binding CloseMediaPreviewCommand}"
+                  Padding="12,6" Classes="subtle"/>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="16,0">
+          <Button Content="‹" FontSize="36" Command="{Binding PreviewPreviousCommand}"
+                  IsEnabled="{Binding CanPreviewPrevious}"
+                  Padding="18,10" VerticalAlignment="Center" Margin="8,0" Classes="subtle"/>
+          <Image Grid.Column="1" Source="{Binding MediaPreviewBitmap}" Stretch="Uniform"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Cursor="Hand"
+                 PointerPressed="MediaPreviewImage_OnPointerPressed"/>
+          <Button Grid.Column="2" Content="›" FontSize="36" Command="{Binding PreviewNextCommand}"
+                  IsEnabled="{Binding CanPreviewNext}"
+                  Padding="18,10" VerticalAlignment="Center" Margin="8,0" Classes="subtle"/>
+        </Grid>
+
+        <TextBlock Grid.Row="2" Text="{Binding PreviewHintText}"
+                   Margin="20,8,20,20" Opacity="0.65" FontSize="13"
+                   HorizontalAlignment="Center" TextWrapping="Wrap"/>
+      </Grid>
+    </Border>
   </Panel>
 </UserControl>

@@ -32,8 +32,92 @@ public partial class GameDetailsView : UserControl
         StopIntro();
         if (DataContext is GameDetailsViewModel vm)
         {
+            vm.CloseMediaPreviewCommand.Execute(null);
             vm.CloseCommand.Execute(null);
         }
+    }
+
+    private void Cover_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Source == PlayOverlay || (e.Source is Control c && IsDescendantOf(c, PlayOverlay)))
+        {
+            return;
+        }
+
+        if (DataContext is GameDetailsViewModel { HasCover: true } vm)
+        {
+            vm.OpenCoverPreviewCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private void MediaThumb_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is GameDetailsViewModel vm
+            && (sender as Control)?.Tag is MediaThumbItem thumb)
+        {
+            vm.OpenMediaPreviewCommand.Execute(thumb);
+            e.Handled = true;
+        }
+    }
+
+    private void MediaPreviewBackdrop_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is not GameDetailsViewModel vm)
+        {
+            return;
+        }
+
+        // Ignore clicks on buttons / image (they have their own handlers).
+        if (e.Source is Button or Image)
+        {
+            return;
+        }
+
+        if (vm.CanPreviewNext)
+        {
+            vm.PreviewNextCommand.Execute(null);
+        }
+        else
+        {
+            vm.CloseMediaPreviewCommand.Execute(null);
+        }
+
+        e.Handled = true;
+    }
+
+    private void MediaPreviewImage_OnPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is not GameDetailsViewModel vm)
+        {
+            return;
+        }
+
+        if (vm.CanPreviewNext)
+        {
+            vm.PreviewNextCommand.Execute(null);
+        }
+        else
+        {
+            vm.CloseMediaPreviewCommand.Execute(null);
+        }
+
+        e.Handled = true;
+    }
+
+    private static bool IsDescendantOf(Control? node, Control? ancestor)
+    {
+        while (node is not null)
+        {
+            if (ReferenceEquals(node, ancestor))
+            {
+                return true;
+            }
+
+            node = node.Parent as Control;
+        }
+
+        return false;
     }
 
     private async void AddToLibrary_OnClick(object? sender, RoutedEventArgs e)

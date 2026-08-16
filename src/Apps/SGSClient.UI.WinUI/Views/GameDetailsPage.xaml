@@ -88,7 +88,8 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Spacing="10">
-              <Border x:Name="HeroBorder" Height="220" CornerRadius="8">
+              <Border x:Name="HeroBorder" Height="220" CornerRadius="8"
+                      PointerPressed="Cover_PointerPressed">
                 <Border.Background>
                   <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                     <GradientStop Color="#FF2A3A4A" Offset="0" />
@@ -117,7 +118,9 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate>
-                    <Border Width="92" Height="56" CornerRadius="4" Background="#334455" Margin="0,0,8,0">
+                    <Border Width="92" Height="56" CornerRadius="4" Background="#334455" Margin="0,0,8,0"
+                            PointerPressed="MediaThumb_PointerPressed"
+                            Tag="{Binding}">
                       <Grid>
                         <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -203,5 +206,55 @@
         </StackPanel>
       </Grid>
     </ScrollViewer>
+
+    <!-- Fullscreen media preview -->
+    <Grid x:Name="MediaPreviewOverlay"
+          Visibility="Collapsed"
+          Background="#E6000000"
+          PointerPressed="MediaPreviewBackdrop_PointerPressed">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <Grid Margin="20,16" ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock x:Name="MediaPreviewLabelText" FontSize="16" FontWeight="SemiBold"
+                   VerticalAlignment="Center" TextWrapping="NoWrap" />
+        <TextBlock x:Name="MediaPreviewCounterText" Grid.Column="1"
+                   Opacity="0.7" VerticalAlignment="Center" Margin="0,0,12,0" />
+        <Button Grid.Column="2" Content="✕" Click="CloseMediaPreview_Click"
+                Padding="12,6" Style="{StaticResource SubtleButtonStyle}" />
+      </Grid>
+
+      <Grid Grid.Row="1" Margin="16,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <Button x:Name="PreviewPrevButton" Content="‹" FontSize="36"
+                Click="PreviewPrevious_Click" Padding="18,10"
+                VerticalAlignment="Center" Margin="8,0"
+                Style="{StaticResource SubtleButtonStyle}" />
+        <Image x:Name="MediaPreviewImage" Grid.Column="1"
+               Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"
+               PointerPressed="MediaPreviewImage_PointerPressed" />
+        <Button x:Name="PreviewNextButton" Grid.Column="2" Content="›" FontSize="36"
+                Click="PreviewNext_Click" Padding="18,10"
+                VerticalAlignment="Center" Margin="8,0"
+                Style="{StaticResource SubtleButtonStyle}" />
+      </Grid>
+
+      <TextBlock x:Name="MediaPreviewHintText" Grid.Row="2"
+                 Margin="20,8,20,20" Opacity="0.65" FontSize="13"
+                 HorizontalAlignment="Center" TextWrapping="Wrap" />
+    </Grid>
   </Grid>
 </Page>
