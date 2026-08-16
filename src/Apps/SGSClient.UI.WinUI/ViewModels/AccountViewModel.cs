@@ -268,10 +268,10 @@ public partial class AccountViewModel : ObservableObject
         ProfileActionStatus = "Wgrywanie zdjęcia…";
         try
         {
-            var updated = await _userApi.UploadAvatarAsync(content, fileName);
+            var (updated, error) = await _userApi.UploadAvatarAsync(content, fileName);
             if (updated is null)
             {
-                ProfileActionStatus = "Upload nieudany. Sprawdź format (png/jpg/webp/gif, max 5 MB) i czy API ma najnowszy deploy.";
+                ProfileActionStatus = error ?? "Upload nieudany.";
                 return;
             }
 

@@ -64,13 +64,14 @@ public sealed class MeController(
 
     [HttpPut("avatar")]
     [Authorize]
-    [RequestSizeLimit(UserAvatarService.MaxAvatarBytes)]
+    // Multipart overhead — limit must be above MaxAvatarBytes.
+    [RequestSizeLimit(UserAvatarService.MaxAvatarBytes + (1L * 1024 * 1024))]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserProfileDto>> UploadAvatar(
-        IFormFile? file,
+        [FromForm] IFormFile? file,
         CancellationToken cancellationToken)
     {
         var sub = GetSub();
@@ -93,6 +94,10 @@ public sealed class MeController(
         catch (ArgumentException ex)
         {
             return BadRequest(new { errors = new[] { ex.Message } });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { errors = new[] { ex.Message } });
         }
     }
 

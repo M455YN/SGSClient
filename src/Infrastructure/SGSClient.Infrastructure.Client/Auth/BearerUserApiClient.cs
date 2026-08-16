@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
 
@@ -13,11 +14,13 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
     public Task<UserProfileDto?> UpdateMeAsync(UpdateProfileRequestDto request, CancellationToken cancellationToken = default) =>
         SendAsync<UserProfileDto>(HttpMethod.Patch, "api/me", request, cancellationToken);
 
-    public async Task<UserProfileDto?> UploadAvatarAsync(string localFilePath, CancellationToken cancellationToken = default)
+    public async Task<(UserProfileDto? Profile, string? Error)> UploadAvatarAsync(
+        string localFilePath,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(localFilePath) || !File.Exists(localFilePath))
         {
-            return null;
+            return (null, "Nie można odczytać wybranego pliku.");
         }
 
         await using var stream = File.OpenRead(localFilePath);
@@ -25,21 +28,36 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             .ConfigureAwait(false);
     }
 
-    public async Task<UserProfileDto?> UploadAvatarAsync(
+    public async Task<(UserProfileDto? Profile, string? Error)> UploadAvatarAsync(
         Stream content,
         string fileName,
         CancellationToken cancellationToken = default)
     {
         var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
-        if (string.IsNullOrWhiteSpace(token) || content is null || string.IsNullOrWhiteSpace(fileName))
+        if (string.IsNullOrWhiteSpace(token))
         {
-            return null;
+            return (null, "Brak tokena — zaloguj się ponownie.");
+        }
+
+        if (content is null || string.IsNullOrWhiteSpace(fileName))
+        {
+            return (null, "Brak pliku zdjęcia.");
         }
 
         try
         {
+            // WinRT / non-seekable streams break multipart; buffer first.
+            await using var buffer = new MemoryStream();
+            await content.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+            if (buffer.Length == 0)
+            {
+                return (null, "Wybrany plik jest pusty.");
+            }
+
+            buffer.Position = 0;
+
             using var form = new MultipartFormDataContent();
-            var fileContent = new StreamContent(content);
+            var fileContent = new StreamContent(buffer);
             var ext = Path.GetExtension(fileName).ToLowerInvariant();
             fileContent.Headers.ContentType = new MediaTypeHeaderValue(ext switch
             {
@@ -56,19 +74,67 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                return null;
+                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                var detail = TryExtractError(body);
+                return (null, $"HTTP {(int)response.StatusCode}: {detail ?? response.ReasonPhrase ?? "błąd"}");
             }
 
-            return await response.Content.ReadFromJsonAsync<UserProfileDto>(cancellationToken).ConfigureAwait(false);
+            var profile = await response.Content.ReadFromJsonAsync<UserProfileDto>(cancellationToken)
+                .ConfigureAwait(false);
+            return profile is null
+                ? (null, "API nie zwróciło profilu.")
+                : (profile, null);
         }
-        catch
+        catch (Exception ex)
         {
-            return null;
+            return (null, ex.Message);
         }
     }
 
     public Task<UserProfileDto?> ClearAvatarAsync(CancellationToken cancellationToken = default) =>
         SendAsync<UserProfileDto>(HttpMethod.Delete, "api/me/avatar", body: null, cancellationToken);
+
+    private static string? TryExtractError(string? body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("errors", out var errors))
+            {
+                if (errors.ValueKind == JsonValueKind.Array && errors.GetArrayLength() > 0)
+                {
+                    return errors[0].GetString();
+                }
+
+                if (errors.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var prop in errors.EnumerateObject())
+                    {
+                        if (prop.Value.ValueKind == JsonValueKind.Array && prop.Value.GetArrayLength() > 0)
+                        {
+                            return prop.Value[0].GetString();
+                        }
+                    }
+                }
+            }
+
+            if (doc.RootElement.TryGetProperty("title", out var title))
+            {
+                return title.GetString();
+            }
+        }
+        catch
+        {
+            // fall through
+        }
+
+        return body.Length > 180 ? body[..180] : body;
+    }
 
     private async Task<T?> SendAsync<T>(HttpMethod method, string url, object? body, CancellationToken cancellationToken)
     {
