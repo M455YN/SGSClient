@@ -31,20 +31,39 @@ if (azureAd.IsConfigured)
 {
     JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
+    var audience = string.IsNullOrWhiteSpace(azureAd.ApiAudience)
+        ? azureAd.ClientId
+        : azureAd.ApiAudience;
+
     builder.Services
         .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
+            options.MapInboundClaims = false;
             options.MetadataAddress = azureAd.MetadataAddress;
-            options.Audience = string.IsNullOrWhiteSpace(azureAd.ApiAudience)
-                ? azureAd.ClientId
-                : azureAd.ApiAudience;
+            options.Audience = audience;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 NameClaimType = "name",
                 ValidateIssuer = true,
                 ValidateAudience = true,
-                ValidateLifetime = true
+                ValidateLifetime = true,
+                // Accept app client id and optional dedicated API audience (ID vs access token).
+                ValidAudiences = string.IsNullOrWhiteSpace(azureAd.ApiAudience)
+                    ? [azureAd.ClientId]
+                    : [azureAd.ApiAudience, azureAd.ClientId]
+            };
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = context =>
+                {
+                    var logger = context.HttpContext.RequestServices
+                        .GetService<ILoggerFactory>()
+                        ?.CreateLogger("SGSClient.Api.Jwt");
+                    logger?.LogWarning(context.Exception, "JWT authentication failed for {Path}",
+                        context.Request.Path);
+                    return Task.CompletedTask;
+                }
             };
         });
 }

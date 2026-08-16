@@ -155,7 +155,7 @@ public sealed class MsalAuthSession : IAuthSession
 
         if (_authResult is not null && _authResult.ExpiresOn > DateTimeOffset.UtcNow.AddMinutes(2))
         {
-            return PreferAccessToken(_authResult);
+            return PreferApiBearerToken(_authResult);
         }
 
         var accounts = await _msal.GetAccountsAsync().ConfigureAwait(false);
@@ -171,7 +171,7 @@ public sealed class MsalAuthSession : IAuthSession
                 .AcquireTokenSilent(_settings.Scopes, account)
                 .ExecuteAsync(cancellationToken)
                 .ConfigureAwait(false);
-            return PreferAccessToken(_authResult);
+            return PreferApiBearerToken(_authResult);
         }
         catch (MsalUiRequiredException)
         {
@@ -374,6 +374,23 @@ public sealed class MsalAuthSession : IAuthSession
         }
     }
 
-    private static string PreferAccessToken(AuthenticationResult result) =>
-        string.IsNullOrWhiteSpace(result.AccessToken) ? result.IdToken : result.AccessToken;
+    /// <summary>
+    /// With only openid/offline_access scopes, B2C access tokens often have the wrong audience
+    /// for our API. Prefer the ID token (aud = client id) unless a dedicated ApiAudience is set.
+    /// </summary>
+    private string PreferApiBearerToken(AuthenticationResult result)
+    {
+        var useIdToken = string.IsNullOrWhiteSpace(_settings.ApiAudience)
+            || !_settings.Scopes.Any(static s =>
+                s.Contains("api://", StringComparison.OrdinalIgnoreCase)
+                || s.Contains(".onmicrosoft.com/", StringComparison.OrdinalIgnoreCase)
+                || s.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+
+        if (useIdToken)
+        {
+            return string.IsNullOrWhiteSpace(result.IdToken) ? result.AccessToken : result.IdToken;
+        }
+
+        return string.IsNullOrWhiteSpace(result.AccessToken) ? result.IdToken : result.AccessToken;
+    }
 }
