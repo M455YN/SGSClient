@@ -6,6 +6,7 @@ namespace SGSClient.Infrastructure.Client.Persistence;
 public sealed class SgsClientDbContext(DbContextOptions<SgsClientDbContext> options) : DbContext(options)
 {
     public DbSet<LocalInstallEntity> Installs => Set<LocalInstallEntity>();
+    public DbSet<LocalPlaytimeEntity> Playtimes => Set<LocalPlaytimeEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,6 +28,13 @@ public sealed class SgsClientDbContext(DbContextOptions<SgsClientDbContext> opti
             entity.HasIndex(x => x.GameId);
             entity.HasIndex(x => x.Symbol);
             entity.HasIndex(x => new { x.GameId, x.Platform, x.Architecture }).IsUnique();
+        });
+
+        modelBuilder.Entity<LocalPlaytimeEntity>(entity =>
+        {
+            entity.ToTable("local_playtime");
+            entity.HasKey(x => new { x.UserId, x.GameId });
+            entity.HasIndex(x => x.GameId);
         });
     }
 }

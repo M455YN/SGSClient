@@ -17,4 +17,29 @@ public interface IGameRepository
         int gameId,
         int buildId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Every published version across all builds, including drafts, for the owner's panel.</summary>
+    Task<IReadOnlyList<GameBuildVersionDto>> GetOwnedVersionHistoryAsync(
+        int gameId,
+        int ownerUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<GameBuildVersionDto?> UpdateOwnedVersionNotesAsync(
+        int gameId,
+        int versionId,
+        int ownerUserId,
+        string? releaseNotes,
+        CancellationToken cancellationToken = default);
+
+    Task<GameStatsDto?> GetOwnedGameStatsAsync(
+        int gameId,
+        int ownerUserId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Records one package download for the creator statistics.</summary>
+    Task RecordDownloadAsync(
+        string symbol,
+        string version,
+        string platformKey,
+        CancellationToken cancellationToken = default);
 }

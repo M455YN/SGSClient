@@ -367,6 +367,84 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
         }
     }
 
+    public async Task<IReadOnlyList<GameBuildVersionDto>> GetOwnedVersionsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/{gameId}/studio/versions");
+            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return [];
+            }
+
+            var versions = await response.Content
+                .ReadFromJsonAsync<List<GameBuildVersionDto>>(cancellationToken)
+                .ConfigureAwait(false);
+            return versions ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<GameStatsDto?> GetOwnedGameStatsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/{gameId}/stats");
+            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<GameStatsDto>(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<GameBuildVersionDto?> UpdateVersionNotesAsync(
+        int gameId,
+        int versionId,
+        string? releaseNotes,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var message = new HttpRequestMessage(
+                HttpMethod.Patch,
+                $"api/Games/{gameId}/versions/{versionId}/notes")
+            {
+                Content = JsonContent.Create(new UpdateVersionNotesRequestDto { ReleaseNotes = releaseNotes })
+            };
+            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<GameBuildVersionDto>(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private async Task AttachBearerAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         if (auth.IsAvailable && auth.IsLoggedIn)

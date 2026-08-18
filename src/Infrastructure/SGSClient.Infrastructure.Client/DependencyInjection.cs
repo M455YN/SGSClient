@@ -28,6 +28,10 @@ public static class DependencyInjection
 
         services.AddSingleton<IGameLauncherService, ProcessGameLauncherService>();
         services.AddScoped<ILocalLibraryStore, LocalLibraryService>();
+        services.AddScoped<IPlaytimeStore>(sp => new LocalPlaytimeStore(
+            sp.GetRequiredService<SgsClientDbContext>(),
+            sp.GetService<IAuthSession>(),
+            sp.GetService<IUserApiClient>()));
         services.AddSingleton<IGamePackagePacker, GamePackagePacker>();
         services.AddSingleton<IClientUserSettingsStore, ClientUserSettingsStore>();
         services.AddSingleton<ILibraryFoldersStore, LibraryFoldersStore>();

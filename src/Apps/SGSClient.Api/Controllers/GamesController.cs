@@ -74,6 +74,82 @@ public sealed class GamesController(
         return Ok(versions);
     }
 
+    [HttpGet("{id:int}/studio/versions")]
+    [ProducesResponseType(typeof(IReadOnlyList<GameBuildVersionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<GameBuildVersionDto>>> GetOwnedVersions(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var versions = await games.GetOwnedVersionHistoryAsync(id, ownerUserId.Value, cancellationToken);
+        if (versions.Count == 0)
+        {
+            var owned = await games.GetOwnedGamesAsync(ownerUserId.Value, cancellationToken);
+            if (owned.All(g => g.Id != id))
+            {
+                return NotFound();
+            }
+        }
+
+        return Ok(versions);
+    }
+
+    [HttpGet("{id:int}/stats")]
+    [ProducesResponseType(typeof(GameStatsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameStatsDto>> GetOwnedStats(int id, CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var stats = await games.GetOwnedGameStatsAsync(id, ownerUserId.Value, cancellationToken);
+        return stats is null ? NotFound() : Ok(stats);
+    }
+
+    [HttpPatch("{id:int}/versions/{versionId:int}/notes")]
+    [ProducesResponseType(typeof(GameBuildVersionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameBuildVersionDto>> UpdateVersionNotes(
+        int id,
+        int versionId,
+        [FromBody] UpdateVersionNotesRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var updated = await games.UpdateOwnedVersionNotesAsync(
+                id,
+                versionId,
+                ownerUserId.Value,
+                request.ReleaseNotes,
+                cancellationToken);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
     [HttpPatch("{id:int}")]
     [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -337,7 +413,11 @@ public sealed class GamesController(
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult DownloadPackage(string symbol, string version, string fileName)
+    public async Task<IActionResult> DownloadPackage(
+        string symbol,
+        string version,
+        string fileName,
+        CancellationToken cancellationToken)
     {
         if (!SgsPackageRules.IsValidSymbol(symbol)
             || string.IsNullOrWhiteSpace(version)
@@ -354,6 +434,16 @@ public sealed class GamesController(
         if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
         {
             return NotFound();
+        }
+
+        try
+        {
+            var platformKey = Path.GetFileNameWithoutExtension(fileName);
+            await games.RecordDownloadAsync(symbol, version, platformKey, cancellationToken);
+        }
+        catch
+        {
+            // Statistics must never block a download.
         }
 
         return PhysicalFile(path, "application/zip", fileName);

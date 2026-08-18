@@ -11,4 +11,7 @@ public sealed class GameBuildVersionEntity
     public required string ZipLink { get; set; }
     public required string FileName { get; set; }
     public DateTimeOffset PublishedAtUtc { get; set; }
+
+    /// <summary>Creator-written changelog shown in the game's updates tab.</summary>
+    public string? ReleaseNotes { get; set; }
 }

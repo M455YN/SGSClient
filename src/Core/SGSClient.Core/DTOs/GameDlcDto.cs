@@ -34,4 +34,22 @@ public sealed class UpdateGameRequestDto
 
     /// <summary>Position on the home page featured rail; negative clears it.</summary>
     public int? FeaturedOrder { get; init; }
+
+    public string? StudioName { get; init; }
+    public string? WebsiteUrl { get; init; }
+    public string? DiscordUrl { get; init; }
+    public string? SupportUrl { get; init; }
+    public GameReleaseStatus? ReleaseStatus { get; init; }
+
+    /// <summary>Release day; <see cref="ClearReleaseDate"/> removes it.</summary>
+    public DateTimeOffset? ReleaseDateUtc { get; init; }
+    public bool ClearReleaseDate { get; init; }
+    public GameAgeRating? AgeRating { get; init; }
+    public GameFeatures? Features { get; init; }
+
+    /// <summary>Full replacement of the language list; empty list clears it.</summary>
+    public IReadOnlyList<string>? Languages { get; init; }
+
+    /// <summary>Full replacement of the tag list; empty list clears it.</summary>
+    public IReadOnlyList<string>? Tags { get; init; }
 }

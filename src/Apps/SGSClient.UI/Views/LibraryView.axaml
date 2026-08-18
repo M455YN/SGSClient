@@ -78,7 +78,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:LibraryGameItem">
-                    <Border Width="168" Height="248" CornerRadius="8" ClipToBounds="True"
+                    <Border Width="168" Height="268" CornerRadius="8" ClipToBounds="True"
                             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
                             BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                             BorderThickness="1" Cursor="Hand"
@@ -94,6 +94,8 @@
                           <StackPanel Spacing="4">
                             <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                             <TextBlock Text="{Binding LastPlayedText}" Opacity="0.65" FontSize="11"/>
+                            <TextBlock Text="{Binding PlaytimeText}" Opacity="0.65" FontSize="11"
+                                       IsVisible="{Binding HasPlaytime}"/>
                             <Button Content="Graj" Tag="{Binding}" Click="Launch_OnClick"
                                     IsEnabled="{Binding CanLaunch}"
                                     Classes="accent" Padding="12,6"

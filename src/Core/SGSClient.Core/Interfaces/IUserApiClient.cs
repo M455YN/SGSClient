@@ -41,4 +41,12 @@ public interface IUserApiClient
     Task<(SocialOverviewDto? Overview, string? Error)> UnfollowAsync(
         int userId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<PlaytimeDto>> GetPlaytimeAsync(CancellationToken cancellationToken = default);
+
+    Task<PlaytimeDto?> GetPlaytimeAsync(int gameId, CancellationToken cancellationToken = default);
+
+    Task<PlaytimeDto?> RecordPlaytimeSessionAsync(
+        RecordPlaytimeSessionRequest request,
+        CancellationToken cancellationToken = default);
 }

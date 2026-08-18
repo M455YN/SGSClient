@@ -9,6 +9,7 @@ using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
+using SGSClient.Core.Playtime;
 
 namespace SGSClient.UI.ViewModels;
 
@@ -110,6 +111,12 @@ public partial class LibraryViewModel : ViewModelBase
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
             var items = await library.GetAllAsync();
+            var playtime = scope.ServiceProvider.GetService<IPlaytimeStore>();
+            if (playtime is not null)
+            {
+                await playtime.SyncFromServerAsync();
+                await playtime.ApplyToLibraryAsync(items);
+            }
 
             Games.Clear();
             foreach (var item in items.OrderBy(x => x.Title))
@@ -297,7 +304,13 @@ public partial class LibraryViewModel : ViewModelBase
 
         try
         {
-            await _launcher.LaunchAsync(item.ExecutablePath);
+            var result = await _launcher.LaunchAsync(new GameLaunchRequest
+            {
+                GameId = item.GameId,
+                Title = item.Title,
+                ExecutablePath = item.ExecutablePath
+            });
+            StatusText = result.Message;
             if (_scopes is not null)
             {
                 using var scope = _scopes.CreateScope();
@@ -305,8 +318,12 @@ public partial class LibraryViewModel : ViewModelBase
                 var existing = await library.GetByGameIdAsync(item.GameId);
                 if (existing is not null)
                 {
-                    existing.LastPlayedUtc = DateTimeOffset.UtcNow;
-                    await library.UpsertAsync(existing);
+                    var playtime = scope.ServiceProvider.GetService<IPlaytimeStore>();
+                    if (playtime is not null)
+                    {
+                        await playtime.ApplyToLibraryAsync([existing]);
+                    }
+
                     item.ApplyModel(existing, _apiBaseUrl);
                     RebuildShelves();
                 }
@@ -450,6 +467,13 @@ public partial class LibraryGameItem : ObservableObject
     [ObservableProperty]
     private string _lastPlayedText = "Niegrana";
 
+    [ObservableProperty]
+    private string _playtimeText = string.Empty;
+
+    public bool HasPlaytime => !string.IsNullOrWhiteSpace(PlaytimeText);
+
+    partial void OnPlaytimeTextChanged(string value) => OnPropertyChanged(nameof(HasPlaytime));
+
     public static LibraryGameItem FromModel(GameLibraryItem item, string apiBaseUrl)
     {
         var vm = new LibraryGameItem
@@ -483,6 +507,9 @@ public partial class LibraryGameItem : ObservableObject
         LastPlayedText = item.LastPlayedUtc is null
             ? "Niegrana"
             : item.LastPlayedUtc.Value.LocalDateTime.ToString("g");
+        PlaytimeText = item.TotalPlayTimeSeconds > 0
+            ? PlaytimeFormat.ToPolishTotal(item.TotalPlayTimeSeconds)
+            : string.Empty;
         ApplyInstallState(item.InstallState);
     }
 

@@ -100,6 +100,8 @@ public sealed partial class GameDetailsPage : Page
         RefreshHeroMedia();
 
         StatusText.Text = ViewModel.StatusText;
+        PlaytimeText.Text = ViewModel.PlaytimeText;
+        PlaytimeText.Visibility = ViewModel.HasPlaytime ? Visibility.Visible : Visibility.Collapsed;
         DescriptionText.Text = ViewModel.Description;
         HardwareText.Text = ViewModel.HardwareRequirements;
         OtherText.Text = ViewModel.OtherInformation;

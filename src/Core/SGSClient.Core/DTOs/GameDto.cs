@@ -34,6 +34,21 @@ public sealed class GameDto
     public string? ParentSymbol { get; init; }
     public DateTimeOffset CreatedAtUtc { get; init; }
     public long PackageSizeBytes { get; init; }
+
+    public string? StudioName { get; init; }
+    public string? WebsiteUrl { get; init; }
+    public string? DiscordUrl { get; init; }
+    public string? SupportUrl { get; init; }
+    public GameReleaseStatus ReleaseStatus { get; init; } = GameReleaseStatus.Released;
+    public DateTimeOffset? ReleaseDateUtc { get; init; }
+    public GameAgeRating AgeRating { get; init; } = GameAgeRating.Unrated;
+    public GameFeatures Features { get; init; } = GameFeatures.None;
+    public string? LanguagesCsv { get; init; }
+    public string? TagsCsv { get; init; }
+
+    public IReadOnlyList<string> Languages => CsvList.Split(LanguagesCsv);
+    public IReadOnlyList<string> Tags => CsvList.Split(TagsCsv);
+
     public IReadOnlyList<GameBuildDto> Builds { get; init; } = [];
     public IReadOnlyList<GameDlcDto> Dlcs { get; init; } = [];
 }

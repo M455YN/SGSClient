@@ -12,8 +12,10 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
     public DbSet<GameGenreEntity> GameGenres => Set<GameGenreEntity>();
     public DbSet<GameEngineEntity> GameEngines => Set<GameEngineEntity>();
     public DbSet<GameScreenshotEntity> GameScreenshots => Set<GameScreenshotEntity>();
+    public DbSet<GameDownloadEntity> GameDownloads => Set<GameDownloadEntity>();
     public DbSet<UserEntity> Users => Set<UserEntity>();
     public DbSet<UserRelationshipEntity> UserRelationships => Set<UserRelationshipEntity>();
+    public DbSet<UserGamePlaytimeEntity> UserGamePlaytimes => Set<UserGamePlaytimeEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,6 +63,25 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<UserGamePlaytimeEntity>(entity =>
+        {
+            entity.ToTable("user_game_playtime");
+            entity.HasKey(x => new { x.UserId, x.GameId });
+
+            entity.HasIndex(x => new { x.UserId, x.LastPlayedUtc });
+            entity.HasIndex(x => x.GameId);
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Game)
+                .WithMany()
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<GameGenreEntity>(entity =>
         {
             entity.ToTable("game_genres");
@@ -96,6 +117,15 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.IntroUrl).HasMaxLength(2048);
             entity.Property(x => x.Kind).HasConversion<int>();
             entity.Property(x => x.CreatedAtUtc).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(x => x.StudioName).HasMaxLength(128);
+            entity.Property(x => x.WebsiteUrl).HasMaxLength(2048);
+            entity.Property(x => x.DiscordUrl).HasMaxLength(2048);
+            entity.Property(x => x.SupportUrl).HasMaxLength(2048);
+            entity.Property(x => x.ReleaseStatus).HasConversion<int>().HasDefaultValue(GameReleaseStatus.Released);
+            entity.Property(x => x.AgeRating).HasConversion<int>().HasDefaultValue(GameAgeRating.Unrated);
+            entity.Property(x => x.Features).HasConversion<int>().HasDefaultValue(GameFeatures.None);
+            entity.Property(x => x.LanguagesCsv).HasMaxLength(512);
+            entity.Property(x => x.TagsCsv).HasMaxLength(512);
 
             entity.HasIndex(x => x.Symbol).IsUnique();
             entity.HasIndex(x => x.UserId);
@@ -104,6 +134,7 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.HasIndex(x => x.FeaturedOrder);
             entity.HasIndex(x => x.ParentGameId);
             entity.HasIndex(x => x.Kind);
+            entity.HasIndex(x => x.ReleaseStatus);
 
             entity.HasOne(x => x.ParentGame)
                 .WithMany(x => x.Dlcs)
@@ -163,9 +194,26 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.ExeName).HasMaxLength(256).IsRequired();
             entity.Property(x => x.ZipLink).HasMaxLength(2048).IsRequired();
             entity.Property(x => x.FileName).HasMaxLength(128).IsRequired();
+            entity.Property(x => x.ReleaseNotes).HasMaxLength(4000);
 
             entity.HasIndex(x => new { x.GameBuildId, x.Version }).IsUnique();
             entity.HasIndex(x => new { x.GameBuildId, x.PublishedAtUtc });
+        });
+
+        modelBuilder.Entity<GameDownloadEntity>(entity =>
+        {
+            entity.ToTable("game_downloads");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Version).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.PlatformKey).HasMaxLength(64).IsRequired();
+
+            entity.HasIndex(x => new { x.GameId, x.DownloadedAtUtc });
+
+            entity.HasOne(x => x.Game)
+                .WithMany()
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<GameScreenshotEntity>(entity =>

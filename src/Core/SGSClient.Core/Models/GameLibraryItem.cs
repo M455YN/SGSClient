@@ -27,4 +27,7 @@ public sealed class GameLibraryItem
     public string? CustomCoverPath { get; set; }
 
     public DateTimeOffset? LastPlayedUtc { get; set; }
+
+    /// <summary>User-scoped total playtime. Overlay from <c>IPlaytimeStore</c>; not persisted on the install row.</summary>
+    public long TotalPlayTimeSeconds { get; set; }
 }

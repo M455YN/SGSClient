@@ -162,6 +162,24 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         CancellationToken cancellationToken = default) =>
         SendResultAsync<SocialOverviewDto>(HttpMethod.Delete, $"api/me/follows/{userId}", body: null, cancellationToken);
 
+    public async Task<IReadOnlyList<PlaytimeDto>> GetPlaytimeAsync(CancellationToken cancellationToken = default)
+    {
+        var list = await SendAllowAnonymousAsync<List<PlaytimeDto>>(
+            HttpMethod.Get,
+            "api/me/playtime",
+            body: null,
+            cancellationToken);
+        return list ?? [];
+    }
+
+    public Task<PlaytimeDto?> GetPlaytimeAsync(int gameId, CancellationToken cancellationToken = default) =>
+        SendAllowAnonymousAsync<PlaytimeDto>(HttpMethod.Get, $"api/me/playtime/{gameId}", body: null, cancellationToken);
+
+    public Task<PlaytimeDto?> RecordPlaytimeSessionAsync(
+        RecordPlaytimeSessionRequest request,
+        CancellationToken cancellationToken = default) =>
+        SendAllowAnonymousAsync<PlaytimeDto>(HttpMethod.Post, "api/me/playtime/sessions", request, cancellationToken);
+
     private static string? TryExtractError(string? body)
     {
         if (string.IsNullOrWhiteSpace(body))
@@ -212,8 +230,31 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             return default;
         }
 
+        return await SendCoreAsync<T>(method, url, body, token, cancellationToken).ConfigureAwait(false);
+    }
+
+    private Task<T?> SendAllowAnonymousAsync<T>(
+        HttpMethod method,
+        string url,
+        object? body,
+        CancellationToken cancellationToken) =>
+        SendCoreAsync<T>(method, url, body, token: null, cancellationToken);
+
+    private async Task<T?> SendCoreAsync<T>(
+        HttpMethod method,
+        string url,
+        object? body,
+        string? token,
+        CancellationToken cancellationToken)
+    {
+        var accessToken = token ?? await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+
         using var request = new HttpRequestMessage(method, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
         if (body is not null)
         {
             request.Content = JsonContent.Create(body);

@@ -88,6 +88,8 @@
               </StackPanel>
 
               <TextBlock Text="{Binding StatusText}" Opacity="0.65" FontSize="12"/>
+              <TextBlock Text="{Binding PlaytimeText}" IsVisible="{Binding HasPlaytime}"
+                         Opacity="0.75" FontSize="13" FontWeight="SemiBold"/>
             </StackPanel>
 
             <!-- Right: media -->

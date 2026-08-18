@@ -17,6 +17,7 @@ public sealed class MeController(
     IUserService users,
     IUserAvatarService avatars,
     IGameRepository games,
+    IPlaytimeService playtime,
     IAdminAuthorization adminAuth,
     IOptions<AzureAdSettings> azureOptions,
     IOptions<GameStorageSettings> storageOptions) : ControllerBase
@@ -246,6 +247,70 @@ public sealed class MeController(
 
         var result = await games.GetOwnedGamesAsync(ownerUserId.Value, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpGet("playtime")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<PlaytimeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IReadOnlyList<PlaytimeDto>>> GetPlaytime(CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await playtime.GetAllAsync(ownerUserId.Value, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("playtime/{gameId:int}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PlaytimeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PlaytimeDto>> GetPlaytimeForGame(int gameId, CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await playtime.GetAsync(ownerUserId.Value, gameId, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpPost("playtime/sessions")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PlaytimeDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PlaytimeDto>> RecordPlaytimeSession(
+        [FromBody] RecordPlaytimeSessionRequest request,
+        CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var result = await playtime.RecordSessionAsync(ownerUserId.Value, request, cancellationToken);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     private UserProfileDto WithAdminFlag(UserProfileDto profile) => new()

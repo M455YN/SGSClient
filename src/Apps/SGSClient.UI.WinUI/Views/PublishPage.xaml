@@ -144,6 +144,12 @@
             </StackPanel>
           </Grid>
 
+          <StackPanel Spacing="4">
+            <TextBlock Text="Opis zmian (changelog)" Opacity="0.55" FontSize="12" />
+            <TextBox x:Name="ReleaseNotesBox" PlaceholderText="Co nowego w tej wersji"
+                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" />
+          </StackPanel>
+
           <Grid ColumnSpacing="12">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />

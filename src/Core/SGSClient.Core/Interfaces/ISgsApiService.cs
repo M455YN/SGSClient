@@ -31,4 +31,16 @@ public interface ISgsApiService
         int gameId,
         int buildId,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GameBuildVersionDto>> GetOwnedVersionsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default);
+
+    Task<GameStatsDto?> GetOwnedGameStatsAsync(int gameId, CancellationToken cancellationToken = default);
+
+    Task<GameBuildVersionDto?> UpdateVersionNotesAsync(
+        int gameId,
+        int versionId,
+        string? releaseNotes,
+        CancellationToken cancellationToken = default);
 }

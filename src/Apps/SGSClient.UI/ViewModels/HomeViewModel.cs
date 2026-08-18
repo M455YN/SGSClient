@@ -11,6 +11,7 @@ using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
+using SGSClient.Core.Playtime;
 
 namespace SGSClient.UI.ViewModels;
 
@@ -289,7 +290,15 @@ public partial class HomeViewModel : ViewModelBase
         {
             using var scope = _scopes.CreateScope();
             var store = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            return await store.GetAllAsync();
+            var items = await store.GetAllAsync();
+            var playtime = scope.ServiceProvider.GetService<IPlaytimeStore>();
+            if (playtime is not null)
+            {
+                await playtime.SyncFromServerAsync();
+                await playtime.ApplyToLibraryAsync(items);
+            }
+
+            return items;
         }
         catch
         {
@@ -352,7 +361,7 @@ public partial class HomeGameCard : ObservableObject
             Title = item.Title,
             TileLabel = MakeTile(item.Title, item.Symbol),
             CoverImageUrl = cover,
-            Caption = FormatLastPlayed(item.LastPlayedUtc)
+            Caption = FormatContinueCaption(item.LastPlayedUtc, item.TotalPlayTimeSeconds)
         };
     }
 
@@ -404,6 +413,14 @@ public partial class HomeGameCard : ObservableObject
 
         var value = text.Trim();
         return value.Length <= max ? value : value[..Math.Max(0, max - 1)].TrimEnd() + "…";
+    }
+
+    private static string FormatContinueCaption(DateTimeOffset? utc, long totalSeconds)
+    {
+        var when = FormatLastPlayed(utc);
+        return totalSeconds > 0
+            ? $"{when} · {PlaytimeFormat.ToPolish(totalSeconds)}"
+            : when;
     }
 
     private static string FormatLastPlayed(DateTimeOffset? utc)

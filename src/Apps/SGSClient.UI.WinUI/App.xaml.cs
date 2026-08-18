@@ -68,7 +68,8 @@ public partial class App : Application
             sp.GetService<ISgsApiService>()));
         services.AddTransient(sp => new StudioViewModel(
             sp.GetService<ISgsApiService>(),
-            sp.GetService<IAuthSession>()));
+            sp.GetService<IAuthSession>(),
+            configuration));
         services.AddTransient(sp => new AdminViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetService<IAuthSession>(),

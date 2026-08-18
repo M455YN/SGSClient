@@ -252,19 +252,20 @@ public partial class ShellSidebarViewModel : ViewModelBase
             return;
         }
 
-        await _launcher.LaunchAsync(item.ExecutablePath);
-
-        using var scope = _scopes.CreateScope();
-        var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-        var existing = await library.GetByGameIdAsync(item.GameId);
-        if (existing is null)
+        try
         {
-            return;
+            var result = await _launcher.LaunchAsync(new GameLaunchRequest
+            {
+                GameId = item.GameId,
+                Title = item.Title,
+                ExecutablePath = item.ExecutablePath
+            });
+            _ = result;
+            await LoadInstalledAsync();
         }
-
-        existing.LastPlayedUtc = DateTimeOffset.UtcNow;
-        await library.UpsertAsync(existing);
-        await LoadInstalledAsync();
+        catch
+        {
+        }
     }
 
     [RelayCommand]

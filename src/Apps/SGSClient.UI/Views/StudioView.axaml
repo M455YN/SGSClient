@@ -3,76 +3,305 @@
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.StudioView"
              x:DataType="vm:StudioViewModel">
-  <Grid Margin="28,24,28,24" RowDefinitions="Auto,*,Auto" RowSpacing="18">
-    <Grid ColumnDefinitions="*,Auto">
-      <StackPanel Spacing="6">
-        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
-        <TextBlock Text="Zarządzaj swoimi grami i DLC — edytuj metadane, dodawaj treści lub usuwaj wpisy."
-                   Opacity="0.65" TextWrapping="Wrap"/>
+  <UserControl.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16"/>
+      <Setter Property="Background" Value="#12FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#22FFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.6"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Grid Margin="28,20,28,12" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Moje gry" FontSize="28" FontWeight="SemiBold"/>
+        <TextBlock Text="Panel twórcy — strona sklepu, multimedia, buildy i DLC." Classes="caption"/>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
-        <Button Content="Dodaj grę" Click="AddGame_OnClick" Padding="14,8"/>
+        <Button Content="Nowa gra" Classes="accent" Click="AddGame_OnClick" Padding="14,8"/>
         <Button Content="Odśwież" Click="Refresh_OnClick" Padding="12,6"/>
       </StackPanel>
     </Grid>
 
-    <Panel Grid.Row="1">
-      <TextBlock Text="{Binding StatusText}"
-                 IsVisible="{Binding ShowEmpty}"
-                 Opacity="0.6"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center"
-                 TextWrapping="Wrap"
-                 MaxWidth="420"/>
+    <Grid Grid.Row="1" Margin="28,0,28,0" ColumnDefinitions="360,*" ColumnSpacing="16">
+      <Border Classes="card" Padding="0" Margin="0,0,0,16">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <TextBox Margin="12,12,12,8" PlaceholderText="Szukaj po tytule lub symbolu"
+                   Text="{Binding SearchText, Mode=TwoWay}"/>
+          <ListBox Grid.Row="1" ItemsSource="{Binding FilteredGames}"
+                   SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
+                   Background="Transparent" BorderThickness="0">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:StudioContentItem">
+                <Grid ColumnDefinitions="48,*" ColumnSpacing="10" Margin="4,6">
+                  <Border Width="48" Height="48" CornerRadius="4" Background="#1FFFFFFF" ClipToBounds="True">
+                    <Panel>
+                      <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 Opacity="0.5" FontWeight="SemiBold"
+                                 IsVisible="{Binding !HasCover}"/>
+                      <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                             IsVisible="{Binding HasCover}"/>
+                    </Panel>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding MetaText}" Classes="caption" TextTrimming="CharacterEllipsis"/>
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <TextBlock Grid.Row="2" Margin="12,8,12,12" Text="{Binding ListSummary}" Classes="caption"/>
+        </Grid>
+      </Border>
 
-      <ScrollViewer IsVisible="{Binding HasGames}" HorizontalScrollBarVisibility="Disabled">
-        <ItemsControl ItemsSource="{Binding Games}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:StudioContentItem">
-              <Border Padding="16" Margin="0,0,0,12" CornerRadius="10"
-                      Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-                <StackPanel Spacing="12">
-                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <StackPanel Spacing="4">
-                      <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                      <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12"/>
-                      <TextBlock Text="{Binding Description}" Opacity="0.7" FontSize="13"
-                                 TextWrapping="Wrap" MaxLines="3" TextTrimming="CharacterEllipsis"/>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
-                      <Button Content="Edytuj" Padding="12,6" Tag="{Binding}" Click="Edit_OnClick"/>
-                      <Button Content="Dodaj DLC" Padding="12,6" Tag="{Binding}" Click="AddDlc_OnClick"/>
-                      <Button Content="Usuń" Padding="12,6" Tag="{Binding}" Click="Delete_OnClick"/>
-                    </StackPanel>
-                  </Grid>
+      <ScrollViewer Grid.Column="1" Margin="0,0,0,16" IsVisible="{Binding HasSelection}">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <RadioButton Content="Przegląd" GroupName="StudioTab" IsChecked="{Binding IsOverviewTab, Mode=OneWay}"
+                         Command="{Binding SelectTabCommand}" CommandParameter="overview"/>
+            <RadioButton Content="Strona sklepu" GroupName="StudioTab" IsChecked="{Binding IsStoreTab, Mode=OneWay}"
+                         Command="{Binding SelectTabCommand}" CommandParameter="store"/>
+            <RadioButton Content="Multimedia" GroupName="StudioTab" IsChecked="{Binding IsMediaTab, Mode=OneWay}"
+                         Command="{Binding SelectTabCommand}" CommandParameter="media"/>
+            <RadioButton Content="Buildy" GroupName="StudioTab" IsChecked="{Binding IsBuildsTab, Mode=OneWay}"
+                         Command="{Binding SelectTabCommand}" CommandParameter="builds"/>
+            <RadioButton Content="DLC" GroupName="StudioTab" IsChecked="{Binding IsDlcTab, Mode=OneWay}"
+                         Command="{Binding SelectTabCommand}" CommandParameter="dlc"/>
+          </StackPanel>
 
-                  <ItemsControl ItemsSource="{Binding Dlcs}">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="vm:StudioContentItem">
-                        <Border Padding="12" Margin="0,0,0,6" CornerRadius="8"
-                                Background="#14FFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1">
-                          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <StackPanel Spacing="2">
-                              <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
-                              <TextBlock Text="{Binding MetaText}" Opacity="0.55" FontSize="11"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                              <Button Content="Edytuj" Padding="10,4" Tag="{Binding}" Click="Edit_OnClick"/>
-                              <Button Content="Usuń" Padding="10,4" Tag="{Binding}" Click="Delete_OnClick"/>
-                            </StackPanel>
-                          </Grid>
-                        </Border>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
+          <StackPanel Spacing="16" IsVisible="{Binding IsOverviewTab}">
+            <Border Height="200" CornerRadius="8" ClipToBounds="True" Background="#1AFFFFFF">
+              <Panel>
+                <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="42" FontWeight="Bold"
+                           Opacity="0.2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                           IsVisible="{Binding !SelectedGame.HasCover}"/>
+                <Image Source="{Binding SelectedGame.CoverImageUrl}" Stretch="UniformToFill"
+                       IsVisible="{Binding SelectedGame.HasCover}"/>
+                <StackPanel VerticalAlignment="Bottom" Margin="16,12" Spacing="2">
+                  <TextBlock Text="{Binding SelectedGame.Title}" FontSize="22" FontWeight="SemiBold"/>
+                  <TextBlock Text="{Binding SelectedGame.MetaText}" Classes="caption"/>
+                </StackPanel>
+              </Panel>
+            </Border>
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+              <Border Classes="card">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Pobrania" Classes="caption"/>
+                  <TextBlock Text="{Binding TotalDownloadsText}" FontSize="22" FontWeight="SemiBold"/>
                 </StackPanel>
               </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
-    </Panel>
+              <Border Grid.Column="1" Classes="card">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="30 dni" Classes="caption"/>
+                  <TextBlock Text="{Binding Last30Text}" FontSize="22" FontWeight="SemiBold"/>
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="2" Classes="card">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="7 dni" Classes="caption"/>
+                  <TextBlock Text="{Binding Last7Text}" FontSize="22" FontWeight="SemiBold"/>
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="3" Classes="card">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Wersja" Classes="caption"/>
+                  <TextBlock Text="{Binding SelectedGame.CurrentVersionText}" FontSize="22" FontWeight="SemiBold"/>
+                </StackPanel>
+              </Border>
+            </Grid>
+            <Border Classes="card">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="Widoczność w sklepie" FontWeight="SemiBold"/>
+                  <TextBlock Text="Szkic jest ukryty dla graczy." Classes="caption" TextWrapping="Wrap"/>
+                </StackPanel>
+                <ToggleSwitch x:Name="PublishedSwitch" Grid.Column="1" OnContent="W sklepie" OffContent="Szkic"
+                              IsChecked="{Binding SelectedGame.IsPublished, Mode=OneWay}"
+                              IsCheckedChanged="Published_OnChanged"/>
+              </Grid>
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Opublikuj nową wersję" Click="AddVersion_OnClick" Padding="14,8"/>
+              <Button Content="Dodaj DLC" Click="AddDlc_OnClick" Padding="14,8"/>
+              <Button Content="Usuń grę" Click="Delete_OnClick" Padding="14,8"/>
+            </StackPanel>
+          </StackPanel>
 
-    <TextBlock Grid.Row="2" Text="{Binding StatusText}" Opacity="0.7" TextWrapping="Wrap"/>
+          <StackPanel Spacing="12" IsVisible="{Binding IsStoreTab}">
+            <Border Classes="card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Podstawowe" FontWeight="SemiBold"/>
+                <TextBox PlaceholderText="Tytuł" Text="{Binding SelectedGame.EditTitle, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="Opis" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="88"
+                         Text="{Binding SelectedGame.EditDescription, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="Wymagania sprzętowe" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
+                         Text="{Binding SelectedGame.EditHardwareRequirements, Mode=TwoWay}"/>
+                <ComboBox PlaceholderText="Gatunek" ItemsSource="{Binding GenreOptions}"
+                          SelectedItem="{Binding SelectedGame.EditGenre, Mode=TwoWay}"/>
+                <ComboBox PlaceholderText="Silnik" ItemsSource="{Binding EngineOptions}"
+                          SelectedItem="{Binding SelectedGame.EditEngine, Mode=TwoWay}"/>
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Wydanie, studio i funkcje" FontWeight="SemiBold"/>
+                <ComboBox ItemsSource="{Binding ReleaseStatusOptions}"
+                          SelectedIndex="{Binding SelectedGame.EditReleaseStatusIndex, Mode=TwoWay}"/>
+                <ComboBox ItemsSource="{Binding AgeRatingOptions}"
+                          SelectedIndex="{Binding SelectedGame.EditAgeRatingIndex, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="Nazwa studia" Text="{Binding SelectedGame.EditStudioName, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="Strona www" Text="{Binding SelectedGame.EditWebsiteUrl, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="Discord" Text="{Binding SelectedGame.EditDiscordUrl, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="Wsparcie" Text="{Binding SelectedGame.EditSupportUrl, Mode=TwoWay}"/>
+                <WrapPanel>
+                  <CheckBox Content="Singleplayer" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasSinglePlayer, Mode=TwoWay}"/>
+                  <CheckBox Content="Multiplayer" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasMultiPlayer, Mode=TwoWay}"/>
+                  <CheckBox Content="Kooperacja" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasCoOp, Mode=TwoWay}"/>
+                  <CheckBox Content="Pad" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasController, Mode=TwoWay}"/>
+                  <CheckBox Content="Chmura" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasCloudSaves, Mode=TwoWay}"/>
+                  <CheckBox Content="Osiągnięcia" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasAchievements, Mode=TwoWay}"/>
+                  <CheckBox Content="Mody" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasModding, Mode=TwoWay}"/>
+                  <CheckBox Content="VR" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasVr, Mode=TwoWay}"/>
+                </WrapPanel>
+                <TextBox PlaceholderText="Języki, np. Polski, English" Text="{Binding SelectedGame.EditLanguages, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="Tagi, np. roguelike, pixel art" Text="{Binding SelectedGame.EditTags, Mode=TwoWay}"/>
+              </StackPanel>
+            </Border>
+            <Button Content="Zapisz stronę sklepu" Classes="accent" Click="SaveStore_OnClick"
+                    HorizontalAlignment="Left" Padding="16,8"/>
+          </StackPanel>
+
+          <StackPanel Spacing="12" IsVisible="{Binding IsMediaTab}">
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Okładka" FontWeight="SemiBold"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="Wybierz plik" Click="PickCover_OnClick"/>
+                  <Button Content="Usuń" Click="ClearCover_OnClick"/>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Intro" FontWeight="SemiBold"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="Wybierz wideo" Click="PickIntro_OnClick"/>
+                  <Button Content="Usuń" Click="ClearIntro_OnClick"/>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="Zrzuty ekranu" FontWeight="SemiBold"/>
+                  <Button Grid.Column="1" Content="Dodaj" Click="AddScreenshot_OnClick"/>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding SelectedGame.ScreenshotItems}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel/>
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Button Content="Usuń zrzut" Tag="{Binding}" Click="RemoveScreenshot_OnClick"
+                              Margin="0,0,8,8" Padding="10,6"/>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="12" IsVisible="{Binding IsBuildsTab}">
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="Aktualne buildy" FontWeight="SemiBold"/>
+                  <Button Grid.Column="1" Content="Nowa wersja" Click="AddVersion_OnClick"/>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding SelectedGame.Builds}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Classes="card" Margin="0,0,0,8" Padding="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <StackPanel>
+                            <TextBlock Text="{Binding PlatformText}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding MetaText}" Classes="caption"/>
+                          </StackPanel>
+                          <TextBlock Grid.Column="1" Text="{Binding Version}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Historia i opis zmian" FontWeight="SemiBold"/>
+                <ItemsControl ItemsSource="{Binding Versions}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:StudioVersionItem">
+                      <Border Classes="card" Margin="0,0,0,10" Padding="12">
+                        <StackPanel Spacing="8">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding Version}" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="1" Text="{Binding MetaText}" Classes="caption"/>
+                          </Grid>
+                          <TextBox PlaceholderText="Notatki do tej wersji" AcceptsReturn="True" TextWrapping="Wrap"
+                                   MinHeight="64" Text="{Binding EditNotes, Mode=TwoWay}"/>
+                          <Button Content="Zapisz opis zmian" Tag="{Binding}" Click="SaveNotes_OnClick"
+                                  HorizontalAlignment="Left" Padding="12,6"/>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="12" IsVisible="{Binding IsDlcTab}">
+            <Border Classes="card">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="Dodatki" FontWeight="SemiBold"/>
+                  <Button Grid.Column="1" Content="Dodaj DLC" Click="AddDlc_OnClick"/>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding SelectedGame.Dlcs}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Classes="card" Margin="0,0,0,8" Padding="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <StackPanel>
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding MetaText}" Classes="caption"/>
+                          </StackPanel>
+                          <Button Grid.Column="1" Content="Usuń" Tag="{Binding}" Click="DeleteDlc_OnClick"/>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+
+    <Grid Grid.Row="2" Margin="28,8,28,16" ColumnDefinitions="*,Auto">
+      <TextBlock Text="{Binding StatusText}" Opacity="0.7" TextWrapping="Wrap"/>
+      <ProgressBar Grid.Column="1" IsIndeterminate="True" Width="120" Height="4"
+                   IsVisible="{Binding IsBusy}" VerticalAlignment="Center"/>
+    </Grid>
   </Grid>
 </UserControl>

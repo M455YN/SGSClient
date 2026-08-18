@@ -232,6 +232,7 @@ public sealed class GamePackagePublisher(
                 exePath,
                 zipLink,
                 fileName,
+                manifest.Build.ReleaseNotes,
                 cancellationToken);
 
             var dto = await db.Games.AsNoTracking()
@@ -268,6 +269,16 @@ public sealed class GamePackagePublisher(
                     ParentGameId = g.ParentGameId,
                     ParentSymbol = g.ParentGame != null ? g.ParentGame.Symbol : null,
                     CreatedAtUtc = g.CreatedAtUtc,
+                    StudioName = g.StudioName,
+                    WebsiteUrl = g.WebsiteUrl,
+                    DiscordUrl = g.DiscordUrl,
+                    SupportUrl = g.SupportUrl,
+                    ReleaseStatus = g.ReleaseStatus,
+                    ReleaseDateUtc = g.ReleaseDateUtc,
+                    AgeRating = g.AgeRating,
+                    Features = g.Features,
+                    LanguagesCsv = g.LanguagesCsv,
+                    TagsCsv = g.TagsCsv,
                     PackageSizeBytes = g.Builds
                         .OrderByDescending(b => b.IsDefault)
                         .Select(b => b.PackageSizeBytes)

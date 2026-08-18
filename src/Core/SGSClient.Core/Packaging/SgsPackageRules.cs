@@ -19,6 +19,7 @@ public static partial class SgsPackageRules
     public const int MinSymbolLength = 2;
     public const int MaxSymbolLength = 64;
     public const int MaxDescriptionLength = 4000;
+    public const int MaxReleaseNotesLength = 4000;
     public const int MaxVersionLength = 32;
     public const int MaxExecutablePathLength = 260;
     public const int MaxScreenshots = 12;
@@ -317,6 +318,11 @@ public static partial class SgsPackageRules
             else
             {
                 build.Executable = exePath;
+            }
+
+            if (build.ReleaseNotes?.Length > MaxReleaseNotesLength)
+            {
+                errors.Add($"Opis zmian może mieć maksymalnie {MaxReleaseNotesLength} znaków.");
             }
 
             if (build.Architecture is { Length: > 0 }

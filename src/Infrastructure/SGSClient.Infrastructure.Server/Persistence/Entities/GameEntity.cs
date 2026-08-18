@@ -24,6 +24,21 @@ public sealed class GameEntity
     public int? ParentGameId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
 
+    public string? StudioName { get; set; }
+    public string? WebsiteUrl { get; set; }
+    public string? DiscordUrl { get; set; }
+    public string? SupportUrl { get; set; }
+    public GameReleaseStatus ReleaseStatus { get; set; } = GameReleaseStatus.Released;
+    public DateTimeOffset? ReleaseDateUtc { get; set; }
+    public GameAgeRating AgeRating { get; set; } = GameAgeRating.Unrated;
+    public GameFeatures Features { get; set; } = GameFeatures.None;
+
+    /// <summary>Comma separated language names, e.g. "Polski,English".</summary>
+    public string? LanguagesCsv { get; set; }
+
+    /// <summary>Comma separated lowercase store tags, e.g. "roguelike,pixel art".</summary>
+    public string? TagsCsv { get; set; }
+
     public GameEntity? ParentGame { get; set; }
     public ICollection<GameEntity> Dlcs { get; set; } = new List<GameEntity>();
     public GameEngineEntity? Engine { get; set; }

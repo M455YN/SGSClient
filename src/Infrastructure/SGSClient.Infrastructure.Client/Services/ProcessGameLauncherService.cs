@@ -1,27 +1,282 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Models;
 
 namespace SGSClient.Infrastructure.Client.Services;
 
-public sealed class ProcessGameLauncherService : IGameLauncherService
+public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IGameLauncherService
 {
-    public Task LaunchAsync(string executablePath, CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(executablePath);
+    private readonly ConcurrentDictionary<int, ActiveSession> _byGameId = new();
+    private readonly ConcurrentDictionary<string, int> _byExe = new(StringComparer.OrdinalIgnoreCase);
 
-        if (!File.Exists(executablePath))
+    public bool IsRunning(int gameId) =>
+        _byGameId.TryGetValue(gameId, out var session) && !session.Completed;
+
+    public async Task<GameLaunchResult> LaunchAsync(
+        GameLaunchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrWhiteSpace(request.ExecutablePath);
+
+        var title = string.IsNullOrWhiteSpace(request.Title) ? "Gra" : request.Title.Trim();
+        string exe;
+        try
         {
-            throw new FileNotFoundException("Game executable was not found.", executablePath);
+            exe = Path.GetFullPath(request.ExecutablePath);
+        }
+        catch
+        {
+            return GameLaunchResult.NotFound();
         }
 
-        var startInfo = new ProcessStartInfo
+        if (!File.Exists(exe))
         {
-            FileName = executablePath,
-            UseShellExecute = true,
-            WorkingDirectory = Path.GetDirectoryName(executablePath)
-        };
+            return GameLaunchResult.NotFound();
+        }
 
-        Process.Start(startInfo);
-        return Task.CompletedTask;
+        if (IsRunning(request.GameId) || IsExeTracked(exe) || IsExeRunningOnOs(exe))
+        {
+            return GameLaunchResult.AlreadyRunning(title);
+        }
+
+        var session = new ActiveSession(request.GameId, exe, DateTimeOffset.UtcNow);
+        if (!_byGameId.TryAdd(request.GameId, session))
+        {
+            return GameLaunchResult.AlreadyRunning(title);
+        }
+
+        _byExe[Normalize(exe)] = request.GameId;
+
+        Process? process;
+        try
+        {
+            process = StartProcess(exe);
+        }
+        catch
+        {
+            RemoveSession(session);
+            return GameLaunchResult.Failed();
+        }
+
+        if (process is null)
+        {
+            RemoveSession(session);
+            return GameLaunchResult.Failed();
+        }
+
+        session.ProcessId = process.Id;
+        await TouchLastPlayedAsync(request.GameId, session.StartedAtUtc, cancellationToken);
+        _ = TrackUntilExitAsync(session, process);
+        return GameLaunchResult.Ok();
+    }
+
+    private static Process? StartProcess(string exe)
+    {
+        var workingDirectory = Path.GetDirectoryName(exe);
+        try
+        {
+            return Process.Start(new ProcessStartInfo
+            {
+                FileName = exe,
+                UseShellExecute = false,
+                WorkingDirectory = workingDirectory
+            });
+        }
+        catch
+        {
+            return Process.Start(new ProcessStartInfo
+            {
+                FileName = exe,
+                UseShellExecute = true,
+                WorkingDirectory = workingDirectory
+            });
+        }
+    }
+
+    private async Task TrackUntilExitAsync(ActiveSession session, Process process)
+    {
+        try
+        {
+            await WaitUntilGameExitsAsync(session.ExecutablePath, process);
+        }
+        catch
+        {
+            // still close the session and record whatever time we have
+        }
+        finally
+        {
+            try
+            {
+                process.Dispose();
+            }
+            catch
+            {
+            }
+
+            var ended = DateTimeOffset.UtcNow;
+            var duration = ended - session.StartedAtUtc;
+            session.Completed = true;
+            RemoveSession(session);
+
+            if (duration.TotalSeconds >= 1)
+            {
+                try
+                {
+                    using var scope = scopes.CreateScope();
+                    var playtime = scope.ServiceProvider.GetRequiredService<IPlaytimeStore>();
+                    await playtime.RecordSessionAsync(session.GameId, duration, ended);
+                }
+                catch
+                {
+                }
+            }
+        }
+    }
+
+    private static async Task WaitUntilGameExitsAsync(string exe, Process process)
+    {
+        await Task.Delay(2000);
+
+        var seenRunning = IsExeRunningOnOs(exe);
+        try
+        {
+            seenRunning = seenRunning || !process.HasExited;
+        }
+        catch
+        {
+        }
+
+        if (!seenRunning)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(15);
+            while (DateTime.UtcNow < deadline && !IsExeRunningOnOs(exe))
+            {
+                await Task.Delay(400);
+            }
+        }
+
+        while (true)
+        {
+            var osRunning = IsExeRunningOnOs(exe);
+            var processAlive = false;
+            try
+            {
+                processAlive = !process.HasExited;
+            }
+            catch
+            {
+            }
+
+            if (!osRunning && !processAlive)
+            {
+                await Task.Delay(1500);
+                if (!IsExeRunningOnOs(exe))
+                {
+                    return;
+                }
+            }
+
+            await Task.Delay(1000);
+        }
+    }
+
+    private async Task TouchLastPlayedAsync(int gameId, DateTimeOffset startedAtUtc, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var scope = scopes.CreateScope();
+            var library = scope.ServiceProvider.GetService<ILocalLibraryStore>();
+            if (library is null)
+            {
+                return;
+            }
+
+            var item = await library.GetByGameIdAsync(gameId, cancellationToken);
+            if (item is null)
+            {
+                return;
+            }
+
+            item.LastPlayedUtc = startedAtUtc;
+            await library.UpsertAsync(item, cancellationToken);
+        }
+        catch
+        {
+        }
+    }
+
+    private bool IsExeTracked(string exe) =>
+        _byExe.TryGetValue(Normalize(exe), out var gameId)
+        && _byGameId.TryGetValue(gameId, out var session)
+        && !session.Completed;
+
+    private static bool IsExeRunningOnOs(string exe)
+    {
+        var name = Path.GetFileNameWithoutExtension(exe);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        Process[] processes;
+        try
+        {
+            processes = Process.GetProcessesByName(name);
+        }
+        catch
+        {
+            return false;
+        }
+
+        try
+        {
+            foreach (var process in processes)
+            {
+                try
+                {
+                    var path = process.MainModule?.FileName;
+                    if (!string.IsNullOrWhiteSpace(path)
+                        && string.Equals(Normalize(path), Normalize(exe), StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Access denied: same process name is enough to refuse a second copy.
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        finally
+        {
+            foreach (var process in processes)
+            {
+                process.Dispose();
+            }
+        }
+    }
+
+    private void RemoveSession(ActiveSession session)
+    {
+        _byGameId.TryRemove(session.GameId, out _);
+        _byExe.TryRemove(Normalize(session.ExecutablePath), out _);
+    }
+
+    private static string Normalize(string path) =>
+        Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+    private sealed class ActiveSession(int gameId, string executablePath, DateTimeOffset startedAtUtc)
+    {
+        public int GameId { get; } = gameId;
+        public string ExecutablePath { get; } = executablePath;
+        public DateTimeOffset StartedAtUtc { get; } = startedAtUtc;
+        public int ProcessId { get; set; }
+        public bool Completed { get; set; }
     }
 }

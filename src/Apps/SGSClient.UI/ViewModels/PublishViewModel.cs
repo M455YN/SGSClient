@@ -103,6 +103,9 @@ public partial class PublishViewModel : ViewModelBase
     private string _buildVersion = string.Empty;
 
     [ObservableProperty]
+    private string _releaseNotes = string.Empty;
+
+    [ObservableProperty]
     private string _buildPlatform = "windows";
 
     [ObservableProperty]
@@ -548,6 +551,7 @@ public partial class PublishViewModel : ViewModelBase
             ? string.Join(Environment.NewLine, shots)
             : string.Empty;
         BuildVersion = manifest.Build.Version ?? string.Empty;
+        ReleaseNotes = manifest.Build.ReleaseNotes ?? string.Empty;
         BuildPlatform = string.IsNullOrWhiteSpace(manifest.Build.Platform) ? "windows" : manifest.Build.Platform;
         BuildArchitecture = string.IsNullOrWhiteSpace(manifest.Build.Architecture) ? "x64" : manifest.Build.Architecture;
         BuildExecutable = manifest.Build.Executable ?? string.Empty;
@@ -596,7 +600,8 @@ public partial class PublishViewModel : ViewModelBase
                 Platform = (BuildPlatform ?? "windows").Trim().ToLowerInvariant(),
                 Architecture = string.IsNullOrWhiteSpace(BuildArchitecture) ? "x64" : BuildArchitecture.Trim(),
                 Executable = BuildExecutable.Trim().Replace('\\', '/'),
-                IsDefault = true
+                IsDefault = true,
+                ReleaseNotes = NullIfWhiteSpace(ReleaseNotes)
             },
             Package = _packageHints
         };
@@ -617,6 +622,7 @@ public partial class PublishViewModel : ViewModelBase
         MediaIntro = string.Empty;
         MediaScreenshots = string.Empty;
         BuildVersion = string.Empty;
+        ReleaseNotes = string.Empty;
         BuildPlatform = "windows";
         BuildArchitecture = "x64";
         BuildExecutable = string.Empty;

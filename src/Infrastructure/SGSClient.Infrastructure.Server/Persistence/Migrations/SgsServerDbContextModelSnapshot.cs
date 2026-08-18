@@ -96,6 +96,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<DateTimeOffset>("PublishedAtUtc")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("ReleaseNotes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
                     b.Property<string>("Version")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -114,6 +118,37 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("game_build_versions", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameDownloadEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("DownloadedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PlatformKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId", "DownloadedAtUtc");
+
+                    b.ToTable("game_downloads", (string)null);
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", b =>
@@ -150,6 +185,11 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AgeRating")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("CoverUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
@@ -163,6 +203,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(8000)
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("DiscordUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<bool>("DraftP")
                         .HasColumnType("bit");
 
@@ -175,6 +219,11 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<bool>("FeaturedP")
                         .HasColumnType("bit");
 
+                    b.Property<int>("Features")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("HardwareRequirements")
                         .HasMaxLength(8000)
                         .HasColumnType("nvarchar(max)");
@@ -186,6 +235,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<int>("Kind")
                         .HasColumnType("int");
 
+                    b.Property<string>("LanguagesCsv")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
                     b.Property<string>("OtherInformation")
                         .HasMaxLength(8000)
                         .HasColumnType("nvarchar(max)");
@@ -193,10 +246,30 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<int?>("ParentGameId")
                         .HasColumnType("int");
 
+                    b.Property<DateTimeOffset?>("ReleaseDateUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("ReleaseStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(2);
+
+                    b.Property<string>("StudioName")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("SupportUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<string>("Symbol")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("TagsCsv")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -208,6 +281,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
+
+                    b.Property<string>("WebsiteUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
 
                     b.HasKey("Id");
 
@@ -222,6 +299,8 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.HasIndex("Kind");
 
                     b.HasIndex("ParentGameId");
+
+                    b.HasIndex("ReleaseStatus");
 
                     b.HasIndex("Symbol")
                         .IsUnique();
@@ -357,6 +436,32 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGamePlaytimeEntity", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("LastPlayedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("SessionCount")
+                        .HasColumnType("int");
+
+                    b.Property<long>("TotalSeconds")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("UserId", "GameId");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("UserId", "LastPlayedUtc");
+
+                    b.ToTable("user_game_playtime", (string)null);
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserRelationshipEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -417,6 +522,17 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("GameBuild");
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameDownloadEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", b =>
                 {
                     b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", "Engine")
@@ -450,6 +566,25 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Game");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGamePlaytimeEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserRelationshipEntity", b =>

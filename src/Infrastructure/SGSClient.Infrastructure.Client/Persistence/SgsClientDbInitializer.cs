@@ -56,6 +56,25 @@ public static class SgsClientDbInitializer
                 "ALTER TABLE local_installs ADD COLUMN CustomCoverPath TEXT NULL;",
                 cancellationToken);
         }
+
+        if (!await TableExistsAsync(db, "local_playtime", cancellationToken))
+        {
+            await ExecuteNonQueryAsync(
+                db,
+                """
+                CREATE TABLE local_playtime (
+                    UserId INTEGER NOT NULL,
+                    GameId INTEGER NOT NULL,
+                    TotalSeconds INTEGER NOT NULL DEFAULT 0,
+                    UnsyncedSeconds INTEGER NOT NULL DEFAULT 0,
+                    LastPlayedUtc TEXT NULL,
+                    SessionCount INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (UserId, GameId)
+                );
+                CREATE INDEX IX_local_playtime_GameId ON local_playtime (GameId);
+                """,
+                cancellationToken);
+        }
     }
 
     private static async Task<bool> HasRequiredSchemaAsync(

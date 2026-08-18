@@ -274,5 +274,22 @@ public class GameInstallServiceTests
             int buildId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<GameBuildVersionDto>>([]);
+
+        public Task<IReadOnlyList<GameBuildVersionDto>> GetOwnedVersionsAsync(
+            int gameId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameBuildVersionDto>>([]);
+
+        public Task<GameStatsDto?> GetOwnedGameStatsAsync(
+            int gameId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameStatsDto?>(null);
+
+        public Task<GameBuildVersionDto?> UpdateVersionNotesAsync(
+            int gameId,
+            int versionId,
+            string? releaseNotes,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameBuildVersionDto?>(null);
     }
 }

@@ -58,6 +58,7 @@ public partial class PublishViewModel : ObservableObject
     [ObservableProperty] public partial string MediaIntro { get; set; } = string.Empty;
     [ObservableProperty] public partial string MediaScreenshots { get; set; } = string.Empty;
     [ObservableProperty] public partial string BuildVersion { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ReleaseNotes { get; set; } = string.Empty;
     [ObservableProperty] public partial string BuildPlatform { get; set; } = "windows";
     [ObservableProperty] public partial string BuildArchitecture { get; set; } = "x64";
     [ObservableProperty] public partial string BuildExecutable { get; set; } = string.Empty;
@@ -489,6 +490,7 @@ public partial class PublishViewModel : ObservableObject
             ? string.Join(Environment.NewLine, shots)
             : string.Empty;
         BuildVersion = manifest.Build.Version ?? string.Empty;
+        ReleaseNotes = manifest.Build.ReleaseNotes ?? string.Empty;
         BuildPlatform = string.IsNullOrWhiteSpace(manifest.Build.Platform) ? "windows" : manifest.Build.Platform;
         BuildArchitecture = string.IsNullOrWhiteSpace(manifest.Build.Architecture) ? "x64" : manifest.Build.Architecture;
         BuildExecutable = manifest.Build.Executable ?? string.Empty;
@@ -537,7 +539,8 @@ public partial class PublishViewModel : ObservableObject
                 Platform = (BuildPlatform ?? "windows").Trim().ToLowerInvariant(),
                 Architecture = string.IsNullOrWhiteSpace(BuildArchitecture) ? "x64" : BuildArchitecture.Trim(),
                 Executable = BuildExecutable.Trim().Replace('\\', '/'),
-                IsDefault = true
+                IsDefault = true,
+                ReleaseNotes = NullIfWhiteSpace(ReleaseNotes)
             },
             Package = _packageHints
         };
@@ -558,6 +561,7 @@ public partial class PublishViewModel : ObservableObject
         MediaIntro = string.Empty;
         MediaScreenshots = string.Empty;
         BuildVersion = string.Empty;
+        ReleaseNotes = string.Empty;
         BuildPlatform = "windows";
         BuildArchitecture = "x64";
         BuildExecutable = string.Empty;

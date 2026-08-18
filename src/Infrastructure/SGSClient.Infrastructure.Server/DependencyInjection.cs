@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<IGameRepository, EfGameRepository>();
         services.AddScoped<IUserService, EfUserService>();
         services.AddScoped<IFriendsService, FriendsService>();
+        services.AddScoped<IPlaytimeService, PlaytimeService>();
         services.AddSingleton<IAdminAuthorization, AdminAuthorization>();
         services.AddScoped<GameBuildVersionService>();
         services.AddScoped<IGamePackagePublisher, GamePackagePublisher>();

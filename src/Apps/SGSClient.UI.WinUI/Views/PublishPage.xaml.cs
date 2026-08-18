@@ -136,6 +136,11 @@ public sealed partial class PublishPage : Page
             VersionBox.Text = ViewModel.BuildVersion;
         }
 
+        if (ReleaseNotesBox.Text != ViewModel.ReleaseNotes)
+        {
+            ReleaseNotesBox.Text = ViewModel.ReleaseNotes;
+        }
+
         if (ExecutableBox.Text != ViewModel.BuildExecutable)
         {
             ExecutableBox.Text = ViewModel.BuildExecutable;
@@ -189,6 +194,7 @@ public sealed partial class PublishPage : Page
         ViewModel.MediaIntro = IntroBox.Text ?? string.Empty;
         ViewModel.MediaScreenshots = ScreenshotsBox.Text ?? string.Empty;
         ViewModel.BuildVersion = VersionBox.Text ?? string.Empty;
+        ViewModel.ReleaseNotes = ReleaseNotesBox.Text ?? string.Empty;
         ViewModel.BuildExecutable = ExecutableBox.Text ?? string.Empty;
         ViewModel.BuildPlatform = PlatformCombo.SelectedItem as string ?? "windows";
         ViewModel.BuildArchitecture = ArchitectureCombo.SelectedItem as string ?? "x64";

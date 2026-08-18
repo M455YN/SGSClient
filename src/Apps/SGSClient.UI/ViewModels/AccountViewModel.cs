@@ -8,6 +8,8 @@ using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Models;
+using SGSClient.Core.Playtime;
 
 namespace SGSClient.UI.ViewModels;
 
@@ -562,17 +564,24 @@ public partial class AccountViewModel : ViewModelBase
         {
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetService<ILocalLibraryStore>();
+            var playtime = scope.ServiceProvider.GetService<IPlaytimeStore>();
             if (library is null)
             {
                 return;
             }
 
             var items = await library.GetAllAsync();
+            if (playtime is not null)
+            {
+                await playtime.SyncFromServerAsync();
+                await playtime.ApplyToLibraryAsync(items);
+            }
+
             foreach (var item in items
                          .OrderByDescending(x => x.LastPlayedUtc ?? DateTimeOffset.MinValue)
                          .Take(9))
             {
-                RecentGames.Add(new RecentGameItem(item.Title, item.Symbol, item.LastPlayedUtc));
+                RecentGames.Add(new RecentGameItem(item.Title, item.Symbol, item.LastPlayedUtc, item.TotalPlayTimeSeconds));
             }
         }
         catch
@@ -624,14 +633,22 @@ public partial class AccountViewModel : ViewModelBase
     }
 }
 
-public sealed class RecentGameItem(string title, string symbol, DateTimeOffset? lastPlayedUtc)
+public sealed class RecentGameItem(string title, string symbol, DateTimeOffset? lastPlayedUtc, long playtimeSeconds = 0)
 {
     public string Title { get; } = title;
     public string Symbol { get; } = symbol;
     public string TileLabel { get; } = string.IsNullOrWhiteSpace(symbol)
         ? title[..Math.Min(2, title.Length)].ToUpperInvariant()
         : symbol[..Math.Min(3, symbol.Length)].ToUpperInvariant();
-    public string Subtitle { get; } = lastPlayedUtc is null
-        ? "Niegrana"
-        : lastPlayedUtc.Value.LocalDateTime.ToString("g");
+    public string Subtitle { get; } = FormatSubtitle(lastPlayedUtc, playtimeSeconds);
+
+    private static string FormatSubtitle(DateTimeOffset? lastPlayedUtc, long playtimeSeconds)
+    {
+        var when = lastPlayedUtc is null
+            ? "Niegrana"
+            : lastPlayedUtc.Value.LocalDateTime.ToString("g");
+        return playtimeSeconds > 0
+            ? $"{PlaytimeFormat.ToPolishTotal(playtimeSeconds)} · {when}"
+            : when;
+    }
 }

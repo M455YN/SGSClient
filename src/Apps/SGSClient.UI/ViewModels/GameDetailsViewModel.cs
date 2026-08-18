@@ -10,6 +10,7 @@ using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
+using SGSClient.Core.Playtime;
 
 namespace SGSClient.UI.ViewModels;
 
@@ -138,6 +139,13 @@ public partial class GameDetailsViewModel : ViewModelBase
     private string _statusText = string.Empty;
 
     [ObservableProperty]
+    private string _playtimeText = string.Empty;
+
+    public bool HasPlaytime => !string.IsNullOrWhiteSpace(PlaytimeText);
+
+    partial void OnPlaytimeTextChanged(string value) => OnPropertyChanged(nameof(HasPlaytime));
+
+    [ObservableProperty]
     private string _selectedTab = "Details";
 
     [ObservableProperty]
@@ -240,6 +248,7 @@ public partial class GameDetailsViewModel : ViewModelBase
             ApplyGame(game);
             await EnrichBuildHistoryAsync(game.Id);
             await RefreshLibraryStateAsync(game.Id);
+            await SyncAndRefreshPlaytimeAsync(game.Id);
             UpdateActionState(game);
             HasContent = true;
             StatusText = string.Empty;
@@ -438,11 +447,14 @@ public partial class GameDetailsViewModel : ViewModelBase
         {
             using var scope = _scopes.CreateScope();
             var launcher = scope.ServiceProvider.GetRequiredService<IGameLauncherService>();
-            await launcher.LaunchAsync(_libraryItem.ExecutablePath);
-            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            _libraryItem.LastPlayedUtc = DateTimeOffset.UtcNow;
-            await library.UpsertAsync(_libraryItem);
-            StatusText = "Uruchomiono.";
+            var result = await launcher.LaunchAsync(new GameLaunchRequest
+            {
+                GameId = _libraryItem.GameId,
+                Title = Title,
+                ExecutablePath = _libraryItem.ExecutablePath
+            });
+            StatusText = result.Message;
+            await RefreshPlaytimeAsync(_libraryItem.GameId);
         }
         catch (Exception ex)
         {
@@ -574,19 +586,14 @@ public partial class GameDetailsViewModel : ViewModelBase
         ShowFeaturedBadge = game.FeaturedP;
 
         Badges.Clear();
-        if (game.FeaturedP)
+        foreach (var badge in GameStoreLabels.CatalogBadges(game))
         {
-            Badges.Add("Wyróżnione");
+            Badges.Add(badge);
         }
 
-        if (!string.IsNullOrWhiteSpace(game.GenreName))
+        if (!string.IsNullOrWhiteSpace(game.StudioName))
         {
-            Badges.Add(game.GenreName);
-        }
-
-        if (!string.IsNullOrWhiteSpace(game.EngineName))
-        {
-            Badges.Add(game.EngineName);
+            Badges.Insert(0, game.StudioName);
         }
 
         Badges.Add("Sklep SGS");
@@ -727,10 +734,60 @@ public partial class GameDetailsViewModel : ViewModelBase
             {
                 ApplyLibraryActions(_libraryItem);
             }
+
+            await RefreshPlaytimeAsync(gameId);
         }
         catch
         {
             InLibrary = false;
+        }
+    }
+
+    private async Task SyncAndRefreshPlaytimeAsync(int gameId)
+    {
+        if (_scopes is null)
+        {
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var store = scope.ServiceProvider.GetService<IPlaytimeStore>();
+            if (store is null)
+            {
+                return;
+            }
+
+            await store.SyncFromServerAsync();
+        }
+        catch
+        {
+        }
+
+        await RefreshPlaytimeAsync(gameId);
+    }
+
+    private async Task RefreshPlaytimeAsync(int gameId)
+    {
+        if (_scopes is null)
+        {
+            PlaytimeText = string.Empty;
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var store = scope.ServiceProvider.GetService<IPlaytimeStore>();
+            var record = store is null ? null : await store.GetAsync(gameId);
+            PlaytimeText = record is { TotalSeconds: > 0 }
+                ? PlaytimeFormat.ToPolishTotal(record.TotalSeconds)
+                : string.Empty;
+        }
+        catch
+        {
+            PlaytimeText = string.Empty;
         }
     }
 

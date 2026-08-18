@@ -17,6 +17,7 @@ public sealed class GameBuildVersionService(
         string exeName,
         string zipLink,
         string fileName,
+        string? releaseNotes = null,
         CancellationToken cancellationToken = default)
     {
         if (build.Id == 0)
@@ -29,6 +30,8 @@ public sealed class GameBuildVersionService(
             .FirstOrDefaultAsync(v => v.GameBuildId == build.Id && v.Version == version, cancellationToken)
             .ConfigureAwait(false);
 
+        var notes = string.IsNullOrWhiteSpace(releaseNotes) ? null : releaseNotes.Trim();
+
         if (existing is null)
         {
             db.GameBuildVersions.Add(new GameBuildVersionEntity
@@ -38,7 +41,8 @@ public sealed class GameBuildVersionService(
                 ExeName = exeName,
                 ZipLink = zipLink,
                 FileName = fileName,
-                PublishedAtUtc = now
+                PublishedAtUtc = now,
+                ReleaseNotes = notes
             });
         }
         else
@@ -47,6 +51,12 @@ public sealed class GameBuildVersionService(
             existing.ZipLink = zipLink;
             existing.FileName = fileName;
             existing.PublishedAtUtc = now;
+
+            // Keep the previous changelog when a republish omits it.
+            if (notes is not null)
+            {
+                existing.ReleaseNotes = notes;
+            }
         }
 
         await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

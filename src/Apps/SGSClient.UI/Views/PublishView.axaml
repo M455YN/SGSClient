@@ -140,6 +140,12 @@
             </StackPanel>
           </Grid>
 
+          <StackPanel Spacing="4">
+            <TextBlock Text="Opis zmian (changelog)" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding ReleaseNotes}" PlaceholderText="Co nowego w tej wersji"
+                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"/>
+          </StackPanel>
+
           <Grid ColumnDefinitions="*,12,*">
             <StackPanel Grid.Column="0" Spacing="4">
               <TextBlock Text="Platforma" Opacity="0.55" FontSize="12"/>

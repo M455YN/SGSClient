@@ -63,6 +63,9 @@ public sealed class SgsPackageBuildInfo
     public required string Executable { get; set; }
 
     public bool IsDefault { get; set; } = true;
+
+    /// <summary>Changelog for this version, shown in the game's updates tab.</summary>
+    public string? ReleaseNotes { get; set; }
 }
 
 public sealed class SgsPackageHints

@@ -212,10 +212,194 @@ public sealed class EfGameRepository(
                 ExeName = v.ExeName,
                 ZipLink = v.ZipLink,
                 PublishedAtUtc = v.PublishedAtUtc,
-                IsCurrent = v.Version == build.CurrentVersion
+                IsCurrent = v.Version == build.CurrentVersion,
+                ReleaseNotes = v.ReleaseNotes
             })
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<GameBuildVersionDto>> GetOwnedVersionHistoryAsync(
+        int gameId,
+        int ownerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var owns = await db.Games
+            .AsNoTracking()
+            .AnyAsync(g => g.Id == gameId && g.UserId == ownerUserId, cancellationToken);
+        if (!owns)
+        {
+            return [];
+        }
+
+        var rows = await db.GameBuildVersions
+            .AsNoTracking()
+            .Where(v => v.GameBuild!.GameId == gameId)
+            .OrderByDescending(v => v.PublishedAtUtc)
+            .Select(v => new
+            {
+                v.Id,
+                v.GameBuildId,
+                v.Version,
+                v.ExeName,
+                v.ZipLink,
+                v.PublishedAtUtc,
+                v.ReleaseNotes,
+                CurrentVersion = v.GameBuild!.CurrentVersion,
+                Platform = v.GameBuild.Platform,
+                Architecture = v.GameBuild.Architecture
+            })
+            .ToListAsync(cancellationToken);
+
+        return rows.Select(v => new GameBuildVersionDto
+        {
+            Id = v.Id,
+            GameBuildId = v.GameBuildId,
+            Version = v.Version,
+            ExeName = v.ExeName,
+            ZipLink = v.ZipLink,
+            PublishedAtUtc = v.PublishedAtUtc,
+            IsCurrent = v.Version == v.CurrentVersion,
+            ReleaseNotes = v.ReleaseNotes,
+            PlatformLabel = string.IsNullOrWhiteSpace(v.Architecture)
+                ? v.Platform.ToString()
+                : $"{v.Platform} {v.Architecture}"
+        }).ToList();
+    }
+
+    public async Task<GameBuildVersionDto?> UpdateOwnedVersionNotesAsync(
+        int gameId,
+        int versionId,
+        int ownerUserId,
+        string? releaseNotes,
+        CancellationToken cancellationToken = default)
+    {
+        var version = await db.GameBuildVersions
+            .Include(v => v.GameBuild)
+            .ThenInclude(b => b!.Game)
+            .FirstOrDefaultAsync(
+                v => v.Id == versionId
+                    && v.GameBuild!.GameId == gameId
+                    && v.GameBuild.Game!.UserId == ownerUserId,
+                cancellationToken);
+
+        if (version is null)
+        {
+            return null;
+        }
+
+        var notes = releaseNotes?.Trim();
+        if (notes?.Length > SgsPackageRules.MaxReleaseNotesLength)
+        {
+            throw new ArgumentException(
+                $"Opis zmian może mieć maksymalnie {SgsPackageRules.MaxReleaseNotesLength} znaków.");
+        }
+
+        version.ReleaseNotes = string.IsNullOrWhiteSpace(notes) ? null : notes;
+        await db.SaveChangesAsync(cancellationToken);
+
+        var build = version.GameBuild!;
+        return new GameBuildVersionDto
+        {
+            Id = version.Id,
+            GameBuildId = version.GameBuildId,
+            Version = version.Version,
+            ExeName = version.ExeName,
+            ZipLink = version.ZipLink,
+            PublishedAtUtc = version.PublishedAtUtc,
+            IsCurrent = version.Version == build.CurrentVersion,
+            ReleaseNotes = version.ReleaseNotes,
+            PlatformLabel = build.Architecture is null
+                ? build.Platform.ToString()
+                : $"{build.Platform} {build.Architecture}"
+        };
+    }
+
+    public async Task<GameStatsDto?> GetOwnedGameStatsAsync(
+        int gameId,
+        int ownerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var owns = await db.Games
+            .AsNoTracking()
+            .AnyAsync(g => g.Id == gameId && g.UserId == ownerUserId, cancellationToken);
+        if (!owns)
+        {
+            return null;
+        }
+
+        var today = DateTimeOffset.UtcNow.Date;
+        var from30 = new DateTimeOffset(today.AddDays(-29), TimeSpan.Zero);
+        var from7 = new DateTimeOffset(today.AddDays(-6), TimeSpan.Zero);
+
+        var downloads = await db.GameDownloads
+            .AsNoTracking()
+            .Where(d => d.GameId == gameId)
+            .Select(d => new { d.Version, d.DownloadedAtUtc })
+            .ToListAsync(cancellationToken);
+
+        var perDay = downloads
+            .Where(d => d.DownloadedAtUtc >= from30)
+            .GroupBy(d => DateOnly.FromDateTime(d.DownloadedAtUtc.UtcDateTime.Date))
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var daily = Enumerable.Range(0, 30)
+            .Select(offset =>
+            {
+                var day = DateOnly.FromDateTime(today.AddDays(offset - 29));
+                return new GameStatsPointDto
+                {
+                    Day = day,
+                    Downloads = perDay.TryGetValue(day, out var count) ? count : 0
+                };
+            })
+            .ToList();
+
+        return new GameStatsDto
+        {
+            GameId = gameId,
+            TotalDownloads = downloads.Count,
+            DownloadsLast30Days = downloads.Count(d => d.DownloadedAtUtc >= from30),
+            DownloadsLast7Days = downloads.Count(d => d.DownloadedAtUtc >= from7),
+            LastDownloadUtc = downloads.Count == 0 ? null : downloads.Max(d => d.DownloadedAtUtc),
+            Daily = daily,
+            ByVersion = downloads
+                .GroupBy(d => d.Version)
+                .Select(g => new GameStatsVersionDto { Version = g.Key, Downloads = g.Count() })
+                .OrderByDescending(v => v.Downloads)
+                .ToList()
+        };
+    }
+
+    public async Task RecordDownloadAsync(
+        string symbol,
+        string version,
+        string platformKey,
+        CancellationToken cancellationToken = default)
+    {
+        var gameId = await db.Games
+            .AsNoTracking()
+            .Where(g => g.Symbol == symbol)
+            .Select(g => (int?)g.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (gameId is null)
+        {
+            return;
+        }
+
+        db.GameDownloads.Add(new GameDownloadEntity
+        {
+            GameId = gameId.Value,
+            Version = Truncate(version, 64),
+            PlatformKey = Truncate(platformKey, 64),
+            DownloadedAtUtc = DateTimeOffset.UtcNow
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static string Truncate(string value, int maxLength) =>
+        value.Length <= maxLength ? value : value[..maxLength];
 
     private void TryDeleteStorageFolder(string symbol)
     {
@@ -291,6 +475,70 @@ public sealed class EfGameRepository(
             game.DraftP = request.DraftP.Value;
         }
 
+        if (request.StudioName is not null)
+        {
+            game.StudioName = Trimmed(request.StudioName, 128);
+        }
+
+        if (request.WebsiteUrl is not null)
+        {
+            game.WebsiteUrl = ValidatedUrl(request.WebsiteUrl, "Adres strony");
+        }
+
+        if (request.DiscordUrl is not null)
+        {
+            game.DiscordUrl = ValidatedUrl(request.DiscordUrl, "Adres Discorda");
+        }
+
+        if (request.SupportUrl is not null)
+        {
+            game.SupportUrl = ValidatedUrl(request.SupportUrl, "Adres wsparcia");
+        }
+
+        if (request.ReleaseStatus is not null)
+        {
+            if (!Enum.IsDefined(request.ReleaseStatus.Value))
+            {
+                throw new ArgumentException("Nieznany status wydania.");
+            }
+
+            game.ReleaseStatus = request.ReleaseStatus.Value;
+        }
+
+        if (request.ClearReleaseDate)
+        {
+            game.ReleaseDateUtc = null;
+        }
+        else if (request.ReleaseDateUtc is not null)
+        {
+            game.ReleaseDateUtc = request.ReleaseDateUtc;
+        }
+
+        if (request.AgeRating is not null)
+        {
+            if (!Enum.IsDefined(request.AgeRating.Value))
+            {
+                throw new ArgumentException("Nieznana kategoria wiekowa.");
+            }
+
+            game.AgeRating = request.AgeRating.Value;
+        }
+
+        if (request.Features is not null)
+        {
+            game.Features = request.Features.Value;
+        }
+
+        if (request.Languages is not null)
+        {
+            game.LanguagesCsv = CsvList.Join(request.Languages);
+        }
+
+        if (request.Tags is not null)
+        {
+            game.TagsCsv = CsvList.Join(request.Tags.Select(t => t.ToLowerInvariant()));
+        }
+
         if (!allowCuration)
         {
             return;
@@ -309,6 +557,34 @@ public sealed class EfGameRepository(
         {
             game.FeaturedOrder = request.FeaturedOrder.Value < 0 ? null : request.FeaturedOrder.Value;
         }
+    }
+
+    private static string? Trimmed(string value, int maxLength)
+    {
+        var trimmed = value.Trim();
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
+
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength];
+    }
+
+    private static string? ValidatedUrl(string value, string label)
+    {
+        var trimmed = value.Trim();
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
+
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+            || uri.Scheme is not ("http" or "https"))
+        {
+            throw new ArgumentException($"{label} musi zaczynać się od http:// lub https://.");
+        }
+
+        return trimmed.Length <= 2048 ? trimmed : throw new ArgumentException($"{label} jest za długi.");
     }
 
     private async Task<int?> ResolveTaxonomyIdAsync(string raw, bool isGenre, CancellationToken cancellationToken)
@@ -380,6 +656,16 @@ public sealed class EfGameRepository(
             ParentGameId = g.ParentGameId,
             ParentSymbol = g.ParentGame != null ? g.ParentGame.Symbol : null,
             CreatedAtUtc = g.CreatedAtUtc,
+            StudioName = g.StudioName,
+            WebsiteUrl = g.WebsiteUrl,
+            DiscordUrl = g.DiscordUrl,
+            SupportUrl = g.SupportUrl,
+            ReleaseStatus = g.ReleaseStatus,
+            ReleaseDateUtc = g.ReleaseDateUtc,
+            AgeRating = g.AgeRating,
+            Features = g.Features,
+            LanguagesCsv = g.LanguagesCsv,
+            TagsCsv = g.TagsCsv,
             PackageSizeBytes = g.Builds
                 .OrderByDescending(b => b.IsDefault)
                 .Select(b => b.PackageSizeBytes)

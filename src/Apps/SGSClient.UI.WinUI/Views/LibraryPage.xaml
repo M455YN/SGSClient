@@ -126,7 +126,7 @@
               </GridView.ItemContainerStyle>
               <GridView.ItemTemplate>
                 <DataTemplate>
-                  <Border Width="168" Height="248" CornerRadius="8"
+                  <Border Width="168" Height="268" CornerRadius="8"
                           Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                           BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                           BorderThickness="1">
@@ -140,6 +140,9 @@
                         <StackPanel Spacing="2">
                           <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                           <TextBlock Text="{Binding LastPlayedText}"
+                                     Style="{StaticResource CaptionTextBlockStyle}"
+                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                          <TextBlock Text="{Binding PlaytimeText}"
                                      Style="{StaticResource CaptionTextBlockStyle}"
                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
