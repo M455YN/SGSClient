@@ -12,16 +12,18 @@ namespace SGSClient.UI.WinUI.Views;
 
 public sealed partial class AdminPage : Page
 {
+    private bool _syncingToggles;
+
     public AdminViewModel ViewModel { get; }
 
     public AdminPage()
     {
         ViewModel = App.Services.GetRequiredService<AdminViewModel>();
         InitializeComponent();
+        DataContext = ViewModel;
         ViewModel.SetEditHandler(ShowEditDialogAsync);
         ViewModel.SetConfirmDeleteHandler(ConfirmDeleteAsync);
-        ViewModel.PropertyChanged += (_, _) => RefreshUi();
-        TitleText.Text = ViewModel.Title;
+        ViewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -31,71 +33,113 @@ public sealed partial class AdminPage : Page
         RefreshUi();
     }
 
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(AdminViewModel.SelectedGame))
+        {
+            SyncToggles();
+        }
+
+        RefreshUi();
+    }
+
+    private void SyncToggles()
+    {
+        _syncingToggles = true;
+        PublishedToggle.IsOn = ViewModel.SelectedGame?.IsPublished == true;
+        FeaturedToggle.IsOn = ViewModel.SelectedGame?.FeaturedP == true;
+        _syncingToggles = false;
+    }
+
     private void RefreshUi()
     {
         StatusText.Text = ViewModel.StatusText;
         EmptyText.Text = ViewModel.StatusText;
         EmptyText.Visibility = ViewModel.ShowEmpty ? Visibility.Visible : Visibility.Collapsed;
-        GamesList.Visibility = ViewModel.ShowGames ? Visibility.Visible : Visibility.Collapsed;
-        UsersList.Visibility = ViewModel.ShowUsers ? Visibility.Visible : Visibility.Collapsed;
-        GamesList.ItemsSource = null;
-        GamesList.ItemsSource = ViewModel.Games;
-        UsersList.ItemsSource = null;
-        UsersList.ItemsSource = ViewModel.Users;
+        GamesTab.Visibility = ViewModel.IsGamesTab && !ViewModel.ShowEmpty ? Visibility.Visible : Visibility.Collapsed;
+        FeaturedTab.Visibility = ViewModel.IsFeaturedTab && !ViewModel.ShowEmpty ? Visibility.Visible : Visibility.Collapsed;
+        UsersTab.Visibility = ViewModel.IsUsersTab && !ViewModel.ShowEmpty ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs e)
     {
         await ViewModel.LoadCommand.ExecuteAsync(null);
+        SyncToggles();
         RefreshUi();
     }
 
-    private void GamesTab_Click(object sender, RoutedEventArgs e)
+    private void Tab_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        ViewModel.SelectTabCommand.Execute("games");
-        RefreshUi();
+        if (sender.SelectedItem?.Tag is string tag)
+        {
+            ViewModel.SelectTabCommand.Execute(tag);
+            RefreshUi();
+        }
     }
 
-    private void UsersTab_Click(object sender, RoutedEventArgs e)
+    private void Filter_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        ViewModel.SelectTabCommand.Execute("users");
-        RefreshUi();
+        if (sender.SelectedItem?.Tag is string tag)
+        {
+            ViewModel.SetFilterCommand.Execute(tag);
+        }
+    }
+
+    private void Search_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+        {
+            ViewModel.SearchText = sender.Text;
+        }
+    }
+
+    private async void Published_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_syncingToggles)
+        {
+            return;
+        }
+
+        await ViewModel.SetDraftCommand.ExecuteAsync(!PublishedToggle.IsOn);
+        SyncToggles();
+    }
+
+    private async void Featured_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_syncingToggles)
+        {
+            return;
+        }
+
+        await ViewModel.SetFeaturedCommand.ExecuteAsync(FeaturedToggle.IsOn);
+        SyncToggles();
+    }
+
+    private async void MoveUp_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: AdminGameItem item })
+        {
+            await ViewModel.MoveFeaturedUpCommand.ExecuteAsync(item);
+        }
+    }
+
+    private async void MoveDown_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: AdminGameItem item })
+        {
+            await ViewModel.MoveFeaturedDownCommand.ExecuteAsync(item);
+        }
     }
 
     private async void Edit_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { Tag: AdminGameItem item })
-        {
-            await ViewModel.EditCommand.ExecuteAsync(item);
-            RefreshUi();
-        }
-    }
-
-    private async void ToggleDraft_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { Tag: AdminGameItem item })
-        {
-            await ViewModel.ToggleDraftCommand.ExecuteAsync(item);
-            RefreshUi();
-        }
-    }
-
-    private async void ToggleFeatured_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { Tag: AdminGameItem item })
-        {
-            await ViewModel.ToggleFeaturedCommand.ExecuteAsync(item);
-            RefreshUi();
-        }
+        await ViewModel.EditCommand.ExecuteAsync(ViewModel.SelectedGame);
+        SyncToggles();
     }
 
     private async void Delete_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { Tag: AdminGameItem item })
-        {
-            await ViewModel.DeleteCommand.ExecuteAsync(item);
-            RefreshUi();
-        }
+        await ViewModel.DeleteCommand.ExecuteAsync(ViewModel.SelectedGame);
     }
 
     private async Task<bool> ShowEditDialogAsync(AdminGameItem item)
@@ -154,14 +198,6 @@ public sealed partial class AdminPage : Page
             HorizontalAlignment = HorizontalAlignment.Stretch,
             Margin = new Thickness(0, 0, 0, 8)
         };
-        var draftBox = new CheckBox { Content = "Szkic (ukryty w sklepie)", IsChecked = item.DraftP };
-        var featuredBox = new CheckBox
-        {
-            Content = "Wyróżnione",
-            IsChecked = item.FeaturedP,
-            Margin = new Thickness(0, 8, 0, 0)
-        };
-
         item.PendingCoverPath = null;
         item.PendingIntroPath = null;
         item.ClearCover = false;
@@ -314,8 +350,6 @@ public sealed partial class AdminPage : Page
         panel.Children.Add(genreCombo);
         panel.Children.Add(new TextBlock { Text = "Silnik", Opacity = 0.55, FontSize = 12 });
         panel.Children.Add(engineCombo);
-        panel.Children.Add(draftBox);
-        panel.Children.Add(featuredBox);
 
         panel.Children.Add(new TextBlock
         {
@@ -361,8 +395,6 @@ public sealed partial class AdminPage : Page
         item.EditOtherInformation = otherBox.Text;
         item.EditGenre = genreCombo.SelectedItem as string ?? string.Empty;
         item.EditEngine = engineCombo.SelectedItem as string ?? string.Empty;
-        item.EditDraft = draftBox.IsChecked == true;
-        item.EditFeatured = featuredBox.IsChecked == true;
         return true;
     }
 

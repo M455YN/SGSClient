@@ -260,7 +260,8 @@ public sealed class MeController(
         PlayerTag = profile.PlayerTag,
         CreatedAtUtc = profile.CreatedAtUtc,
         LastLoginUtc = profile.LastLoginUtc,
-        IsAdmin = adminAuth.IsAdmin(User, profile.Email)
+        Role = adminAuth.ResolveRole(profile.Role, profile.Email),
+        IsAdmin = adminAuth.IsAdmin(User, profile.Email, profile.Role)
     };
 
     private async Task<ResolvedIdentity?> ResolveIdentityAsync(CancellationToken cancellationToken)

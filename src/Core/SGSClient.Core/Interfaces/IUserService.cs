@@ -1,4 +1,5 @@
 using SGSClient.Core.DTOs;
+using SGSClient.Core.Enums;
 
 namespace SGSClient.Core.Interfaces;
 
@@ -31,4 +32,10 @@ public interface IUserService
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<AdminUserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Assigns a role. Throws when the target is a configuration-locked owner account.</summary>
+    Task<AdminUserDto?> SetUserRoleAsync(
+        int userId,
+        UserRole role,
+        CancellationToken cancellationToken = default);
 }

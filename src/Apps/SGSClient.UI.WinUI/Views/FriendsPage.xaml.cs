@@ -8,6 +8,8 @@ namespace SGSClient.UI.WinUI.Views;
 
 public sealed partial class FriendsPage : Page
 {
+    private bool _syncingTabs;
+
     public FriendsViewModel ViewModel { get; }
 
     public FriendsPage()
@@ -20,22 +22,22 @@ public sealed partial class FriendsPage : Page
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        var tab = e.Parameter as string;
-        await ViewModel.InitializeAsync(tab);
+        await ViewModel.InitializeAsync(e.Parameter as string);
         RefreshUi();
     }
 
     private void RefreshUi()
     {
         StatusText.Text = ViewModel.StatusText;
-        SearchBox.Text = ViewModel.SearchQuery;
-        TabRequests.Content = ViewModel.RequestsTabLabel;
+        if (SearchBox.FocusState == FocusState.Unfocused)
+        {
+            SearchBox.Text = ViewModel.SearchQuery;
+            SearchBox.PlaceholderText = ViewModel.SearchPlaceholder;
+        }
 
-        HighlightTab(TabFriends, ViewModel.ShowFriendsTab);
-        HighlightTab(TabRequests, ViewModel.ShowRequestsTab);
-        HighlightTab(TabFollowing, ViewModel.ShowFollowingTab);
-        HighlightTab(TabFollowers, ViewModel.ShowFollowersTab);
-        HighlightTab(TabSearch, ViewModel.ShowSearchTab);
+        _syncingTabs = true;
+        SocialTabs.SelectedItem = ViewModel.ShowSearchTab ? TabSearch : TabFriends;
+        _syncingTabs = false;
 
         FriendsPanel.Visibility = ViewModel.ShowFriendsTab ? Visibility.Visible : Visibility.Collapsed;
         RequestsPanel.Visibility = ViewModel.ShowRequestsTab ? Visibility.Visible : Visibility.Collapsed;
@@ -44,37 +46,99 @@ public sealed partial class FriendsPage : Page
         SearchPanel.Visibility = ViewModel.ShowSearchTab ? Visibility.Visible : Visibility.Collapsed;
 
         EmptyFriendsText.Visibility = ViewModel.ShowEmptyFriends ? Visibility.Visible : Visibility.Collapsed;
+        IncomingExpander.Visibility = ViewModel.ShowFriendsTab && ViewModel.HasIncoming
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        IncomingBadge.Value = ViewModel.IncomingCount;
+
+        OnlineExpander.Visibility = ViewModel.ShowFriendsGroups ? Visibility.Visible : Visibility.Collapsed;
+        OfflineExpander.Visibility = ViewModel.ShowFriendsGroups ? Visibility.Visible : Visibility.Collapsed;
+        OnlineBadge.Value = ViewModel.OnlineCount;
+        OfflineBadge.Value = ViewModel.OfflineCount;
+
         EmptyIncomingText.Visibility = ViewModel.HasIncoming ? Visibility.Collapsed : Visibility.Visible;
         EmptyOutgoingText.Visibility = ViewModel.HasOutgoing ? Visibility.Collapsed : Visibility.Visible;
         EmptyFollowingText.Visibility = ViewModel.ShowEmptyFollowing ? Visibility.Visible : Visibility.Collapsed;
         EmptyFollowersText.Visibility = ViewModel.ShowEmptyFollowers ? Visibility.Visible : Visibility.Collapsed;
         EmptySearchText.Visibility = ViewModel.ShowEmptySearch ? Visibility.Visible : Visibility.Collapsed;
 
-        FriendsList.ItemsSource = ViewModel.Friends;
         IncomingList.ItemsSource = ViewModel.Incoming;
+        IncomingListAlt.ItemsSource = ViewModel.Incoming;
+        OnlineList.ItemsSource = ViewModel.OnlineFriends;
+        OfflineList.ItemsSource = ViewModel.OfflineFriends;
         OutgoingList.ItemsSource = ViewModel.Outgoing;
         FollowingList.ItemsSource = ViewModel.Following;
         FollowersList.ItemsSource = ViewModel.Followers;
         SearchList.ItemsSource = ViewModel.SearchResults;
     }
 
-    private static void HighlightTab(Button button, bool selected) =>
-        button.FontWeight = selected ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
-
-    private void Tab_Click(object sender, RoutedEventArgs e)
+    private void SocialTabs_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        if ((sender as FrameworkElement)?.Tag is string tab)
+        if (_syncingTabs || sender.SelectedItem is not SelectorBarItem { Tag: string tag })
         {
-            ViewModel.SelectTabCommand.Execute(tab);
-            RefreshUi();
+            return;
         }
+
+        if (tag == "Profile")
+        {
+            App.MainWindow?.CloseSocialOverlay();
+            App.MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account");
+            return;
+        }
+
+        if (tag == "Chat")
+        {
+            return;
+        }
+
+        ViewModel.SelectTabCommand.Execute(tag);
+        RefreshUi();
     }
 
-    private async void Search_Click(object sender, RoutedEventArgs e)
+    private void Close_Click(object sender, RoutedEventArgs e) =>
+        App.MainWindow?.CloseSocialOverlay();
+
+    private void IncomingExpander_Expanding(Expander sender, ExpanderExpandingEventArgs args) =>
+        ViewModel.IncomingExpanded = true;
+
+    private void IncomingExpander_Collapsed(Expander sender, ExpanderCollapsedEventArgs args) =>
+        ViewModel.IncomingExpanded = false;
+
+    private void OnlineExpander_Expanding(Expander sender, ExpanderExpandingEventArgs args) =>
+        ViewModel.OnlineExpanded = true;
+
+    private void OnlineExpander_Collapsed(Expander sender, ExpanderCollapsedEventArgs args) =>
+        ViewModel.OnlineExpanded = false;
+
+    private void OfflineExpander_Expanding(Expander sender, ExpanderExpandingEventArgs args) =>
+        ViewModel.OfflineExpanded = true;
+
+    private void OfflineExpander_Collapsed(Expander sender, ExpanderCollapsedEventArgs args) =>
+        ViewModel.OfflineExpanded = false;
+
+    private async void Search_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
-        ViewModel.SearchQuery = SearchBox.Text ?? string.Empty;
-        await ViewModel.SearchCommand.ExecuteAsync(null);
+        ViewModel.SearchQuery = sender.Text ?? string.Empty;
+        if (ViewModel.ShowSearchTab || ViewModel.SearchQuery.Trim().Length >= 2)
+        {
+            await ViewModel.SearchCommand.ExecuteAsync(null);
+        }
+
         RefreshUi();
+    }
+
+    private void Search_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
+        {
+            return;
+        }
+
+        ViewModel.SearchQuery = sender.Text ?? string.Empty;
+        if (ViewModel.ShowFriendsTab)
+        {
+            RefreshUi();
+        }
     }
 
     private async void AddFriend_Click(object sender, RoutedEventArgs e)

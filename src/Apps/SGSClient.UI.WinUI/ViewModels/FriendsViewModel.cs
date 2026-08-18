@@ -27,6 +27,8 @@ public partial class FriendsViewModel : ObservableObject
     public ObservableCollection<SocialPersonItem> Following { get; } = [];
     public ObservableCollection<SocialPersonItem> Followers { get; } = [];
     public ObservableCollection<SocialPersonItem> SearchResults { get; } = [];
+    public ObservableCollection<SocialPersonItem> OnlineFriends { get; } = [];
+    public ObservableCollection<SocialPersonItem> OfflineFriends { get; } = [];
 
     [ObservableProperty]
     public partial string SelectedTab { get; set; } = "Friends";
@@ -43,6 +45,15 @@ public partial class FriendsViewModel : ObservableObject
     [ObservableProperty]
     public partial int IncomingCount { get; set; }
 
+    [ObservableProperty]
+    public partial bool OnlineExpanded { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool OfflineExpanded { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool IncomingExpanded { get; set; } = true;
+
     public bool ShowFriendsTab => SelectedTab == "Friends";
     public bool ShowRequestsTab => SelectedTab == "Requests";
     public bool ShowFollowingTab => SelectedTab == "Following";
@@ -54,7 +65,11 @@ public partial class FriendsViewModel : ObservableObject
     public bool ShowEmptySearch => ShowSearchTab && SearchResults.Count == 0 && !IsBusy;
     public bool HasIncoming => Incoming.Count > 0;
     public bool HasOutgoing => Outgoing.Count > 0;
+    public bool ShowFriendsGroups => ShowFriendsTab && Friends.Count > 0;
+    public int OnlineCount => OnlineFriends.Count;
+    public int OfflineCount => OfflineFriends.Count;
     public string RequestsTabLabel => IncomingCount > 0 ? $"Zaproszenia ({IncomingCount})" : "Zaproszenia";
+    public string SearchPlaceholder => ShowSearchTab ? "Szukaj graczy…" : "Szukaj znajomych…";
 
     partial void OnSelectedTabChanged(string value)
     {
@@ -63,7 +78,18 @@ public partial class FriendsViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowFollowingTab));
         OnPropertyChanged(nameof(ShowFollowersTab));
         OnPropertyChanged(nameof(ShowSearchTab));
+        OnPropertyChanged(nameof(ShowFriendsGroups));
+        OnPropertyChanged(nameof(SearchPlaceholder));
         NotifyEmpty();
+        RebuildPresenceLists();
+    }
+
+    partial void OnSearchQueryChanged(string value)
+    {
+        if (ShowFriendsTab)
+        {
+            RebuildPresenceLists();
+        }
     }
 
     public async Task InitializeAsync(string? tab = null)
@@ -230,7 +256,35 @@ public partial class FriendsViewModel : ObservableObject
         OnPropertyChanged(nameof(RequestsTabLabel));
         OnPropertyChanged(nameof(HasIncoming));
         OnPropertyChanged(nameof(HasOutgoing));
+        RebuildPresenceLists();
         NotifyEmpty();
+    }
+
+    private void RebuildPresenceLists()
+    {
+        OnlineFriends.Clear();
+        OfflineFriends.Clear();
+        var q = SearchQuery.Trim();
+        foreach (var friend in Friends)
+        {
+            if (q.Length > 0 && !friend.Matches(q))
+            {
+                continue;
+            }
+
+            if (friend.IsOnline)
+            {
+                OnlineFriends.Add(friend);
+            }
+            else
+            {
+                OfflineFriends.Add(friend);
+            }
+        }
+
+        OnPropertyChanged(nameof(OnlineCount));
+        OnPropertyChanged(nameof(OfflineCount));
+        OnPropertyChanged(nameof(ShowFriendsGroups));
     }
 
     private static void Replace(ObservableCollection<SocialPersonItem> target, IReadOnlyList<SocialUserDto> source)
@@ -248,6 +302,7 @@ public partial class FriendsViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowEmptyFollowing));
         OnPropertyChanged(nameof(ShowEmptyFollowers));
         OnPropertyChanged(nameof(ShowEmptySearch));
+        OnPropertyChanged(nameof(ShowFriendsGroups));
         OnPropertyChanged(nameof(HasIncoming));
         OnPropertyChanged(nameof(HasOutgoing));
     }
@@ -255,38 +310,54 @@ public partial class FriendsViewModel : ObservableObject
 
 public sealed class SocialPersonItem
 {
+    private static readonly string[] AvatarPalette =
+    [
+        "#3D5A80", "#5C4B7A", "#2F6F5E", "#8A5A3C", "#4A6B8A", "#6B3D5A"
+    ];
+
     public required int UserId { get; init; }
     public required string DisplayName { get; init; }
+    public required string Title { get; init; }
     public required string Initials { get; init; }
     public required string Subtitle { get; init; }
+    public required string AvatarHex { get; init; }
+    public required bool IsOnline { get; init; }
     public required FriendRelation FriendRelation { get; init; }
     public required bool IsFollowing { get; init; }
     public bool ShowAddFriend => FriendRelation == FriendRelation.None;
     public bool ShowAccept => FriendRelation == FriendRelation.IncomingRequest;
     public bool ShowRemoveFriend => FriendRelation is FriendRelation.Friends or FriendRelation.OutgoingRequest;
     public string RemoveFriendLabel => FriendRelation == FriendRelation.OutgoingRequest ? "Anuluj" : "Usuń";
-    public bool ShowFollow => !IsFollowing;
-    public bool ShowUnfollow => IsFollowing;
+    public bool ShowFollow => !IsFollowing && FriendRelation == FriendRelation.None;
+    public bool ShowUnfollow => IsFollowing && FriendRelation != FriendRelation.Friends;
+    public bool HasActions => ShowAddFriend || ShowAccept || ShowRemoveFriend;
+
+    public bool Matches(string query) =>
+        Title.Contains(query, StringComparison.OrdinalIgnoreCase)
+        || DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase);
 
     public static SocialPersonItem FromDto(SocialUserDto user)
     {
-        var location = string.IsNullOrWhiteSpace(user.Location) ? null : user.Location.Trim();
+        var isOnline = user.LastLoginUtc is { } at
+            && DateTimeOffset.UtcNow - at.ToUniversalTime() <= TimeSpan.FromMinutes(20);
+        var title = string.IsNullOrWhiteSpace(user.PlayerTag) ? user.DisplayName : user.PlayerTag!;
         var relation = user.FriendRelation switch
         {
-            FriendRelation.Friends => "Znajomy",
             FriendRelation.IncomingRequest => "Zaproszenie do Ciebie",
             FriendRelation.OutgoingRequest => "Zaproszenie wysłane",
-            _ => user.IsFollowing ? "Obserwujesz" : (user.IsFollower ? "Obserwuje Cię" : null)
+            FriendRelation.Friends => isOnline ? "Online" : "Offline",
+            _ => user.IsFollowing ? "Obserwujesz" : (user.IsFollower ? "Obserwuje Cię" : (isOnline ? "Online" : "Offline"))
         };
-        var tag = string.IsNullOrWhiteSpace(user.PlayerTag) ? null : $"@{user.PlayerTag}";
-        var subtitle = string.Join(" · ", new[] { tag, location, relation }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
         return new SocialPersonItem
         {
             UserId = user.Id,
             DisplayName = user.DisplayName,
+            Title = title,
             Initials = MakeInitials(user.DisplayName),
-            Subtitle = string.IsNullOrWhiteSpace(subtitle) ? "Gracz SGS" : subtitle,
+            Subtitle = relation,
+            AvatarHex = AvatarPalette[Math.Abs(user.Id) % AvatarPalette.Length],
+            IsOnline = isOnline,
             FriendRelation = user.FriendRelation,
             IsFollowing = user.IsFollowing
         };

@@ -68,7 +68,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _account.SetAdminVisibilityHandler(visible =>
         {
             IsAdminVisible = visible;
-            Sidebar.SetAdminVisible(visible);
+            Sidebar.SetRoleVisibility(visible, visible);
             Sidebar.RefreshProfile();
         });
         Sidebar.SelectNav("Home");
@@ -86,7 +86,13 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isAdminVisible;
 
+    [ObservableProperty]
+    private bool _isSocialOpen;
+
+    public FriendsViewModel Friends => _friends;
+
     private string _detailsReturnTag = "Games";
+    private string _contentNavTag = "Home";
 
     [RelayCommand]
     private void Navigate(string? tag)
@@ -106,6 +112,22 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        if (tag == "Friends")
+        {
+            if (IsSocialOpen)
+            {
+                CloseSocial();
+            }
+            else
+            {
+                OpenSocial();
+            }
+
+            return;
+        }
+
+        _contentNavTag = tag;
+        CloseSocial();
         SelectedNavTag = tag;
         Sidebar.SelectNav(tag);
         CurrentPage = tag switch
@@ -117,7 +139,6 @@ public partial class MainWindowViewModel : ViewModelBase
             "Admin" => _admin,
             "Settings" => _settings,
             "Account" => _account,
-            "Friends" => _friends,
             _ => _home
         };
 
@@ -151,24 +172,39 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             Sidebar.RefreshProfile();
         }
-
-        if (tag == "Friends")
-        {
-            _ = _friends.InitializeAsync(_friendsTab);
-            _friendsTab = "Friends";
-        }
     }
 
-    public void OpenSocial(string tag)
+    public void OpenSocial(string? tab = null)
     {
-        if (tag.StartsWith("Friends:", StringComparison.Ordinal))
+        if (tab is { Length: > 0 } && tab.StartsWith("Friends:", StringComparison.Ordinal))
         {
-            _friendsTab = tag.Length > 8 ? tag[8..] : "Friends";
-            Navigate("Friends");
+            _friendsTab = tab.Length > 8 ? tab[8..] : "Friends";
+        }
+        else if (tab is "Following" or "Followers" or "Requests" or "Search")
+        {
+            _friendsTab = tab;
+        }
+        else if (!string.IsNullOrWhiteSpace(tab) && tab != "Friends")
+        {
+            Navigate(tab);
             return;
         }
 
-        Navigate(tag);
+        IsSocialOpen = true;
+        _ = _friends.InitializeAsync(_friendsTab);
+        _friendsTab = "Friends";
+    }
+
+    public void CloseSocial()
+    {
+        if (!IsSocialOpen)
+        {
+            return;
+        }
+
+        IsSocialOpen = false;
+        SelectedNavTag = _contentNavTag;
+        Sidebar.SelectNav(_contentNavTag);
     }
 
     public void NavigateToPublish(string? parentSymbol = null)

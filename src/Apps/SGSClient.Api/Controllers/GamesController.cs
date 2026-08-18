@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
+using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Packaging;
 
@@ -203,6 +204,11 @@ public sealed class GamesController(
             return Unauthorized();
         }
 
+        if (await EnsureCreatorAsync(ownerUserId.Value, cancellationToken) is { } forbidden)
+        {
+            return forbidden;
+        }
+
         if (package is null || package.Length == 0)
         {
             return BadRequest(new { errors = new[] { "Dodaj plik ZIP z grą." } });
@@ -279,6 +285,25 @@ public sealed class GamesController(
         Cover,
         Intro,
         Screenshot
+    }
+
+    /// <summary>Returns a 403 result when the account may not publish; null when it may.</summary>
+    private async Task<ActionResult<GameDto>?> EnsureCreatorAsync(int userId, CancellationToken cancellationToken)
+    {
+        if (!azureOptions.Value.IsConfigured)
+        {
+            return null;
+        }
+
+        var profile = await users.GetByIdAsync(userId, cancellationToken);
+        if (profile is not null && profile.Role >= UserRole.Creator)
+        {
+            return null;
+        }
+
+        return StatusCode(
+            StatusCodes.Status403Forbidden,
+            new { errors = new[] { "Twoje konto nie ma roli twórcy. Poproś administratora o nadanie uprawnień." } });
     }
 
     private async Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken)

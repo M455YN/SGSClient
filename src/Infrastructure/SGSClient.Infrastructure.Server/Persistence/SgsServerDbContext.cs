@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SGSClient.Core.Enums;
 using SGSClient.Infrastructure.Server.Persistence.Entities;
 
 namespace SGSClient.Infrastructure.Server.Persistence;
@@ -28,6 +29,7 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.Bio).HasMaxLength(500);
             entity.Property(x => x.Location).HasMaxLength(128);
             entity.Property(x => x.PlayerTag).HasMaxLength(32);
+            entity.Property(x => x.Role).HasConversion<int>().HasDefaultValue(UserRole.User);
             entity.Property(x => x.SettingsJson).HasMaxLength(8000).IsRequired();
             entity.HasIndex(x => x.AzureSub).IsUnique();
             entity.HasIndex(x => x.Email);
@@ -99,6 +101,7 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.HasIndex(x => x.UserId);
             entity.HasIndex(x => x.DraftP);
             entity.HasIndex(x => x.FeaturedP);
+            entity.HasIndex(x => x.FeaturedOrder);
             entity.HasIndex(x => x.ParentGameId);
             entity.HasIndex(x => x.Kind);
 

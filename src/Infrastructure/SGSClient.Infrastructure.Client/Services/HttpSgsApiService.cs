@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using SGSClient.Core.DTOs;
+using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
 
 namespace SGSClient.Infrastructure.Client.Services;
@@ -212,6 +213,69 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
         {
             return [];
         }
+    }
+
+    public async Task<AdminRoleUpdateResult> UpdateAdminUserRoleAsync(
+        int userId,
+        UserRole role,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var message = new HttpRequestMessage(HttpMethod.Patch, $"api/admin/users/{userId}/role")
+            {
+                Content = JsonContent.Create(new UpdateUserRoleRequestDto { Role = role })
+            };
+            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return new AdminRoleUpdateResult
+                {
+                    Error = await ReadErrorAsync(response, cancellationToken).ConfigureAwait(false)
+                };
+            }
+
+            var updated = await response.Content.ReadFromJsonAsync<AdminUserDto>(cancellationToken)
+                .ConfigureAwait(false);
+            return updated is null
+                ? new AdminRoleUpdateResult { Error = "Serwer nie zwrócił zaktualizowanego użytkownika." }
+                : new AdminRoleUpdateResult { User = updated };
+        }
+        catch (Exception ex)
+        {
+            return new AdminRoleUpdateResult { Error = ex.Message };
+        }
+    }
+
+    private static async Task<string> ReadErrorAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var payload = await response.Content.ReadFromJsonAsync<ApiErrorPayload>(cancellationToken)
+                .ConfigureAwait(false);
+            if (payload?.Errors is { Length: > 0 } errors)
+            {
+                return string.Join(" ", errors);
+            }
+        }
+        catch
+        {
+            // fall through to the status code
+        }
+
+        return response.StatusCode switch
+        {
+            System.Net.HttpStatusCode.Unauthorized => "Zaloguj się ponownie.",
+            System.Net.HttpStatusCode.Forbidden => "Brak uprawnień do tej operacji.",
+            System.Net.HttpStatusCode.NotFound => "Nie znaleziono użytkownika.",
+            _ => $"Błąd serwera ({(int)response.StatusCode})."
+        };
+    }
+
+    private sealed class ApiErrorPayload
+    {
+        public string[]? Errors { get; init; }
     }
 
     public Task<GameDto?> UploadGameCoverAsync(

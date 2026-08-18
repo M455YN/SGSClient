@@ -169,6 +169,9 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<int?>("EngineId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("FeaturedOrder")
+                        .HasColumnType("int");
+
                     b.Property<bool>("FeaturedP")
                         .HasColumnType("bit");
 
@@ -211,6 +214,8 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.HasIndex("DraftP");
 
                     b.HasIndex("EngineId");
+
+                    b.HasIndex("FeaturedOrder");
 
                     b.HasIndex("FeaturedP");
 
@@ -327,6 +332,11 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<string>("PlayerTag")
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("Role")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("SettingsJson")
                         .IsRequired()

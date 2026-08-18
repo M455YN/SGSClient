@@ -31,4 +31,7 @@ public sealed class UpdateGameRequestDto
     public string? Engine { get; init; }
     public bool? DraftP { get; init; }
     public bool? FeaturedP { get; init; }
+
+    /// <summary>Position on the home page featured rail; negative clears it.</summary>
+    public int? FeaturedOrder { get; init; }
 }

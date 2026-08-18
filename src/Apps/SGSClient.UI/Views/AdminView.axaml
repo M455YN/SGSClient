@@ -3,22 +3,47 @@
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.AdminView"
              x:DataType="vm:AdminViewModel">
-  <Grid Margin="28,24,28,24" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16">
-    <Grid ColumnDefinitions="*,Auto">
-      <StackPanel Spacing="6">
-        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
-        <TextBlock Text="Moderacja katalogu i przegląd użytkowników."
-                   Opacity="0.65" TextWrapping="Wrap"/>
+  <UserControl.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16"/>
+      <Setter Property="Background" Value="#12FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#22FFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="Border.badge">
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="8,3"/>
+      <Setter Property="Background" Value="#22FFFFFF"/>
+    </Style>
+    <Style Selector="Border.thumb">
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Background" Value="#1FFFFFFF"/>
+      <Setter Property="ClipToBounds" Value="True"/>
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.6"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Grid Margin="28,20,28,12" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="10">
+        <TextBlock Text="Admin" FontSize="28" FontWeight="SemiBold"/>
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <RadioButton Content="Katalog" GroupName="AdminTab" IsChecked="{Binding IsGamesTab, Mode=OneWay}"
+                       Command="{Binding SelectTabCommand}" CommandParameter="games"/>
+          <RadioButton Content="Wyróżnione" GroupName="AdminTab" IsChecked="{Binding IsFeaturedTab, Mode=OneWay}"
+                       Command="{Binding SelectTabCommand}" CommandParameter="featured"/>
+          <RadioButton Content="Użytkownicy" GroupName="AdminTab" IsChecked="{Binding IsUsersTab, Mode=OneWay}"
+                       Command="{Binding SelectTabCommand}" CommandParameter="users"/>
+        </StackPanel>
       </StackPanel>
       <Button Grid.Column="1" Content="Odśwież" Click="Refresh_OnClick" Padding="12,6" VerticalAlignment="Top"/>
     </Grid>
 
-    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
-      <Button Content="Gry" Command="{Binding SelectTabCommand}" CommandParameter="games" Padding="14,8"/>
-      <Button Content="Użytkownicy" Command="{Binding SelectTabCommand}" CommandParameter="users" Padding="14,8"/>
-    </StackPanel>
-
-    <Panel Grid.Row="2">
+    <Panel Grid.Row="1" Margin="28,0,28,0">
       <TextBlock Text="{Binding StatusText}"
                  IsVisible="{Binding ShowEmpty}"
                  Opacity="0.6"
@@ -27,42 +52,266 @@
                  TextWrapping="Wrap"
                  MaxWidth="420"/>
 
-      <ScrollViewer IsVisible="{Binding ShowGames}" HorizontalScrollBarVisibility="Disabled">
-        <ItemsControl ItemsSource="{Binding Games}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:AdminGameItem">
-              <Border Padding="14" Margin="0,0,0,10" CornerRadius="10"
-                      Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                  <StackPanel Spacing="4">
-                    <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12" TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding Description}" Opacity="0.7" FontSize="12"
-                               TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
+      <!-- Katalog: master-detail -->
+      <Grid IsVisible="{Binding ShowGames}" ColumnDefinitions="360,*">
+        <Border Classes="card" Padding="0" Margin="0,0,16,16">
+          <Grid RowDefinitions="Auto,*,Auto">
+            <StackPanel Margin="12,12,12,8" Spacing="8">
+              <TextBox PlaceholderText="Szukaj po nazwie lub symbolu"
+                       Text="{Binding SearchText, Mode=TwoWay}"/>
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button Content="Wszystkie" Padding="10,4" FontSize="12"
+                        Command="{Binding SetFilterCommand}" CommandParameter="all"/>
+                <Button Content="Publiczne" Padding="10,4" FontSize="12"
+                        Command="{Binding SetFilterCommand}" CommandParameter="published"/>
+                <Button Content="Szkice" Padding="10,4" FontSize="12"
+                        Command="{Binding SetFilterCommand}" CommandParameter="drafts"/>
+                <Button Content="Wyróżnione" Padding="10,4" FontSize="12"
+                        Command="{Binding SetFilterCommand}" CommandParameter="featured"/>
+              </StackPanel>
+            </StackPanel>
+
+            <ListBox Grid.Row="1"
+                     ItemsSource="{Binding FilteredGames}"
+                     SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
+                     Background="Transparent"
+                     BorderThickness="0">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:AdminGameItem">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <Border Classes="thumb" Width="40" Height="40">
+                      <Panel>
+                        <TextBlock Text="{Binding TileLabel}" FontSize="10" FontWeight="SemiBold" Opacity="0.7"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                               IsVisible="{Binding HasCover}"/>
+                      </Panel>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                      <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding MetaText}" Classes="caption" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                      <Border Classes="badge" Background="#3B82F6" IsVisible="{Binding FeaturedP}">
+                        <TextBlock Text="★" FontSize="11" Foreground="White"/>
+                      </Border>
+                      <Border Classes="badge" Background="#66854D0E" IsVisible="{Binding DraftP}">
+                        <TextBlock Text="Szkic" FontSize="11"/>
+                      </Border>
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+
+            <TextBlock Grid.Row="2" Margin="14,8,14,12" Text="{Binding ListSummary}" Classes="caption"/>
+          </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Column="1" IsVisible="{Binding HasSelection}">
+          <StackPanel Spacing="16" Margin="0,0,0,16">
+            <Border Classes="card">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                <Border Classes="thumb" Width="88" Height="88" CornerRadius="8">
+                  <Panel>
+                    <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="20" FontWeight="SemiBold" Opacity="0.5"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Image Source="{Binding SelectedGame.CoverBitmap}" Stretch="UniformToFill"
+                           IsVisible="{Binding SelectedGame.HasCover}"/>
+                  </Panel>
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding SelectedGame.Title}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                  <TextBlock Text="{Binding SelectedGame.MetaText}" Opacity="0.65"/>
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Classes="badge" Background="#3B82F6" IsVisible="{Binding SelectedGame.FeaturedP}">
+                      <TextBlock Text="Wyróżnione" FontSize="11" Foreground="White"/>
+                    </Border>
+                    <Border Classes="badge" Background="#6616A34A" IsVisible="{Binding SelectedGame.IsPublished}">
+                      <TextBlock Text="W sklepie" FontSize="11"/>
+                    </Border>
+                    <Border Classes="badge" Background="#66854D0E" IsVisible="{Binding SelectedGame.DraftP}">
+                      <TextBlock Text="Szkic" FontSize="11"/>
+                    </Border>
                   </StackPanel>
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top">
-                    <Button Content="Edytuj" Padding="10,6" Tag="{Binding}" Click="Edit_OnClick"/>
-                    <Button Content="Szkic" Padding="10,6" Tag="{Binding}" Click="ToggleDraft_OnClick"/>
-                    <Button Content="Featured" Padding="10,6" Tag="{Binding}" Click="ToggleFeatured_OnClick"/>
-                    <Button Content="Usuń" Padding="10,6" Tag="{Binding}" Click="Delete_OnClick"/>
+                </StackPanel>
+                <Button Grid.Column="2" Content="Edytuj" Click="Edit_OnClick"
+                        Classes="accent" Padding="16,8" VerticalAlignment="Top"/>
+              </Grid>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="12">
+                <TextBlock Text="Widoczność" FontWeight="SemiBold"/>
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="Opublikowana w sklepie"/>
+                    <TextBlock Text="Wyłącz, żeby schować grę jako szkic." Classes="caption"/>
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" OnContent="Tak" OffContent="Nie"
+                                IsChecked="{Binding SelectedPublished, Mode=TwoWay}"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="Wyróżniona na stronie głównej"/>
+                    <TextBlock Text="Trafia na szynę Wyróżnione; pierwsza pozycja to hero." Classes="caption"/>
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" OnContent="Tak" OffContent="Nie"
+                                IsChecked="{Binding SelectedFeatured, Mode=TwoWay}"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Sklep" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding SelectedGame.DescriptionText}" TextWrapping="Wrap" Opacity="0.7"/>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="24">
+                  <StackPanel>
+                    <TextBlock Text="Gatunek" Classes="caption"/>
+                    <TextBlock Text="{Binding SelectedGame.GenreText}"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="Silnik" Classes="caption"/>
+                    <TextBlock Text="{Binding SelectedGame.EngineText}"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="Właściciel" Classes="caption"/>
+                    <TextBlock Text="{Binding SelectedGame.OwnerText}" TextTrimming="CharacterEllipsis"/>
                   </StackPanel>
                 </Grid>
-              </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Border Classes="badge">
+                    <TextBlock Text="{Binding SelectedGame.CoverText}" FontSize="12"/>
+                  </Border>
+                  <Border Classes="badge">
+                    <TextBlock Text="{Binding SelectedGame.IntroText}" FontSize="12"/>
+                  </Border>
+                  <Border Classes="badge">
+                    <TextBlock Text="{Binding SelectedGame.ScreenshotsText}" FontSize="12"/>
+                  </Border>
+                </StackPanel>
+              </StackPanel>
+            </Border>
 
+            <Border Classes="card">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Strefa niebezpieczna" FontWeight="SemiBold"/>
+                  <TextBlock Text="Usunięcie pozycji katalogu jest nieodwracalne." Classes="caption"/>
+                </StackPanel>
+                <Button Grid.Column="1" Content="Usuń grę" Click="Delete_OnClick"
+                        Padding="16,8" VerticalAlignment="Center"/>
+              </Grid>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+
+        <TextBlock Grid.Column="1" Text="Wybierz pozycję z listy"
+                   Opacity="0.6"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   IsVisible="{Binding !HasSelection}"/>
+      </Grid>
+
+      <!-- Kuracja wyróżnionych -->
+      <Grid IsVisible="{Binding ShowFeatured}" ColumnDefinitions="*,420">
+        <Border Classes="card" Padding="0" Margin="0,0,16,16">
+          <Grid RowDefinitions="Auto,*">
+            <StackPanel Margin="16,14,16,8" Spacing="2">
+              <TextBlock Text="Kolejność na stronie głównej" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding FeaturedSummary}" Classes="caption"/>
+            </StackPanel>
+            <ScrollViewer Grid.Row="1">
+              <ItemsControl ItemsSource="{Binding FeaturedGames}" Margin="8,0,8,8">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:AdminGameItem">
+                    <Grid ColumnDefinitions="48,Auto,*,Auto" ColumnSpacing="12" Margin="6,5">
+                      <TextBlock Text="{Binding PositionLabel}" VerticalAlignment="Center"
+                                 FontWeight="SemiBold" FontSize="12" Opacity="0.6"/>
+                      <Border Grid.Column="1" Classes="thumb" Width="56" Height="40">
+                        <Panel>
+                          <TextBlock Text="{Binding TileLabel}" FontSize="10" FontWeight="SemiBold" Opacity="0.7"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                          <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
+                        </Panel>
+                      </Border>
+                      <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding StateLabel}" Classes="caption"/>
+                      </StackPanel>
+                      <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <Button Content="↑" Padding="10,4" Tag="{Binding}" Click="MoveUp_OnClick"
+                                ToolTip.Tip="W górę"/>
+                        <Button Content="↓" Padding="10,4" Tag="{Binding}" Click="MoveDown_OnClick"
+                                ToolTip.Tip="W dół"/>
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+        </Border>
+
+        <StackPanel Grid.Column="1" Spacing="12" Margin="0,0,0,16">
+          <TextBlock Text="Podgląd hero" FontWeight="SemiBold"/>
+          <Border Height="240" CornerRadius="8" ClipToBounds="True"
+                  Background="#12FFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1"
+                  IsVisible="{Binding HasHeroPreview}">
+            <Panel>
+              <TextBlock Text="{Binding HeroPreview.TileLabel}" FontSize="56" FontWeight="SemiBold" Opacity="0.16"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              <Image Source="{Binding HeroPreview.CoverBitmap}" Stretch="UniformToFill"
+                     IsVisible="{Binding HeroPreview.HasCover}"/>
+              <Border VerticalAlignment="Bottom">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
+                    <GradientStop Color="#00000000" Offset="0"/>
+                    <GradientStop Color="#E6000000" Offset="1"/>
+                  </LinearGradientBrush>
+                </Border.Background>
+                <StackPanel Margin="16,40,16,14" Spacing="6">
+                  <Border Classes="badge" Background="#3B82F6" HorizontalAlignment="Left">
+                    <TextBlock Text="Wyróżnione" FontSize="11" Foreground="White"/>
+                  </Border>
+                  <TextBlock Text="{Binding HeroPreview.Title}" FontSize="22" FontWeight="SemiBold"
+                             Foreground="White" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+              </Border>
+            </Panel>
+          </Border>
+          <TextBlock Text="Tak zobaczy to gracz na górze strony głównej."
+                     Classes="caption" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Grid>
+
+      <!-- Użytkownicy -->
       <ScrollViewer IsVisible="{Binding ShowUsers}" HorizontalScrollBarVisibility="Disabled">
-        <ItemsControl ItemsSource="{Binding Users}">
+        <ItemsControl ItemsSource="{Binding Users}" Margin="0,0,0,16">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:AdminUserItem">
-              <Border Padding="14" Margin="0,0,0,8" CornerRadius="10"
-                      Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="16"/>
-                  <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12" TextWrapping="Wrap"/>
-                </StackPanel>
+              <Border Classes="card" Padding="14" Margin="0,0,0,8">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="14">
+                  <Border Width="40" Height="40" CornerRadius="20" Background="#2AFFFFFF">
+                    <TextBlock Text="{Binding Initials}" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="16"/>
+                      <Border Classes="badge" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding RoleLabel}" FontSize="11"/>
+                      </Border>
+                    </StackPanel>
+                    <TextBlock Text="{Binding MetaText}" Classes="caption" TextWrapping="Wrap"/>
+                  </StackPanel>
+                  <TextBlock Grid.Column="2" Text="{Binding RoleHint}" Classes="caption"
+                             MaxWidth="180" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                  <ComboBox Grid.Column="3" MinWidth="150" VerticalAlignment="Center"
+                            ItemsSource="{Binding RoleOptions}"
+                            SelectedIndex="{Binding RoleIndex, Mode=TwoWay}"
+                            IsEnabled="{Binding CanEditRole}"/>
+                </Grid>
               </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -70,6 +319,12 @@
       </ScrollViewer>
     </Panel>
 
-    <TextBlock Grid.Row="3" Text="{Binding StatusText}" Opacity="0.7" TextWrapping="Wrap"/>
+    <Border Grid.Row="2" Padding="28,10" BorderThickness="0,1,0,0" BorderBrush="#22FFFFFF">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <TextBlock Text="{Binding StatusText}" Opacity="0.7" TextTrimming="CharacterEllipsis"
+                   VerticalAlignment="Center"/>
+        <ProgressBar Grid.Column="1" Width="80" IsIndeterminate="True" IsVisible="{Binding IsBusy}"/>
+      </Grid>
+    </Border>
   </Grid>
 </UserControl>

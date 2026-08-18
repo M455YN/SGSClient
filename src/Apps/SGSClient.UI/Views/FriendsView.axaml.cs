@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using SGSClient.UI.ViewModels;
 
@@ -11,11 +12,60 @@ public partial class FriendsView : UserControl
         InitializeComponent();
     }
 
+    private MainWindowViewModel? Shell =>
+        VisualRoot is Window { DataContext: MainWindowViewModel main } ? main : null;
+
     private void Tab_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is FriendsViewModel vm && sender is Control { Tag: string tab })
         {
             vm.SelectTabCommand.Execute(tab);
+        }
+    }
+
+    private void OverlayProfile_OnClick(object? sender, RoutedEventArgs e)
+    {
+        Shell?.CloseSocial();
+        Shell?.NavigateCommand.Execute("Account");
+    }
+
+    private void Close_OnClick(object? sender, RoutedEventArgs e) =>
+        Shell?.CloseSocial();
+
+    private void ToggleIncoming_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm)
+        {
+            vm.IncomingExpanded = !vm.IncomingExpanded;
+        }
+    }
+
+    private void ToggleOnline_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm)
+        {
+            vm.OnlineExpanded = !vm.OnlineExpanded;
+        }
+    }
+
+    private void ToggleOffline_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm)
+        {
+            vm.OfflineExpanded = !vm.OfflineExpanded;
+        }
+    }
+
+    private async void SearchBox_OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || DataContext is not FriendsViewModel vm)
+        {
+            return;
+        }
+
+        if (vm.ShowSearchTab || vm.SearchQuery.Trim().Length >= 2)
+        {
+            await vm.SearchCommand.ExecuteAsync(null);
         }
     }
 

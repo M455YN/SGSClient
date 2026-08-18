@@ -38,7 +38,11 @@ public partial class App : Application
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
         services.AddClientInfrastructure(configuration);
-        services.AddTransient(sp => new HomeViewModel(sp.GetService<ISgsApiService>()));
+        services.AddTransient(sp => new HomeViewModel(
+            sp.GetService<ISgsApiService>(),
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetService<IAuthSession>(),
+            configuration));
         services.AddTransient(sp => new GamesViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -67,7 +71,8 @@ public partial class App : Application
             sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new AdminViewModel(
             sp.GetService<ISgsApiService>(),
-            sp.GetService<IAuthSession>()));
+            sp.GetService<IAuthSession>(),
+            configuration));
         services.AddTransient(sp => new SettingsViewModel(
             sp.GetRequiredService<IConfiguration>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -78,7 +83,7 @@ public partial class App : Application
             sp.GetService<IUserApiClient>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration));
-        services.AddTransient(sp => new FriendsViewModel(
+        services.AddSingleton(sp => new FriendsViewModel(
             sp.GetService<IUserApiClient>(),
             sp.GetService<IAuthSession>()));
         services.AddSingleton(sp => new ShellSidebarViewModel(

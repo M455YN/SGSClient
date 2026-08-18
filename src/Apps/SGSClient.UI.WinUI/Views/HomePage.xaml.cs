@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using SGSClient.UI.WinUI.ViewModels;
 
@@ -15,27 +14,26 @@ public sealed partial class HomePage : Page
     {
         ViewModel = App.Services.GetRequiredService<HomeViewModel>();
         InitializeComponent();
-        ViewModel.PropertyChanged += (_, _) => RefreshUi();
+        DataContext = ViewModel;
         ViewModel.NavigateRequested += OnNavigateRequested;
         ViewModel.OpenGameRequested += OnOpenGameRequested;
-        BrandText.Text = ViewModel.Brand;
-        HeadlineText.Text = ViewModel.Headline;
-        TaglineText.Text = ViewModel.Tagline;
-        RefreshUi();
+        ViewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(HomeViewModel.CanPublish) or null)
+            {
+                ApplyPublishColumn();
+            }
+        };
+        ApplyPublishColumn();
     }
+
+    private void ApplyPublishColumn() =>
+        PublishColumn.Width = ViewModel.CanPublish ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
         await ViewModel.EnsureLoadedAsync();
-        RefreshUi();
-    }
-
-    private void RefreshUi()
-    {
-        FeaturedStatusText.Text = ViewModel.FeaturedStatus;
-        FeaturedList.ItemsSource = ViewModel.HasFeatured ? ViewModel.Featured : null;
-        FeaturedList.Visibility = ViewModel.HasFeatured ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OpenStore_Click(object sender, RoutedEventArgs e) =>
@@ -44,11 +42,28 @@ public sealed partial class HomePage : Page
     private void OpenLibrary_Click(object sender, RoutedEventArgs e) =>
         ViewModel.OpenLibraryCommand.Execute(null);
 
-    private void Featured_PointerPressed(object sender, PointerRoutedEventArgs e)
+    private void OpenPublish_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.OpenPublishCommand.Execute(null);
+
+    private void OpenFriends_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.OpenFriendsCommand.Execute(null);
+
+    private void OpenHero_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.OpenHeroCommand.Execute(null);
+
+    private void Rail_ItemClick(object sender, ItemClickEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is HomeFeaturedItem item)
+        if (e.ClickedItem is HomeGameCard item)
         {
-            ViewModel.OpenFeaturedCommand.Execute(item);
+            ViewModel.OpenGameCommand.Execute(item);
+        }
+    }
+
+    private void Category_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is HomeCategoryItem item)
+        {
+            ViewModel.OpenCategoryCommand.Execute(item);
         }
     }
 
@@ -56,6 +71,12 @@ public sealed partial class HomePage : Page
     {
         if (App.MainWindow is null)
         {
+            return;
+        }
+
+        if (tag == "Friends")
+        {
+            App.MainWindow.OpenSocialOverlay();
             return;
         }
 

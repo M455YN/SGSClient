@@ -17,6 +17,9 @@ public sealed class GameEntity
     public string? IntroUrl { get; set; }
     public bool DraftP { get; set; }
     public bool FeaturedP { get; set; }
+
+    /// <summary>Position on the home page featured rail. Lower comes first; null sorts last.</summary>
+    public int? FeaturedOrder { get; set; }
     public GameContentKind Kind { get; set; } = GameContentKind.Game;
     public int? ParentGameId { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; } = DateTimeOffset.UtcNow;

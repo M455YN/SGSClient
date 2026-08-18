@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using SGSClient.Core.DTOs;
+using SGSClient.Core.Enums;
 
 namespace SGSClient.Core.Interfaces;
 
@@ -16,6 +17,10 @@ public interface ISgsApiService
     Task<GameDto?> UpdateAdminGameAsync(int gameId, UpdateGameRequestDto request, CancellationToken cancellationToken = default);
     Task<bool> DeleteAdminGameAsync(int gameId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AdminUserDto>> GetAdminUsersAsync(CancellationToken cancellationToken = default);
+    Task<AdminRoleUpdateResult> UpdateAdminUserRoleAsync(
+        int userId,
+        UserRole role,
+        CancellationToken cancellationToken = default);
     Task<GameDto?> UploadGameCoverAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> ClearGameCoverAsync(int gameId, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> UploadGameIntroAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);

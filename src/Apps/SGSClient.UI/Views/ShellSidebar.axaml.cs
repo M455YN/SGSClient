@@ -43,6 +43,7 @@ public partial class ShellSidebar : UserControl
         {
             if (e.PropertyName is nameof(ShellSidebarViewModel.SelectedNavTag)
                 or nameof(ShellSidebarViewModel.IsAdminVisible)
+                or nameof(ShellSidebarViewModel.IsCreatorVisible)
                 or nameof(ShellSidebarViewModel.ProfileDisplayName)
                 or nameof(ShellSidebarViewModel.ProfileStatus)
                 or nameof(ShellSidebarViewModel.HasAvatar)
@@ -81,7 +82,6 @@ public partial class ShellSidebar : UserControl
         NavHomeLabel.IsVisible = expanded;
         NavGamesLabel.IsVisible = expanded;
         NavLibraryLabel.IsVisible = expanded;
-        NavFriendsLabel.IsVisible = expanded;
         NavPublishLabel.IsVisible = expanded;
         NavStudioLabel.IsVisible = expanded;
         NavAdminLabel.IsVisible = expanded;
@@ -92,7 +92,6 @@ public partial class ShellSidebar : UserControl
         ApplyCompactChrome(NavHome, expanded, profileLike: false);
         ApplyCompactChrome(NavGames, expanded, profileLike: false);
         ApplyCompactChrome(NavLibrary, expanded, profileLike: false);
-        ApplyCompactChrome(NavFriends, expanded, profileLike: false);
         ApplyCompactChrome(NavPublish, expanded, profileLike: false);
         ApplyCompactChrome(NavStudio, expanded, profileLike: false);
         ApplyCompactChrome(NavAdmin, expanded, profileLike: false);
@@ -123,6 +122,8 @@ public partial class ShellSidebar : UserControl
         ProfileNameText.Text = vm.ProfileDisplayName;
         ProfileStatusText.Text = vm.ProfileStatus;
         NavAdmin.IsVisible = vm.IsAdminVisible;
+        NavPublish.IsVisible = vm.IsCreatorVisible;
+        NavStudio.IsVisible = vm.IsCreatorVisible;
         InstalledHeaderText.Text = vm.InstalledHeader.ToUpperInvariant();
         AvatarImage.Source = vm.ProfileAvatarBitmap;
         AvatarBorder.IsVisible = vm.HasAvatar;
@@ -131,7 +132,6 @@ public partial class ShellSidebar : UserControl
         Highlight(NavHome, vm.IsHomeSelected);
         Highlight(NavGames, vm.IsGamesSelected);
         Highlight(NavLibrary, vm.IsLibrarySelected);
-        Highlight(NavFriends, vm.IsFriendsSelected);
         Highlight(NavPublish, vm.IsPublishSelected);
         Highlight(NavStudio, vm.IsStudioSelected);
         Highlight(NavAdmin, vm.IsAdminSelected);

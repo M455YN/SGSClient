@@ -27,13 +27,13 @@ public sealed partial class AccountPage : Page
             {
                 if (tag.StartsWith("Friends:", StringComparison.Ordinal))
                 {
-                    App.MainWindow.NavigateTo(typeof(FriendsPage), parameter: tag[8..], selectTag: "Friends");
+                    App.MainWindow.OpenSocialOverlay(tag[8..]);
                     return;
                 }
 
                 if (tag == "Friends")
                 {
-                    App.MainWindow.NavigateTo(typeof(FriendsPage), parameter: "Friends", selectTag: "Friends");
+                    App.MainWindow.OpenSocialOverlay("Friends");
                 }
             });
         }

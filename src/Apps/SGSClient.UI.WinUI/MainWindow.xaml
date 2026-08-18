@@ -13,10 +13,26 @@
 
     <views:ShellSidebar x:Name="Sidebar" Grid.Column="0" />
 
-    <Border Grid.Column="1"
-            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-            BorderThickness="1,0,0,0">
-      <Frame x:Name="ContentFrame" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
-    </Border>
+    <Grid Grid.Column="1">
+      <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+              BorderThickness="1,0,0,0">
+        <Frame x:Name="ContentFrame" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+      </Border>
+
+      <Border x:Name="SocialPanel"
+              Width="360"
+              HorizontalAlignment="Right"
+              Margin="0,12,12,12"
+              CornerRadius="8"
+              Visibility="Collapsed"
+              Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+              BorderThickness="1">
+        <Border.Shadow>
+          <ThemeShadow />
+        </Border.Shadow>
+        <Frame x:Name="SocialFrame" Background="Transparent" />
+      </Border>
+    </Grid>
   </Grid>
 </Window>

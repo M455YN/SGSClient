@@ -3,102 +3,210 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:SGSClient.UI.WinUI.ViewModels"
-    xmlns:local="using:SGSClient.UI.WinUI.Views">
+    xmlns:local="using:SGSClient.UI.WinUI.Views"
+    Background="Transparent">
 
   <Page.Resources>
     <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <local:InverseBoolToVisibilityConverter x:Key="BoolToVisInv" />
+
+    <Style x:Key="CompactButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="Padding" Value="10,5" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style x:Key="CompactAccentButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="Padding" Value="10,5" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style x:Key="CloseGlyphButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="MinWidth" Value="36" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style x:Key="SocialListItem" TargetType="ListViewItem">
+      <Setter Property="MinHeight" Value="56" />
+      <Setter Property="Padding" Value="4,6" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+
     <DataTemplate x:Key="PersonRowTemplate" x:DataType="vm:SocialPersonItem">
-      <Border Margin="0,0,0,10" Padding="14" CornerRadius="8"
-              Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <Grid ColumnSpacing="12">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-          </Grid.ColumnDefinitions>
-          <Border Width="44" Height="44" CornerRadius="22" Background="#2A2A2A">
-            <TextBlock Text="{Binding Initials}" FontWeight="SemiBold"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding Subtitle}" Opacity="0.6" FontSize="12" />
-          </StackPanel>
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-            <Button Content="Akceptuj" Tag="{Binding}" Click="Accept_Click" Padding="10,6"
-                    Visibility="{Binding ShowAccept, Converter={StaticResource BoolToVis}}" />
-            <Button Content="Dodaj" Tag="{Binding}" Click="AddFriend_Click" Padding="10,6"
-                    Visibility="{Binding ShowAddFriend, Converter={StaticResource BoolToVis}}" />
-            <Button Content="{Binding RemoveFriendLabel}" Tag="{Binding}" Click="RemoveFriend_Click" Padding="10,6"
-                    Visibility="{Binding ShowRemoveFriend, Converter={StaticResource BoolToVis}}" />
-            <Button Content="Obserwuj" Tag="{Binding}" Click="Follow_Click" Padding="10,6"
-                    Visibility="{Binding ShowFollow, Converter={StaticResource BoolToVis}}" />
-            <Button Content="Przestań" Tag="{Binding}" Click="Unfollow_Click" Padding="10,6"
-                    Visibility="{Binding ShowUnfollow, Converter={StaticResource BoolToVis}}" />
-          </StackPanel>
-        </Grid>
-      </Border>
-    </DataTemplate>
-  </Page.Resources>
-
-  <ScrollViewer>
-    <StackPanel Margin="28,24,28,32" Spacing="18" MaxWidth="920" HorizontalAlignment="Left">
-      <StackPanel Spacing="6">
-        <TextBlock Text="Znajomi" FontSize="32" FontWeight="Bold" />
-        <TextBlock x:Name="StatusText" Opacity="0.7" FontSize="13" TextWrapping="Wrap" />
-      </StackPanel>
-
-      <Grid ColumnSpacing="8">
+      <Grid ColumnSpacing="12">
         <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <TextBox x:Name="SearchBox" PlaceholderText="Szukaj gracza po nazwie…" MinHeight="36" />
-        <Button Grid.Column="1" Content="Szukaj" Click="Search_Click" Padding="16,8" />
+        <Grid Width="40" Height="40">
+          <PersonPicture Width="36" Height="36" DisplayName="{Binding DisplayName}" Initials="{Binding Initials}" />
+          <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                   Fill="{ThemeResource SystemFillColorSuccessBrush}"
+                   Stroke="{ThemeResource SolidBackgroundFillColorBaseBrush}" StrokeThickness="2"
+                   Visibility="{Binding IsOnline, Converter={StaticResource BoolToVis}}" />
+          <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                   Fill="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                   Stroke="{ThemeResource ControlStrongStrokeColorDefaultBrush}" StrokeThickness="2"
+                   Visibility="{Binding IsOnline, Converter={StaticResource BoolToVisInv}}" />
+        </Grid>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+          <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                     TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding Subtitle}" Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <Button Content="Akceptuj" Tag="{Binding}" Click="Accept_Click" Style="{StaticResource CompactAccentButton}"
+                  Visibility="{Binding ShowAccept, Converter={StaticResource BoolToVis}}" />
+          <Button Content="Dodaj" Tag="{Binding}" Click="AddFriend_Click" Style="{StaticResource CompactAccentButton}"
+                  Visibility="{Binding ShowAddFriend, Converter={StaticResource BoolToVis}}" />
+          <Button Content="{Binding RemoveFriendLabel}" Tag="{Binding}" Click="RemoveFriend_Click" Style="{StaticResource CompactButton}"
+                  Visibility="{Binding ShowRemoveFriend, Converter={StaticResource BoolToVis}}" />
+          <Button Content="Obserwuj" Tag="{Binding}" Click="Follow_Click" Style="{StaticResource CompactButton}"
+                  Visibility="{Binding ShowFollow, Converter={StaticResource BoolToVis}}" />
+          <Button Content="Przestań" Tag="{Binding}" Click="Unfollow_Click" Style="{StaticResource CompactButton}"
+                  Visibility="{Binding ShowUnfollow, Converter={StaticResource BoolToVis}}" />
+        </StackPanel>
       </Grid>
+    </DataTemplate>
+  </Page.Resources>
 
-      <StackPanel Orientation="Horizontal" Spacing="4">
-        <Button x:Name="TabFriends" Content="Znajomi" Tag="Friends" Click="Tab_Click" Padding="14,8" />
-        <Button x:Name="TabRequests" Content="Zaproszenia" Tag="Requests" Click="Tab_Click" Padding="14,8" />
-        <Button x:Name="TabFollowing" Content="Obserwowane" Tag="Following" Click="Tab_Click" Padding="14,8" />
-        <Button x:Name="TabFollowers" Content="Obserwujący" Tag="Followers" Click="Tab_Click" Padding="14,8" />
-        <Button x:Name="TabSearch" Content="Szukaj" Tag="Search" Click="Tab_Click" Padding="14,8" />
-      </StackPanel>
-      <Border Height="1" Background="#33FFFFFF" />
+  <Grid Padding="16,12,12,12" RowSpacing="8">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
 
-      <StackPanel x:Name="FriendsPanel" Spacing="8">
-        <TextBlock x:Name="EmptyFriendsText" Text="Nie masz jeszcze znajomych. Wyszukaj gracza po nazwie."
-                   Opacity="0.6" TextWrapping="Wrap" />
-        <ItemsControl x:Name="FriendsList" ItemTemplate="{StaticResource PersonRowTemplate}" />
-      </StackPanel>
+    <Grid ColumnSpacing="8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <SelectorBar x:Name="SocialTabs" Grid.Column="0" SelectionChanged="SocialTabs_SelectionChanged">
+        <SelectorBarItem x:Name="TabProfile" Tag="Profile" Text="Profil" Icon="Contact" />
+        <SelectorBarItem x:Name="TabFriends" Tag="Friends" Text="Znajomi" Icon="People" IsSelected="True" />
+        <SelectorBarItem x:Name="TabChat" Tag="Chat" Text="Czat" Icon="Message" IsEnabled="False" />
+        <SelectorBarItem x:Name="TabSearch" Tag="Search" Text="Dodaj" Icon="AddFriend" />
+      </SelectorBar>
+      <Button Grid.Column="1" VerticalAlignment="Center"
+              Style="{StaticResource CloseGlyphButton}"
+              Click="Close_Click" ToolTipService.ToolTip="Zamknij">
+        <FontIcon Glyph="&#xE711;" FontSize="12" />
+      </Button>
+    </Grid>
 
-      <StackPanel x:Name="RequestsPanel" Spacing="14" Visibility="Collapsed">
-        <StackPanel Spacing="8">
-          <TextBlock Text="Do Ciebie" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock x:Name="EmptyIncomingText" Text="Brak nowych zaproszeń." Opacity="0.6" />
-          <ItemsControl x:Name="IncomingList" ItemTemplate="{StaticResource PersonRowTemplate}" />
+    <TextBlock Grid.Row="1" Text="Społeczność" Style="{StaticResource SubtitleTextBlockStyle}" Margin="4,4,4,0" />
+
+    <AutoSuggestBox x:Name="SearchBox" Grid.Row="2" QueryIcon="Find"
+                    PlaceholderText="Szukaj znajomych"
+                    QuerySubmitted="Search_QuerySubmitted"
+                    TextChanged="Search_TextChanged" />
+
+    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="8">
+        <TextBlock x:Name="StatusText" Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+
+        <StackPanel x:Name="FriendsPanel" Spacing="8">
+          <TextBlock x:Name="EmptyFriendsText" Text="Nie masz jeszcze znajomych. Wpisz nazwę lub @tag, żeby kogoś znaleźć."
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+
+          <Expander x:Name="IncomingExpander" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Expanding="IncomingExpander_Expanding" Collapsed="IncomingExpander_Collapsed">
+            <Expander.Header>
+              <Grid>
+                <TextBlock Text="Zaproszenia" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <InfoBadge x:Name="IncomingBadge" HorizontalAlignment="Right" VerticalAlignment="Center" />
+              </Grid>
+            </Expander.Header>
+            <ListView x:Name="IncomingList" ItemTemplate="{StaticResource PersonRowTemplate}"
+                      ItemContainerStyle="{StaticResource SocialListItem}"
+                      SelectionMode="None" IsItemClickEnabled="False"
+                      ScrollViewer.VerticalScrollBarVisibility="Disabled" />
+          </Expander>
+
+          <Expander x:Name="OnlineExpander" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Expanding="OnlineExpander_Expanding" Collapsed="OnlineExpander_Collapsed">
+            <Expander.Header>
+              <Grid>
+                <TextBlock Text="Online" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <InfoBadge x:Name="OnlineBadge" HorizontalAlignment="Right" VerticalAlignment="Center" />
+              </Grid>
+            </Expander.Header>
+            <ListView x:Name="OnlineList" ItemTemplate="{StaticResource PersonRowTemplate}"
+                      ItemContainerStyle="{StaticResource SocialListItem}"
+                      SelectionMode="None" IsItemClickEnabled="False"
+                      ScrollViewer.VerticalScrollBarVisibility="Disabled" />
+          </Expander>
+
+          <Expander x:Name="OfflineExpander" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Expanding="OfflineExpander_Expanding" Collapsed="OfflineExpander_Collapsed">
+            <Expander.Header>
+              <Grid>
+                <TextBlock Text="Offline" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <InfoBadge x:Name="OfflineBadge" HorizontalAlignment="Right" VerticalAlignment="Center" />
+              </Grid>
+            </Expander.Header>
+            <ListView x:Name="OfflineList" ItemTemplate="{StaticResource PersonRowTemplate}"
+                      ItemContainerStyle="{StaticResource SocialListItem}"
+                      SelectionMode="None" IsItemClickEnabled="False"
+                      ScrollViewer.VerticalScrollBarVisibility="Disabled" />
+          </Expander>
         </StackPanel>
-        <StackPanel Spacing="8">
-          <TextBlock Text="Wysłane" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock x:Name="EmptyOutgoingText" Text="Nie czekasz na żadną odpowiedź." Opacity="0.6" />
-          <ItemsControl x:Name="OutgoingList" ItemTemplate="{StaticResource PersonRowTemplate}" />
+
+        <StackPanel x:Name="RequestsPanel" Spacing="8" Visibility="Collapsed">
+          <TextBlock Text="Do Ciebie" Style="{StaticResource BodyStrongTextBlockStyle}" />
+          <TextBlock x:Name="EmptyIncomingText" Text="Brak nowych zaproszeń."
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+          <ListView x:Name="IncomingListAlt" ItemTemplate="{StaticResource PersonRowTemplate}"
+                    ItemContainerStyle="{StaticResource SocialListItem}"
+                    SelectionMode="None" ScrollViewer.VerticalScrollBarVisibility="Disabled" />
+          <TextBlock Text="Wysłane" Style="{StaticResource BodyStrongTextBlockStyle}" />
+          <TextBlock x:Name="EmptyOutgoingText" Text="Nie czekasz na żadną odpowiedź."
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+          <ListView x:Name="OutgoingList" ItemTemplate="{StaticResource PersonRowTemplate}"
+                    ItemContainerStyle="{StaticResource SocialListItem}"
+                    SelectionMode="None" ScrollViewer.VerticalScrollBarVisibility="Disabled" />
+        </StackPanel>
+
+        <StackPanel x:Name="FollowingPanel" Spacing="8" Visibility="Collapsed">
+          <TextBlock Text="Obserwowane" Style="{StaticResource BodyStrongTextBlockStyle}" />
+          <TextBlock x:Name="EmptyFollowingText" Text="Nikogo nie obserwujesz."
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+          <ListView x:Name="FollowingList" ItemTemplate="{StaticResource PersonRowTemplate}"
+                    ItemContainerStyle="{StaticResource SocialListItem}"
+                    SelectionMode="None" ScrollViewer.VerticalScrollBarVisibility="Disabled" />
+        </StackPanel>
+
+        <StackPanel x:Name="FollowersPanel" Spacing="8" Visibility="Collapsed">
+          <TextBlock Text="Obserwujący" Style="{StaticResource BodyStrongTextBlockStyle}" />
+          <TextBlock x:Name="EmptyFollowersText" Text="Nikt Cię jeszcze nie obserwuje."
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+          <ListView x:Name="FollowersList" ItemTemplate="{StaticResource PersonRowTemplate}"
+                    ItemContainerStyle="{StaticResource SocialListItem}"
+                    SelectionMode="None" ScrollViewer.VerticalScrollBarVisibility="Disabled" />
+        </StackPanel>
+
+        <StackPanel x:Name="SearchPanel" Spacing="8" Visibility="Collapsed">
+          <TextBlock x:Name="EmptySearchText" Text="Wpisz nazwę lub @tag i naciśnij Enter."
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+          <ListView x:Name="SearchList" ItemTemplate="{StaticResource PersonRowTemplate}"
+                    ItemContainerStyle="{StaticResource SocialListItem}"
+                    SelectionMode="None" ScrollViewer.VerticalScrollBarVisibility="Disabled" />
         </StackPanel>
       </StackPanel>
-
-      <StackPanel x:Name="FollowingPanel" Spacing="8" Visibility="Collapsed">
-        <TextBlock x:Name="EmptyFollowingText" Text="Nikogo nie obserwujesz." Opacity="0.6" />
-        <ItemsControl x:Name="FollowingList" ItemTemplate="{StaticResource PersonRowTemplate}" />
-      </StackPanel>
-
-      <StackPanel x:Name="FollowersPanel" Spacing="8" Visibility="Collapsed">
-        <TextBlock x:Name="EmptyFollowersText" Text="Nikt Cię jeszcze nie obserwuje." Opacity="0.6" />
-        <ItemsControl x:Name="FollowersList" ItemTemplate="{StaticResource PersonRowTemplate}" />
-      </StackPanel>
-
-      <StackPanel x:Name="SearchPanel" Spacing="8" Visibility="Collapsed">
-        <TextBlock x:Name="EmptySearchText" Text="Wpisz nazwę i naciśnij Szukaj." Opacity="0.6" />
-        <ItemsControl x:Name="SearchList" ItemTemplate="{StaticResource PersonRowTemplate}" />
-      </StackPanel>
-    </StackPanel>
-  </ScrollViewer>
+    </ScrollViewer>
+  </Grid>
 </Page>

@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using System.Numerics;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SGSClient.UI.WinUI.ViewModels;
 using SGSClient.UI.WinUI.Views;
@@ -7,6 +8,9 @@ namespace SGSClient.UI.WinUI;
 
 public sealed partial class MainWindow : Window
 {
+    private string _contentNavTag = "Home";
+    private bool _socialOpen;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -27,15 +31,27 @@ public sealed partial class MainWindow : Window
 
     public void SetAdminNavVisible(bool visible)
     {
-        Sidebar.ViewModel.SetAdminVisible(visible);
+        Sidebar.ViewModel.SetRoleVisibility(visible, visible);
         Sidebar.ViewModel.RefreshProfile();
     }
 
     public void NavigateTo(Type pageType, object? parameter = null, string? selectTag = null)
     {
-        if (selectTag is not null)
+        if (selectTag is not null && selectTag != "Friends")
+        {
+            _contentNavTag = selectTag;
+            CloseSocialOverlay();
+            Sidebar.ViewModel.SelectNav(selectTag);
+        }
+        else if (selectTag is not null)
         {
             Sidebar.ViewModel.SelectNav(selectTag);
+        }
+
+        if (pageType == typeof(FriendsPage))
+        {
+            OpenSocialOverlay(parameter as string);
+            return;
         }
 
         if (parameter is null)
@@ -58,6 +74,23 @@ public sealed partial class MainWindow : Window
 
     private void NavigateByTag(string tag)
     {
+        if (tag == "Friends")
+        {
+            if (_socialOpen)
+            {
+                CloseSocialOverlay();
+            }
+            else
+            {
+                OpenSocialOverlay();
+            }
+
+            return;
+        }
+
+        _contentNavTag = tag;
+        CloseSocialOverlay();
+
         var pageType = tag switch
         {
             "Games" => typeof(GamesPage),
@@ -67,7 +100,6 @@ public sealed partial class MainWindow : Window
             "Admin" => typeof(AdminPage),
             "Settings" => typeof(SettingsPage),
             "Account" => typeof(AccountPage),
-            "Friends" => typeof(FriendsPage),
             _ => typeof(HomePage)
         };
 
@@ -80,6 +112,34 @@ public sealed partial class MainWindow : Window
         {
             _ = Sidebar.ViewModel.LoadInstalledAsync();
         }
+    }
+
+    public void OpenSocialOverlay(string? tab = null)
+    {
+        if (SocialFrame.Content is FriendsPage page)
+        {
+            _ = page.ViewModel.InitializeAsync(tab);
+        }
+        else
+        {
+            SocialFrame.Navigate(typeof(FriendsPage), tab);
+        }
+
+        SocialPanel.Translation = new Vector3(0, 0, 16);
+        SocialPanel.Visibility = Visibility.Visible;
+        _socialOpen = true;
+    }
+
+    public void CloseSocialOverlay()
+    {
+        if (!_socialOpen)
+        {
+            return;
+        }
+
+        SocialPanel.Visibility = Visibility.Collapsed;
+        _socialOpen = false;
+        Sidebar.ViewModel.SelectNav(_contentNavTag);
     }
 
     private void OpenGameDetails(int gameId)

@@ -20,6 +20,7 @@ public sealed class EfGameRepository(
             .AsNoTracking()
             .Where(g => !g.DraftP && g.Kind == GameContentKind.Game)
             .OrderByDescending(g => g.FeaturedP)
+            .ThenBy(g => g.FeaturedOrder ?? int.MaxValue)
             .ThenBy(g => g.Title)
             .Select(ProjectGame(includeDlcs: false))
             .ToListAsync(cancellationToken);
@@ -152,7 +153,7 @@ public sealed class EfGameRepository(
             return null;
         }
 
-        await ApplyMetadataUpdatesAsync(game, request, cancellationToken);
+        await ApplyMetadataUpdatesAsync(game, request, cancellationToken, allowCuration: true);
         await db.SaveChangesAsync(cancellationToken);
         return await db.Games.AsNoTracking()
             .Where(g => g.Id == gameId)
@@ -236,7 +237,8 @@ public sealed class EfGameRepository(
     private async Task ApplyMetadataUpdatesAsync(
         GameEntity game,
         UpdateGameRequestDto request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool allowCuration = false)
     {
         if (request.Title is not null)
         {
@@ -289,9 +291,23 @@ public sealed class EfGameRepository(
             game.DraftP = request.DraftP.Value;
         }
 
+        if (!allowCuration)
+        {
+            return;
+        }
+
         if (request.FeaturedP is not null)
         {
             game.FeaturedP = request.FeaturedP.Value;
+            if (!game.FeaturedP)
+            {
+                game.FeaturedOrder = null;
+            }
+        }
+
+        if (request.FeaturedOrder is not null)
+        {
+            game.FeaturedOrder = request.FeaturedOrder.Value < 0 ? null : request.FeaturedOrder.Value;
         }
     }
 
@@ -359,6 +375,7 @@ public sealed class EfGameRepository(
                 .ToList(),
             DraftP = g.DraftP,
             FeaturedP = g.FeaturedP,
+            FeaturedOrder = g.FeaturedOrder,
             Kind = g.Kind,
             ParentGameId = g.ParentGameId,
             ParentSymbol = g.ParentGame != null ? g.ParentGame.Symbol : null,

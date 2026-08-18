@@ -28,6 +28,7 @@ public sealed class GameDto
     public IReadOnlyList<GameScreenshotDto> Screenshots { get; init; } = [];
     public bool DraftP { get; init; }
     public bool FeaturedP { get; init; }
+    public int? FeaturedOrder { get; init; }
     public GameContentKind Kind { get; init; } = GameContentKind.Game;
     public int? ParentGameId { get; init; }
     public string? ParentSymbol { get; init; }

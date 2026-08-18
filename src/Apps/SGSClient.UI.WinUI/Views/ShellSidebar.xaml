@@ -105,13 +105,6 @@
             <TextBlock x:Name="NavLibraryLabel" Text="Biblioteka" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <Button x:Name="NavFriends" Tag="Friends" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
-                ToolTipService.ToolTip="Znajomi">
-          <StackPanel Orientation="Horizontal" Spacing="12">
-            <FontIcon Glyph="&#xE716;" FontSize="16" />
-            <TextBlock x:Name="NavFriendsLabel" Text="Znajomi" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
         <Button x:Name="NavPublish" Tag="Publish" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
                 ToolTipService.ToolTip="Publikuj">
           <StackPanel Orientation="Horizontal" Spacing="12">

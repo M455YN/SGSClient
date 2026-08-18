@@ -1,92 +1,313 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="SGSClient.UI.Views.HomeView"
              x:DataType="vm:HomeViewModel">
-  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <Panel>
-      <Border Height="520" VerticalAlignment="Top" IsHitTestVisible="False">
-        <Border.Background>
-          <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
-            <GradientStop Color="#44305A48" Offset="0"/>
-            <GradientStop Color="#221E3840" Offset="0.4"/>
-            <GradientStop Color="#00000000" Offset="1"/>
-          </LinearGradientBrush>
-        </Border.Background>
+
+  <UserControl.Styles>
+    <Style Selector="Border.home-card:pointerover">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+    </Style>
+    <Style Selector="Border.stat">
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16,10"/>
+      <Setter Property="MinWidth" Value="104"/>
+      <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="Button.quick">
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="Padding" Value="16,14"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Background" Value="{DynamicResource ControlFillColorDefaultBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+  </UserControl.Styles>
+
+  <UserControl.Resources>
+    <DataTemplate x:Key="PosterTemplate" x:DataType="vm:HomeGameCard">
+      <Border Classes="home-card" Width="168" Height="248" CornerRadius="8" ClipToBounds="True"
+              Background="{DynamicResource ControlFillColorDefaultBrush}"
+              BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+              BorderThickness="1" Cursor="Hand" Tag="{Binding}"
+              PointerPressed="Card_OnPointerPressed">
+        <Panel>
+          <TextBlock Text="{Binding TileLabel}" FontSize="28" FontWeight="SemiBold" Opacity="0.28"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     IsVisible="{Binding !HasCover}"/>
+          <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                 IsVisible="{Binding HasCover}"/>
+          <Border VerticalAlignment="Bottom" Padding="12,10"
+                  Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+              <TextBlock Text="{Binding Caption}" Opacity="0.65" FontSize="12"/>
+            </StackPanel>
+          </Border>
+        </Panel>
       </Border>
+    </DataTemplate>
 
-      <Border Width="420" Height="420" HorizontalAlignment="Right" VerticalAlignment="Top"
-              Margin="0,-40,-80,0" Opacity="0.35" IsHitTestVisible="False">
-        <Border.Background>
-          <RadialGradientBrush>
-            <GradientStop Color="#662E7D32" Offset="0"/>
-            <GradientStop Color="#00000000" Offset="1"/>
-          </RadialGradientBrush>
-        </Border.Background>
+    <DataTemplate x:Key="WideCardTemplate" x:DataType="vm:HomeGameCard">
+      <Border Classes="home-card" Width="280" Height="208" CornerRadius="8" ClipToBounds="True"
+              Background="{DynamicResource ControlFillColorDefaultBrush}"
+              BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+              BorderThickness="1" Cursor="Hand" Tag="{Binding}"
+              PointerPressed="Card_OnPointerPressed">
+        <Grid RowDefinitions="*,Auto">
+          <Panel>
+            <TextBlock Text="{Binding TileLabel}" FontSize="28" FontWeight="SemiBold" Opacity="0.28"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       IsVisible="{Binding !HasCover}"/>
+            <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                   IsVisible="{Binding HasCover}"/>
+          </Panel>
+          <Border Grid.Row="1" Padding="12,10"
+                  Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+              <TextBlock Text="{Binding Blurb}" Opacity="0.65" FontSize="12"
+                         TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+          </Border>
+        </Grid>
       </Border>
+    </DataTemplate>
+  </UserControl.Resources>
 
-      <StackPanel Margin="36,40,36,40" Spacing="36" MaxWidth="980" HorizontalAlignment="Left">
-        <!-- Hero -->
-        <StackPanel Spacing="16" MaxWidth="640">
-          <TextBlock Text="{Binding Brand}"
-                     FontSize="48" FontWeight="Bold"
-                     LetterSpacing="0.5"/>
-          <TextBlock Text="{Binding Headline}"
-                     FontSize="26" FontWeight="SemiBold"
-                     Opacity="0.95" TextWrapping="Wrap"/>
-          <TextBlock Text="{Binding Tagline}"
-                     FontSize="15" Opacity="0.7" TextWrapping="Wrap"
-                     MaxWidth="520" LineHeight="22"/>
+  <Panel>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="32,24,32,40" Spacing="28">
 
-          <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,10,0,0">
-            <Button Content="Przeglądaj sklep"
-                    Click="OpenStore_OnClick"
-                    Padding="20,12"
-                    MinWidth="180"
-                    Background="#2E7D32"
-                    Foreground="White"/>
-            <Button Content="Biblioteka"
-                    Click="OpenLibrary_OnClick"
-                    Padding="20,12"
-                    MinWidth="140"/>
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="4" VerticalAlignment="Center">
+            <TextBlock Text="{Binding DateText}" FontSize="12" Opacity="0.65"/>
+            <TextBlock Text="{Binding Greeting}" FontSize="28" FontWeight="SemiBold"/>
           </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Border Classes="stat">
+              <StackPanel>
+                <TextBlock Text="{Binding LibraryCountText}" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock Text="W bibliotece" FontSize="12" Opacity="0.65"/>
+              </StackPanel>
+            </Border>
+            <Border Classes="stat">
+              <StackPanel>
+                <TextBlock Text="{Binding InstalledCountText}" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock Text="Zainstalowane" FontSize="12" Opacity="0.65"/>
+              </StackPanel>
+            </Border>
+            <Border Classes="stat">
+              <StackPanel>
+                <TextBlock Text="{Binding CatalogCountText}" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock Text="W sklepie" FontSize="12" Opacity="0.65"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+
+        <Border IsVisible="{Binding HasError}"
+                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="16,12">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Katalog" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Opacity="0.75" FontSize="13"/>
+          </StackPanel>
+        </Border>
+
+        <Border Height="400" CornerRadius="8" ClipToBounds="True" IsVisible="{Binding HasHero}"
+                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                BorderThickness="1">
+          <Panel>
+            <TextBlock Text="{Binding Hero.TileLabel}" FontSize="96" FontWeight="SemiBold" Opacity="0.16"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       IsVisible="{Binding !Hero.HasCover}"/>
+            <Image Source="{Binding Hero.CoverBitmap}" Stretch="UniformToFill"
+                   IsVisible="{Binding Hero.HasCover}"/>
+            <Border VerticalAlignment="Bottom">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
+                  <GradientStop Color="#00000000" Offset="0"/>
+                  <GradientStop Color="#E6000000" Offset="1"/>
+                </LinearGradientBrush>
+              </Border.Background>
+              <StackPanel Margin="32,72,32,28" Spacing="10" MaxWidth="620" HorizontalAlignment="Left">
+                <Border Background="{DynamicResource AccentFillColorDefaultBrush}"
+                        Padding="8,3" CornerRadius="4" HorizontalAlignment="Left"
+                        IsVisible="{Binding Hero.ShowFeaturedBadge}">
+                  <TextBlock Text="Wyróżnione" FontSize="11"
+                             Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                </Border>
+                <TextBlock Text="{Binding Hero.Title}" FontSize="40" FontWeight="SemiBold"
+                           Foreground="White" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Hero.Blurb}" FontSize="14" Foreground="#CCFFFFFF"
+                           TextWrapping="Wrap"/>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+                  <Button Content="Zobacz grę" Classes="accent" Padding="20,10" Click="OpenHero_OnClick"/>
+                  <Button Content="Przeglądaj sklep" Padding="20,10" Click="OpenStore_OnClick"/>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </Panel>
+        </Border>
+
+        <Grid x:Name="QuickActionsGrid" ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+          <Button Classes="quick" Click="OpenStore_OnClick">
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <ui:FASymbolIcon Symbol="Shop" FontSize="20"/>
+              <StackPanel>
+                <TextBlock Text="Sklep" FontWeight="SemiBold"/>
+                <TextBlock Text="Przeglądaj katalog" FontSize="12" Opacity="0.65"/>
+              </StackPanel>
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="1" Classes="quick" Click="OpenLibrary_OnClick">
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <ui:FASymbolIcon Symbol="Library" FontSize="20"/>
+              <StackPanel>
+                <TextBlock Text="Biblioteka" FontWeight="SemiBold"/>
+                <TextBlock Text="Twoje gry" FontSize="12" Opacity="0.65"/>
+              </StackPanel>
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="2" Classes="quick" Click="OpenFriends_OnClick">
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <ui:FASymbolIcon Symbol="People" FontSize="20"/>
+              <StackPanel>
+                <TextBlock Text="Znajomi" FontWeight="SemiBold"/>
+                <TextBlock Text="Panel społecznościowy" FontSize="12" Opacity="0.65"/>
+              </StackPanel>
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="3" Classes="quick" Click="OpenPublish_OnClick"
+                  IsVisible="{Binding CanPublish}">
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <ui:FASymbolIcon Symbol="Upload" FontSize="20"/>
+              <StackPanel>
+                <TextBlock Text="Publikuj" FontWeight="SemiBold"/>
+                <TextBlock Text="Wyślij build" FontSize="12" Opacity="0.65"/>
+              </StackPanel>
+            </StackPanel>
+          </Button>
+        </Grid>
+
+        <StackPanel Spacing="12" IsVisible="{Binding HasContinue}">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Kontynuuj" FontSize="20" FontWeight="SemiBold"/>
+            <Button Grid.Column="1" Content="Biblioteka" Classes="subtle" Padding="8,4"
+                    Click="OpenLibrary_OnClick"/>
+          </Grid>
+          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding ContinuePlaying}"
+                          ItemTemplate="{StaticResource PosterTemplate}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="12"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+          </ScrollViewer>
         </StackPanel>
 
-        <!-- Featured strip -->
-        <StackPanel Spacing="14">
-          <TextBlock Text="{Binding FeaturedStatus}" FontSize="18" FontWeight="SemiBold" Opacity="0.9"/>
-          <ItemsControl ItemsSource="{Binding Featured}" IsVisible="{Binding HasFeatured}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel/>
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.Styles>
-              <Style Selector="Border.home-tile:pointerover">
-                <Setter Property="Background" Value="#33FFFFFF"/>
-                <Setter Property="BorderBrush" Value="#55FFFFFF"/>
-              </Style>
-            </ItemsControl.Styles>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:HomeFeaturedItem">
-                <Border Classes="home-tile" Width="280" Margin="0,0,16,16" Padding="16" CornerRadius="10"
-                        Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
-                        Cursor="Hand" Tag="{Binding}" PointerPressed="Featured_OnPointerPressed">
-                  <StackPanel Spacing="12">
-                    <Border Width="64" Height="64" CornerRadius="10" Background="#2A3A32">
-                      <TextBlock Text="{Binding TileLabel}" FontWeight="Bold" FontSize="16"
-                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="16" TextWrapping="Wrap"/>
-                    <TextBlock Text="{Binding Blurb}" Opacity="0.65" FontSize="12"
-                               TextWrapping="Wrap" MaxHeight="48" TextTrimming="CharacterEllipsis"/>
-                  </StackPanel>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+        <StackPanel Spacing="12" IsVisible="{Binding HasReadyToInstall}">
+          <TextBlock Text="Gotowe do instalacji" FontSize="20" FontWeight="SemiBold"/>
+          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding ReadyToInstall}"
+                          ItemTemplate="{StaticResource PosterTemplate}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="12"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+
+        <StackPanel Spacing="12" IsVisible="{Binding HasFeatured}">
+          <TextBlock Text="Wyróżnione" FontSize="20" FontWeight="SemiBold"/>
+          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Featured}"
+                          ItemTemplate="{StaticResource WideCardTemplate}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="12"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+
+        <StackPanel Spacing="12" IsVisible="{Binding HasCategories}">
+          <TextBlock Text="Kategorie" FontSize="20" FontWeight="SemiBold"/>
+          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Categories}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="12"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:HomeCategoryItem">
+                  <Border Classes="home-card" Width="196" Height="88" CornerRadius="8" Padding="16,12"
+                          Background="{DynamicResource ControlFillColorDefaultBrush}"
+                          BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                          BorderThickness="1" Cursor="Hand" Tag="{Binding}"
+                          PointerPressed="Category_OnPointerPressed">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                      <Border Width="40" Height="40" CornerRadius="20" VerticalAlignment="Center"
+                              Background="{DynamicResource AccentFillColorDefaultBrush}">
+                        <TextBlock Text="{Binding Initial}" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                      </Border>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding CountText}" FontSize="12" Opacity="0.65"/>
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+
+        <StackPanel Spacing="12" IsVisible="{Binding HasCatalog}">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Nowe w sklepie" FontSize="20" FontWeight="SemiBold"/>
+            <Button Grid.Column="1" Content="Sklep" Classes="subtle" Padding="8,4"
+                    Click="OpenStore_OnClick"/>
+          </Grid>
+          <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <ItemsControl ItemsSource="{Binding Catalog}"
+                          ItemTemplate="{StaticResource WideCardTemplate}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="12"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+
+        <StackPanel Spacing="12" MaxWidth="480" HorizontalAlignment="Left" IsVisible="{Binding ShowEmpty}">
+          <TextBlock Text="Nic tu jeszcze nie ma" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="Dodaj gry ze sklepu albo uruchom Api, żeby zobaczyć wyróżnione tytuły."
+                     Opacity="0.7" TextWrapping="Wrap"/>
+          <Button Content="Przeglądaj sklep" Classes="accent" Padding="16,8"
+                  HorizontalAlignment="Left" Click="OpenStore_OnClick"/>
         </StackPanel>
       </StackPanel>
-    </Panel>
-  </ScrollViewer>
+    </ScrollViewer>
+
+    <ProgressBar IsIndeterminate="True" Height="3" VerticalAlignment="Top"
+                 IsVisible="{Binding IsBusy}"/>
+  </Panel>
 </UserControl>

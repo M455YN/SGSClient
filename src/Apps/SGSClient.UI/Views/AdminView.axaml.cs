@@ -61,33 +61,33 @@ public partial class AdminView : UserControl
 
     private async void Edit_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is AdminViewModel vm && sender is Control { Tag: AdminGameItem item })
+        if (DataContext is AdminViewModel vm)
         {
-            await vm.EditCommand.ExecuteAsync(item);
+            await vm.EditCommand.ExecuteAsync(vm.SelectedGame);
         }
     }
 
-    private async void ToggleDraft_OnClick(object? sender, RoutedEventArgs e)
+    private async void MoveUp_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is AdminViewModel vm && sender is Control { Tag: AdminGameItem item })
         {
-            await vm.ToggleDraftCommand.ExecuteAsync(item);
+            await vm.MoveFeaturedUpCommand.ExecuteAsync(item);
         }
     }
 
-    private async void ToggleFeatured_OnClick(object? sender, RoutedEventArgs e)
+    private async void MoveDown_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is AdminViewModel vm && sender is Control { Tag: AdminGameItem item })
         {
-            await vm.ToggleFeaturedCommand.ExecuteAsync(item);
+            await vm.MoveFeaturedDownCommand.ExecuteAsync(item);
         }
     }
 
     private async void Delete_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is AdminViewModel vm && sender is Control { Tag: AdminGameItem item })
+        if (DataContext is AdminViewModel vm)
         {
-            await vm.DeleteCommand.ExecuteAsync(item);
+            await vm.DeleteCommand.ExecuteAsync(vm.SelectedGame);
         }
     }
 
@@ -137,9 +137,6 @@ public partial class AdminView : UserControl
                 : string.Empty,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        var draftBox = new CheckBox { Content = "Szkic (ukryty w sklepie)", IsChecked = item.DraftP };
-        var featuredBox = new CheckBox { Content = "Wyróżnione", IsChecked = item.FeaturedP };
-
         item.PendingCoverPath = null;
         item.PendingIntroPath = null;
         item.ClearCover = false;
@@ -289,8 +286,6 @@ public partial class AdminView : UserControl
         panel.Children.Add(genreCombo);
         panel.Children.Add(new TextBlock { Text = "Silnik", Opacity = 0.55, FontSize = 12 });
         panel.Children.Add(engineCombo);
-        panel.Children.Add(draftBox);
-        panel.Children.Add(featuredBox);
 
         panel.Children.Add(new TextBlock
         {
@@ -346,8 +341,6 @@ public partial class AdminView : UserControl
         item.EditOtherInformation = otherBox.Text;
         item.EditGenre = genreCombo.SelectedItem as string ?? string.Empty;
         item.EditEngine = engineCombo.SelectedItem as string ?? string.Empty;
-        item.EditDraft = draftBox.IsChecked == true;
-        item.EditFeatured = featuredBox.IsChecked == true;
         return true;
     }
 

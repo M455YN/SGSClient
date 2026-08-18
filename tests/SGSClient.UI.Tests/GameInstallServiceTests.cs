@@ -223,6 +223,52 @@ public class GameInstallServiceTests
         public Task<IReadOnlyList<AdminUserDto>> GetAdminUsersAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<AdminUserDto>>([]);
 
+        public Task<AdminRoleUpdateResult> UpdateAdminUserRoleAsync(
+            int userId,
+            UserRole role,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new AdminRoleUpdateResult { Error = "not supported" });
+
+        public Task<GameDto?> UploadGameCoverAsync(
+            int gameId,
+            string localFilePath,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<GameDto?> ClearGameCoverAsync(
+            int gameId,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<GameDto?> UploadGameIntroAsync(
+            int gameId,
+            string localFilePath,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<GameDto?> ClearGameIntroAsync(
+            int gameId,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<GameDto?> AddGameScreenshotAsync(
+            int gameId,
+            string localFilePath,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<GameDto?> RemoveGameScreenshotAsync(
+            int gameId,
+            int screenshotId,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
         public Task<IReadOnlyList<GameBuildVersionDto>> GetBuildVersionsAsync(
             int gameId,
             int buildId,

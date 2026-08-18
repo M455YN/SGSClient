@@ -1,5 +1,7 @@
 namespace SGSClient.Infrastructure.Server.Persistence.Entities;
 
+using SGSClient.Core.Enums;
+
 public sealed class UserEntity
 {
     public int Id { get; set; }
@@ -10,6 +12,7 @@ public sealed class UserEntity
     public string? Bio { get; set; }
     public string? Location { get; set; }
     public string? PlayerTag { get; set; }
+    public UserRole Role { get; set; } = UserRole.User;
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? LastLoginUtc { get; set; }
     public string SettingsJson { get; set; } = "{}";

@@ -50,6 +50,10 @@ public partial class ShellSidebarViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsAdminVisible { get; set; }
 
+    /// <summary>Publishing entry points are only for accounts with the creator role or higher.</summary>
+    [ObservableProperty]
+    public partial bool IsCreatorVisible { get; set; } = true;
+
     [ObservableProperty]
     public partial string ProfileDisplayName { get; set; } = "Gość";
 
@@ -79,7 +83,6 @@ public partial class ShellSidebarViewModel : ObservableObject
     public bool IsAdminSelected => SelectedNavTag == "Admin";
     public bool IsSettingsSelected => SelectedNavTag == "Settings";
     public bool IsAccountSelected => SelectedNavTag == "Account";
-    public bool IsFriendsSelected => SelectedNavTag == "Friends";
 
     partial void OnSelectedNavTagChanged(string value)
     {
@@ -91,7 +94,6 @@ public partial class ShellSidebarViewModel : ObservableObject
         OnPropertyChanged(nameof(IsAdminSelected));
         OnPropertyChanged(nameof(IsSettingsSelected));
         OnPropertyChanged(nameof(IsAccountSelected));
-        OnPropertyChanged(nameof(IsFriendsSelected));
     }
 
     public void RefreshProfile()
@@ -102,6 +104,7 @@ public partial class ShellSidebarViewModel : ObservableObject
             ProfileStatus = "Logowanie wyłączone";
             ProfileAvatarUrl = null;
             HasAvatar = false;
+            IsCreatorVisible = true;
             return;
         }
 
@@ -109,16 +112,24 @@ public partial class ShellSidebarViewModel : ObservableObject
         {
             var user = _auth.CurrentUser;
             ProfileDisplayName = string.IsNullOrWhiteSpace(user.DisplayName) ? "Gracz" : user.DisplayName;
+            var roleSuffix = user.Role switch
+            {
+                UserRole.SuperAdmin => " · superadmin",
+                UserRole.Admin => " · admin",
+                UserRole.Creator => " · twórca",
+                _ => string.Empty
+            };
             ProfileStatus = !string.IsNullOrWhiteSpace(user.PlayerTag)
-                ? $"@{user.PlayerTag}"
+                ? $"@{user.PlayerTag}{roleSuffix}"
                 : string.IsNullOrWhiteSpace(user.Email)
-                    ? (user.IsAdmin ? "Zalogowany · admin" : "Zalogowany")
-                    : (user.IsAdmin ? $"{user.Email} · admin" : user.Email!);
+                    ? $"Zalogowany{roleSuffix}"
+                    : $"{user.Email}{roleSuffix}";
             ProfileAvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
                 ? null
                 : CacheBust(InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl));
             HasAvatar = !string.IsNullOrWhiteSpace(ProfileAvatarUrl);
             IsAdminVisible = user.IsAdmin;
+            IsCreatorVisible = user.CanPublish;
             return;
         }
 
@@ -127,9 +138,16 @@ public partial class ShellSidebarViewModel : ObservableObject
         ProfileAvatarUrl = null;
         HasAvatar = false;
         IsAdminVisible = false;
+        IsCreatorVisible = false;
     }
 
     public void SetAdminVisible(bool visible) => IsAdminVisible = visible;
+
+    public void SetRoleVisibility(bool admin, bool creator)
+    {
+        IsAdminVisible = admin;
+        IsCreatorVisible = creator;
+    }
 
     private static string CacheBust(string url)
     {

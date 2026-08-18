@@ -1,12 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using SGSClient.Core.Auth;
 using SGSClient.Core.DTOs;
+using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
 using SGSClient.Infrastructure.Server.Persistence.Entities;
 
 namespace SGSClient.Infrastructure.Server.Persistence.Services;
 
-public sealed class EfUserService(SgsServerDbContext db) : IUserService
+public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adminAuth) : IUserService
 {
     public async Task<UserProfileDto> UpsertFromClaimsAsync(
         string azureSub,
@@ -29,6 +30,7 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
                 DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Player" : displayName,
                 Email = normalizedEmail,
                 AvatarUrl = avatarUrl,
+                Role = adminAuth.IsBootstrapEmail(normalizedEmail) ? UserRole.SuperAdmin : UserRole.User,
                 CreatedAtUtc = now,
                 LastLoginUtc = now
             };
@@ -46,6 +48,11 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
             if (string.IsNullOrWhiteSpace(user.AvatarUrl) && !string.IsNullOrWhiteSpace(avatarUrl))
             {
                 user.AvatarUrl = avatarUrl;
+            }
+
+            if (adminAuth.IsBootstrapEmail(user.Email) && user.Role != UserRole.SuperAdmin)
+            {
+                user.Role = UserRole.SuperAdmin;
             }
 
             user.LastLoginUtc = now;
@@ -178,21 +185,48 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
 
     public async Task<IReadOnlyList<AdminUserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
-        return await db.Users
+        var users = await db.Users
             .AsNoTracking()
             .OrderBy(u => u.DisplayName)
-            .Select(u => new AdminUserDto
-            {
-                Id = u.Id,
-                DisplayName = u.DisplayName,
-                Email = u.Email,
-                CreatedAtUtc = u.CreatedAtUtc,
-                LastLoginUtc = u.LastLoginUtc
-            })
             .ToListAsync(cancellationToken);
+
+        return users.Select(MapAdmin).ToList();
     }
 
-    private static UserProfileDto Map(UserEntity user) => new()
+    public async Task<AdminUserDto?> SetUserRoleAsync(
+        int userId,
+        UserRole role,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        if (adminAuth.IsBootstrapEmail(user.Email))
+        {
+            throw new InvalidOperationException("Konto właściciela ma stałą rolę superadmina.");
+        }
+
+        user.Role = role;
+        await db.SaveChangesAsync(cancellationToken);
+        return MapAdmin(user);
+    }
+
+    private AdminUserDto MapAdmin(UserEntity user) => new()
+    {
+        Id = user.Id,
+        DisplayName = user.DisplayName,
+        Email = user.Email,
+        PlayerTag = user.PlayerTag,
+        Role = adminAuth.ResolveRole(user.Role, user.Email),
+        IsRoleLocked = adminAuth.IsBootstrapEmail(user.Email),
+        CreatedAtUtc = user.CreatedAtUtc,
+        LastLoginUtc = user.LastLoginUtc
+    };
+
+    private UserProfileDto Map(UserEntity user) => new()
     {
         Id = user.Id,
         AzureSub = user.AzureSub,
@@ -202,6 +236,7 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
         Bio = user.Bio,
         Location = user.Location,
         PlayerTag = user.PlayerTag,
+        Role = adminAuth.ResolveRole(user.Role, user.Email),
         CreatedAtUtc = user.CreatedAtUtc,
         LastLoginUtc = user.LastLoginUtc
     };

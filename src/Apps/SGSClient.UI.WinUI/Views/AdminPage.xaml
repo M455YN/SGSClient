@@ -1,123 +1,489 @@
 <Page
     x:Class="SGSClient.UI.WinUI.Views.AdminPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:SGSClient.UI.WinUI.ViewModels"
+    xmlns:local="using:SGSClient.UI.WinUI.Views"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-  <Grid Padding="28,24" RowSpacing="16">
+  <Page.Resources>
+    <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <local:InverseBoolToVisibilityConverter x:Key="BoolToVisInv" />
+
+    <Style x:Key="GameListItem" TargetType="ListViewItem">
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="MinHeight" Value="60" />
+      <Setter Property="Margin" Value="0,1" />
+    </Style>
+
+    <Style x:Key="SectionCard" TargetType="Border">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+  </Page.Resources>
+
+  <Grid RowSpacing="0">
     <Grid.RowDefinitions>
-      <RowDefinition Height="Auto" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
-    <Grid>
+    <Grid Padding="28,20,28,12" ColumnSpacing="12">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
-      <StackPanel Spacing="6">
-        <TextBlock x:Name="TitleText" FontSize="28" FontWeight="SemiBold" />
-        <TextBlock Text="Moderacja katalogu i przegląd użytkowników."
-                   Opacity="0.65" TextWrapping="Wrap" />
+      <StackPanel Spacing="8">
+        <TextBlock Text="Admin" Style="{StaticResource TitleTextBlockStyle}" />
+        <SelectorBar x:Name="TabBar" SelectionChanged="Tab_SelectionChanged">
+          <SelectorBarItem Tag="games" Text="Katalog" Icon="Library" IsSelected="True" />
+          <SelectorBarItem Tag="featured" Text="Wyróżnione" Icon="Favorite" />
+          <SelectorBarItem Tag="users" Text="Użytkownicy" Icon="People" />
+        </SelectorBar>
       </StackPanel>
-      <Button Grid.Column="1" Content="Odśwież" Click="Refresh_Click" Padding="12,6" VerticalAlignment="Top" />
+      <Button Grid.Column="1" Click="Refresh_Click" VerticalAlignment="Top"
+              ToolTipService.ToolTip="Odśwież" Padding="10,6">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <FontIcon Glyph="&#xE72C;" FontSize="14" />
+          <TextBlock Text="Odśwież" />
+        </StackPanel>
+      </Button>
     </Grid>
 
-    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8">
-      <Button x:Name="GamesTabButton" Content="Gry" Click="GamesTab_Click" Padding="14,8" />
-      <Button x:Name="UsersTabButton" Content="Użytkownicy" Click="UsersTab_Click" Padding="14,8" />
-    </StackPanel>
+    <!-- Katalog: master-detail -->
+    <Grid x:Name="GamesTab" Grid.Row="1" Margin="28,0,28,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="360" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
 
-    <Grid Grid.Row="2">
-      <TextBlock x:Name="EmptyText"
-                 Opacity="0.6"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center"
-                 TextWrapping="Wrap"
-                 Visibility="Collapsed" />
+      <Border Style="{StaticResource SectionCard}" Padding="0" Margin="0,0,16,16">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
 
-      <ListView x:Name="GamesList"
-                SelectionMode="None"
-                Background="Transparent"
-                BorderThickness="0"
-                Visibility="Collapsed">
-        <ListView.ItemContainerStyle>
-          <Style TargetType="ListViewItem">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Padding" Value="0,0,0,10" />
-            <Setter Property="Template">
-              <Setter.Value>
-                <ControlTemplate TargetType="ListViewItem">
-                  <ContentPresenter Content="{TemplateBinding Content}"
-                                    ContentTemplate="{TemplateBinding ContentTemplate}"
-                                    HorizontalAlignment="Stretch" />
-                </ControlTemplate>
-              </Setter.Value>
-            </Setter>
-          </Style>
-        </ListView.ItemContainerStyle>
-        <ListView.ItemTemplate>
-          <DataTemplate>
-            <Border Padding="14" CornerRadius="10"
-                    Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-              <Grid ColumnSpacing="12">
+          <StackPanel Margin="12,12,12,8" Spacing="8">
+            <AutoSuggestBox x:Name="SearchBox"
+                            PlaceholderText="Szukaj po nazwie lub symbolu"
+                            QueryIcon="Find"
+                            TextChanged="Search_TextChanged" />
+            <SelectorBar x:Name="FilterBar" SelectionChanged="Filter_SelectionChanged">
+              <SelectorBarItem Tag="all" Text="Wszystkie" IsSelected="True" />
+              <SelectorBarItem Tag="published" Text="Publiczne" />
+              <SelectorBarItem Tag="drafts" Text="Szkice" />
+              <SelectorBarItem Tag="featured" Text="Wyróżnione" />
+            </SelectorBar>
+          </StackPanel>
+
+          <ListView x:Name="GamesList"
+                    Grid.Row="1"
+                    ItemsSource="{Binding FilteredGames}"
+                    SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
+                    SelectionMode="Single"
+                    ItemContainerStyle="{StaticResource GameListItem}"
+                    Background="Transparent"
+                    BorderThickness="0">
+            <ListView.ItemTemplate>
+              <DataTemplate x:DataType="vm:AdminGameItem">
+                <Grid ColumnSpacing="10">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <Border Width="40" Height="40" CornerRadius="4"
+                          Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                    <Grid>
+                      <TextBlock Text="{Binding TileLabel}" FontSize="10" FontWeight="SemiBold" Opacity="0.7"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                             Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                    </Grid>
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    <TextBlock Text="{Binding MetaText}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextTrimming="CharacterEllipsis" MaxLines="1" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Border CornerRadius="4" Padding="6,2"
+                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                            ToolTipService.ToolTip="Wyróżniona"
+                            Visibility="{Binding FeaturedP, Converter={StaticResource BoolToVis}}">
+                      <FontIcon Glyph="&#xE735;" FontSize="11"
+                                Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                    </Border>
+                    <Border CornerRadius="4" Padding="6,2"
+                            Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                            ToolTipService.ToolTip="Szkic"
+                            Visibility="{Binding DraftP, Converter={StaticResource BoolToVis}}">
+                      <TextBlock Text="Szkic" FontSize="11" />
+                    </Border>
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListView.ItemTemplate>
+          </ListView>
+
+          <TextBlock Grid.Row="2" Margin="14,8,14,12"
+                     Text="{Binding ListSummary}"
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Grid>
+      </Border>
+
+      <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto"
+                    Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+        <StackPanel Spacing="16" Margin="0,0,0,16">
+
+          <Border Style="{StaticResource SectionCard}">
+            <Grid ColumnSpacing="16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <Border Width="88" Height="88" CornerRadius="8"
+                      Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                <Grid>
+                  <TextBlock Text="{Binding SelectedGame.TileLabel}"
+                             FontSize="20" FontWeight="SemiBold" Opacity="0.5"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <Image Source="{Binding SelectedGame.CoverImageUrl}" Stretch="UniformToFill"
+                         Visibility="{Binding SelectedGame.HasCover, Converter={StaticResource BoolToVis}}" />
+                </Grid>
+              </Border>
+              <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                <TextBlock Text="{Binding SelectedGame.Title}"
+                           Style="{StaticResource SubtitleTextBlockStyle}"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding SelectedGame.MetaText}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Border CornerRadius="4" Padding="8,3"
+                          Background="{ThemeResource AccentFillColorDefaultBrush}"
+                          Visibility="{Binding SelectedGame.FeaturedP, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Wyróżnione" FontSize="11"
+                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                  </Border>
+                  <Border CornerRadius="4" Padding="8,3"
+                          Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
+                          Visibility="{Binding SelectedGame.IsPublished, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="W sklepie" FontSize="11" />
+                  </Border>
+                  <Border CornerRadius="4" Padding="8,3"
+                          Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
+                          Visibility="{Binding SelectedGame.DraftP, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Szkic" FontSize="11" />
+                  </Border>
+                </StackPanel>
+              </StackPanel>
+              <Button Grid.Column="2" Content="Edytuj" Click="Edit_Click"
+                      Style="{StaticResource AccentButtonStyle}"
+                      VerticalAlignment="Top" Padding="16,8" />
+            </Grid>
+          </Border>
+
+          <Border Style="{StaticResource SectionCard}">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Widoczność" Style="{StaticResource BodyStrongTextBlockStyle}" />
+              <Grid Margin="0,8,0,0">
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Spacing="4">
-                  <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding Description}" Opacity="0.7" FontSize="12"
-                             TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="Opublikowana w sklepie" />
+                  <TextBlock Text="Wyłącz, żeby schować grę jako szkic."
+                             Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top">
-                  <Button Content="Edytuj" Click="Edit_Click" Tag="{Binding}" Padding="10,6" />
-                  <Button Content="Szkic" Click="ToggleDraft_Click" Tag="{Binding}" Padding="10,6" />
-                  <Button Content="Featured" Click="ToggleFeatured_Click" Tag="{Binding}" Padding="10,6" />
-                  <Button Content="Usuń" Click="Delete_Click" Tag="{Binding}" Padding="10,6" />
+                <ToggleSwitch x:Name="PublishedToggle" Grid.Column="1"
+                              OnContent="Tak" OffContent="Nie"
+                              Toggled="Published_Toggled" />
+              </Grid>
+              <Grid Margin="0,8,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="Wyróżniona na stronie głównej" />
+                  <TextBlock Text="Trafia na szynę Wyróżnione; pierwsza pozycja to hero."
+                             Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
+                <ToggleSwitch x:Name="FeaturedToggle" Grid.Column="1"
+                              OnContent="Tak" OffContent="Nie"
+                              Toggled="Featured_Toggled" />
+              </Grid>
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource SectionCard}">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Sklep" Style="{StaticResource BodyStrongTextBlockStyle}" />
+              <TextBlock Text="{Binding SelectedGame.DescriptionText}"
+                         TextWrapping="Wrap"
+                         Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+              <Grid ColumnSpacing="24" RowSpacing="8">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                  <TextBlock Text="Gatunek" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  <TextBlock Text="{Binding SelectedGame.GenreText}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="Silnik" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  <TextBlock Text="{Binding SelectedGame.EngineText}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="Właściciel" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  <TextBlock Text="{Binding SelectedGame.OwnerText}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </Grid>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border CornerRadius="4" Padding="8,4"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                  <TextBlock Text="{Binding SelectedGame.CoverText}" FontSize="12" />
+                </Border>
+                <Border CornerRadius="4" Padding="8,4"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                  <TextBlock Text="{Binding SelectedGame.IntroText}" FontSize="12" />
+                </Border>
+                <Border CornerRadius="4" Padding="8,4"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                  <TextBlock Text="{Binding SelectedGame.ScreenshotsText}" FontSize="12" />
+                </Border>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <Border Style="{StaticResource SectionCard}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Spacing="2">
+                <TextBlock Text="Strefa niebezpieczna" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock Text="Usunięcie pozycji katalogu jest nieodwracalne."
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+              </StackPanel>
+              <Button Grid.Column="1" Content="Usuń grę" Click="Delete_Click"
+                      VerticalAlignment="Center" Padding="16,8" />
+            </Grid>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <TextBlock Grid.Column="1"
+                 Text="Wybierz pozycję z listy"
+                 HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                 Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisInv}}" />
+    </Grid>
+
+    <!-- Kuracja wyróżnionych -->
+    <Grid x:Name="FeaturedTab" Grid.Row="1" Margin="28,0,28,0" Visibility="Collapsed">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="420" />
+      </Grid.ColumnDefinitions>
+
+      <Border Style="{StaticResource SectionCard}" Padding="0" Margin="0,0,16,16">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <StackPanel Margin="16,14,16,8" Spacing="2">
+            <TextBlock Text="Kolejność na stronie głównej" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <TextBlock Text="{Binding FeaturedSummary}"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+          </StackPanel>
+          <ListView Grid.Row="1"
+                    ItemsSource="{Binding FeaturedGames}"
+                    SelectionMode="None"
+                    ItemContainerStyle="{StaticResource GameListItem}"
+                    Background="Transparent"
+                    BorderThickness="0">
+            <ListView.ItemTemplate>
+              <DataTemplate x:DataType="vm:AdminGameItem">
+                <Grid ColumnSpacing="12">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="48" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding PositionLabel}"
+                             VerticalAlignment="Center" FontWeight="SemiBold" FontSize="12"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  <Border Grid.Column="1" Width="56" Height="40" CornerRadius="4"
+                          Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                    <Grid>
+                      <TextBlock Text="{Binding TileLabel}" FontSize="10" FontWeight="SemiBold" Opacity="0.7"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                             Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                    </Grid>
+                  </Border>
+                  <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding StateLabel}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <Button Click="MoveUp_Click" Tag="{Binding}" Padding="8,6"
+                            ToolTipService.ToolTip="W górę">
+                      <FontIcon Glyph="&#xE74A;" FontSize="12" />
+                    </Button>
+                    <Button Click="MoveDown_Click" Tag="{Binding}" Padding="8,6"
+                            ToolTipService.ToolTip="W dół">
+                      <FontIcon Glyph="&#xE74B;" FontSize="12" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListView.ItemTemplate>
+          </ListView>
+        </Grid>
+      </Border>
+
+      <StackPanel Grid.Column="1" Spacing="12" Margin="0,0,0,16">
+        <TextBlock Text="Podgląd hero" Style="{StaticResource BodyStrongTextBlockStyle}" />
+        <Border Height="240" CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                Visibility="{Binding HasHeroPreview, Converter={StaticResource BoolToVis}}">
+          <Grid>
+            <TextBlock Text="{Binding HeroPreview.TileLabel}"
+                       FontSize="56" FontWeight="SemiBold" Opacity="0.16"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Image Source="{Binding HeroPreview.CoverImageUrl}" Stretch="UniformToFill"
+                   Visibility="{Binding HeroPreview.HasCover, Converter={StaticResource BoolToVis}}" />
+            <Border VerticalAlignment="Bottom">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                  <GradientStop Color="#00000000" Offset="0" />
+                  <GradientStop Color="#E6000000" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <StackPanel Margin="16,40,16,14" Spacing="6">
+                <Border Background="{ThemeResource AccentFillColorDefaultBrush}"
+                        Padding="8,3" CornerRadius="4" HorizontalAlignment="Left">
+                  <TextBlock Text="Wyróżnione" FontSize="11"
+                             Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                </Border>
+                <TextBlock Text="{Binding HeroPreview.Title}"
+                           FontSize="22" FontWeight="SemiBold" Foreground="White"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Border>
+          </Grid>
+        </Border>
+        <TextBlock Text="Tak zobaczy to gracz na górze strony głównej."
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Użytkownicy -->
+    <ScrollViewer x:Name="UsersTab" Grid.Row="1" Margin="28,0,28,0" Visibility="Collapsed">
+      <ItemsControl ItemsSource="{Binding Users}" Margin="0,0,0,16">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:AdminUserItem">
+            <Border CornerRadius="8" Padding="14" Margin="0,0,0,8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1">
+              <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <PersonPicture Width="40" Height="40"
+                               DisplayName="{Binding DisplayName}"
+                               Initials="{Binding Initials}" />
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding DisplayName}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <Border CornerRadius="4" Padding="7,2" VerticalAlignment="Center"
+                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                      <TextBlock Text="{Binding RoleLabel}" FontSize="11" />
+                    </Border>
+                  </StackPanel>
+                  <TextBlock Text="{Binding MetaText}"
+                             Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock Grid.Column="2"
+                           Text="{Binding RoleHint}"
+                           VerticalAlignment="Center"
+                           MaxWidth="180" TextWrapping="Wrap"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <ComboBox Grid.Column="3"
+                          MinWidth="150"
+                          VerticalAlignment="Center"
+                          ItemsSource="{Binding RoleOptions}"
+                          SelectedIndex="{Binding RoleIndex, Mode=TwoWay}"
+                          IsEnabled="{Binding CanEditRole}" />
               </Grid>
             </Border>
           </DataTemplate>
-        </ListView.ItemTemplate>
-      </ListView>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
 
-      <ListView x:Name="UsersList"
-                SelectionMode="None"
-                Background="Transparent"
-                BorderThickness="0"
-                Visibility="Collapsed">
-        <ListView.ItemContainerStyle>
-          <Style TargetType="ListViewItem">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Padding" Value="0,0,0,8" />
-            <Setter Property="Template">
-              <Setter.Value>
-                <ControlTemplate TargetType="ListViewItem">
-                  <ContentPresenter Content="{TemplateBinding Content}"
-                                    ContentTemplate="{TemplateBinding ContentTemplate}"
-                                    HorizontalAlignment="Stretch" />
-                </ControlTemplate>
-              </Setter.Value>
-            </Setter>
-          </Style>
-        </ListView.ItemContainerStyle>
-        <ListView.ItemTemplate>
-          <DataTemplate>
-            <Border Padding="14" CornerRadius="10"
-                    Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-              <StackPanel Spacing="2">
-                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" FontSize="16" />
-                <TextBlock Text="{Binding MetaText}" Opacity="0.6" FontSize="12" TextWrapping="Wrap" />
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ListView.ItemTemplate>
-      </ListView>
-    </Grid>
+    <TextBlock x:Name="EmptyText"
+               Grid.Row="1"
+               HorizontalAlignment="Center" VerticalAlignment="Center"
+               TextWrapping="Wrap" MaxWidth="420"
+               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+               Visibility="Collapsed" />
 
-    <TextBlock x:Name="StatusText" Grid.Row="3" Opacity="0.7" TextWrapping="Wrap" />
+    <Border Grid.Row="2" Padding="28,10"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+      <Grid ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock x:Name="StatusText"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <ProgressRing Grid.Column="1" Width="18" Height="18"
+                      IsActive="{Binding IsBusy}"
+                      Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+      </Grid>
+    </Border>
   </Grid>
 </Page>

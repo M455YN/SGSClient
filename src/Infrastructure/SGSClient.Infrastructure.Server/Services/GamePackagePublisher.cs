@@ -263,6 +263,7 @@ public sealed class GamePackagePublisher(
                         .ToList(),
                     DraftP = g.DraftP,
                     FeaturedP = g.FeaturedP,
+                    FeaturedOrder = g.FeaturedOrder,
                     Kind = g.Kind,
                     ParentGameId = g.ParentGameId,
                     ParentSymbol = g.ParentGame != null ? g.ParentGame.Symbol : null,
