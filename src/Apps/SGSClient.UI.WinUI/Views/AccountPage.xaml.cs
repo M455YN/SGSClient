@@ -23,6 +23,19 @@ public sealed partial class AccountPage : Page
         {
             ViewModel.SetParentWindowHandleProvider(
                 () => WindowNative.GetWindowHandle(App.MainWindow));
+            ViewModel.SetNavigateHandler(tag =>
+            {
+                if (tag.StartsWith("Friends:", StringComparison.Ordinal))
+                {
+                    App.MainWindow.NavigateTo(typeof(FriendsPage), parameter: tag[8..], selectTag: "Friends");
+                    return;
+                }
+
+                if (tag == "Friends")
+                {
+                    App.MainWindow.NavigateTo(typeof(FriendsPage), parameter: "Friends", selectTag: "Friends");
+                }
+            });
         }
 
         Loaded += async (_, _) =>
@@ -35,14 +48,28 @@ public sealed partial class AccountPage : Page
     private void RefreshUi()
     {
         SignedOutPanel.Visibility = ViewModel.ShowSignedOut ? Visibility.Visible : Visibility.Collapsed;
-        ProfileScroll.Visibility = ViewModel.IsLoggedIn ? Visibility.Visible : Visibility.Collapsed;
+        TagSetupPanel.Visibility = ViewModel.ShowTagSetup ? Visibility.Visible : Visibility.Collapsed;
+        ProfileScroll.Visibility = ViewModel.IsLoggedIn && !ViewModel.NeedsPlayerTagSetup
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         SignedOutStatus.Text = ViewModel.AccountStatus;
 
         DisplayNameText.Text = ViewModel.DisplayName;
+        PlayerTagText.Text = ViewModel.PlayerTagDisplay;
+        PlayerTagText.Visibility = string.IsNullOrWhiteSpace(ViewModel.PlayerTag)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         LastActivityText.Text = ViewModel.LastActivityText;
-        FriendsText.Text = $"{ViewModel.FriendsCount} Znajomi";
-        FollowingText.Text = $"{ViewModel.FollowingCount} Obserwowane";
-        FollowersText.Text = $"{ViewModel.FollowersCount} Obserwujący";
+        if (DraftTagBox.FocusState == FocusState.Unfocused)
+        {
+            DraftTagBox.Text = ViewModel.DraftPlayerTag;
+        }
+
+        TagPreviewText.Text = ViewModel.TagPreview;
+        TagStatusText.Text = ViewModel.TagStatus;
+        FriendsText.Content = $"{ViewModel.FriendsCount} Znajomi";
+        FollowingText.Content = $"{ViewModel.FollowingCount} Obserwowane";
+        FollowersText.Content = $"{ViewModel.FollowersCount} Obserwujący";
         BioText.Text = ViewModel.BioDisplay;
         LocationText.Text = ViewModel.LocationDisplay;
         EmailText.Text = ViewModel.Email;
@@ -56,6 +83,7 @@ public sealed partial class AccountPage : Page
             EditDisplayNameBox.Text = ViewModel.EditDisplayName;
             EditBioBox.Text = ViewModel.EditBio;
             EditLocationBox.Text = ViewModel.EditLocation;
+            EditPlayerTagBox.Text = ViewModel.EditPlayerTag;
         }
 
         AvatarActionStatusText.Text = ViewModel.ProfileActionStatus;
@@ -93,6 +121,29 @@ public sealed partial class AccountPage : Page
         App.MainWindow?.RefreshSidebar();
     }
 
+    private void OpenFriends_Click(object sender, RoutedEventArgs e)
+    {
+        var tab = (sender as FrameworkElement)?.Tag as string ?? "Friends";
+        ViewModel.OpenFriendsCommand.Execute(tab);
+    }
+
+    private void OpenFriendsPage_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.OpenFriendsCommand.Execute("Friends");
+
+    private async void ClaimTag_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.DraftPlayerTag = DraftTagBox.Text ?? string.Empty;
+        await ViewModel.ClaimPlayerTagCommand.ExecuteAsync(null);
+        RefreshUi();
+        App.MainWindow?.RefreshSidebar();
+    }
+
+    private void DraftTag_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        ViewModel.DraftPlayerTag = DraftTagBox.Text ?? string.Empty;
+        TagPreviewText.Text = ViewModel.TagPreview;
+    }
+
     private void Edit_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.BeginEditCommand.Execute(null);
@@ -110,6 +161,7 @@ public sealed partial class AccountPage : Page
         ViewModel.EditDisplayName = EditDisplayNameBox.Text ?? string.Empty;
         ViewModel.EditBio = EditBioBox.Text ?? string.Empty;
         ViewModel.EditLocation = EditLocationBox.Text ?? string.Empty;
+        ViewModel.EditPlayerTag = EditPlayerTagBox.Text ?? string.Empty;
         await ViewModel.SaveProfileCommand.ExecuteAsync(null);
         RefreshUi();
     }

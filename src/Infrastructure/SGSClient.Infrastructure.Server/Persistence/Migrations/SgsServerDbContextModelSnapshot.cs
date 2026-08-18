@@ -324,6 +324,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
+                    b.Property<string>("PlayerTag")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<string>("SettingsJson")
                         .IsRequired()
                         .HasMaxLength(8000)
@@ -336,7 +340,49 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
 
                     b.HasIndex("Email");
 
+                    b.HasIndex("PlayerTag")
+                        .IsUnique()
+                        .HasFilter("[PlayerTag] IS NOT NULL");
+
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserRelationshipEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AddresseeUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RequesterUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("RespondedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AddresseeUserId", "Kind", "Status");
+
+                    b.HasIndex("RequesterUserId", "AddresseeUserId", "Kind")
+                        .IsUnique();
+
+                    b.HasIndex("RequesterUserId", "Kind", "Status");
+
+                    b.ToTable("user_relationships", (string)null);
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildEntity", b =>
@@ -394,6 +440,25 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Game");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserRelationshipEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "Addressee")
+                        .WithMany()
+                        .HasForeignKey("AddresseeUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "Requester")
+                        .WithMany()
+                        .HasForeignKey("RequesterUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Addressee");
+
+                    b.Navigation("Requester");
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildEntity", b =>

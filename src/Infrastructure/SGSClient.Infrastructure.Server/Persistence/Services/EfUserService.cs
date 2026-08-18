@@ -36,11 +36,7 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
         }
         else
         {
-            if (!string.IsNullOrWhiteSpace(displayName))
-            {
-                user.DisplayName = displayName;
-            }
-
+            // DisplayName / PlayerTag are client-owned after the first login.
             if (normalizedEmail is not null)
             {
                 user.Email = normalizedEmail;
@@ -123,8 +119,61 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
             user.AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl) ? null : request.AvatarUrl.Trim();
         }
 
+        if (request.PlayerTag is not null)
+        {
+            await AssignPlayerTagAsync(user, request.PlayerTag, cancellationToken);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return Map(user);
+    }
+
+    public async Task<UserProfileDto?> ClaimPlayerTagAsync(
+        string azureSub,
+        string tag,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(azureSub);
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.AzureSub == azureSub, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        await AssignPlayerTagAsync(user, tag, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        return Map(user);
+    }
+
+    public async Task<PlayerTagAvailabilityDto> CheckPlayerTagAsync(
+        string tag,
+        int? excludeUserId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (!PlayerTagRules.TryNormalize(tag, out var normalized, out var error))
+        {
+            return new PlayerTagAvailabilityDto { Available = false, Error = error };
+        }
+
+        var taken = await db.Users.AnyAsync(
+            u => u.PlayerTag == normalized && (excludeUserId == null || u.Id != excludeUserId),
+            cancellationToken);
+
+        return taken
+            ? new PlayerTagAvailabilityDto { Available = false, Normalized = normalized, Error = "Ten tag jest już zajęty." }
+            : new PlayerTagAvailabilityDto { Available = true, Normalized = normalized };
+    }
+
+    private async Task AssignPlayerTagAsync(UserEntity user, string tag, CancellationToken cancellationToken)
+    {
+        var check = await CheckPlayerTagAsync(tag, user.Id, cancellationToken);
+        if (!check.Available || string.IsNullOrWhiteSpace(check.Normalized))
+        {
+            throw new ArgumentException(check.Error ?? "Nie można ustawić tagu.");
+        }
+
+        user.PlayerTag = check.Normalized;
     }
 
     public async Task<IReadOnlyList<AdminUserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default)
@@ -152,6 +201,7 @@ public sealed class EfUserService(SgsServerDbContext db) : IUserService
         AvatarUrl = user.AvatarUrl,
         Bio = user.Bio,
         Location = user.Location,
+        PlayerTag = user.PlayerTag,
         CreatedAtUtc = user.CreatedAtUtc,
         LastLoginUtc = user.LastLoginUtc
     };

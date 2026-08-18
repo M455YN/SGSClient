@@ -7,6 +7,7 @@ using SGSClient.Infrastructure.Client;
 using SGSClient.Infrastructure.Client.Persistence;
 using SGSClient.Infrastructure.Client.Services;
 using SGSClient.UI.WinUI.ViewModels;
+using SGSClient.UI.WinUI.Views;
 
 namespace SGSClient.UI.WinUI;
 
@@ -77,6 +78,9 @@ public partial class App : Application
             sp.GetService<IUserApiClient>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration));
+        services.AddTransient(sp => new FriendsViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<IAuthSession>()));
         services.AddSingleton(sp => new ShellSidebarViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
@@ -123,6 +127,10 @@ public partial class App : Application
                     auth.SetCurrentUser(profile);
                     MainWindow?.SetAdminNavVisible(profile.IsAdmin);
                     MainWindow?.RefreshSidebar();
+                    if (profile.NeedsPlayerTag)
+                    {
+                        MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account");
+                    }
                 }
             }
         }

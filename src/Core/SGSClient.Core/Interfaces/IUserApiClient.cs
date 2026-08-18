@@ -9,4 +9,36 @@ public interface IUserApiClient
     Task<(UserProfileDto? Profile, string? Error)> UploadAvatarAsync(string localFilePath, CancellationToken cancellationToken = default);
     Task<(UserProfileDto? Profile, string? Error)> UploadAvatarAsync(Stream content, string fileName, CancellationToken cancellationToken = default);
     Task<UserProfileDto?> ClearAvatarAsync(CancellationToken cancellationToken = default);
+
+    Task<(UserProfileDto? Profile, string? Error)> ClaimPlayerTagAsync(
+        string tag,
+        CancellationToken cancellationToken = default);
+
+    Task<PlayerTagAvailabilityDto?> CheckPlayerTagAsync(
+        string tag,
+        CancellationToken cancellationToken = default);
+
+    Task<SocialOverviewDto?> GetSocialAsync(CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SocialUserDto>> SearchUsersAsync(string query, CancellationToken cancellationToken = default);
+
+    Task<(SocialOverviewDto? Overview, string? Error)> SendFriendRequestAsync(
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    Task<(SocialOverviewDto? Overview, string? Error)> AcceptFriendRequestAsync(
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    Task<(SocialOverviewDto? Overview, string? Error)> RemoveFriendAsync(
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    Task<(SocialOverviewDto? Overview, string? Error)> FollowAsync(
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    Task<(SocialOverviewDto? Overview, string? Error)> UnfollowAsync(
+        int userId,
+        CancellationToken cancellationToken = default);
 }

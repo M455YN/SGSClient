@@ -310,6 +310,7 @@ public sealed class MsalAuthSession : IAuthSession
         AvatarUrl = source.AvatarUrl,
         Bio = source.Bio,
         Location = source.Location,
+        PlayerTag = source.PlayerTag,
         CreatedAtUtc = source.CreatedAtUtc,
         LastLoginUtc = source.LastLoginUtc,
         IsAdmin = isAdmin

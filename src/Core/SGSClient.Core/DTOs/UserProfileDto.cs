@@ -9,7 +9,9 @@ public sealed class UserProfileDto
     public string? AvatarUrl { get; init; }
     public string? Bio { get; init; }
     public string? Location { get; init; }
+    public string? PlayerTag { get; init; }
     public DateTimeOffset CreatedAtUtc { get; init; }
     public DateTimeOffset? LastLoginUtc { get; init; }
     public bool IsAdmin { get; init; }
+    public bool NeedsPlayerTag => string.IsNullOrWhiteSpace(PlayerTag);
 }

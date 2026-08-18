@@ -88,6 +88,7 @@ public partial class ShellSidebarViewModel : ViewModelBase
     public bool IsAdminSelected => SelectedNavTag == "Admin";
     public bool IsSettingsSelected => SelectedNavTag == "Settings";
     public bool IsAccountSelected => SelectedNavTag == "Account";
+    public bool IsFriendsSelected => SelectedNavTag == "Friends";
 
     partial void OnSelectedNavTagChanged(string value)
     {
@@ -99,6 +100,7 @@ public partial class ShellSidebarViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsAdminSelected));
         OnPropertyChanged(nameof(IsSettingsSelected));
         OnPropertyChanged(nameof(IsAccountSelected));
+        OnPropertyChanged(nameof(IsFriendsSelected));
     }
 
     public void RefreshProfile()
@@ -117,9 +119,11 @@ public partial class ShellSidebarViewModel : ViewModelBase
         {
             var user = _auth.CurrentUser;
             ProfileDisplayName = string.IsNullOrWhiteSpace(user.DisplayName) ? "Gracz" : user.DisplayName;
-            ProfileStatus = string.IsNullOrWhiteSpace(user.Email)
-                ? (user.IsAdmin ? "Zalogowany · admin" : "Zalogowany")
-                : (user.IsAdmin ? $"{user.Email} · admin" : user.Email!);
+            ProfileStatus = !string.IsNullOrWhiteSpace(user.PlayerTag)
+                ? $"@{user.PlayerTag}"
+                : string.IsNullOrWhiteSpace(user.Email)
+                    ? (user.IsAdmin ? "Zalogowany · admin" : "Zalogowany")
+                    : (user.IsAdmin ? $"{user.Email} · admin" : user.Email!);
             ProfileAvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
                 ? null
                 : CacheBust(InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl));

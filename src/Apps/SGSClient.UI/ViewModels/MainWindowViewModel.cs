@@ -14,6 +14,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly AdminViewModel _admin;
     private readonly SettingsViewModel _settings;
     private readonly AccountViewModel _account;
+    private readonly FriendsViewModel _friends;
+    private string _friendsTab = "Friends";
 
     public MainWindowViewModel()
         : this(
@@ -26,6 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase
             new AdminViewModel(),
             new SettingsViewModel(),
             new AccountViewModel(),
+            new FriendsViewModel(),
             new ShellSidebarViewModel())
     {
     }
@@ -40,6 +43,7 @@ public partial class MainWindowViewModel : ViewModelBase
         AdminViewModel admin,
         SettingsViewModel settings,
         AccountViewModel account,
+        FriendsViewModel friends,
         ShellSidebarViewModel sidebar)
     {
         _home = home;
@@ -51,6 +55,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _admin = admin;
         _settings = settings;
         _account = account;
+        _friends = friends;
         Sidebar = sidebar;
         CurrentPage = _home;
         SelectedNavTag = "Home";
@@ -59,6 +64,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _library.SetOpenDetailsHandler(id => OpenGameDetails(id, "Library"));
         _gameDetails.SetCloseHandler(CloseGameDetails);
         _home.SetNavigateHandler(NavigateFromHome);
+        _account.SetNavigateHandler(OpenSocial);
         _account.SetAdminVisibilityHandler(visible =>
         {
             IsAdminVisible = visible;
@@ -111,6 +117,7 @@ public partial class MainWindowViewModel : ViewModelBase
             "Admin" => _admin,
             "Settings" => _settings,
             "Account" => _account,
+            "Friends" => _friends,
             _ => _home
         };
 
@@ -144,6 +151,24 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             Sidebar.RefreshProfile();
         }
+
+        if (tag == "Friends")
+        {
+            _ = _friends.InitializeAsync(_friendsTab);
+            _friendsTab = "Friends";
+        }
+    }
+
+    public void OpenSocial(string tag)
+    {
+        if (tag.StartsWith("Friends:", StringComparison.Ordinal))
+        {
+            _friendsTab = tag.Length > 8 ? tag[8..] : "Friends";
+            Navigate("Friends");
+            return;
+        }
+
+        Navigate(tag);
     }
 
     public void NavigateToPublish(string? parentSymbol = null)
@@ -197,6 +222,10 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         await _account.InitializeAsync();
         Sidebar.RefreshProfile();
+        if (_account.NeedsPlayerTagSetup)
+        {
+            Navigate("Account");
+        }
         await Sidebar.LoadInstalledAsync();
     }
 }

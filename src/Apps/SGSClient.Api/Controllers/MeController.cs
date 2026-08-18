@@ -60,8 +60,67 @@ public sealed class MeController(
             return Unauthorized();
         }
 
-        var profile = await users.UpdateProfileAsync(resolved.AzureSub, request, cancellationToken);
-        return profile is null ? NotFound() : Ok(WithAdminFlag(profile));
+        try
+        {
+            var profile = await users.UpdateProfileAsync(resolved.AzureSub, request, cancellationToken);
+            return profile is null ? NotFound() : Ok(WithAdminFlag(profile));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    [HttpPut("tag")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserProfileDto>> ClaimPlayerTag(
+        [FromBody] ClaimPlayerTagRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var resolved = await ResolveIdentityAsync(cancellationToken);
+        if (resolved is null)
+        {
+            return Unauthorized();
+        }
+
+        await users.UpsertFromClaimsAsync(
+            resolved.AzureSub,
+            resolved.DisplayName,
+            resolved.Email,
+            avatarUrl: null,
+            cancellationToken);
+
+        try
+        {
+            var profile = await users.ClaimPlayerTagAsync(resolved.AzureSub, request.Tag, cancellationToken);
+            return profile is null ? NotFound() : Ok(WithAdminFlag(profile));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    [HttpGet("tag-available")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PlayerTagAvailabilityDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<PlayerTagAvailabilityDto>> CheckPlayerTag(
+        [FromQuery] string? q,
+        CancellationToken cancellationToken)
+    {
+        var resolved = await ResolveIdentityAsync(cancellationToken);
+        if (resolved is null)
+        {
+            return Unauthorized();
+        }
+
+        var profile = await users.GetByAzureSubAsync(resolved.AzureSub, cancellationToken);
+        return Ok(await users.CheckPlayerTagAsync(q ?? string.Empty, profile?.Id, cancellationToken));
     }
 
     [HttpPut("avatar")]
@@ -198,6 +257,7 @@ public sealed class MeController(
         AvatarUrl = profile.AvatarUrl,
         Bio = profile.Bio,
         Location = profile.Location,
+        PlayerTag = profile.PlayerTag,
         CreatedAtUtc = profile.CreatedAtUtc,
         LastLoginUtc = profile.LastLoginUtc,
         IsAdmin = adminAuth.IsAdmin(User, profile.Email)

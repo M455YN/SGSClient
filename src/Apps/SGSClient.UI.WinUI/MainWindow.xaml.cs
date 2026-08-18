@@ -67,6 +67,7 @@ public sealed partial class MainWindow : Window
             "Admin" => typeof(AdminPage),
             "Settings" => typeof(SettingsPage),
             "Account" => typeof(AccountPage),
+            "Friends" => typeof(FriendsPage),
             _ => typeof(HomePage)
         };
 

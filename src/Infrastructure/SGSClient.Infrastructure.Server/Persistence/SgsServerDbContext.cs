@@ -12,6 +12,7 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
     public DbSet<GameEngineEntity> GameEngines => Set<GameEngineEntity>();
     public DbSet<GameScreenshotEntity> GameScreenshots => Set<GameScreenshotEntity>();
     public DbSet<UserEntity> Users => Set<UserEntity>();
+    public DbSet<UserRelationshipEntity> UserRelationships => Set<UserRelationshipEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,9 +27,36 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.AvatarUrl).HasMaxLength(2048);
             entity.Property(x => x.Bio).HasMaxLength(500);
             entity.Property(x => x.Location).HasMaxLength(128);
+            entity.Property(x => x.PlayerTag).HasMaxLength(32);
             entity.Property(x => x.SettingsJson).HasMaxLength(8000).IsRequired();
             entity.HasIndex(x => x.AzureSub).IsUnique();
             entity.HasIndex(x => x.Email);
+            entity.HasIndex(x => x.PlayerTag)
+                .IsUnique()
+                .HasFilter("[PlayerTag] IS NOT NULL");
+        });
+
+        modelBuilder.Entity<UserRelationshipEntity>(entity =>
+        {
+            entity.ToTable("user_relationships");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Kind).HasConversion<int>();
+            entity.Property(x => x.Status).HasConversion<int>();
+
+            entity.HasIndex(x => new { x.RequesterUserId, x.AddresseeUserId, x.Kind }).IsUnique();
+            entity.HasIndex(x => new { x.AddresseeUserId, x.Kind, x.Status });
+            entity.HasIndex(x => new { x.RequesterUserId, x.Kind, x.Status });
+
+            entity.HasOne(x => x.Requester)
+                .WithMany()
+                .HasForeignKey(x => x.RequesterUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Addressee)
+                .WithMany()
+                .HasForeignKey(x => x.AddresseeUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<GameGenreEntity>(entity =>

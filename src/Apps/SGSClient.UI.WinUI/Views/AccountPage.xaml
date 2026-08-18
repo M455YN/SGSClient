@@ -15,6 +15,23 @@
       <Button Content="Zaloguj się" Click="SignIn_Click" HorizontalAlignment="Left" Padding="16,8" />
     </StackPanel>
 
+    <StackPanel x:Name="TagSetupPanel"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Spacing="12"
+                MaxWidth="480"
+                Margin="32"
+                Visibility="Collapsed">
+      <TextBlock Text="Wybierz tag gracza" FontSize="32" FontWeight="SemiBold" />
+      <TextBlock Text="To Twoja unikalna nazwa w SGS — jak na Discordzie. Inni znajdą Cię po @tagu."
+                 Opacity="0.75" TextWrapping="Wrap" />
+      <TextBlock x:Name="TagPreviewText" FontSize="22" FontWeight="SemiBold" Opacity="0.9" />
+      <TextBox x:Name="DraftTagBox" PlaceholderText="np. m455yn" MinHeight="40"
+               TextChanged="DraftTag_TextChanged" />
+      <TextBlock x:Name="TagStatusText" Opacity="0.7" TextWrapping="Wrap" FontSize="13" />
+      <Button Content="Zapisz tag" Click="ClaimTag_Click" HorizontalAlignment="Left" Padding="16,8" />
+    </StackPanel>
+
     <ScrollViewer x:Name="ProfileScroll" Visibility="Collapsed">
       <Grid>
         <Border Height="360" VerticalAlignment="Top" IsHitTestVisible="False">
@@ -54,11 +71,18 @@
               </Border>
               <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
                 <TextBlock x:Name="DisplayNameText" FontSize="34" FontWeight="Bold" />
+                <TextBlock x:Name="PlayerTagText" Opacity="0.75" FontSize="16" />
                 <TextBlock x:Name="LastActivityText" Opacity="0.7" FontSize="13" />
                 <StackPanel Orientation="Horizontal" Spacing="18" Margin="0,8,0,0">
-                  <TextBlock x:Name="FriendsText" Opacity="0.9" />
-                  <TextBlock x:Name="FollowingText" Opacity="0.9" />
-                  <TextBlock x:Name="FollowersText" Opacity="0.9" />
+                  <Button x:Name="FriendsText" Click="OpenFriends_Click" Tag="Friends"
+                          Background="Transparent" BorderThickness="0" Padding="0"
+                          HorizontalAlignment="Left" />
+                  <Button x:Name="FollowingText" Click="OpenFriends_Click" Tag="Following"
+                          Background="Transparent" BorderThickness="0" Padding="0"
+                          HorizontalAlignment="Left" />
+                  <Button x:Name="FollowersText" Click="OpenFriends_Click" Tag="Followers"
+                          Background="Transparent" BorderThickness="0" Padding="0"
+                          HorizontalAlignment="Left" />
                 </StackPanel>
               </StackPanel>
             </Grid>
@@ -104,6 +128,7 @@
           <StackPanel x:Name="RightRail" Grid.Column="1" Spacing="16">
             <Button x:Name="EditButton" Content="Dostosuj profil" HorizontalAlignment="Stretch"
                     Padding="12,10" Click="Edit_Click" />
+            <Button Content="Znajomi" HorizontalAlignment="Stretch" Padding="12,10" Click="OpenFriendsPage_Click" />
             <Button Content="Wyloguj" HorizontalAlignment="Stretch" Padding="12,10" Click="SignOut_Click" />
 
             <StackPanel Spacing="10" Margin="0,8,0,0">
@@ -138,6 +163,10 @@
                   VerticalAlignment="Top">
             <StackPanel Spacing="14">
               <TextBlock Text="Dostosuj profil" FontSize="20" FontWeight="SemiBold" />
+              <StackPanel Spacing="6">
+                <TextBlock Text="Tag gracza" Opacity="0.6" FontSize="12" />
+                <TextBox x:Name="EditPlayerTagBox" MinHeight="36" PlaceholderText="np. m455yn" />
+              </StackPanel>
               <StackPanel Spacing="6">
                 <TextBlock Text="Nazwa wyświetlana" Opacity="0.6" FontSize="12" />
                 <TextBox x:Name="EditDisplayNameBox" MinHeight="36" />

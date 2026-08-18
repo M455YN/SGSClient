@@ -20,5 +20,15 @@ public interface IUserService
         UpdateProfileRequestDto request,
         CancellationToken cancellationToken = default);
 
+    Task<UserProfileDto?> ClaimPlayerTagAsync(
+        string azureSub,
+        string tag,
+        CancellationToken cancellationToken = default);
+
+    Task<PlayerTagAvailabilityDto> CheckPlayerTagAsync(
+        string tag,
+        int? excludeUserId = null,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<AdminUserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default);
 }

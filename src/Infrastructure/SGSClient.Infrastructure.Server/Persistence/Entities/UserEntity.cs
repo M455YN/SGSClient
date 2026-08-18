@@ -9,6 +9,7 @@ public sealed class UserEntity
     public string? AvatarUrl { get; set; }
     public string? Bio { get; set; }
     public string? Location { get; set; }
+    public string? PlayerTag { get; set; }
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? LastLoginUtc { get; set; }
     public string SettingsJson { get; set; } = "{}";

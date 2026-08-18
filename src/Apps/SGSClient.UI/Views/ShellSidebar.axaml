@@ -85,6 +85,15 @@
               <TextBlock x:Name="NavLibraryLabel" Text="Biblioteka" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
+          <Button x:Name="NavFriends" Tag="Friends" Click="Nav_OnClick"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Znajomi">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="People" FontSize="16" />
+              <TextBlock x:Name="NavFriendsLabel" Text="Znajomi" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
           <Button x:Name="NavPublish" Tag="Publish" Click="Nav_OnClick"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                   MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"

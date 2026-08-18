@@ -79,6 +79,9 @@ public partial class App : Application
             sp.GetService<IUserApiClient>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration));
+        services.AddTransient(sp => new FriendsViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<IAuthSession>()));
         services.AddSingleton(sp => new ShellSidebarViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
@@ -95,6 +98,7 @@ public partial class App : Application
             sp.GetRequiredService<AdminViewModel>(),
             sp.GetRequiredService<SettingsViewModel>(),
             sp.GetRequiredService<AccountViewModel>(),
+            sp.GetRequiredService<FriendsViewModel>(),
             sp.GetRequiredService<ShellSidebarViewModel>()));
 
         Services = services.BuildServiceProvider();

@@ -160,6 +160,7 @@ public sealed class UserAvatarService(
         AvatarUrl = user.AvatarUrl,
         Bio = user.Bio,
         Location = user.Location,
+        PlayerTag = user.PlayerTag,
         CreatedAtUtc = user.CreatedAtUtc,
         LastLoginUtc = user.LastLoginUtc
     };

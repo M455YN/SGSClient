@@ -94,6 +94,74 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
     public Task<UserProfileDto?> ClearAvatarAsync(CancellationToken cancellationToken = default) =>
         SendAsync<UserProfileDto>(HttpMethod.Delete, "api/me/avatar", body: null, cancellationToken);
 
+    public Task<(UserProfileDto? Profile, string? Error)> ClaimPlayerTagAsync(
+        string tag,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<UserProfileDto>(
+            HttpMethod.Put,
+            "api/me/tag",
+            new ClaimPlayerTagRequestDto { Tag = tag },
+            cancellationToken);
+
+    public async Task<PlayerTagAvailabilityDto?> CheckPlayerTagAsync(
+        string tag,
+        CancellationToken cancellationToken = default)
+    {
+        var encoded = Uri.EscapeDataString(tag ?? string.Empty);
+        return await SendAsync<PlayerTagAvailabilityDto>(
+                HttpMethod.Get,
+                $"api/me/tag-available?q={encoded}",
+                body: null,
+                cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public Task<SocialOverviewDto?> GetSocialAsync(CancellationToken cancellationToken = default) =>
+        SendAsync<SocialOverviewDto>(HttpMethod.Get, "api/me/social", body: null, cancellationToken);
+
+    public async Task<IReadOnlyList<SocialUserDto>> SearchUsersAsync(
+        string query,
+        CancellationToken cancellationToken = default)
+    {
+        var encoded = Uri.EscapeDataString(query ?? string.Empty);
+        var result = await SendAsync<List<SocialUserDto>>(
+                HttpMethod.Get,
+                $"api/users/search?q={encoded}",
+                body: null,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return result ?? [];
+    }
+
+    public Task<(SocialOverviewDto? Overview, string? Error)> SendFriendRequestAsync(
+        int userId,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<SocialOverviewDto>(HttpMethod.Post, $"api/me/friends/{userId}", body: null, cancellationToken);
+
+    public Task<(SocialOverviewDto? Overview, string? Error)> AcceptFriendRequestAsync(
+        int userId,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<SocialOverviewDto>(
+            HttpMethod.Post,
+            $"api/me/friends/{userId}/accept",
+            body: null,
+            cancellationToken);
+
+    public Task<(SocialOverviewDto? Overview, string? Error)> RemoveFriendAsync(
+        int userId,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<SocialOverviewDto>(HttpMethod.Delete, $"api/me/friends/{userId}", body: null, cancellationToken);
+
+    public Task<(SocialOverviewDto? Overview, string? Error)> FollowAsync(
+        int userId,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<SocialOverviewDto>(HttpMethod.Put, $"api/me/follows/{userId}", body: null, cancellationToken);
+
+    public Task<(SocialOverviewDto? Overview, string? Error)> UnfollowAsync(
+        int userId,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<SocialOverviewDto>(HttpMethod.Delete, $"api/me/follows/{userId}", body: null, cancellationToken);
+
     private static string? TryExtractError(string? body)
     {
         if (string.IsNullOrWhiteSpace(body))
@@ -158,5 +226,51 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         }
 
         return await response.Content.ReadFromJsonAsync<T>(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<(T? Value, string? Error)> SendResultAsync<T>(
+        HttpMethod method,
+        string url,
+        object? body,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return (null, "Brak tokena — zaloguj się ponownie.");
+        }
+
+        try
+        {
+            using var request = new HttpRequestMessage(method, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (body is not null)
+            {
+                request.Content = JsonContent.Create(body);
+            }
+
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, $"HTTP {(int)response.StatusCode}: {TryExtractError(text) ?? response.ReasonPhrase ?? "błąd"}");
+            }
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return (null, "API nie zwróciło danych.");
+            }
+
+            var value = JsonSerializer.Deserialize<T>(text, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            return value is null ? (null, "API nie zwróciło danych.") : (value, null);
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
     }
 }

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SGSClient.Core.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Install;
@@ -18,6 +19,7 @@ public partial class AccountViewModel : ViewModelBase
     private readonly string _apiBaseUrl;
     private Func<nint>? _parentWindowHandle;
     private Action<bool>? _adminVisibility;
+    private Action<string>? _navigate;
 
     public AccountViewModel()
         : this(null, null, null, null)
@@ -54,17 +56,26 @@ public partial class AccountViewModel : ViewModelBase
     public ObservableCollection<RecentGameItem> RecentGames { get; } = [];
 
     public bool ShowSignedOut => !IsLoggedIn;
-    public bool ShowProfile => IsLoggedIn && !IsEditing;
+    public bool ShowTagSetup => IsLoggedIn && NeedsPlayerTagSetup;
+    public bool ShowAccountContent => IsLoggedIn && !NeedsPlayerTagSetup;
+    public bool ShowProfile => IsLoggedIn && !IsEditing && !NeedsPlayerTagSetup;
     public bool HasAvatar => !string.IsNullOrWhiteSpace(AvatarUrl);
     public bool ShowAvatarImage => AvatarBitmap is not null;
     public bool HasRecentGames => RecentGames.Count > 0;
-    public bool ShowEmptyRecentGames => IsLoggedIn && RecentGames.Count == 0;
+    public bool ShowEmptyRecentGames => IsLoggedIn && !NeedsPlayerTagSetup && RecentGames.Count == 0;
     public string BioDisplay => string.IsNullOrWhiteSpace(Bio) ? "Dodaj bio w Dostosuj profil" : Bio;
     public string LocationDisplay => string.IsNullOrWhiteSpace(Location) ? "—" : Location;
+    public string PlayerTagDisplay => string.IsNullOrWhiteSpace(PlayerTag) ? string.Empty : $"@{PlayerTag}";
+    public string TagPreview => string.IsNullOrWhiteSpace(DraftPlayerTag)
+        ? "@twoj.tag"
+        : "@" + DraftPlayerTag.Trim().TrimStart('@').ToLowerInvariant();
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowSignedOut))]
     [NotifyPropertyChangedFor(nameof(ShowProfile))]
+    [NotifyPropertyChangedFor(nameof(ShowTagSetup))]
+    [NotifyPropertyChangedFor(nameof(ShowAccountContent))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyRecentGames))]
     private bool _isLoggedIn;
 
     [ObservableProperty]
@@ -75,10 +86,29 @@ public partial class AccountViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowProfile))]
+    [NotifyPropertyChangedFor(nameof(ShowTagSetup))]
     private bool _isEditing;
 
     [ObservableProperty]
     private string _displayName = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PlayerTagDisplay))]
+    private string _playerTag = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowTagSetup))]
+    [NotifyPropertyChangedFor(nameof(ShowProfile))]
+    [NotifyPropertyChangedFor(nameof(ShowAccountContent))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyRecentGames))]
+    private bool _needsPlayerTagSetup;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TagPreview))]
+    private string _draftPlayerTag = string.Empty;
+
+    [ObservableProperty]
+    private string _tagStatus = string.Empty;
 
     [ObservableProperty]
     private string _email = string.Empty;
@@ -113,6 +143,9 @@ public partial class AccountViewModel : ViewModelBase
     private string _editLocation = string.Empty;
 
     [ObservableProperty]
+    private string _editPlayerTag = string.Empty;
+
+    [ObservableProperty]
     private int _friendsCount;
 
     [ObservableProperty]
@@ -128,6 +161,7 @@ public partial class AccountViewModel : ViewModelBase
     private string _profileActionStatus = string.Empty;
 
     public void SetParentWindowHandleProvider(Func<nint> provider) => _parentWindowHandle = provider;
+    public void SetNavigateHandler(Action<string> navigate) => _navigate = navigate;
 
     public async Task InitializeAsync()
     {
@@ -230,6 +264,7 @@ public partial class AccountViewModel : ViewModelBase
         EditDisplayName = DisplayName;
         EditBio = Bio;
         EditLocation = Location;
+        EditPlayerTag = PlayerTag;
         ProfileActionStatus = string.Empty;
         IsEditing = true;
     }
@@ -253,7 +288,8 @@ public partial class AccountViewModel : ViewModelBase
             {
                 DisplayName = EditDisplayName,
                 Bio = EditBio,
-                Location = EditLocation
+                Location = EditLocation,
+                PlayerTag = string.IsNullOrWhiteSpace(EditPlayerTag) ? null : EditPlayerTag
             });
 
             if (updated is null)
@@ -345,6 +381,14 @@ public partial class AccountViewModel : ViewModelBase
     {
         IsLoggedIn = true;
         DisplayName = user.DisplayName;
+        PlayerTag = user.PlayerTag ?? string.Empty;
+        NeedsPlayerTagSetup = _auth?.IsAvailable == true && user.Id > 0 && user.NeedsPlayerTag;
+        DraftPlayerTag = NeedsPlayerTagSetup
+            ? (PlayerTagRules.SuggestFrom(user.DisplayName, user.Email) ?? string.Empty)
+            : PlayerTag;
+        TagStatus = NeedsPlayerTagSetup
+            ? "Tag jest unikalny — jak nazwa użytkownika na Discordzie."
+            : string.Empty;
         Email = user.Email ?? string.Empty;
         AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
             ? string.Empty
@@ -364,6 +408,7 @@ public partial class AccountViewModel : ViewModelBase
         FriendsCount = 0;
         FollowingCount = 0;
         FollowersCount = 0;
+        await LoadSocialCountsAsync();
         await LoadRecentGamesAsync();
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
@@ -376,6 +421,10 @@ public partial class AccountViewModel : ViewModelBase
         IsEditing = false;
         DisplayName = string.Empty;
         Email = string.Empty;
+        PlayerTag = string.Empty;
+        NeedsPlayerTagSetup = false;
+        DraftPlayerTag = string.Empty;
+        TagStatus = string.Empty;
         AvatarUrl = string.Empty;
         AvatarBitmap = null;
         Bio = string.Empty;
@@ -390,6 +439,75 @@ public partial class AccountViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
         _adminVisibility?.Invoke(_auth?.IsAvailable != true);
+    }
+
+    [RelayCommand]
+    private async Task ClaimPlayerTagAsync()
+    {
+        if (_userApi is null)
+        {
+            TagStatus = "API niedostępne.";
+            return;
+        }
+
+        if (!PlayerTagRules.TryNormalize(DraftPlayerTag, out var tag, out var error))
+        {
+            TagStatus = error;
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var check = await _userApi.CheckPlayerTagAsync(tag);
+            if (check is { Available: false })
+            {
+                TagStatus = check.Error ?? "Ten tag jest zajęty.";
+                return;
+            }
+
+            var (profile, claimError) = await _userApi.ClaimPlayerTagAsync(tag);
+            if (profile is null)
+            {
+                TagStatus = claimError ?? "Nie udało się zapisać tagu.";
+                return;
+            }
+
+            _auth?.SetCurrentUser(profile);
+            await ApplyProfileAsync(profile);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenFriends(string? tab) =>
+        _navigate?.Invoke(string.IsNullOrWhiteSpace(tab) ? "Friends" : $"Friends:{tab}");
+
+    private async Task LoadSocialCountsAsync()
+    {
+        if (_userApi is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var social = await _userApi.GetSocialAsync();
+            if (social is null)
+            {
+                return;
+            }
+
+            FriendsCount = social.FriendsCount;
+            FollowingCount = social.FollowingCount;
+            FollowersCount = social.FollowersCount;
+        }
+        catch
+        {
+        }
     }
 
     private static string CacheBust(string url)
