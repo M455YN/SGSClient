@@ -518,8 +518,8 @@ public partial class GameDetailsViewModel : ObservableObject
         Title = game.Title;
         Symbol = game.Symbol;
         IsDlc = game.Kind == GameContentKind.Dlc;
-        _coverUrl = game.CoverUrl;
-        CoverImageUrl = ResolveMediaUrl(game.CoverUrl);
+        _coverUrl = game.ThumbnailUrl;
+        CoverImageUrl = ResolveMediaUrl(game.LandscapeUrl);
         HasCover = !string.IsNullOrWhiteSpace(CoverImageUrl);
         IntroMediaUrl = ResolveMediaUrl(game.IntroUrl);
         HasIntro = !string.IsNullOrWhiteSpace(IntroMediaUrl);
@@ -564,9 +564,17 @@ public partial class GameDetailsViewModel : ObservableObject
                 .Distinct(StringComparer.OrdinalIgnoreCase));
 
         MediaThumbs.Clear();
-        if (!string.IsNullOrWhiteSpace(CoverImageUrl))
+        var thumbUrl = ResolveMediaUrl(game.CoverUrl);
+        var headerUrl = ResolveMediaUrl(game.HeaderUrl);
+        if (!string.IsNullOrWhiteSpace(thumbUrl))
         {
-            MediaThumbs.Add(new MediaThumbItem { Label = "Okładka", ImageUrl = CoverImageUrl, IsImage = true });
+            MediaThumbs.Add(new MediaThumbItem { Label = "Miniaturka", ImageUrl = thumbUrl, IsImage = true });
+        }
+
+        if (!string.IsNullOrWhiteSpace(headerUrl)
+            && !string.Equals(headerUrl, thumbUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            MediaThumbs.Add(new MediaThumbItem { Label = "Okładka pozioma", ImageUrl = headerUrl, IsImage = true });
         }
 
         var shotIndex = 1;

@@ -20,8 +20,8 @@
   <Grid RowDefinitions="Auto,*,Auto">
     <Grid Margin="28,20,28,12" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="4">
-        <TextBlock Text="Moje gry" FontSize="28" FontWeight="SemiBold"/>
-        <TextBlock Text="Panel twórcy — strona sklepu, multimedia, buildy i DLC." Classes="caption"/>
+        <TextBlock Text="Panel twórcy" FontSize="28" FontWeight="SemiBold"/>
+        <TextBlock Text="Strona sklepu, multimedia, buildy i DLC." Classes="caption"/>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
         <Button Content="Nowa gra" Classes="accent" Click="AddGame_OnClick" Padding="14,8"/>
@@ -81,9 +81,9 @@
               <Panel>
                 <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="42" FontWeight="Bold"
                            Opacity="0.2" HorizontalAlignment="Center" VerticalAlignment="Center"
-                           IsVisible="{Binding !SelectedGame.HasCover}"/>
-                <Image Source="{Binding SelectedGame.CoverImageUrl}" Stretch="UniformToFill"
-                       IsVisible="{Binding SelectedGame.HasCover}"/>
+                           IsVisible="{Binding !SelectedGame.HasHeaderArt}"/>
+                <Image Source="{Binding SelectedGame.HeaderImageUrl}" Stretch="UniformToFill"
+                       IsVisible="{Binding SelectedGame.HasHeaderArt}"/>
                 <StackPanel VerticalAlignment="Bottom" Margin="16,12" Spacing="2">
                   <TextBlock Text="{Binding SelectedGame.Title}" FontSize="22" FontWeight="SemiBold"/>
                   <TextBlock Text="{Binding SelectedGame.MetaText}" Classes="caption"/>
@@ -180,13 +180,36 @@
 
           <StackPanel Spacing="12" IsVisible="{Binding IsMediaTab}">
             <Border Classes="card">
-              <StackPanel Spacing="8">
-                <TextBlock Text="Okładka" FontWeight="SemiBold"/>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Content="Wybierz plik" Click="PickCover_OnClick"/>
-                  <Button Content="Usuń" Click="ClearCover_OnClick"/>
+              <Grid ColumnDefinitions="120,*" ColumnSpacing="16">
+                <Border Height="160" Width="120" CornerRadius="6" Background="#1AFFFFFF">
+                  <Image Source="{Binding SelectedGame.OwnCoverImageUrl}" Stretch="UniformToFill"/>
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                  <TextBlock Text="Miniaturka" FontWeight="SemiBold"/>
+                  <TextBlock Text="Pionowa, na listy i w bibliotece (jak kapsuła Steam)."
+                             Classes="caption" TextWrapping="Wrap"/>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Wybierz plik" Click="PickCover_OnClick"/>
+                    <Button Content="Usuń" Click="ClearCover_OnClick"/>
+                  </StackPanel>
                 </StackPanel>
-              </StackPanel>
+              </Grid>
+            </Border>
+            <Border Classes="card">
+              <Grid ColumnDefinitions="280,*" ColumnSpacing="16">
+                <Border Height="130" CornerRadius="6" Background="#1AFFFFFF">
+                  <Image Source="{Binding SelectedGame.OwnHeaderImageUrl}" Stretch="UniformToFill"/>
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                  <TextBlock Text="Okładka pozioma" FontWeight="SemiBold"/>
+                  <TextBlock Text="Szeroka, jak header na Steam — strona gry i wyróżnienia."
+                             Classes="caption" TextWrapping="Wrap"/>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Wybierz plik" Click="PickHeader_OnClick"/>
+                    <Button Content="Usuń" Click="ClearHeader_OnClick"/>
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
             </Border>
             <Border Classes="card">
               <StackPanel Spacing="8">

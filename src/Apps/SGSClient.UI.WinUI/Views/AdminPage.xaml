@@ -146,152 +146,397 @@
       <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto"
                     Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
         <StackPanel Spacing="16" Margin="0,0,0,16">
+          <SelectorBar x:Name="EditorTabBar" SelectionChanged="EditorTab_SelectionChanged">
+            <SelectorBarItem Tag="overview" Text="Przegląd" Icon="View" IsSelected="True" />
+            <SelectorBarItem Tag="store" Text="Strona sklepu" Icon="Shop" />
+            <SelectorBarItem Tag="media" Text="Multimedia" Icon="Pictures" />
+            <SelectorBarItem Tag="builds" Text="Buildy" Icon="Setting" />
+            <SelectorBarItem Tag="dlc" Text="DLC" Icon="Library" />
+          </SelectorBar>
 
-          <Border Style="{StaticResource SectionCard}">
-            <Grid ColumnSpacing="16">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-              </Grid.ColumnDefinitions>
-              <Border Width="88" Height="88" CornerRadius="8"
-                      Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+          <StackPanel Spacing="16" Visibility="{Binding IsOverviewTab, Converter={StaticResource BoolToVis}}">
+            <Grid Height="220">
+              <Border CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                 <Grid>
-                  <TextBlock Text="{Binding SelectedGame.TileLabel}"
-                             FontSize="20" FontWeight="SemiBold" Opacity="0.5"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  <Image Source="{Binding SelectedGame.CoverImageUrl}" Stretch="UniformToFill"
-                         Visibility="{Binding SelectedGame.HasCover, Converter={StaticResource BoolToVis}}" />
+                  <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="48" FontWeight="Bold"
+                             Opacity="0.25" HorizontalAlignment="Center" VerticalAlignment="Center"
+                             Visibility="{Binding SelectedGame.HasHeaderArt, Converter={StaticResource BoolToVisInv}}" />
+                  <Image Source="{Binding SelectedGame.HeaderImageUrl}" Stretch="UniformToFill"
+                         Visibility="{Binding SelectedGame.HasHeaderArt, Converter={StaticResource BoolToVis}}" />
+                  <Border VerticalAlignment="Bottom" Padding="16,12">
+                    <Border.Background>
+                      <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                        <GradientStop Color="#00000000" Offset="0" />
+                        <GradientStop Color="#CC000000" Offset="1" />
+                      </LinearGradientBrush>
+                    </Border.Background>
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{Binding SelectedGame.Title}" FontSize="22" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding SelectedGame.MetaText}" Opacity="0.8" FontSize="12" />
+                      <TextBlock Text="{Binding SelectedGame.OwnerText}" Opacity="0.7" FontSize="12" />
+                    </StackPanel>
+                  </Border>
                 </Grid>
               </Border>
-              <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-                <TextBlock Text="{Binding SelectedGame.Title}"
-                           Style="{StaticResource SubtitleTextBlockStyle}"
-                           TextWrapping="Wrap" />
-                <TextBlock Text="{Binding SelectedGame.MetaText}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <Border CornerRadius="4" Padding="8,3"
-                          Background="{ThemeResource AccentFillColorDefaultBrush}"
-                          Visibility="{Binding SelectedGame.FeaturedP, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="Wyróżnione" FontSize="11"
-                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
-                  </Border>
-                  <Border CornerRadius="4" Padding="8,3"
-                          Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
-                          Visibility="{Binding SelectedGame.IsPublished, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="W sklepie" FontSize="11" />
-                  </Border>
-                  <Border CornerRadius="4" Padding="8,3"
-                          Background="{ThemeResource SystemFillColorCautionBackgroundBrush}"
-                          Visibility="{Binding SelectedGame.DraftP, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="Szkic" FontSize="11" />
-                  </Border>
-                </StackPanel>
-              </StackPanel>
-              <Button Grid.Column="2" Content="Edytuj" Click="Edit_Click"
-                      Style="{StaticResource AccentButtonStyle}"
-                      VerticalAlignment="Top" Padding="16,8" />
             </Grid>
-          </Border>
 
-          <Border Style="{StaticResource SectionCard}">
-            <StackPanel Spacing="4">
-              <TextBlock Text="Widoczność" Style="{StaticResource BodyStrongTextBlockStyle}" />
-              <Grid Margin="0,8,0,0">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center">
-                  <TextBlock Text="Opublikowana w sklepie" />
-                  <TextBlock Text="Wyłącz, żeby schować grę jako szkic."
-                             Style="{StaticResource CaptionTextBlockStyle}"
-                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
-                <ToggleSwitch x:Name="PublishedToggle" Grid.Column="1"
-                              OnContent="Tak" OffContent="Nie"
-                              Toggled="Published_Toggled" />
-              </Grid>
-              <Grid Margin="0,8,0,0">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center">
-                  <TextBlock Text="Wyróżniona na stronie głównej" />
-                  <TextBlock Text="Trafia na szynę Wyróżnione; pierwsza pozycja to hero."
-                             Style="{StaticResource CaptionTextBlockStyle}"
-                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
-                <ToggleSwitch x:Name="FeaturedToggle" Grid.Column="1"
-                              OnContent="Tak" OffContent="Nie"
-                              Toggled="Featured_Toggled" />
-              </Grid>
-            </StackPanel>
-          </Border>
-
-          <Border Style="{StaticResource SectionCard}">
-            <StackPanel Spacing="10">
-              <TextBlock Text="Sklep" Style="{StaticResource BodyStrongTextBlockStyle}" />
-              <TextBlock Text="{Binding SelectedGame.DescriptionText}"
-                         TextWrapping="Wrap"
-                         Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-              <Grid ColumnSpacing="24" RowSpacing="8">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <StackPanel>
-                  <TextBlock Text="Gatunek" Style="{StaticResource CaptionTextBlockStyle}"
-                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                  <TextBlock Text="{Binding SelectedGame.GenreText}" />
-                </StackPanel>
-                <StackPanel Grid.Column="1">
-                  <TextBlock Text="Silnik" Style="{StaticResource CaptionTextBlockStyle}"
-                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                  <TextBlock Text="{Binding SelectedGame.EngineText}" />
-                </StackPanel>
-                <StackPanel Grid.Column="2">
-                  <TextBlock Text="Właściciel" Style="{StaticResource CaptionTextBlockStyle}"
-                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                  <TextBlock Text="{Binding SelectedGame.OwnerText}" TextTrimming="CharacterEllipsis" />
-                </StackPanel>
-              </Grid>
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <Border CornerRadius="4" Padding="8,4"
-                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                  <TextBlock Text="{Binding SelectedGame.CoverText}" FontSize="12" />
-                </Border>
-                <Border CornerRadius="4" Padding="8,4"
-                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                  <TextBlock Text="{Binding SelectedGame.IntroText}" FontSize="12" />
-                </Border>
-                <Border CornerRadius="4" Padding="8,4"
-                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                  <TextBlock Text="{Binding SelectedGame.ScreenshotsText}" FontSize="12" />
-                </Border>
-              </StackPanel>
-            </StackPanel>
-          </Border>
-
-          <Border Style="{StaticResource SectionCard}">
-            <Grid>
+            <Grid ColumnSpacing="12">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
               </Grid.ColumnDefinitions>
-              <StackPanel Spacing="2">
-                <TextBlock Text="Strefa niebezpieczna" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                <TextBlock Text="Usunięcie pozycji katalogu jest nieodwracalne."
-                           Style="{StaticResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-              </StackPanel>
-              <Button Grid.Column="1" Content="Usuń grę" Click="Delete_Click"
-                      VerticalAlignment="Center" Padding="16,8" />
+              <Border Style="{StaticResource SectionCard}">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Pobrania" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+                  <TextBlock Text="{Binding TotalDownloadsText}" FontSize="24" FontWeight="SemiBold" />
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="1" Style="{StaticResource SectionCard}">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Ostatnie 30 dni" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+                  <TextBlock Text="{Binding Last30Text}" FontSize="24" FontWeight="SemiBold" />
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="2" Style="{StaticResource SectionCard}">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Ostatnie 7 dni" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+                  <TextBlock Text="{Binding Last7Text}" FontSize="24" FontWeight="SemiBold" />
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="3" Style="{StaticResource SectionCard}">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Wersja" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+                  <TextBlock Text="{Binding SelectedGame.CurrentVersionText}" FontSize="24" FontWeight="SemiBold" />
+                </StackPanel>
+              </Border>
             </Grid>
-          </Border>
+
+            <Border Style="{StaticResource SectionCard}" Visibility="{Binding HasDailyBars, Converter={StaticResource BoolToVis}}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Aktywność pobrań (30 dni)" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <ItemsControl ItemsSource="{Binding DailyBars}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" Spacing="2" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Width="8" Height="{Binding BarHeight}" CornerRadius="2" VerticalAlignment="Bottom"
+                              Background="{ThemeResource AccentFillColorDefaultBrush}"
+                              Opacity="0.85" ToolTipService.ToolTip="{Binding Tooltip}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding LastDownloadText}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="4">
+                <TextBlock Text="Widoczność" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <Grid Margin="0,8,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Opublikowana w sklepie" />
+                    <TextBlock Text="Szkic jest ukryty dla graczy."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  </StackPanel>
+                  <ToggleSwitch x:Name="PublishedToggle" Grid.Column="1"
+                                OffContent="Szkic" OnContent="W sklepie"
+                                Toggled="Published_Toggled" />
+                </Grid>
+                <Grid Margin="0,8,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Wyróżniona na stronie głównej" />
+                    <TextBlock Text="Trafia na szynę Wyróżnione; pierwsza pozycja to hero."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  </StackPanel>
+                  <ToggleSwitch x:Name="FeaturedToggle" Grid.Column="1"
+                                OnContent="Tak" OffContent="Nie"
+                                Toggled="Featured_Toggled" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Opublikuj nową wersję" Click="AddVersion_Click" Padding="14,8" />
+              <Button Content="Dodaj DLC" Click="AddDlc_Click" Padding="14,8" />
+              <Button Content="Usuń grę" Click="Delete_Click" Padding="14,8" />
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Spacing="12" Visibility="{Binding IsStoreTab, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Podstawowe" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBox Header="Tytuł" Text="{Binding SelectedGame.EditTitle, Mode=TwoWay}" />
+                <TextBox Header="Opis" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"
+                         Text="{Binding SelectedGame.EditDescription, Mode=TwoWay}" />
+                <TextBox Header="Wymagania sprzętowe" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64"
+                         Text="{Binding SelectedGame.EditHardwareRequirements, Mode=TwoWay}" />
+                <TextBox Header="Inne informacje" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
+                         Text="{Binding SelectedGame.EditOtherInformation, Mode=TwoWay}" />
+                <Grid ColumnSpacing="12">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <ComboBox Header="Gatunek" HorizontalAlignment="Stretch"
+                            ItemsSource="{Binding GenreOptions}"
+                            SelectedItem="{Binding SelectedGame.EditGenre, Mode=TwoWay}" />
+                  <ComboBox Grid.Column="1" Header="Silnik" HorizontalAlignment="Stretch"
+                            ItemsSource="{Binding EngineOptions}"
+                            SelectedItem="{Binding SelectedGame.EditEngine, Mode=TwoWay}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Wydanie i klasyfikacja" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <Grid ColumnSpacing="12">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <ComboBox Header="Status wydania" HorizontalAlignment="Stretch"
+                            ItemsSource="{Binding ReleaseStatusOptions}"
+                            SelectedIndex="{Binding SelectedGame.EditReleaseStatusIndex, Mode=TwoWay}" />
+                  <CalendarDatePicker Grid.Column="1" Header="Data premiery"
+                                      Date="{Binding SelectedGame.EditReleaseDate, Mode=TwoWay}" />
+                  <ComboBox Grid.Column="2" Header="Kategoria wiekowa" HorizontalAlignment="Stretch"
+                            ItemsSource="{Binding AgeRatingOptions}"
+                            SelectedIndex="{Binding SelectedGame.EditAgeRatingIndex, Mode=TwoWay}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Studio i linki" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBox Header="Nazwa studia" Text="{Binding SelectedGame.EditStudioName, Mode=TwoWay}" />
+                <TextBox Header="Strona www" Text="{Binding SelectedGame.EditWebsiteUrl, Mode=TwoWay}" />
+                <TextBox Header="Discord" Text="{Binding SelectedGame.EditDiscordUrl, Mode=TwoWay}" />
+                <TextBox Header="Wsparcie" Text="{Binding SelectedGame.EditSupportUrl, Mode=TwoWay}" />
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Funkcje" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <CheckBox Content="Singleplayer" IsChecked="{Binding SelectedGame.HasSinglePlayer, Mode=TwoWay}" />
+                  <CheckBox Grid.Column="1" Content="Multiplayer" IsChecked="{Binding SelectedGame.HasMultiPlayer, Mode=TwoWay}" />
+                  <CheckBox Grid.Column="2" Content="Kooperacja" IsChecked="{Binding SelectedGame.HasCoOp, Mode=TwoWay}" />
+                  <CheckBox Grid.Column="3" Content="Pad" IsChecked="{Binding SelectedGame.HasController, Mode=TwoWay}" />
+                </Grid>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <CheckBox Content="Chmura" IsChecked="{Binding SelectedGame.HasCloudSaves, Mode=TwoWay}" />
+                  <CheckBox Grid.Column="1" Content="Osiągnięcia" IsChecked="{Binding SelectedGame.HasAchievements, Mode=TwoWay}" />
+                  <CheckBox Grid.Column="2" Content="Mody" IsChecked="{Binding SelectedGame.HasModding, Mode=TwoWay}" />
+                  <CheckBox Grid.Column="3" Content="VR" IsChecked="{Binding SelectedGame.HasVr, Mode=TwoWay}" />
+                </Grid>
+                <TextBox Header="Języki (oddzielone przecinkiem)"
+                         Text="{Binding SelectedGame.EditLanguages, Mode=TwoWay}"
+                         PlaceholderText="Polski, English" />
+                <TextBox Header="Tagi (oddzielone przecinkiem)"
+                         Text="{Binding SelectedGame.EditTags, Mode=TwoWay}"
+                         PlaceholderText="roguelike, pixel art" />
+              </StackPanel>
+            </Border>
+            <Button Content="Zapisz stronę sklepu" Style="{StaticResource AccentButtonStyle}"
+                    Click="SaveStore_Click" HorizontalAlignment="Left" Padding="16,8" />
+          </StackPanel>
+
+          <StackPanel Spacing="12" Visibility="{Binding IsMediaTab, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource SectionCard}">
+              <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="120" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Height="160" Width="120" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                  <Image Source="{Binding SelectedGame.OwnCoverImageUrl}" Stretch="UniformToFill" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                  <TextBlock Text="Miniaturka" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <TextBlock Text="Pionowa, na listy i w bibliotece (jak kapsuła Steam)."
+                             Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Wybierz plik" Click="PickCover_Click" />
+                    <Button Content="Usuń" Click="ClearCover_Click" />
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="280" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Height="130" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                  <Image Source="{Binding SelectedGame.OwnHeaderImageUrl}" Stretch="UniformToFill" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                  <TextBlock Text="Okładka pozioma" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <TextBlock Text="Szeroka, jak header na Steam — strona gry i wyróżnienia."
+                             Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Wybierz plik" Click="PickHeader_Click" />
+                    <Button Content="Usuń" Click="ClearHeader_Click" />
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="Intro / zwiastun" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock Text="{Binding SelectedGame.IntroUrl}" Opacity="0.7" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="Wybierz wideo" Click="PickIntro_Click" />
+                  <Button Content="Usuń" Click="ClearIntro_Click" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="10">
+                <Grid>
+                  <TextBlock Text="Zrzuty ekranu" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <Button Content="Dodaj" HorizontalAlignment="Right" Click="AddScreenshot_Click" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding SelectedGame.ScreenshotItems}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <ItemsWrapGrid MaximumRowsOrColumns="4" Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid Width="160" Height="92" Margin="0,0,8,8">
+                        <Border CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                          <Image Source="{Binding ImageUrl}" Stretch="UniformToFill" />
+                        </Border>
+                        <Button HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4"
+                                Tag="{Binding}" Click="RemoveScreenshot_Click" Padding="6">
+                          <FontIcon Glyph="&#xE711;" FontSize="12" />
+                        </Button>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="12" Visibility="{Binding IsBuildsTab, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="10">
+                <Grid>
+                  <TextBlock Text="Aktualne buildy" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <Button Content="Nowa wersja" HorizontalAlignment="Right" Click="AddVersion_Click" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding SelectedGame.Builds}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Padding="12" Margin="0,0,0,8" CornerRadius="6"
+                              Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                        <Grid>
+                          <StackPanel>
+                            <TextBlock Text="{Binding PlatformText}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding MetaText}" Opacity="0.7" FontSize="12" />
+                          </StackPanel>
+                          <TextBlock Text="{Binding Version}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                     FontWeight="SemiBold" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="10">
+                <TextBlock Text="Historia i opis zmian" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <ItemsControl ItemsSource="{Binding Versions}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:StudioVersionItem">
+                      <Border Padding="12" Margin="0,0,0,10" CornerRadius="6"
+                              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                        <StackPanel Spacing="8">
+                          <Grid>
+                            <TextBlock Text="{Binding Version}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding MetaText}" HorizontalAlignment="Right" Opacity="0.7" FontSize="12" />
+                          </Grid>
+                          <TextBox Header="Notatki do tej wersji" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"
+                                   Text="{Binding EditNotes, Mode=TwoWay}" />
+                          <Button Content="Zapisz opis zmian" Tag="{Binding}" Click="SaveNotes_Click"
+                                  HorizontalAlignment="Left" Padding="12,6" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="Brak opublikowanych wersji." Opacity="0.6"
+                           Visibility="{Binding HasVersions, Converter={StaticResource BoolToVisInv}}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
+          <StackPanel Spacing="12" Visibility="{Binding IsDlcTab, Converter={StaticResource BoolToVis}}">
+            <Border Style="{StaticResource SectionCard}">
+              <StackPanel Spacing="10">
+                <Grid>
+                  <TextBlock Text="Dodatki" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <Button Content="Dodaj DLC" HorizontalAlignment="Right" Click="AddDlc_Click" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding SelectedGame.Dlcs}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Padding="12" Margin="0,0,0,8" CornerRadius="6"
+                              Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                        <Grid ColumnSpacing="12">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <StackPanel>
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding MetaText}" Opacity="0.7" FontSize="12" />
+                          </StackPanel>
+                          <Button Grid.Column="1" Content="Usuń" Tag="{Binding}" Click="DeleteDlc_Click" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="Ta gra nie ma jeszcze DLC." Opacity="0.6"
+                           Visibility="{Binding SelectedGame.HasDlcs, Converter={StaticResource BoolToVisInv}}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </StackPanel>
       </ScrollViewer>
 
@@ -382,8 +627,8 @@
             <TextBlock Text="{Binding HeroPreview.TileLabel}"
                        FontSize="56" FontWeight="SemiBold" Opacity="0.16"
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <Image Source="{Binding HeroPreview.CoverImageUrl}" Stretch="UniformToFill"
-                   Visibility="{Binding HeroPreview.HasCover, Converter={StaticResource BoolToVis}}" />
+            <Image Source="{Binding HeroPreview.HeaderImageUrl}" Stretch="UniformToFill"
+                   Visibility="{Binding HeroPreview.HasHeaderArt, Converter={StaticResource BoolToVis}}" />
             <Border VerticalAlignment="Bottom">
               <Border.Background>
                 <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">

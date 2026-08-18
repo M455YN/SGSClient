@@ -39,8 +39,8 @@
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
       <StackPanel Spacing="4">
-        <TextBlock Text="Moje gry" Style="{StaticResource TitleTextBlockStyle}" />
-        <TextBlock Text="Panel twórcy — strona sklepu, multimedia, buildy i DLC."
+        <TextBlock Text="Panel twórcy" Style="{StaticResource TitleTextBlockStyle}" />
+        <TextBlock Text="Strona sklepu, multimedia, buildy i DLC."
                    Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
       </StackPanel>
@@ -133,9 +133,9 @@
                 <Grid>
                   <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="48" FontWeight="Bold"
                              Opacity="0.25" HorizontalAlignment="Center" VerticalAlignment="Center"
-                             Visibility="{Binding SelectedGame.HasCover, Converter={StaticResource BoolToVisInv}}" />
-                  <Image Source="{Binding SelectedGame.CoverImageUrl}" Stretch="UniformToFill"
-                         Visibility="{Binding SelectedGame.HasCover, Converter={StaticResource BoolToVis}}" />
+                             Visibility="{Binding SelectedGame.HasHeaderArt, Converter={StaticResource BoolToVisInv}}" />
+                  <Image Source="{Binding SelectedGame.HeaderImageUrl}" Stretch="UniformToFill"
+                         Visibility="{Binding SelectedGame.HasHeaderArt, Converter={StaticResource BoolToVis}}" />
                   <Border VerticalAlignment="Bottom" Padding="16,12">
                     <Border.Background>
                       <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
@@ -333,17 +333,39 @@
             <Border Style="{StaticResource SectionCard}">
               <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="160" />
+                  <ColumnDefinition Width="120" />
                   <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Height="160" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                  <Image Source="{Binding SelectedGame.CoverImageUrl}" Stretch="UniformToFill" />
+                <Border Height="160" Width="120" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                  <Image Source="{Binding SelectedGame.OwnCoverImageUrl}" Stretch="UniformToFill" />
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
-                  <TextBlock Text="Okładka" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <TextBlock Text="Miniaturka" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <TextBlock Text="Pionowa, na listy i w bibliotece (jak kapsuła Steam)."
+                             Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" />
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button Content="Wybierz plik" Click="PickCover_Click" />
                     <Button Content="Usuń" Click="ClearCover_Click" />
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource SectionCard}">
+              <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="280" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Height="130" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                  <Image Source="{Binding SelectedGame.OwnHeaderImageUrl}" Stretch="UniformToFill" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                  <TextBlock Text="Okładka pozioma" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <TextBlock Text="Szeroka, jak header na Steam — strona gry i wyróżnienia."
+                             Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Wybierz plik" Click="PickHeader_Click" />
+                    <Button Content="Usuń" Click="ClearHeader_Click" />
                   </StackPanel>
                 </StackPanel>
               </Grid>

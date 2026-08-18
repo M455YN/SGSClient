@@ -228,6 +228,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(8000)
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("HeaderUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<string>("IntroUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");

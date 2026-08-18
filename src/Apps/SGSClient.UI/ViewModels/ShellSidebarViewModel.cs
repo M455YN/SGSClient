@@ -56,7 +56,7 @@ public partial class ShellSidebarViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isAdminVisible;
 
-    /// <summary>Publishing entry points are only for accounts with the creator role or higher.</summary>
+    /// <summary>Creator panel is only for accounts with the creator role or higher.</summary>
     [ObservableProperty]
     private bool _isCreatorVisible = true;
 
@@ -88,7 +88,7 @@ public partial class ShellSidebarViewModel : ViewModelBase
     public bool IsGamesSelected => SelectedNavTag == "Games";
     public bool IsLibrarySelected => SelectedNavTag == "Library";
     public bool IsPublishSelected => SelectedNavTag == "Publish";
-    public bool IsStudioSelected => SelectedNavTag == "Studio";
+    public bool IsStudioSelected => SelectedNavTag is "Studio" or "Publish";
     public bool IsAdminSelected => SelectedNavTag == "Admin";
     public bool IsSettingsSelected => SelectedNavTag == "Settings";
     public bool IsAccountSelected => SelectedNavTag == "Account";

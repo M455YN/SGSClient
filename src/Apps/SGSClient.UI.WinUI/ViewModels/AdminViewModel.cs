@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Configuration;
@@ -7,16 +8,22 @@ using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Packaging;
 
 namespace SGSClient.UI.WinUI.ViewModels;
 
 public partial class AdminViewModel : ObservableObject
 {
+    private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
+
     private readonly ISgsApiService? _api;
     private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
-    private Func<AdminGameItem, Task<bool>>? _editGame;
+    private Action? _addVersion;
+    private Action<string>? _addDlc;
     private Func<AdminGameItem, Task<bool>>? _confirmDelete;
+    private Func<Task<string?>>? _pickImage;
+    private Func<Task<string?>>? _pickVideo;
 
     public AdminViewModel(ISgsApiService? api, IAuthSession? auth, IConfiguration? configuration = null)
     {
@@ -28,18 +35,34 @@ public partial class AdminViewModel : ObservableObject
     }
 
     public string Title { get; } = "Admin";
+    public IReadOnlyList<string> GenreOptions { get; } =
+        SgsGameTaxonomy.Genres.Select(g => g.Symbol).Prepend("").ToArray();
+    public IReadOnlyList<string> EngineOptions { get; } =
+        SgsGameTaxonomy.Engines.Select(e => e.Symbol).Prepend("").ToArray();
+    public IReadOnlyList<string> ReleaseStatusOptions { get; } = GameStoreLabels.ReleaseStatusOptions;
+    public IReadOnlyList<string> AgeRatingOptions { get; } = GameStoreLabels.AgeRatingOptions;
 
     public ObservableCollection<AdminGameItem> Games { get; } = [];
     public ObservableCollection<AdminGameItem> FilteredGames { get; } = [];
     public ObservableCollection<AdminGameItem> FeaturedGames { get; } = [];
     public ObservableCollection<AdminUserItem> Users { get; } = [];
+    public ObservableCollection<StudioVersionItem> Versions { get; } = [];
+    public ObservableCollection<StudioStatBar> DailyBars { get; } = [];
 
     [ObservableProperty] public partial string SelectedTab { get; set; } = "games";
+    [ObservableProperty] public partial string EditorTab { get; set; } = "overview";
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial bool ShowEmpty { get; set; }
     [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
     [ObservableProperty] public partial string Filter { get; set; } = "all";
+    [ObservableProperty] public partial GameStatsDto? Stats { get; set; }
+    [ObservableProperty] public partial string TotalDownloadsText { get; set; } = "0";
+    [ObservableProperty] public partial string Last30Text { get; set; } = "0";
+    [ObservableProperty] public partial string Last7Text { get; set; } = "0";
+    [ObservableProperty] public partial string LastDownloadText { get; set; } = "—";
+    [ObservableProperty] public partial bool HasDailyBars { get; set; }
+    [ObservableProperty] public partial bool HasVersions { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelection))]
@@ -58,9 +81,17 @@ public partial class AdminViewModel : ObservableObject
     public bool IsGamesTab => SelectedTab == "games";
     public bool IsFeaturedTab => SelectedTab == "featured";
     public bool IsUsersTab => SelectedTab == "users";
+    public bool IsOverviewTab => EditorTab == "overview";
+    public bool IsStoreTab => EditorTab == "store";
+    public bool IsMediaTab => EditorTab == "media";
+    public bool IsBuildsTab => EditorTab == "builds";
+    public bool IsDlcTab => EditorTab == "dlc";
 
-    public void SetEditHandler(Func<AdminGameItem, Task<bool>> edit) => _editGame = edit;
+    public void SetAddVersionHandler(Action add) => _addVersion = add;
+    public void SetAddDlcHandler(Action<string> add) => _addDlc = add;
     public void SetConfirmDeleteHandler(Func<AdminGameItem, Task<bool>> confirm) => _confirmDelete = confirm;
+    public void SetPickImageHandler(Func<Task<string?>> pick) => _pickImage = pick;
+    public void SetPickVideoHandler(Func<Task<string?>> pick) => _pickVideo = pick;
 
     partial void OnSelectedTabChanged(string value)
     {
@@ -75,8 +106,23 @@ public partial class AdminViewModel : ObservableObject
         };
     }
 
+    partial void OnEditorTabChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsOverviewTab));
+        OnPropertyChanged(nameof(IsStoreTab));
+        OnPropertyChanged(nameof(IsMediaTab));
+        OnPropertyChanged(nameof(IsBuildsTab));
+        OnPropertyChanged(nameof(IsDlcTab));
+    }
+
     partial void OnSearchTextChanged(string value) => ApplyFilter();
     partial void OnFilterChanged(string value) => ApplyFilter();
+
+    partial void OnSelectedGameChanged(AdminGameItem? value)
+    {
+        OnPropertyChanged(nameof(HasSelection));
+        _ = LoadSelectionExtrasAsync();
+    }
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -112,6 +158,14 @@ public partial class AdminViewModel : ObservableObject
             foreach (var game in games.OrderBy(g => g.Kind).ThenBy(g => g.Title))
             {
                 Games.Add(AdminGameItem.FromDto(game, _apiBaseUrl));
+            }
+
+            foreach (var game in Games.Where(g => !g.IsDlc))
+            {
+                foreach (var dlc in Games.Where(g => g.IsDlc && g.ParentGameId == game.Id))
+                {
+                    game.Dlcs.Add(dlc);
+                }
             }
 
             Users.Clear();
@@ -254,6 +308,15 @@ public partial class AdminViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void SelectEditorTab(string? tag)
+    {
+        if (!string.IsNullOrWhiteSpace(tag))
+        {
+            EditorTab = tag;
+        }
+    }
+
+    [RelayCommand]
     private void SetFilter(string? filter)
     {
         if (!string.IsNullOrWhiteSpace(filter))
@@ -272,101 +335,275 @@ public partial class AdminViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task EditAsync(AdminGameItem? item)
+    private void AddVersion() => _addVersion?.Invoke();
+
+    [RelayCommand]
+    private void AddDlc(AdminGameItem? parent)
     {
-        item ??= SelectedGame;
-        if (item is null || _api is null || _editGame is null)
+        var target = parent ?? SelectedGame;
+        if (target is null || string.IsNullOrWhiteSpace(target.Symbol) || target.IsDlc)
         {
             return;
         }
 
-        var saved = await _editGame(item);
-        if (!saved)
+        _addDlc?.Invoke(target.Symbol);
+    }
+
+    [RelayCommand]
+    private async Task SaveStoreAsync()
+    {
+        if (SelectedGame is null || _api is null)
         {
             return;
         }
 
-        var updated = await _api.UpdateAdminGameAsync(item.Id, new UpdateGameRequestDto
+        IsBusy = true;
+        try
         {
-            Title = item.EditTitle?.Trim(),
-            Description = item.EditDescription,
-            HardwareRequirements = item.EditHardwareRequirements,
-            OtherInformation = item.EditOtherInformation,
-            Genre = item.EditGenre,
-            Engine = item.EditEngine,
-            DraftP = item.EditDraft,
-            FeaturedP = item.EditFeatured
-        });
+            var item = SelectedGame;
+            var updated = await _api.UpdateAdminGameAsync(item.Id, item.ToUpdateRequest());
+            if (updated is null)
+            {
+                StatusText = "Nie udało się zapisać strony sklepu.";
+                return;
+            }
 
+            item.ApplyDto(updated, _apiBaseUrl);
+            StatusText = $"Zapisano stronę sklepu: {updated.Title}";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Błąd zapisu: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PickCoverAsync()
+    {
+        if (_pickImage is null)
+        {
+            return;
+        }
+
+        var path = await _pickImage();
+        if (path is null || SelectedGame is null || _api is null)
+        {
+            return;
+        }
+
+        var updated = await _api.UploadGameCoverAsync(SelectedGame.Id, path, asAdmin: true);
+        await ReloadAfterMediaAsync(updated, "Zaktualizowano miniaturkę.");
+    }
+
+    [RelayCommand]
+    private async Task ClearCoverAsync()
+    {
+        if (SelectedGame is null || _api is null)
+        {
+            return;
+        }
+
+        var updated = await _api.ClearGameCoverAsync(SelectedGame.Id, asAdmin: true);
+        await ReloadAfterMediaAsync(updated, "Usunięto miniaturkę.");
+    }
+
+    [RelayCommand]
+    private async Task PickHeaderAsync()
+    {
+        if (_pickImage is null)
+        {
+            return;
+        }
+
+        var path = await _pickImage();
+        if (path is null || SelectedGame is null || _api is null)
+        {
+            return;
+        }
+
+        var updated = await _api.UploadGameHeaderAsync(SelectedGame.Id, path, asAdmin: true);
+        await ReloadAfterMediaAsync(updated, "Zaktualizowano okładkę poziomą.");
+    }
+
+    [RelayCommand]
+    private async Task ClearHeaderAsync()
+    {
+        if (SelectedGame is null || _api is null)
+        {
+            return;
+        }
+
+        var updated = await _api.ClearGameHeaderAsync(SelectedGame.Id, asAdmin: true);
+        await ReloadAfterMediaAsync(updated, "Usunięto okładkę poziomą.");
+    }
+
+    [RelayCommand]
+    private async Task PickIntroAsync()
+    {
+        if (_pickVideo is null)
+        {
+            return;
+        }
+
+        var path = await _pickVideo();
+        if (path is null || SelectedGame is null || _api is null)
+        {
+            return;
+        }
+
+        var updated = await _api.UploadGameIntroAsync(SelectedGame.Id, path, asAdmin: true);
+        await ReloadAfterMediaAsync(updated, "Zaktualizowano intro.");
+    }
+
+    [RelayCommand]
+    private async Task ClearIntroAsync()
+    {
+        if (SelectedGame is null || _api is null)
+        {
+            return;
+        }
+
+        var updated = await _api.ClearGameIntroAsync(SelectedGame.Id, asAdmin: true);
+        await ReloadAfterMediaAsync(updated, "Usunięto intro.");
+    }
+
+    [RelayCommand]
+    private async Task AddScreenshotAsync()
+    {
+        if (_pickImage is null || SelectedGame is null || _api is null)
+        {
+            return;
+        }
+
+        var path = await _pickImage();
+        if (path is null)
+        {
+            return;
+        }
+
+        var updated = await _api.AddGameScreenshotAsync(SelectedGame.Id, path, asAdmin: true);
+        await ReloadAfterMediaAsync(updated, "Dodano zrzut ekranu.");
+    }
+
+    [RelayCommand]
+    private async Task RemoveScreenshotAsync(StudioScreenshotItem? shot)
+    {
+        if (shot is null || SelectedGame is null || _api is null || shot.Id <= 0)
+        {
+            return;
+        }
+
+        var updated = await _api.RemoveGameScreenshotAsync(SelectedGame.Id, shot.Id, asAdmin: true);
+        await ReloadAfterMediaAsync(updated, "Usunięto zrzut ekranu.");
+    }
+
+    private async Task ReloadAfterMediaAsync(GameDto? updated, string okText)
+    {
         if (updated is null)
         {
-            StatusText = "Nie udało się zapisać metadanych.";
+            StatusText = "Nie udało się zaktualizować mediów.";
             return;
         }
 
-        var mediaOk = await ApplyMediaEditsAsync(item.Id, item, asAdmin: true);
-        StatusText = mediaOk
-            ? $"Zapisano: {updated.Title}"
-            : $"Zapisano metadane „{updated.Title}”, ale część mediów się nie udała.";
+        SelectedGame?.ApplyDto(updated, _apiBaseUrl);
+        StatusText = okText;
         await LoadAsync();
     }
 
-    private async Task<bool> ApplyMediaEditsAsync(int gameId, AdminGameItem item, bool asAdmin)
+    [RelayCommand]
+    private async Task SaveVersionNotesAsync(StudioVersionItem? version)
     {
-        if (_api is null)
+        if (version is null || SelectedGame is null || _api is null)
         {
-            return false;
+            return;
         }
 
-        var ok = true;
-
-        foreach (var screenshotId in item.ScreenshotIdsToRemove.Where(id => id > 0).Distinct())
+        var updated = await _api.UpdateAdminVersionNotesAsync(SelectedGame.Id, version.Id, version.EditNotes);
+        if (updated is null)
         {
-            if (await _api.RemoveGameScreenshotAsync(gameId, screenshotId, asAdmin) is null)
-            {
-                ok = false;
-            }
+            StatusText = "Nie udało się zapisać opisu zmian.";
+            return;
         }
 
-        foreach (var path in item.PendingScreenshotPaths)
+        version.ApplyDto(updated);
+        StatusText = $"Zapisano opis zmian dla {updated.Version}.";
+    }
+
+    private async Task LoadSelectionExtrasAsync()
+    {
+        Versions.Clear();
+        DailyBars.Clear();
+        HasVersions = false;
+        HasDailyBars = false;
+        Stats = null;
+        TotalDownloadsText = "0";
+        Last30Text = "0";
+        Last7Text = "0";
+        LastDownloadText = "—";
+
+        if (SelectedGame is null || _api is null)
         {
-            if (await _api.AddGameScreenshotAsync(gameId, path, asAdmin) is null)
-            {
-                ok = false;
-            }
+            return;
         }
 
-        if (item.ClearCover)
+        var gameId = SelectedGame.Id;
+        try
         {
-            if (await _api.ClearGameCoverAsync(gameId, asAdmin) is null)
+            var statsTask = _api.GetAdminGameStatsAsync(gameId);
+            var versionsTask = _api.GetAdminVersionsAsync(gameId);
+            await Task.WhenAll(statsTask, versionsTask);
+            if (SelectedGame?.Id != gameId)
             {
-                ok = false;
+                return;
             }
+
+            ApplyStats(statsTask.Result);
+            foreach (var version in versionsTask.Result)
+            {
+                Versions.Add(StudioVersionItem.FromDto(version));
+            }
+
+            HasVersions = Versions.Count > 0;
         }
-        else if (!string.IsNullOrWhiteSpace(item.PendingCoverPath))
+        catch
         {
-            if (await _api.UploadGameCoverAsync(gameId, item.PendingCoverPath, asAdmin) is null)
-            {
-                ok = false;
-            }
+            // keep empty extras
+        }
+    }
+
+    private void ApplyStats(GameStatsDto? stats)
+    {
+        Stats = stats;
+        TotalDownloadsText = (stats?.TotalDownloads ?? 0).ToString("N0", Polish);
+        Last30Text = (stats?.DownloadsLast30Days ?? 0).ToString("N0", Polish);
+        Last7Text = (stats?.DownloadsLast7Days ?? 0).ToString("N0", Polish);
+        LastDownloadText = stats?.LastDownloadUtc is { } last
+            ? last.LocalDateTime.ToString("d MMM yyyy HH:mm", Polish)
+            : "brak";
+
+        var max = stats?.Daily.Max(p => p.Downloads) ?? 0;
+        DailyBars.Clear();
+        if (stats is null || stats.Daily.Count == 0)
+        {
+            HasDailyBars = false;
+            return;
         }
 
-        if (item.ClearIntro)
+        foreach (var point in stats.Daily)
         {
-            if (await _api.ClearGameIntroAsync(gameId, asAdmin) is null)
+            DailyBars.Add(new StudioStatBar
             {
-                ok = false;
-            }
-        }
-        else if (!string.IsNullOrWhiteSpace(item.PendingIntroPath))
-        {
-            if (await _api.UploadGameIntroAsync(gameId, item.PendingIntroPath, asAdmin) is null)
-            {
-                ok = false;
-            }
+                Label = point.Day.ToString("d.MM"),
+                Value = point.Downloads,
+                Max = Math.Max(1, max)
+            });
         }
 
-        return ok;
+        HasDailyBars = DailyBars.Count > 0;
     }
 
     [RelayCommand]
@@ -386,7 +623,7 @@ public partial class AdminViewModel : ObservableObject
             return;
         }
 
-        item.ApplyDto(updated);
+        item.ApplyDto(updated, _apiBaseUrl);
         ApplyFilter();
         StatusText = updated.DraftP
             ? $"Ukryto w sklepie: {updated.Title}"
@@ -416,7 +653,7 @@ public partial class AdminViewModel : ObservableObject
             return;
         }
 
-        item.ApplyDto(updated);
+        item.ApplyDto(updated, _apiBaseUrl);
         ApplyFilter();
         RebuildFeatured();
         StatusText = updated.FeaturedP
@@ -467,7 +704,7 @@ public partial class AdminViewModel : ObservableObject
                 });
                 if (updated is not null)
                 {
-                    ordered[i].ApplyDto(updated);
+                    ordered[i].ApplyDto(updated, _apiBaseUrl);
                 }
             }
 
@@ -526,69 +763,132 @@ public partial class AdminViewModel : ObservableObject
 public partial class AdminGameItem : ObservableObject
 {
     public required int Id { get; init; }
-    public required string Title { get; init; }
+    public required string Title { get; set; }
     public required string Symbol { get; init; }
-    public string? Description { get; private set; }
-    public string? HardwareRequirements { get; private set; }
-    public string? OtherInformation { get; private set; }
-    public string? GenreSymbol { get; private set; }
-    public string? EngineSymbol { get; private set; }
-    public string? CoverUrl { get; private set; }
-    public string? IntroUrl { get; private set; }
-    public List<GameScreenshotDto> Screenshots { get; private set; } = [];
     public bool IsDlc { get; init; }
+    public int? ParentGameId { get; init; }
+    public string? ParentSymbol { get; init; }
     public string? OwnerDisplayName { get; init; }
     public string? OwnerEmail { get; init; }
-    public string? CoverImageUrl { get; private set; }
+    public ObservableCollection<AdminGameItem> Dlcs { get; } = [];
+    public ObservableCollection<StudioScreenshotItem> ScreenshotItems { get; } = [];
+    public ObservableCollection<StudioBuildItem> Builds { get; } = [];
+
+    [ObservableProperty] public partial string? Description { get; set; }
+    [ObservableProperty] public partial string? HardwareRequirements { get; set; }
+    [ObservableProperty] public partial string? OtherInformation { get; set; }
+    [ObservableProperty] public partial string? GenreSymbol { get; set; }
+    [ObservableProperty] public partial string? EngineSymbol { get; set; }
+    [ObservableProperty] public partial string? CoverUrl { get; set; }
+    [ObservableProperty] public partial string? HeaderUrl { get; set; }
+    [ObservableProperty] public partial string? IntroUrl { get; set; }
+    [ObservableProperty] public partial string? CoverImageUrl { get; set; }
+    [ObservableProperty] public partial string? HeaderImageUrl { get; set; }
+    [ObservableProperty] public partial string? OwnCoverImageUrl { get; set; }
+    [ObservableProperty] public partial string? OwnHeaderImageUrl { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StateLabel))]
     [NotifyPropertyChangedFor(nameof(MetaText))]
     [NotifyPropertyChangedFor(nameof(IsPublished))]
+    [NotifyPropertyChangedFor(nameof(DraftLabel))]
     public partial bool DraftP { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MetaText))]
     public partial bool FeaturedP { get; set; }
 
-    [ObservableProperty]
-    public partial int? FeaturedOrder { get; set; }
+    [ObservableProperty] public partial int? FeaturedOrder { get; set; }
+    [ObservableProperty] public partial string PositionLabel { get; set; } = string.Empty;
+    [ObservableProperty] public partial string? StudioName { get; set; }
+    [ObservableProperty] public partial string? WebsiteUrl { get; set; }
+    [ObservableProperty] public partial string? DiscordUrl { get; set; }
+    [ObservableProperty] public partial string? SupportUrl { get; set; }
+    [ObservableProperty] public partial GameReleaseStatus ReleaseStatus { get; set; }
+    [ObservableProperty] public partial DateTimeOffset? ReleaseDateUtc { get; set; }
+    [ObservableProperty] public partial GameAgeRating AgeRating { get; set; }
+    [ObservableProperty] public partial GameFeatures Features { get; set; }
+    [ObservableProperty] public partial string CurrentVersionText { get; set; } = "—";
+    [ObservableProperty] public partial string EditTitle { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditDescription { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditHardwareRequirements { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditOtherInformation { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditGenre { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditEngine { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditStudioName { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditWebsiteUrl { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditDiscordUrl { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditSupportUrl { get; set; } = string.Empty;
+    [ObservableProperty] public partial int EditReleaseStatusIndex { get; set; } = 2;
+    [ObservableProperty] public partial DateTimeOffset? EditReleaseDate { get; set; }
+    [ObservableProperty] public partial int EditAgeRatingIndex { get; set; }
+    [ObservableProperty] public partial string EditLanguages { get; set; } = string.Empty;
+    [ObservableProperty] public partial string EditTags { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool HasSinglePlayer { get; set; }
+    [ObservableProperty] public partial bool HasMultiPlayer { get; set; }
+    [ObservableProperty] public partial bool HasCoOp { get; set; }
+    [ObservableProperty] public partial bool HasController { get; set; }
+    [ObservableProperty] public partial bool HasCloudSaves { get; set; }
+    [ObservableProperty] public partial bool HasAchievements { get; set; }
+    [ObservableProperty] public partial bool HasModding { get; set; }
+    [ObservableProperty] public partial bool HasVr { get; set; }
 
-    [ObservableProperty]
-    public partial string PositionLabel { get; set; } = string.Empty;
-
-    public bool IsPublished => !DraftP;
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
+    public bool HasOwnCover => !string.IsNullOrWhiteSpace(OwnCoverImageUrl);
+    public bool HasOwnHeader => !string.IsNullOrWhiteSpace(OwnHeaderImageUrl);
+    public bool HasHeaderArt => !string.IsNullOrWhiteSpace(HeaderImageUrl);
+    public bool HasIntro => !string.IsNullOrWhiteSpace(IntroUrl);
+    public bool HasDlcs => Dlcs.Count > 0;
+    public bool IsPublished => !DraftP;
+    public string KindLabel => IsDlc ? "DLC" : "Gra";
+    public string StateLabel => DraftP ? "Szkic" : "Opublikowana";
+    public string DraftLabel => DraftP ? "Szkic" : "W sklepie";
+    public string OwnerText => string.IsNullOrWhiteSpace(OwnerDisplayName)
+        ? (string.IsNullOrWhiteSpace(OwnerEmail) ? "—" : OwnerEmail!)
+        : OwnerDisplayName!;
+    public string MetaText => $"{Symbol} · {KindLabel} · {StateLabel}";
     public string TileLabel => string.IsNullOrWhiteSpace(Symbol)
         ? Title[..Math.Min(2, Title.Length)].ToUpperInvariant()
         : Symbol[..Math.Min(3, Symbol.Length)].ToUpperInvariant();
 
-    public string KindLabel => IsDlc ? "DLC" : "Gra";
-    public string StateLabel => DraftP ? "Szkic" : "Opublikowana";
-    public string OwnerText => string.IsNullOrWhiteSpace(OwnerDisplayName) ? "—" : OwnerDisplayName!;
-    public string MetaText => $"{Symbol} · {KindLabel} · {StateLabel}";
-    public string DescriptionText => string.IsNullOrWhiteSpace(Description) ? "Brak opisu." : Description!;
-    public string GenreText => string.IsNullOrWhiteSpace(GenreSymbol) ? "—" : GenreSymbol!;
-    public string EngineText => string.IsNullOrWhiteSpace(EngineSymbol) ? "—" : EngineSymbol!;
-    public string CoverText => string.IsNullOrWhiteSpace(CoverUrl) ? "Brak okładki" : "Okładka ustawiona";
-    public string IntroText => string.IsNullOrWhiteSpace(IntroUrl) ? "Brak trailera" : "Trailer ustawiony";
-    public string ScreenshotsText => $"{Screenshots.Count} screenów";
+    public GameFeatures EditedFeatures
+    {
+        get
+        {
+            var value = GameFeatures.None;
+            if (HasSinglePlayer) value |= GameFeatures.SinglePlayer;
+            if (HasMultiPlayer) value |= GameFeatures.MultiPlayer;
+            if (HasCoOp) value |= GameFeatures.CoOp;
+            if (HasController) value |= GameFeatures.ControllerSupport;
+            if (HasCloudSaves) value |= GameFeatures.CloudSaves;
+            if (HasAchievements) value |= GameFeatures.Achievements;
+            if (HasModding) value |= GameFeatures.Modding;
+            if (HasVr) value |= GameFeatures.Vr;
+            return value;
+        }
+    }
 
-    public string? EditTitle { get; set; }
-    public string? EditDescription { get; set; }
-    public string? EditHardwareRequirements { get; set; }
-    public string? EditOtherInformation { get; set; }
-    public string? EditGenre { get; set; }
-    public string? EditEngine { get; set; }
-    public bool EditDraft { get; set; }
-    public bool EditFeatured { get; set; }
-
-    public string? PendingCoverPath { get; set; }
-    public bool ClearCover { get; set; }
-    public string? PendingIntroPath { get; set; }
-    public bool ClearIntro { get; set; }
-    public List<string> PendingScreenshotPaths { get; } = [];
-    public List<int> ScreenshotIdsToRemove { get; } = [];
+    public UpdateGameRequestDto ToUpdateRequest() => new()
+    {
+        Title = string.IsNullOrWhiteSpace(EditTitle) ? Title : EditTitle.Trim(),
+        Description = EditDescription,
+        HardwareRequirements = EditHardwareRequirements,
+        OtherInformation = EditOtherInformation,
+        Genre = EditGenre,
+        Engine = EditEngine,
+        DraftP = DraftP,
+        StudioName = EditStudioName,
+        WebsiteUrl = EditWebsiteUrl,
+        DiscordUrl = EditDiscordUrl,
+        SupportUrl = EditSupportUrl,
+        ReleaseStatus = GameStoreLabels.ReleaseStatusFromIndex(EditReleaseStatusIndex),
+        ReleaseDateUtc = EditReleaseDate,
+        ClearReleaseDate = EditReleaseDate is null,
+        AgeRating = GameStoreLabels.AgeRatingFromIndex(EditAgeRatingIndex),
+        Features = EditedFeatures,
+        Languages = CsvList.Split(EditLanguages),
+        Tags = CsvList.Split(EditTags)
+    };
 
     public static AdminGameItem FromDto(GameDto game, string apiBaseUrl)
     {
@@ -598,6 +898,8 @@ public partial class AdminGameItem : ObservableObject
             Title = game.Title,
             Symbol = game.Symbol,
             IsDlc = game.Kind == GameContentKind.Dlc,
+            ParentGameId = game.ParentGameId,
+            ParentSymbol = game.ParentSymbol,
             OwnerDisplayName = game.OwnerDisplayName,
             OwnerEmail = game.OwnerEmail
         };
@@ -607,44 +909,100 @@ public partial class AdminGameItem : ObservableObject
 
     public void ApplyDto(GameDto game, string? apiBaseUrl = null)
     {
+        Title = game.Title;
         Description = game.Description;
         HardwareRequirements = game.HardwareRequirements;
         OtherInformation = game.OtherInformation;
         GenreSymbol = game.GenreSymbol;
         EngineSymbol = game.EngineSymbol;
         CoverUrl = game.CoverUrl;
+        HeaderUrl = game.HeaderUrl;
         IntroUrl = game.IntroUrl;
-        Screenshots = game.Screenshots?.ToList()
-            ?? game.ScreenshotUrls.Select((url, i) => new GameScreenshotDto { Id = -(i + 1), Url = url }).ToList();
         DraftP = game.DraftP;
         FeaturedP = game.FeaturedP;
         FeaturedOrder = game.FeaturedOrder;
+        StudioName = game.StudioName;
+        WebsiteUrl = game.WebsiteUrl;
+        DiscordUrl = game.DiscordUrl;
+        SupportUrl = game.SupportUrl;
+        ReleaseStatus = game.ReleaseStatus;
+        ReleaseDateUtc = game.ReleaseDateUtc;
+        AgeRating = game.AgeRating;
+        Features = game.Features;
+        CurrentVersionText = game.Builds.FirstOrDefault()?.CurrentVersion ?? "—";
 
         if (apiBaseUrl is not null)
         {
-            CoverImageUrl = string.IsNullOrWhiteSpace(game.CoverUrl)
-                ? null
-                : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, game.CoverUrl);
+            CoverImageUrl = ResolveMedia(game.ThumbnailUrl, apiBaseUrl);
+            HeaderImageUrl = ResolveMedia(game.LandscapeUrl, apiBaseUrl);
+            OwnCoverImageUrl = ResolveMedia(game.CoverUrl, apiBaseUrl);
+            OwnHeaderImageUrl = ResolveMedia(game.HeaderUrl, apiBaseUrl);
         }
 
         EditTitle = game.Title;
-        EditDescription = game.Description;
-        EditHardwareRequirements = game.HardwareRequirements;
-        EditOtherInformation = game.OtherInformation;
+        EditDescription = game.Description ?? string.Empty;
+        EditHardwareRequirements = game.HardwareRequirements ?? string.Empty;
+        EditOtherInformation = game.OtherInformation ?? string.Empty;
         EditGenre = game.GenreSymbol ?? string.Empty;
         EditEngine = game.EngineSymbol ?? string.Empty;
-        EditDraft = game.DraftP;
-        EditFeatured = game.FeaturedP;
+        EditStudioName = game.StudioName ?? string.Empty;
+        EditWebsiteUrl = game.WebsiteUrl ?? string.Empty;
+        EditDiscordUrl = game.DiscordUrl ?? string.Empty;
+        EditSupportUrl = game.SupportUrl ?? string.Empty;
+        EditReleaseStatusIndex = GameStoreLabels.ReleaseStatusIndex(game.ReleaseStatus);
+        EditReleaseDate = game.ReleaseDateUtc;
+        EditAgeRatingIndex = GameStoreLabels.AgeRatingIndex(game.AgeRating);
+        EditLanguages = string.Join(", ", game.Languages);
+        EditTags = string.Join(", ", game.Tags);
+        HasSinglePlayer = game.Features.HasFlag(GameFeatures.SinglePlayer);
+        HasMultiPlayer = game.Features.HasFlag(GameFeatures.MultiPlayer);
+        HasCoOp = game.Features.HasFlag(GameFeatures.CoOp);
+        HasController = game.Features.HasFlag(GameFeatures.ControllerSupport);
+        HasCloudSaves = game.Features.HasFlag(GameFeatures.CloudSaves);
+        HasAchievements = game.Features.HasFlag(GameFeatures.Achievements);
+        HasModding = game.Features.HasFlag(GameFeatures.Modding);
+        HasVr = game.Features.HasFlag(GameFeatures.Vr);
 
-        OnPropertyChanged(nameof(DescriptionText));
-        OnPropertyChanged(nameof(GenreText));
-        OnPropertyChanged(nameof(EngineText));
-        OnPropertyChanged(nameof(CoverText));
-        OnPropertyChanged(nameof(IntroText));
-        OnPropertyChanged(nameof(ScreenshotsText));
+        if (apiBaseUrl is not null)
+        {
+            ScreenshotItems.Clear();
+            foreach (var shot in game.Screenshots ?? [])
+            {
+                ScreenshotItems.Add(new StudioScreenshotItem
+                {
+                    Id = shot.Id,
+                    ImageUrl = InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, shot.Url)
+                });
+            }
+
+            Builds.Clear();
+            foreach (var build in game.Builds)
+            {
+                Builds.Add(new StudioBuildItem
+                {
+                    PlatformText = $"{build.Platform} {build.Architecture}".Trim(),
+                    Version = build.CurrentVersion,
+                    ExeName = build.ExeName,
+                    IsDefault = build.IsDefault
+                });
+            }
+        }
+
+        OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(HasCover));
-        OnPropertyChanged(nameof(CoverImageUrl));
+        OnPropertyChanged(nameof(HasOwnCover));
+        OnPropertyChanged(nameof(HasOwnHeader));
+        OnPropertyChanged(nameof(HasHeaderArt));
+        OnPropertyChanged(nameof(HasIntro));
+        OnPropertyChanged(nameof(IsPublished));
+        OnPropertyChanged(nameof(DraftLabel));
+        OnPropertyChanged(nameof(MetaText));
+        OnPropertyChanged(nameof(HasDlcs));
+        OnPropertyChanged(nameof(OwnerText));
     }
+
+    private static string? ResolveMedia(string? url, string apiBaseUrl) =>
+        string.IsNullOrWhiteSpace(url) ? null : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, url);
 }
 
 public partial class AdminUserItem : ObservableObject

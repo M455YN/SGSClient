@@ -564,7 +564,7 @@ public partial class GameDetailsViewModel : ViewModelBase
         Title = game.Title;
         Symbol = game.Symbol;
         IsDlc = game.Kind == GameContentKind.Dlc;
-        _coverUrl = game.CoverUrl;
+        _coverUrl = game.ThumbnailUrl;
         TileLabel = string.IsNullOrWhiteSpace(game.Symbol)
             ? game.Title[..Math.Min(2, game.Title.Length)].ToUpperInvariant()
             : game.Symbol[..Math.Min(3, game.Symbol.Length)].ToUpperInvariant();
@@ -611,14 +611,21 @@ public partial class GameDetailsViewModel : ViewModelBase
                 .Distinct(StringComparer.OrdinalIgnoreCase));
 
         MediaThumbs.Clear();
-        var coverUrl = ResolveMediaUrl(game.CoverUrl);
+        var thumbUrl = ResolveMediaUrl(game.CoverUrl);
+        var headerUrl = ResolveMediaUrl(game.HeaderUrl);
         IntroMediaUrl = ResolveMediaUrl(game.IntroUrl);
         HasIntro = !string.IsNullOrWhiteSpace(IntroMediaUrl);
-        _ = LoadCoverAsync(coverUrl);
+        _ = LoadCoverAsync(ResolveMediaUrl(game.LandscapeUrl));
 
-        if (!string.IsNullOrWhiteSpace(coverUrl))
+        if (!string.IsNullOrWhiteSpace(thumbUrl))
         {
-            MediaThumbs.Add(new MediaThumbItem { Label = "Okładka", Accent = "#3A5A80", ImageUrl = coverUrl });
+            MediaThumbs.Add(new MediaThumbItem { Label = "Miniaturka", Accent = "#3A5A80", ImageUrl = thumbUrl });
+        }
+
+        if (!string.IsNullOrWhiteSpace(headerUrl)
+            && !string.Equals(headerUrl, thumbUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            MediaThumbs.Add(new MediaThumbItem { Label = "Okładka pozioma", Accent = "#4A3A70", ImageUrl = headerUrl });
         }
 
         var shotIndex = 1;

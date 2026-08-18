@@ -76,6 +76,12 @@ public sealed partial class StudioPage : Page
     private async void ClearCover_Click(object sender, RoutedEventArgs e) =>
         await ViewModel.ClearCoverCommand.ExecuteAsync(null);
 
+    private async void PickHeader_Click(object sender, RoutedEventArgs e) =>
+        await ViewModel.PickHeaderCommand.ExecuteAsync(null);
+
+    private async void ClearHeader_Click(object sender, RoutedEventArgs e) =>
+        await ViewModel.ClearHeaderCommand.ExecuteAsync(null);
+
     private async void PickIntro_Click(object sender, RoutedEventArgs e) =>
         await ViewModel.PickIntroCommand.ExecuteAsync(null);
 
@@ -121,10 +127,10 @@ public sealed partial class StudioPage : Page
     }
 
     private void NavigateAddGame() =>
-        App.MainWindow?.NavigateTo(typeof(PublishPage), parameter: null, selectTag: "Publish");
+        App.MainWindow?.NavigateTo(typeof(PublishPage), parameter: null, selectTag: "Studio");
 
     private void NavigateAddDlc(string parentSymbol) =>
-        App.MainWindow?.NavigateTo(typeof(PublishPage), parentSymbol, "Publish");
+        App.MainWindow?.NavigateTo(typeof(PublishPage), parentSymbol, "Studio");
 
     private async Task<string?> PickFileAsync(IReadOnlyList<string> extensions)
     {

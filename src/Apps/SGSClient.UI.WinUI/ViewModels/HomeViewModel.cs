@@ -105,7 +105,7 @@ public partial class HomeViewModel : ObservableObject
     private void OpenLibrary() => NavigateRequested?.Invoke("Library");
 
     [RelayCommand]
-    private void OpenPublish() => NavigateRequested?.Invoke("Publish");
+    private void OpenPublish() => NavigateRequested?.Invoke("Studio");
 
     [RelayCommand]
     private void OpenFriends() => NavigateRequested?.Invoke("Friends");
@@ -202,12 +202,12 @@ public partial class HomeViewModel : ObservableObject
             .ThenBy(g => g.Title)
             .ToList();
         var heroDto = featured.FirstOrDefault() ?? games.FirstOrDefault();
-        Hero = heroDto is null ? null : HomeGameCard.FromDto(heroDto, _apiBaseUrl, 160);
+        Hero = heroDto is null ? null : HomeGameCard.FromDto(heroDto, _apiBaseUrl, 160, landscape: true);
         HasHero = Hero is not null;
 
         foreach (var game in featured.Where(g => g.Id != Hero?.Id).Take(8))
         {
-            Featured.Add(HomeGameCard.FromDto(game, _apiBaseUrl, 90));
+            Featured.Add(HomeGameCard.FromDto(game, _apiBaseUrl, 90, landscape: true));
         }
 
         HasFeatured = Featured.Count > 0;
@@ -217,7 +217,7 @@ public partial class HomeViewModel : ObservableObject
                      .Where(g => g.Id != Hero?.Id)
                      .Take(12))
         {
-            Catalog.Add(HomeGameCard.FromDto(game, _apiBaseUrl, 70));
+            Catalog.Add(HomeGameCard.FromDto(game, _apiBaseUrl, 70, landscape: true));
         }
 
         HasCatalog = Catalog.Count > 0;
@@ -316,13 +316,13 @@ public sealed class HomeGameCard
     public string Caption { get; init; } = string.Empty;
     public bool ShowFeaturedBadge { get; init; }
 
-    public static HomeGameCard FromDto(GameDto dto, string apiBaseUrl, int blurbLength) => new()
+    public static HomeGameCard FromDto(GameDto dto, string apiBaseUrl, int blurbLength, bool landscape = false) => new()
     {
         Id = dto.Id,
         Title = dto.Title,
         TileLabel = MakeTile(dto.Title, dto.Symbol),
         Blurb = Truncate(dto.Description, blurbLength),
-        CoverImageUrl = ResolveCover(dto.CoverUrl, apiBaseUrl),
+        CoverImageUrl = ResolveCover(landscape ? dto.LandscapeUrl : dto.ThumbnailUrl, apiBaseUrl),
         Caption = string.IsNullOrWhiteSpace(dto.GenreName) ? "Sklep" : dto.GenreName!,
         ShowFeaturedBadge = dto.FeaturedP
     };

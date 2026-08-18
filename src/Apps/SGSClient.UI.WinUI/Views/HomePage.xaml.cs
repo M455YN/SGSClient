@@ -84,6 +84,7 @@ public sealed partial class HomePage : Page
         {
             "Games" => typeof(GamesPage),
             "Library" => typeof(LibraryPage),
+            "Studio" => typeof(StudioPage),
             "Publish" => typeof(PublishPage),
             _ => typeof(HomePage)
         };

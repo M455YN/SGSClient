@@ -64,6 +64,74 @@ public sealed class AdminController(
         }
     }
 
+    [HttpGet("games/{id:int}/stats")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameStatsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameStatsDto>> GetGameStats(int id, CancellationToken cancellationToken)
+    {
+        if (!await EnsureAdminAsync(cancellationToken))
+        {
+            return ForbidOrUnauthorized();
+        }
+
+        var stats = await games.GetGameStatsAsync(id, cancellationToken);
+        return stats is null ? NotFound() : Ok(stats);
+    }
+
+    [HttpGet("games/{id:int}/versions")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<GameBuildVersionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<GameBuildVersionDto>>> GetGameVersions(
+        int id,
+        CancellationToken cancellationToken)
+    {
+        if (!await EnsureAdminAsync(cancellationToken))
+        {
+            return ForbidOrUnauthorized();
+        }
+
+        var versions = await games.GetVersionHistoryAsync(id, cancellationToken);
+        return Ok(versions);
+    }
+
+    [HttpPatch("games/{id:int}/versions/{versionId:int}/notes")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameBuildVersionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameBuildVersionDto>> UpdateVersionNotes(
+        int id,
+        int versionId,
+        [FromBody] UpdateVersionNotesRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        if (!await EnsureAdminAsync(cancellationToken))
+        {
+            return ForbidOrUnauthorized();
+        }
+
+        try
+        {
+            var updated = await games.UpdateVersionNotesAsAdminAsync(
+                id,
+                versionId,
+                request.ReleaseNotes,
+                cancellationToken);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
     [HttpDelete("games/{id:int}")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -186,6 +254,27 @@ public sealed class AdminController(
     public Task<ActionResult<GameDto>> ClearCover(int id, CancellationToken cancellationToken) =>
         ClearMediaAsync(id, AdminMediaKind.Cover, cancellationToken);
 
+    [HttpPut("games/{id:int}/media/header")]
+    [AllowAnonymous]
+    [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> UploadHeader(int id, IFormFile? file, CancellationToken cancellationToken) =>
+        UploadMediaAsync(id, file, AdminMediaKind.Header, cancellationToken);
+
+    [HttpDelete("games/{id:int}/media/header")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> ClearHeader(int id, CancellationToken cancellationToken) =>
+        ClearMediaAsync(id, AdminMediaKind.Header, cancellationToken);
+
     [HttpPut("games/{id:int}/media/intro")]
     [AllowAnonymous]
     [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
@@ -261,6 +350,7 @@ public sealed class AdminController(
             var updated = kind switch
             {
                 AdminMediaKind.Cover => await media.SetCoverAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken),
+                AdminMediaKind.Header => await media.SetHeaderAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken),
                 AdminMediaKind.Intro => await media.SetIntroAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken),
                 _ => await media.AddScreenshotAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken)
             };
@@ -282,15 +372,19 @@ public sealed class AdminController(
             return ForbidOrUnauthorized();
         }
 
-        var updated = kind == AdminMediaKind.Cover
-            ? await media.ClearCoverAsync(id, requireOwnerUserId: null, cancellationToken)
-            : await media.ClearIntroAsync(id, requireOwnerUserId: null, cancellationToken);
+        var updated = kind switch
+        {
+            AdminMediaKind.Cover => await media.ClearCoverAsync(id, requireOwnerUserId: null, cancellationToken),
+            AdminMediaKind.Header => await media.ClearHeaderAsync(id, requireOwnerUserId: null, cancellationToken),
+            _ => await media.ClearIntroAsync(id, requireOwnerUserId: null, cancellationToken)
+        };
         return updated is null ? NotFound() : Ok(updated);
     }
 
     private enum AdminMediaKind
     {
         Cover,
+        Header,
         Intro,
         Screenshot
     }

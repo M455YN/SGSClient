@@ -23,7 +23,17 @@ public sealed class GameDto
     public string? EngineSymbol { get; init; }
     public string? EngineName { get; init; }
     public string? CoverUrl { get; init; }
+
+    /// <summary>Landscape store header (Steam-style). Lists use <see cref="CoverUrl"/>.</summary>
+    public string? HeaderUrl { get; init; }
+
     public string? IntroUrl { get; init; }
+
+    /// <summary>Portrait/square tile; falls back to the landscape header.</summary>
+    public string? ThumbnailUrl => string.IsNullOrWhiteSpace(CoverUrl) ? HeaderUrl : CoverUrl;
+
+    /// <summary>Wide store art; falls back to the thumbnail.</summary>
+    public string? LandscapeUrl => string.IsNullOrWhiteSpace(HeaderUrl) ? CoverUrl : HeaderUrl;
     public IReadOnlyList<string> ScreenshotUrls { get; init; } = [];
     public IReadOnlyList<GameScreenshotDto> Screenshots { get; init; } = [];
     public bool DraftP { get; init; }

@@ -349,6 +349,11 @@ public static partial class SgsPackageRules
             yield return media.Cover;
         }
 
+        if (!string.IsNullOrWhiteSpace(media.Header))
+        {
+            yield return media.Header;
+        }
+
         if (!string.IsNullOrWhiteSpace(media.Intro))
         {
             yield return media.Intro;
@@ -389,6 +394,22 @@ public static partial class SgsPackageRules
         else
         {
             media.Cover = null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(media.Header))
+        {
+            if (!TryNormalizeMediaPath(media.Header, AllowedImageExtensions, "header", out var header, out var headerError))
+            {
+                errors.Add(headerError!);
+            }
+            else
+            {
+                media.Header = header;
+            }
+        }
+        else
+        {
+            media.Header = null;
         }
 
         if (!string.IsNullOrWhiteSpace(media.Intro))

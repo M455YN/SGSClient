@@ -256,8 +256,8 @@
             <StackPanel Orientation="Horizontal" Spacing="14">
               <FontIcon Glyph="&#xE898;" FontSize="20" />
               <StackPanel>
-                <TextBlock Text="Publikuj" FontWeight="SemiBold" />
-                <TextBlock Text="Wyślij build"
+                <TextBlock Text="Panel twórcy" FontWeight="SemiBold" />
+                <TextBlock Text="Twoje gry i wydania"
                            Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
               </StackPanel>

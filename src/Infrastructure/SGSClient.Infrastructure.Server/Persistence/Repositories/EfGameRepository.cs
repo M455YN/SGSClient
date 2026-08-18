@@ -226,11 +226,21 @@ public sealed class EfGameRepository(
         var owns = await db.Games
             .AsNoTracking()
             .AnyAsync(g => g.Id == gameId && g.UserId == ownerUserId, cancellationToken);
-        if (!owns)
-        {
-            return [];
-        }
+        return owns ? await QueryVersionHistoryAsync(gameId, cancellationToken) : [];
+    }
 
+    public async Task<IReadOnlyList<GameBuildVersionDto>> GetVersionHistoryAsync(
+        int gameId,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = await db.Games.AsNoTracking().AnyAsync(g => g.Id == gameId, cancellationToken);
+        return exists ? await QueryVersionHistoryAsync(gameId, cancellationToken) : [];
+    }
+
+    private async Task<IReadOnlyList<GameBuildVersionDto>> QueryVersionHistoryAsync(
+        int gameId,
+        CancellationToken cancellationToken)
+    {
         var rows = await db.GameBuildVersions
             .AsNoTracking()
             .Where(v => v.GameBuild!.GameId == gameId)
@@ -266,12 +276,27 @@ public sealed class EfGameRepository(
         }).ToList();
     }
 
-    public async Task<GameBuildVersionDto?> UpdateOwnedVersionNotesAsync(
+    public Task<GameBuildVersionDto?> UpdateOwnedVersionNotesAsync(
         int gameId,
         int versionId,
         int ownerUserId,
         string? releaseNotes,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        UpdateVersionNotesCoreAsync(gameId, versionId, ownerUserId, releaseNotes, cancellationToken);
+
+    public Task<GameBuildVersionDto?> UpdateVersionNotesAsAdminAsync(
+        int gameId,
+        int versionId,
+        string? releaseNotes,
+        CancellationToken cancellationToken = default) =>
+        UpdateVersionNotesCoreAsync(gameId, versionId, ownerUserId: null, releaseNotes, cancellationToken);
+
+    private async Task<GameBuildVersionDto?> UpdateVersionNotesCoreAsync(
+        int gameId,
+        int versionId,
+        int? ownerUserId,
+        string? releaseNotes,
+        CancellationToken cancellationToken)
     {
         var version = await db.GameBuildVersions
             .Include(v => v.GameBuild)
@@ -279,9 +304,8 @@ public sealed class EfGameRepository(
             .FirstOrDefaultAsync(
                 v => v.Id == versionId
                     && v.GameBuild!.GameId == gameId
-                    && v.GameBuild.Game!.UserId == ownerUserId,
+                    && (ownerUserId == null || v.GameBuild.Game!.UserId == ownerUserId),
                 cancellationToken);
-
         if (version is null)
         {
             return null;
@@ -322,11 +346,19 @@ public sealed class EfGameRepository(
         var owns = await db.Games
             .AsNoTracking()
             .AnyAsync(g => g.Id == gameId && g.UserId == ownerUserId, cancellationToken);
-        if (!owns)
-        {
-            return null;
-        }
+        return owns ? await QueryGameStatsAsync(gameId, cancellationToken) : null;
+    }
 
+    public async Task<GameStatsDto?> GetGameStatsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = await db.Games.AsNoTracking().AnyAsync(g => g.Id == gameId, cancellationToken);
+        return exists ? await QueryGameStatsAsync(gameId, cancellationToken) : null;
+    }
+
+    private async Task<GameStatsDto> QueryGameStatsAsync(int gameId, CancellationToken cancellationToken)
+    {
         var today = DateTimeOffset.UtcNow.Date;
         var from30 = new DateTimeOffset(today.AddDays(-29), TimeSpan.Zero);
         var from7 = new DateTimeOffset(today.AddDays(-6), TimeSpan.Zero);
@@ -640,6 +672,7 @@ public sealed class EfGameRepository(
             EngineSymbol = g.Engine != null ? g.Engine.Symbol : null,
             EngineName = g.Engine != null ? g.Engine.Name : null,
             CoverUrl = g.CoverUrl,
+            HeaderUrl = g.HeaderUrl,
             IntroUrl = g.IntroUrl,
             ScreenshotUrls = g.Screenshots
                 .OrderBy(s => s.SortOrder)

@@ -121,6 +121,11 @@ public sealed partial class PublishPage : Page
             CoverBox.Text = ViewModel.MediaCover;
         }
 
+        if (HeaderBox.Text != ViewModel.MediaHeader)
+        {
+            HeaderBox.Text = ViewModel.MediaHeader;
+        }
+
         if (IntroBox.Text != ViewModel.MediaIntro)
         {
             IntroBox.Text = ViewModel.MediaIntro;
@@ -191,6 +196,7 @@ public sealed partial class PublishPage : Page
         ViewModel.HardwareRequirements = HardwareBox.Text ?? string.Empty;
         ViewModel.OtherInformation = OtherInfoBox.Text ?? string.Empty;
         ViewModel.MediaCover = CoverBox.Text ?? string.Empty;
+        ViewModel.MediaHeader = HeaderBox.Text ?? string.Empty;
         ViewModel.MediaIntro = IntroBox.Text ?? string.Empty;
         ViewModel.MediaScreenshots = ScreenshotsBox.Text ?? string.Empty;
         ViewModel.BuildVersion = VersionBox.Text ?? string.Empty;
@@ -234,8 +240,29 @@ public sealed partial class PublishPage : Page
         if (!ViewModel.TrySetCoverFromFile(path, out var error))
         {
             ViewModel.Issues.Clear();
-            ViewModel.Issues.Add(error ?? "Nie udało się ustawić okładki.");
-            ViewModel.StatusText = "Nie udało się dodać okładki.";
+            ViewModel.Issues.Add(error ?? "Nie udało się ustawić miniaturki.");
+            ViewModel.StatusText = "Nie udało się dodać miniaturki.";
+        }
+
+        PushFormFromViewModel();
+        RefreshUi();
+    }
+
+    private async void PickHeader_Click(object sender, RoutedEventArgs e)
+    {
+        var path = await PickSingleFileAsync(
+            [".png", ".jpg", ".jpeg", ".webp", ".gif"],
+            "Obrazy");
+        if (path is null)
+        {
+            return;
+        }
+
+        if (!ViewModel.TrySetHeaderFromFile(path, out var error))
+        {
+            ViewModel.Issues.Clear();
+            ViewModel.Issues.Add(error ?? "Nie udało się ustawić okładki poziomej.");
+            ViewModel.StatusText = "Nie udało się dodać okładki poziomej.";
         }
 
         PushFormFromViewModel();
@@ -293,6 +320,13 @@ public sealed partial class PublishPage : Page
     private void ClearCover_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.ClearCover();
+        PushFormFromViewModel();
+        RefreshUi();
+    }
+
+    private void ClearHeader_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ClearHeader();
         PushFormFromViewModel();
         RefreshUi();
     }

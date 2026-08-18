@@ -218,6 +218,23 @@ public sealed class GamesController(
     public Task<ActionResult<GameDto>> ClearCover(int id, CancellationToken cancellationToken) =>
         ClearOwnedMediaAsync(id, OwnedMediaKind.Cover, cancellationToken);
 
+    [HttpPut("{id:int}/media/header")]
+    [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> UploadHeader(int id, IFormFile? file, CancellationToken cancellationToken) =>
+        UploadOwnedMediaAsync(id, file, OwnedMediaKind.Header, cancellationToken);
+
+    [HttpDelete("{id:int}/media/header")]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> ClearHeader(int id, CancellationToken cancellationToken) =>
+        ClearOwnedMediaAsync(id, OwnedMediaKind.Header, cancellationToken);
+
     [HttpPut("{id:int}/media/intro")]
     [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
@@ -328,6 +345,7 @@ public sealed class GamesController(
             var updated = kind switch
             {
                 OwnedMediaKind.Cover => await media.SetCoverAsync(id, stream, file.FileName, ownerUserId.Value, cancellationToken),
+                OwnedMediaKind.Header => await media.SetHeaderAsync(id, stream, file.FileName, ownerUserId.Value, cancellationToken),
                 OwnedMediaKind.Intro => await media.SetIntroAsync(id, stream, file.FileName, ownerUserId.Value, cancellationToken),
                 _ => await media.AddScreenshotAsync(id, stream, file.FileName, ownerUserId.Value, cancellationToken)
             };
@@ -350,15 +368,19 @@ public sealed class GamesController(
             return Unauthorized();
         }
 
-        var updated = kind == OwnedMediaKind.Cover
-            ? await media.ClearCoverAsync(id, ownerUserId.Value, cancellationToken)
-            : await media.ClearIntroAsync(id, ownerUserId.Value, cancellationToken);
+        var updated = kind switch
+        {
+            OwnedMediaKind.Cover => await media.ClearCoverAsync(id, ownerUserId.Value, cancellationToken),
+            OwnedMediaKind.Header => await media.ClearHeaderAsync(id, ownerUserId.Value, cancellationToken),
+            _ => await media.ClearIntroAsync(id, ownerUserId.Value, cancellationToken)
+        };
         return updated is null ? NotFound() : Ok(updated);
     }
 
     private enum OwnedMediaKind
     {
         Cover,
+        Header,
         Intro,
         Screenshot
     }

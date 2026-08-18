@@ -206,9 +206,9 @@ public partial class GameListItem : ObservableObject
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        var coverImageUrl = string.IsNullOrWhiteSpace(dto.CoverUrl)
+        var coverImageUrl = string.IsNullOrWhiteSpace(dto.LandscapeUrl)
             ? null
-            : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, dto.CoverUrl);
+            : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, dto.LandscapeUrl);
 
         return new GameListItem
         {
@@ -227,7 +227,7 @@ public partial class GameListItem : ObservableObject
             Platform = build?.Platform ?? DetectCurrentPlatform(),
             Architecture = build?.Architecture,
             Version = build?.CurrentVersion,
-            CoverUrl = dto.CoverUrl,
+            CoverUrl = dto.ThumbnailUrl,
             CoverImageUrl = string.IsNullOrWhiteSpace(coverImageUrl) ? null : coverImageUrl,
             InLibrary = inLibrary
         };

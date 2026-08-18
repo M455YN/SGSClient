@@ -98,9 +98,8 @@ public sealed partial class ShellSidebar : UserControl
         ProfileNameText.Text = ViewModel.ProfileDisplayName;
         ProfileStatusText.Text = ViewModel.ProfileStatus;
         NavAdmin.Visibility = ViewModel.IsAdminVisible ? Visibility.Visible : Visibility.Collapsed;
-        var creatorVisibility = ViewModel.IsCreatorVisible ? Visibility.Visible : Visibility.Collapsed;
-        NavPublish.Visibility = creatorVisibility;
-        NavStudio.Visibility = creatorVisibility;
+        NavPublish.Visibility = Visibility.Collapsed;
+        NavStudio.Visibility = ViewModel.IsCreatorVisible ? Visibility.Visible : Visibility.Collapsed;
         InstalledHeaderText.Text = ViewModel.InstalledHeader.ToUpperInvariant();
 
         if (ViewModel.HasAvatar

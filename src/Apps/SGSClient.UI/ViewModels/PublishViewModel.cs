@@ -94,6 +94,9 @@ public partial class PublishViewModel : ViewModelBase
     private string _mediaCover = string.Empty;
 
     [ObservableProperty]
+    private string _mediaHeader = string.Empty;
+
+    [ObservableProperty]
     private string _mediaIntro = string.Empty;
 
     [ObservableProperty]
@@ -373,7 +376,19 @@ public partial class PublishViewModel : ViewModelBase
         }
 
         MediaCover = relative;
-        StatusText = $"Ustawiono okładkę: {relative}";
+        StatusText = $"Ustawiono miniaturkę: {relative}";
+        return true;
+    }
+
+    public bool TrySetHeaderFromFile(string sourcePath, out string? error)
+    {
+        if (!TryImportMediaFile(sourcePath, SgsPackageRules.AllowedImageExtensions, "header", out var relative, out error))
+        {
+            return false;
+        }
+
+        MediaHeader = relative;
+        StatusText = $"Ustawiono okładkę poziomą: {relative}";
         return true;
     }
 
@@ -435,7 +450,13 @@ public partial class PublishViewModel : ViewModelBase
     public void ClearCover()
     {
         MediaCover = string.Empty;
-        StatusText = "Usunięto okładkę z formularza.";
+        StatusText = "Usunięto miniaturkę z formularza.";
+    }
+
+    public void ClearHeader()
+    {
+        MediaHeader = string.Empty;
+        StatusText = "Usunięto okładkę poziomą z formularza.";
     }
 
     public void ClearIntro()
@@ -546,6 +567,7 @@ public partial class PublishViewModel : ViewModelBase
         GameGenre = manifest.Game.Genre ?? string.Empty;
         GameEngine = manifest.Game.Engine ?? string.Empty;
         MediaCover = manifest.Game.Media?.Cover ?? string.Empty;
+        MediaHeader = manifest.Game.Media?.Header ?? string.Empty;
         MediaIntro = manifest.Game.Media?.Intro ?? string.Empty;
         MediaScreenshots = manifest.Game.Media?.Screenshots is { Count: > 0 } shots
             ? string.Join(Environment.NewLine, shots)
@@ -567,12 +589,14 @@ public partial class PublishViewModel : ViewModelBase
 
         SgsPackageMediaInfo? media = null;
         if (!string.IsNullOrWhiteSpace(MediaCover)
+            || !string.IsNullOrWhiteSpace(MediaHeader)
             || !string.IsNullOrWhiteSpace(MediaIntro)
             || screenshots.Count > 0)
         {
             media = new SgsPackageMediaInfo
             {
                 Cover = NullIfWhiteSpace(MediaCover),
+                Header = NullIfWhiteSpace(MediaHeader),
                 Intro = NullIfWhiteSpace(MediaIntro),
                 Screenshots = screenshots
             };
@@ -619,6 +643,7 @@ public partial class PublishViewModel : ViewModelBase
         GameGenre = string.Empty;
         GameEngine = string.Empty;
         MediaCover = string.Empty;
+        MediaHeader = string.Empty;
         MediaIntro = string.Empty;
         MediaScreenshots = string.Empty;
         BuildVersion = string.Empty;

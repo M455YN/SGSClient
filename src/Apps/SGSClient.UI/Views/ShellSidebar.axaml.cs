@@ -122,7 +122,7 @@ public partial class ShellSidebar : UserControl
         ProfileNameText.Text = vm.ProfileDisplayName;
         ProfileStatusText.Text = vm.ProfileStatus;
         NavAdmin.IsVisible = vm.IsAdminVisible;
-        NavPublish.IsVisible = vm.IsCreatorVisible;
+        NavPublish.IsVisible = false;
         NavStudio.IsVisible = vm.IsCreatorVisible;
         InstalledHeaderText.Text = vm.InstalledHeader.ToUpperInvariant();
         AvatarImage.Source = vm.ProfileAvatarBitmap;

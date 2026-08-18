@@ -96,7 +96,7 @@ public partial class PublishView : UserControl
             return;
         }
 
-        var path = await PickSingleFileAsync("Wybierz okładkę", ImageFiles);
+        var path = await PickSingleFileAsync("Wybierz miniaturkę", ImageFiles);
         if (path is null)
         {
             return;
@@ -105,8 +105,29 @@ public partial class PublishView : UserControl
         if (!vm.TrySetCoverFromFile(path, out var error))
         {
             vm.Issues.Clear();
-            vm.Issues.Add(error ?? "Nie udało się ustawić okładki.");
-            vm.StatusText = "Nie udało się dodać okładki.";
+            vm.Issues.Add(error ?? "Nie udało się ustawić miniaturki.");
+            vm.StatusText = "Nie udało się dodać miniaturki.";
+        }
+    }
+
+    private async void PickHeader_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not PublishViewModel vm)
+        {
+            return;
+        }
+
+        var path = await PickSingleFileAsync("Wybierz okładkę poziomą", ImageFiles);
+        if (path is null)
+        {
+            return;
+        }
+
+        if (!vm.TrySetHeaderFromFile(path, out var error))
+        {
+            vm.Issues.Clear();
+            vm.Issues.Add(error ?? "Nie udało się ustawić okładki poziomej.");
+            vm.StatusText = "Nie udało się dodać okładki poziomej.";
         }
     }
 
@@ -170,6 +191,14 @@ public partial class PublishView : UserControl
         if (DataContext is PublishViewModel vm)
         {
             vm.ClearCover();
+        }
+    }
+
+    private void ClearHeader_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is PublishViewModel vm)
+        {
+            vm.ClearHeader();
         }
     }
 

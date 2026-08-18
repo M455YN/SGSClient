@@ -10,6 +10,7 @@
     "engine": "custom",
     "media": {
       "cover": "media/cover.png",
+      "header": "media/header.png",
       "intro": "media/intro.mp4",
       "screenshots": [
         "media/screen-01.png",

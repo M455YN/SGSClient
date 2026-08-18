@@ -113,7 +113,7 @@ public partial class HomeViewModel : ViewModelBase
     private void OpenLibrary() => _navigate?.Invoke("Library");
 
     [RelayCommand]
-    private void OpenPublish() => _navigate?.Invoke("Publish");
+    private void OpenPublish() => _navigate?.Invoke("Studio");
 
     [RelayCommand]
     private void OpenFriends() => _navigate?.Invoke("Friends");
@@ -202,13 +202,13 @@ public partial class HomeViewModel : ViewModelBase
             .ThenBy(g => g.Title)
             .ToList();
         var heroDto = featured.FirstOrDefault() ?? games.FirstOrDefault();
-        Hero = heroDto is null ? null : HomeGameCard.FromDto(heroDto, _apiBaseUrl, 160);
+        Hero = heroDto is null ? null : HomeGameCard.FromDto(heroDto, _apiBaseUrl, 160, landscape: true);
         HasHero = Hero is not null;
         _ = Hero?.LoadCoverAsync();
 
         foreach (var game in featured.Where(g => g.Id != Hero?.Id).Take(8))
         {
-            var card = HomeGameCard.FromDto(game, _apiBaseUrl, 90);
+            var card = HomeGameCard.FromDto(game, _apiBaseUrl, 90, landscape: true);
             Featured.Add(card);
             _ = card.LoadCoverAsync();
         }
@@ -220,7 +220,7 @@ public partial class HomeViewModel : ViewModelBase
                      .Where(g => g.Id != Hero?.Id)
                      .Take(12))
         {
-            var card = HomeGameCard.FromDto(game, _apiBaseUrl, 70);
+            var card = HomeGameCard.FromDto(game, _apiBaseUrl, 70, landscape: true);
             Catalog.Add(card);
             _ = card.LoadCoverAsync();
         }
@@ -330,18 +330,22 @@ public partial class HomeGameCard : ObservableObject
     [ObservableProperty]
     private bool _hasCover;
 
-    public static HomeGameCard FromDto(GameDto dto, string apiBaseUrl, int blurbLength) => new()
+    public static HomeGameCard FromDto(GameDto dto, string apiBaseUrl, int blurbLength, bool landscape = false)
     {
-        Id = dto.Id,
-        Title = dto.Title,
-        TileLabel = MakeTile(dto.Title, dto.Symbol),
-        Blurb = Truncate(dto.Description, blurbLength),
-        CoverImageUrl = string.IsNullOrWhiteSpace(dto.CoverUrl)
-            ? null
-            : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, dto.CoverUrl),
-        Caption = string.IsNullOrWhiteSpace(dto.GenreName) ? "Sklep" : dto.GenreName!,
-        ShowFeaturedBadge = dto.FeaturedP
-    };
+        var imageUrl = landscape ? dto.LandscapeUrl : dto.ThumbnailUrl;
+        return new HomeGameCard
+        {
+            Id = dto.Id,
+            Title = dto.Title,
+            TileLabel = MakeTile(dto.Title, dto.Symbol),
+            Blurb = Truncate(dto.Description, blurbLength),
+            CoverImageUrl = string.IsNullOrWhiteSpace(imageUrl)
+                ? null
+                : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, imageUrl),
+            Caption = string.IsNullOrWhiteSpace(dto.GenreName) ? "Sklep" : dto.GenreName!,
+            ShowFeaturedBadge = dto.FeaturedP
+        };
+    }
 
     public static HomeGameCard FromLibrary(GameLibraryItem item, string apiBaseUrl)
     {

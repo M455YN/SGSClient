@@ -14,6 +14,10 @@ public sealed class GameEntity
     public int? EngineId { get; set; }
     public int? TypeId { get; set; }
     public string? CoverUrl { get; set; }
+
+    /// <summary>Landscape Steam-style store header. Distinct from <see cref="CoverUrl"/> (list thumbnail).</summary>
+    public string? HeaderUrl { get; set; }
+
     public string? IntroUrl { get; set; }
     public bool DraftP { get; set; }
     public bool FeaturedP { get; set; }

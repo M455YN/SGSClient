@@ -23,6 +23,8 @@ public interface ISgsApiService
         CancellationToken cancellationToken = default);
     Task<GameDto?> UploadGameCoverAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> ClearGameCoverAsync(int gameId, bool asAdmin, CancellationToken cancellationToken = default);
+    Task<GameDto?> UploadGameHeaderAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);
+    Task<GameDto?> ClearGameHeaderAsync(int gameId, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> UploadGameIntroAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> ClearGameIntroAsync(int gameId, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> AddGameScreenshotAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);
@@ -39,6 +41,18 @@ public interface ISgsApiService
     Task<GameStatsDto?> GetOwnedGameStatsAsync(int gameId, CancellationToken cancellationToken = default);
 
     Task<GameBuildVersionDto?> UpdateVersionNotesAsync(
+        int gameId,
+        int versionId,
+        string? releaseNotes,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GameBuildVersionDto>> GetAdminVersionsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default);
+
+    Task<GameStatsDto?> GetAdminGameStatsAsync(int gameId, CancellationToken cancellationToken = default);
+
+    Task<GameBuildVersionDto?> UpdateAdminVersionNotesAsync(
         int gameId,
         int versionId,
         string? releaseNotes,

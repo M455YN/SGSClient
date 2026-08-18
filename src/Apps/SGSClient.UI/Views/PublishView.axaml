@@ -92,13 +92,25 @@
                      Opacity="0.5" FontSize="12" TextWrapping="Wrap"/>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Okładka" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="Miniaturka" Opacity="0.55" FontSize="12"/>
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
               <TextBox Grid.Column="0" Text="{Binding MediaCover}" PlaceholderText="media/cover.png"
                        IsReadOnly="True"/>
               <Button Grid.Column="1" Content="Wybierz…" Click="PickCover_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
               <Button Grid.Column="2" Content="Wyczyść" Click="ClearCover_OnClick"
+                      Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Okładka pozioma" Opacity="0.55" FontSize="12"/>
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+              <TextBox Grid.Column="0" Text="{Binding MediaHeader}" PlaceholderText="media/header.png"
+                       IsReadOnly="True"/>
+              <Button Grid.Column="1" Content="Wybierz…" Click="PickHeader_OnClick"
+                      Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+              <Button Grid.Column="2" Content="Wyczyść" Click="ClearHeader_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
             </Grid>
           </StackPanel>

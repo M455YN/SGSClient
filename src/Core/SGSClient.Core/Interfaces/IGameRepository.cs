@@ -24,6 +24,11 @@ public interface IGameRepository
         int ownerUserId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Version history for any game — admin catalog editor.</summary>
+    Task<IReadOnlyList<GameBuildVersionDto>> GetVersionHistoryAsync(
+        int gameId,
+        CancellationToken cancellationToken = default);
+
     Task<GameBuildVersionDto?> UpdateOwnedVersionNotesAsync(
         int gameId,
         int versionId,
@@ -31,9 +36,19 @@ public interface IGameRepository
         string? releaseNotes,
         CancellationToken cancellationToken = default);
 
+    Task<GameBuildVersionDto?> UpdateVersionNotesAsAdminAsync(
+        int gameId,
+        int versionId,
+        string? releaseNotes,
+        CancellationToken cancellationToken = default);
+
     Task<GameStatsDto?> GetOwnedGameStatsAsync(
         int gameId,
         int ownerUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<GameStatsDto?> GetGameStatsAsync(
+        int gameId,
         CancellationToken cancellationToken = default);
 
     /// <summary>Records one package download for the creator statistics.</summary>

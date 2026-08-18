@@ -207,7 +207,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Sidebar.SelectNav(_contentNavTag);
     }
 
-    public void NavigateToPublish(string? parentSymbol = null)
+    public void NavigateToPublish(string? parentSymbol = null, string selectTag = "Studio")
     {
         if (!string.IsNullOrWhiteSpace(parentSymbol))
         {
@@ -218,7 +218,12 @@ public partial class MainWindowViewModel : ViewModelBase
             _publish.PrepareForNewGame();
         }
 
-        Navigate("Publish");
+        _contentNavTag = selectTag;
+        CloseSocial();
+        SelectedNavTag = selectTag;
+        Sidebar.SelectNav(selectTag);
+        CurrentPage = _publish;
+        _publish.RefreshAuthHint();
     }
 
     private void NavigateFromHome(string tag) => Navigate(tag);

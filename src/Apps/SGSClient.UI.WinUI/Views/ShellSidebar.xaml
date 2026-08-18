@@ -106,17 +106,17 @@
           </StackPanel>
         </Button>
         <Button x:Name="NavPublish" Tag="Publish" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
-                ToolTipService.ToolTip="Publikuj">
+                Visibility="Collapsed" ToolTipService.ToolTip="Publikuj">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <FontIcon Glyph="&#xE898;" FontSize="16" />
             <TextBlock x:Name="NavPublishLabel" Text="Publikuj" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="NavStudio" Tag="Studio" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
-                ToolTipService.ToolTip="Moje gry">
+                ToolTipService.ToolTip="Panel twórcy">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <FontIcon Glyph="&#xE7C3;" FontSize="16" />
-            <TextBlock x:Name="NavStudioLabel" Text="Moje gry" VerticalAlignment="Center" />
+            <TextBlock x:Name="NavStudioLabel" Text="Panel twórcy" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="NavAdmin" Tag="Admin" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"

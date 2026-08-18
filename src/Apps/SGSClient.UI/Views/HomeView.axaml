@@ -190,8 +190,8 @@
             <StackPanel Orientation="Horizontal" Spacing="14">
               <ui:FASymbolIcon Symbol="Upload" FontSize="20"/>
               <StackPanel>
-                <TextBlock Text="Publikuj" FontWeight="SemiBold"/>
-                <TextBlock Text="Wyślij build" FontSize="12" Opacity="0.65"/>
+                <TextBlock Text="Panel twórcy" FontWeight="SemiBold"/>
+                <TextBlock Text="Twoje gry i wydania" FontSize="12" Opacity="0.65"/>
               </StackPanel>
             </StackPanel>
           </Button>

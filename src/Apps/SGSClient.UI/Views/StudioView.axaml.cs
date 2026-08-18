@@ -121,6 +121,22 @@ public partial class StudioView : UserControl
         }
     }
 
+    private async void PickHeader_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is StudioViewModel vm)
+        {
+            await vm.PickHeaderCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async void ClearHeader_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is StudioViewModel vm)
+        {
+            await vm.ClearHeaderCommand.ExecuteAsync(null);
+        }
+    }
+
     private async void PickIntro_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is StudioViewModel vm)

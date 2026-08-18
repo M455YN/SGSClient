@@ -17,6 +17,18 @@ public interface IGameMediaService
         int? requireOwnerUserId,
         CancellationToken cancellationToken = default);
 
+    Task<GameDto?> SetHeaderAsync(
+        int gameId,
+        Stream content,
+        string fileName,
+        int? requireOwnerUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<GameDto?> ClearHeaderAsync(
+        int gameId,
+        int? requireOwnerUserId,
+        CancellationToken cancellationToken = default);
+
     Task<GameDto?> SetIntroAsync(
         int gameId,
         Stream content,

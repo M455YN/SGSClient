@@ -72,7 +72,13 @@
               "type": ["string", "null"],
               "minLength": 1,
               "maxLength": 260,
-              "description": "Cover/hero image (.png, .jpg, .jpeg, .webp, .gif)."
+              "description": "List thumbnail, portrait or square (.png, .jpg, .jpeg, .webp, .gif)."
+            },
+            "header": {
+              "type": ["string", "null"],
+              "minLength": 1,
+              "maxLength": 260,
+              "description": "Landscape Steam-style store header (.png, .jpg, .jpeg, .webp, .gif)."
             },
             "intro": {
               "type": ["string", "null"],

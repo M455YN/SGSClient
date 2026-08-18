@@ -28,6 +28,20 @@ public sealed class GameMediaService(
         CancellationToken cancellationToken = default) =>
         ClearSlotAsync(gameId, MediaSlot.Cover, requireOwnerUserId, cancellationToken);
 
+    public Task<GameDto?> SetHeaderAsync(
+        int gameId,
+        Stream content,
+        string fileName,
+        int? requireOwnerUserId,
+        CancellationToken cancellationToken = default) =>
+        SetSlotAsync(gameId, content, fileName, MediaSlot.Header, requireOwnerUserId, cancellationToken);
+
+    public Task<GameDto?> ClearHeaderAsync(
+        int gameId,
+        int? requireOwnerUserId,
+        CancellationToken cancellationToken = default) =>
+        ClearSlotAsync(gameId, MediaSlot.Header, requireOwnerUserId, cancellationToken);
+
     public Task<GameDto?> SetIntroAsync(
         int gameId,
         Stream content,
@@ -122,22 +136,19 @@ public sealed class GameMediaService(
             return null;
         }
 
-        var allowed = slot == MediaSlot.Cover
-            ? SgsPackageRules.AllowedImageExtensions
-            : SgsPackageRules.AllowedVideoExtensions;
-        var stem = slot == MediaSlot.Cover ? "cover" : "intro";
+        var allowed = slot == MediaSlot.Intro
+            ? SgsPackageRules.AllowedVideoExtensions
+            : SgsPackageRules.AllowedImageExtensions;
+        var stem = slot switch
+        {
+            MediaSlot.Cover => "cover",
+            MediaSlot.Header => "header",
+            _ => "intro"
+        };
 
-        var previousUrl = slot == MediaSlot.Cover ? game.CoverUrl : game.IntroUrl;
+        var previousUrl = GetUrl(game, slot);
         var saved = await SaveFileAsync(game.Symbol, content, fileName, allowed, stem, cancellationToken);
-
-        if (slot == MediaSlot.Cover)
-        {
-            game.CoverUrl = saved.Url;
-        }
-        else
-        {
-            game.IntroUrl = saved.Url;
-        }
+        SetUrl(game, slot, saved.Url);
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -161,16 +172,8 @@ public sealed class GameMediaService(
             return null;
         }
 
-        if (slot == MediaSlot.Cover)
-        {
-            TryDeleteMediaFile(game.Symbol, game.CoverUrl, sourcePath: null);
-            game.CoverUrl = null;
-        }
-        else
-        {
-            TryDeleteMediaFile(game.Symbol, game.IntroUrl, sourcePath: null);
-            game.IntroUrl = null;
-        }
+        TryDeleteMediaFile(game.Symbol, GetUrl(game, slot), sourcePath: null);
+        SetUrl(game, slot, null);
 
         await db.SaveChangesAsync(cancellationToken);
         return await ProjectAsync(game.Id, cancellationToken);
@@ -305,6 +308,7 @@ public sealed class GameMediaService(
                 EngineSymbol = g.Engine != null ? g.Engine.Symbol : null,
                 EngineName = g.Engine != null ? g.Engine.Name : null,
                 CoverUrl = g.CoverUrl,
+                HeaderUrl = g.HeaderUrl,
                 IntroUrl = g.IntroUrl,
                 ScreenshotUrls = g.Screenshots
                     .OrderBy(s => s.SortOrder)
@@ -355,9 +359,33 @@ public sealed class GameMediaService(
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    private static string? GetUrl(GameEntity game, MediaSlot slot) => slot switch
+    {
+        MediaSlot.Cover => game.CoverUrl,
+        MediaSlot.Header => game.HeaderUrl,
+        _ => game.IntroUrl
+    };
+
+    private static void SetUrl(GameEntity game, MediaSlot slot, string? url)
+    {
+        switch (slot)
+        {
+            case MediaSlot.Cover:
+                game.CoverUrl = url;
+                break;
+            case MediaSlot.Header:
+                game.HeaderUrl = url;
+                break;
+            default:
+                game.IntroUrl = url;
+                break;
+        }
+    }
+
     private enum MediaSlot
     {
         Cover,
+        Header,
         Intro
     }
 }

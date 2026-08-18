@@ -17,6 +17,7 @@ public sealed class SgsPackageManifestSerializerTests
                 "engine": "custom",
                 "media": {
                   "cover": "media/cover.png",
+                  "header": "media/header.png",
                   "screenshots": ["media/screen-01.png"]
                 }
               },
@@ -36,6 +37,7 @@ public sealed class SgsPackageManifestSerializerTests
         Assert.Equal("action", manifest.Game.Genre);
         Assert.Equal("custom", manifest.Game.Engine);
         Assert.Equal("media/cover.png", manifest.Game.Media!.Cover);
+        Assert.Equal("media/header.png", manifest.Game.Media.Header);
         Assert.Equal("bin/DemoRunner.exe", manifest.Build.Executable);
     }
 

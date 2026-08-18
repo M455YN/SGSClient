@@ -35,7 +35,7 @@ public partial class StudioViewModel : ObservableObject
         StatusText = "Ładowanie Twoich gier…";
     }
 
-    public string Title { get; } = "Moje gry";
+    public string Title { get; } = "Panel twórcy";
     public IReadOnlyList<string> GenreOptions { get; } =
         SgsGameTaxonomy.Genres.Select(g => g.Symbol).Prepend("").ToArray();
     public IReadOnlyList<string> EngineOptions { get; } =
@@ -370,7 +370,7 @@ public partial class StudioViewModel : ObservableObject
         }
 
         var updated = await _api.UploadGameCoverAsync(SelectedGame.Id, path, asAdmin: false);
-        await ReloadAfterMediaAsync(updated, "Zaktualizowano okładkę.");
+        await ReloadAfterMediaAsync(updated, "Zaktualizowano miniaturkę.");
     }
 
     [RelayCommand]
@@ -382,7 +382,37 @@ public partial class StudioViewModel : ObservableObject
         }
 
         var updated = await _api.ClearGameCoverAsync(SelectedGame.Id, asAdmin: false);
-        await ReloadAfterMediaAsync(updated, "Usunięto okładkę.");
+        await ReloadAfterMediaAsync(updated, "Usunięto miniaturkę.");
+    }
+
+    [RelayCommand]
+    private async Task PickHeaderAsync()
+    {
+        if (_pickImage is null)
+        {
+            return;
+        }
+
+        var path = await _pickImage();
+        if (path is null || SelectedGame is null || _api is null)
+        {
+            return;
+        }
+
+        var updated = await _api.UploadGameHeaderAsync(SelectedGame.Id, path, asAdmin: false);
+        await ReloadAfterMediaAsync(updated, "Zaktualizowano okładkę poziomą.");
+    }
+
+    [RelayCommand]
+    private async Task ClearHeaderAsync()
+    {
+        if (SelectedGame is null || _api is null)
+        {
+            return;
+        }
+
+        var updated = await _api.ClearGameHeaderAsync(SelectedGame.Id, asAdmin: false);
+        await ReloadAfterMediaAsync(updated, "Usunięto okładkę poziomą.");
     }
 
     [RelayCommand]
@@ -536,8 +566,12 @@ public partial class StudioContentItem : ObservableObject
     [ObservableProperty] public partial string? GenreSymbol { get; set; }
     [ObservableProperty] public partial string? EngineSymbol { get; set; }
     [ObservableProperty] public partial string? CoverUrl { get; set; }
+    [ObservableProperty] public partial string? HeaderUrl { get; set; }
     [ObservableProperty] public partial string? IntroUrl { get; set; }
     [ObservableProperty] public partial string? CoverImageUrl { get; set; }
+    [ObservableProperty] public partial string? HeaderImageUrl { get; set; }
+    [ObservableProperty] public partial string? OwnCoverImageUrl { get; set; }
+    [ObservableProperty] public partial string? OwnHeaderImageUrl { get; set; }
     [ObservableProperty] public partial bool DraftP { get; set; }
     [ObservableProperty] public partial bool FeaturedP { get; set; }
     [ObservableProperty] public partial string? StudioName { get; set; }
@@ -579,6 +613,9 @@ public partial class StudioContentItem : ObservableObject
     [ObservableProperty] public partial bool HasVr { get; set; }
 
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
+    public bool HasOwnCover => !string.IsNullOrWhiteSpace(OwnCoverImageUrl);
+    public bool HasOwnHeader => !string.IsNullOrWhiteSpace(OwnHeaderImageUrl);
+    public bool HasHeaderArt => !string.IsNullOrWhiteSpace(HeaderImageUrl);
     public bool HasIntro => !string.IsNullOrWhiteSpace(IntroUrl);
     public bool HasDlcs => Dlcs.Count > 0;
     public bool IsPublished => !DraftP;
@@ -671,10 +708,12 @@ public partial class StudioContentItem : ObservableObject
         GenreSymbol = game.GenreSymbol;
         EngineSymbol = game.EngineSymbol;
         CoverUrl = game.CoverUrl;
+        HeaderUrl = game.HeaderUrl;
         IntroUrl = game.IntroUrl;
-        CoverImageUrl = string.IsNullOrWhiteSpace(game.CoverUrl)
-            ? null
-            : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, game.CoverUrl);
+        CoverImageUrl = ResolveMedia(game.ThumbnailUrl, apiBaseUrl);
+        HeaderImageUrl = ResolveMedia(game.LandscapeUrl, apiBaseUrl);
+        OwnCoverImageUrl = ResolveMedia(game.CoverUrl, apiBaseUrl);
+        OwnHeaderImageUrl = ResolveMedia(game.HeaderUrl, apiBaseUrl);
         DraftP = game.DraftP;
         FeaturedP = game.FeaturedP;
         StudioName = game.StudioName;
@@ -738,6 +777,9 @@ public partial class StudioContentItem : ObservableObject
         }
 
         OnPropertyChanged(nameof(HasCover));
+        OnPropertyChanged(nameof(HasOwnCover));
+        OnPropertyChanged(nameof(HasOwnHeader));
+        OnPropertyChanged(nameof(HasHeaderArt));
         OnPropertyChanged(nameof(HasIntro));
         OnPropertyChanged(nameof(IsPublished));
         OnPropertyChanged(nameof(DraftLabel));
@@ -746,6 +788,9 @@ public partial class StudioContentItem : ObservableObject
         OnPropertyChanged(nameof(MetaText));
         OnPropertyChanged(nameof(HasDlcs));
     }
+
+    private static string? ResolveMedia(string? url, string apiBaseUrl) =>
+        string.IsNullOrWhiteSpace(url) ? null : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, url);
 
     private static string FormatSize(long bytes)
     {

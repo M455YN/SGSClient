@@ -90,7 +90,7 @@
                      Opacity="0.5" FontSize="12" TextWrapping="Wrap" />
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Okładka" Opacity="0.55" FontSize="12" />
+            <TextBlock Text="Miniaturka" Opacity="0.55" FontSize="12" />
             <Grid ColumnSpacing="8">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -100,6 +100,20 @@
               <TextBox x:Name="CoverBox" Grid.Column="0" PlaceholderText="media/cover.png" IsReadOnly="True" />
               <Button Grid.Column="1" Content="Wybierz…" Click="PickCover_Click" Padding="12,8" />
               <Button Grid.Column="2" Content="Wyczyść" Click="ClearCover_Click" Padding="12,8" />
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Okładka pozioma" Opacity="0.55" FontSize="12" />
+            <Grid ColumnSpacing="8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="HeaderBox" Grid.Column="0" PlaceholderText="media/header.png" IsReadOnly="True" />
+              <Button Grid.Column="1" Content="Wybierz…" Click="PickHeader_Click" Padding="12,8" />
+              <Button Grid.Column="2" Content="Wyczyść" Click="ClearHeader_Click" Padding="12,8" />
             </Grid>
           </StackPanel>
 

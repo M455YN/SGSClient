@@ -110,100 +110,271 @@
 
         <ScrollViewer Grid.Column="1" IsVisible="{Binding HasSelection}">
           <StackPanel Spacing="16" Margin="0,0,0,16">
-            <Border Classes="card">
-              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
-                <Border Classes="thumb" Width="88" Height="88" CornerRadius="8">
-                  <Panel>
-                    <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="20" FontWeight="SemiBold" Opacity="0.5"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <Image Source="{Binding SelectedGame.CoverBitmap}" Stretch="UniformToFill"
-                           IsVisible="{Binding SelectedGame.HasCover}"/>
-                  </Panel>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <RadioButton Content="Przegląd" GroupName="AdminEditorTab" IsChecked="{Binding IsOverviewTab, Mode=OneWay}"
+                           Command="{Binding SelectEditorTabCommand}" CommandParameter="overview"/>
+              <RadioButton Content="Strona sklepu" GroupName="AdminEditorTab" IsChecked="{Binding IsStoreTab, Mode=OneWay}"
+                           Command="{Binding SelectEditorTabCommand}" CommandParameter="store"/>
+              <RadioButton Content="Multimedia" GroupName="AdminEditorTab" IsChecked="{Binding IsMediaTab, Mode=OneWay}"
+                           Command="{Binding SelectEditorTabCommand}" CommandParameter="media"/>
+              <RadioButton Content="Buildy" GroupName="AdminEditorTab" IsChecked="{Binding IsBuildsTab, Mode=OneWay}"
+                           Command="{Binding SelectEditorTabCommand}" CommandParameter="builds"/>
+              <RadioButton Content="DLC" GroupName="AdminEditorTab" IsChecked="{Binding IsDlcTab, Mode=OneWay}"
+                           Command="{Binding SelectEditorTabCommand}" CommandParameter="dlc"/>
+            </StackPanel>
+
+            <StackPanel Spacing="16" IsVisible="{Binding IsOverviewTab}">
+              <Border Height="200" CornerRadius="8" ClipToBounds="True" Background="#1AFFFFFF">
+                <Panel>
+                  <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="42" FontWeight="Bold"
+                             Opacity="0.2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                             IsVisible="{Binding !SelectedGame.HasHeaderArt}"/>
+                  <Image Source="{Binding SelectedGame.HeaderImageUrl}" Stretch="UniformToFill"
+                         IsVisible="{Binding SelectedGame.HasHeaderArt}"/>
+                  <StackPanel VerticalAlignment="Bottom" Margin="16,12" Spacing="2">
+                    <TextBlock Text="{Binding SelectedGame.Title}" FontSize="22" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding SelectedGame.MetaText}" Classes="caption"/>
+                    <TextBlock Text="{Binding SelectedGame.OwnerText}" Classes="caption"/>
+                  </StackPanel>
+                </Panel>
+              </Border>
+              <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+                <Border Classes="card">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Pobrania" Classes="caption"/>
+                    <TextBlock Text="{Binding TotalDownloadsText}" FontSize="22" FontWeight="SemiBold"/>
+                  </StackPanel>
                 </Border>
-                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding SelectedGame.Title}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                  <TextBlock Text="{Binding SelectedGame.MetaText}" Opacity="0.65"/>
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <Border Classes="badge" Background="#3B82F6" IsVisible="{Binding SelectedGame.FeaturedP}">
-                      <TextBlock Text="Wyróżnione" FontSize="11" Foreground="White"/>
-                    </Border>
-                    <Border Classes="badge" Background="#6616A34A" IsVisible="{Binding SelectedGame.IsPublished}">
-                      <TextBlock Text="W sklepie" FontSize="11"/>
-                    </Border>
-                    <Border Classes="badge" Background="#66854D0E" IsVisible="{Binding SelectedGame.DraftP}">
-                      <TextBlock Text="Szkic" FontSize="11"/>
-                    </Border>
+                <Border Grid.Column="1" Classes="card">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="30 dni" Classes="caption"/>
+                    <TextBlock Text="{Binding Last30Text}" FontSize="22" FontWeight="SemiBold"/>
                   </StackPanel>
-                </StackPanel>
-                <Button Grid.Column="2" Content="Edytuj" Click="Edit_OnClick"
-                        Classes="accent" Padding="16,8" VerticalAlignment="Top"/>
+                </Border>
+                <Border Grid.Column="2" Classes="card">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="7 dni" Classes="caption"/>
+                    <TextBlock Text="{Binding Last7Text}" FontSize="22" FontWeight="SemiBold"/>
+                  </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Classes="card">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="Wersja" Classes="caption"/>
+                    <TextBlock Text="{Binding SelectedGame.CurrentVersionText}" FontSize="22" FontWeight="SemiBold"/>
+                  </StackPanel>
+                </Border>
               </Grid>
-            </Border>
-
-            <Border Classes="card">
-              <StackPanel Spacing="12">
-                <TextBlock Text="Widoczność" FontWeight="SemiBold"/>
-                <Grid ColumnDefinitions="*,Auto">
-                  <StackPanel VerticalAlignment="Center" Spacing="2">
-                    <TextBlock Text="Opublikowana w sklepie"/>
-                    <TextBlock Text="Wyłącz, żeby schować grę jako szkic." Classes="caption"/>
-                  </StackPanel>
-                  <ToggleSwitch Grid.Column="1" OnContent="Tak" OffContent="Nie"
-                                IsChecked="{Binding SelectedPublished, Mode=TwoWay}"/>
-                </Grid>
-                <Grid ColumnDefinitions="*,Auto">
-                  <StackPanel VerticalAlignment="Center" Spacing="2">
-                    <TextBlock Text="Wyróżniona na stronie głównej"/>
-                    <TextBlock Text="Trafia na szynę Wyróżnione; pierwsza pozycja to hero." Classes="caption"/>
-                  </StackPanel>
-                  <ToggleSwitch Grid.Column="1" OnContent="Tak" OffContent="Nie"
-                                IsChecked="{Binding SelectedFeatured, Mode=TwoWay}"/>
-                </Grid>
-              </StackPanel>
-            </Border>
-
-            <Border Classes="card">
-              <StackPanel Spacing="10">
-                <TextBlock Text="Sklep" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding SelectedGame.DescriptionText}" TextWrapping="Wrap" Opacity="0.7"/>
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="24">
-                  <StackPanel>
-                    <TextBlock Text="Gatunek" Classes="caption"/>
-                    <TextBlock Text="{Binding SelectedGame.GenreText}"/>
-                  </StackPanel>
-                  <StackPanel Grid.Column="1">
-                    <TextBlock Text="Silnik" Classes="caption"/>
-                    <TextBlock Text="{Binding SelectedGame.EngineText}"/>
-                  </StackPanel>
-                  <StackPanel Grid.Column="2">
-                    <TextBlock Text="Właściciel" Classes="caption"/>
-                    <TextBlock Text="{Binding SelectedGame.OwnerText}" TextTrimming="CharacterEllipsis"/>
-                  </StackPanel>
-                </Grid>
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Border Classes="badge">
-                    <TextBlock Text="{Binding SelectedGame.CoverText}" FontSize="12"/>
-                  </Border>
-                  <Border Classes="badge">
-                    <TextBlock Text="{Binding SelectedGame.IntroText}" FontSize="12"/>
-                  </Border>
-                  <Border Classes="badge">
-                    <TextBlock Text="{Binding SelectedGame.ScreenshotsText}" FontSize="12"/>
-                  </Border>
+              <Border Classes="card">
+                <StackPanel Spacing="12">
+                  <TextBlock Text="Widoczność" FontWeight="SemiBold"/>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                      <TextBlock Text="Opublikowana w sklepie"/>
+                      <TextBlock Text="Szkic jest ukryty dla graczy." Classes="caption"/>
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" OnContent="W sklepie" OffContent="Szkic"
+                                  IsChecked="{Binding SelectedPublished, Mode=TwoWay}"/>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                      <TextBlock Text="Wyróżniona na stronie głównej"/>
+                      <TextBlock Text="Trafia na szynę Wyróżnione; pierwsza pozycja to hero." Classes="caption"/>
+                    </StackPanel>
+                    <ToggleSwitch Grid.Column="1" OnContent="Tak" OffContent="Nie"
+                                  IsChecked="{Binding SelectedFeatured, Mode=TwoWay}"/>
+                  </Grid>
                 </StackPanel>
+              </Border>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Opublikuj nową wersję" Click="AddVersion_OnClick" Padding="14,8"/>
+                <Button Content="Dodaj DLC" Click="AddDlc_OnClick" Padding="14,8"/>
+                <Button Content="Usuń grę" Click="Delete_OnClick" Padding="14,8"/>
               </StackPanel>
-            </Border>
+            </StackPanel>
 
-            <Border Classes="card">
-              <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="Strefa niebezpieczna" FontWeight="SemiBold"/>
-                  <TextBlock Text="Usunięcie pozycji katalogu jest nieodwracalne." Classes="caption"/>
+            <StackPanel Spacing="12" IsVisible="{Binding IsStoreTab}">
+              <Border Classes="card">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="Podstawowe" FontWeight="SemiBold"/>
+                  <TextBox PlaceholderText="Tytuł" Text="{Binding SelectedGame.EditTitle, Mode=TwoWay}"/>
+                  <TextBox PlaceholderText="Opis" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="88"
+                           Text="{Binding SelectedGame.EditDescription, Mode=TwoWay}"/>
+                  <TextBox PlaceholderText="Wymagania sprzętowe" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
+                           Text="{Binding SelectedGame.EditHardwareRequirements, Mode=TwoWay}"/>
+                  <ComboBox PlaceholderText="Gatunek" ItemsSource="{Binding GenreOptions}"
+                            SelectedItem="{Binding SelectedGame.EditGenre, Mode=TwoWay}"/>
+                  <ComboBox PlaceholderText="Silnik" ItemsSource="{Binding EngineOptions}"
+                            SelectedItem="{Binding SelectedGame.EditEngine, Mode=TwoWay}"/>
                 </StackPanel>
-                <Button Grid.Column="1" Content="Usuń grę" Click="Delete_OnClick"
-                        Padding="16,8" VerticalAlignment="Center"/>
-              </Grid>
-            </Border>
+              </Border>
+              <Border Classes="card">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="Wydanie, studio i funkcje" FontWeight="SemiBold"/>
+                  <ComboBox ItemsSource="{Binding ReleaseStatusOptions}"
+                            SelectedIndex="{Binding SelectedGame.EditReleaseStatusIndex, Mode=TwoWay}"/>
+                  <ComboBox ItemsSource="{Binding AgeRatingOptions}"
+                            SelectedIndex="{Binding SelectedGame.EditAgeRatingIndex, Mode=TwoWay}"/>
+                  <TextBox PlaceholderText="Nazwa studia" Text="{Binding SelectedGame.EditStudioName, Mode=TwoWay}"/>
+                  <TextBox PlaceholderText="Strona www" Text="{Binding SelectedGame.EditWebsiteUrl, Mode=TwoWay}"/>
+                  <TextBox PlaceholderText="Discord" Text="{Binding SelectedGame.EditDiscordUrl, Mode=TwoWay}"/>
+                  <TextBox PlaceholderText="Wsparcie" Text="{Binding SelectedGame.EditSupportUrl, Mode=TwoWay}"/>
+                  <WrapPanel>
+                    <CheckBox Content="Singleplayer" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasSinglePlayer, Mode=TwoWay}"/>
+                    <CheckBox Content="Multiplayer" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasMultiPlayer, Mode=TwoWay}"/>
+                    <CheckBox Content="Kooperacja" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasCoOp, Mode=TwoWay}"/>
+                    <CheckBox Content="Pad" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasController, Mode=TwoWay}"/>
+                    <CheckBox Content="Chmura" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasCloudSaves, Mode=TwoWay}"/>
+                    <CheckBox Content="Osiągnięcia" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasAchievements, Mode=TwoWay}"/>
+                    <CheckBox Content="Mody" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasModding, Mode=TwoWay}"/>
+                    <CheckBox Content="VR" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasVr, Mode=TwoWay}"/>
+                  </WrapPanel>
+                  <TextBox PlaceholderText="Języki, np. Polski, English" Text="{Binding SelectedGame.EditLanguages, Mode=TwoWay}"/>
+                  <TextBox PlaceholderText="Tagi, np. roguelike, pixel art" Text="{Binding SelectedGame.EditTags, Mode=TwoWay}"/>
+                </StackPanel>
+              </Border>
+              <Button Content="Zapisz stronę sklepu" Classes="accent" Click="SaveStore_OnClick"
+                      HorizontalAlignment="Left" Padding="16,8"/>
+            </StackPanel>
+
+            <StackPanel Spacing="12" IsVisible="{Binding IsMediaTab}">
+              <Border Classes="card">
+                <Grid ColumnDefinitions="120,*" ColumnSpacing="16">
+                  <Border Height="160" Width="120" CornerRadius="6" Background="#1AFFFFFF">
+                    <Image Source="{Binding SelectedGame.OwnCoverImageUrl}" Stretch="UniformToFill"/>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="Miniaturka" FontWeight="SemiBold"/>
+                    <TextBlock Text="Pionowa, na listy i w bibliotece (jak kapsuła Steam)."
+                               Classes="caption" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Content="Wybierz plik" Click="PickCover_OnClick"/>
+                      <Button Content="Usuń" Click="ClearCover_OnClick"/>
+                    </StackPanel>
+                  </StackPanel>
+                </Grid>
+              </Border>
+              <Border Classes="card">
+                <Grid ColumnDefinitions="280,*" ColumnSpacing="16">
+                  <Border Height="130" CornerRadius="6" Background="#1AFFFFFF">
+                    <Image Source="{Binding SelectedGame.OwnHeaderImageUrl}" Stretch="UniformToFill"/>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="Okładka pozioma" FontWeight="SemiBold"/>
+                    <TextBlock Text="Szeroka, jak header na Steam — strona gry i wyróżnienia."
+                               Classes="caption" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Content="Wybierz plik" Click="PickHeader_OnClick"/>
+                      <Button Content="Usuń" Click="ClearHeader_OnClick"/>
+                    </StackPanel>
+                  </StackPanel>
+                </Grid>
+              </Border>
+              <Border Classes="card">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Intro" FontWeight="SemiBold"/>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Wybierz wideo" Click="PickIntro_OnClick"/>
+                    <Button Content="Usuń" Click="ClearIntro_OnClick"/>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Border Classes="card">
+                <StackPanel Spacing="8">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Zrzuty ekranu" FontWeight="SemiBold"/>
+                    <Button Grid.Column="1" Content="Dodaj" Click="AddScreenshot_OnClick"/>
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding SelectedGame.ScreenshotItems}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel/>
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Button Content="Usuń zrzut" Tag="{Binding}" Click="RemoveScreenshot_OnClick"
+                                Margin="0,0,8,8" Padding="10,6"/>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="12" IsVisible="{Binding IsBuildsTab}">
+              <Border Classes="card">
+                <StackPanel Spacing="8">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Aktualne buildy" FontWeight="SemiBold"/>
+                    <Button Grid.Column="1" Content="Nowa wersja" Click="AddVersion_OnClick"/>
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding SelectedGame.Builds}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border Classes="card" Margin="0,0,0,8" Padding="12">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock Text="{Binding PlatformText}" FontWeight="SemiBold"/>
+                              <TextBlock Text="{Binding MetaText}" Classes="caption"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding Version}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+              <Border Classes="card">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Historia i opis zmian" FontWeight="SemiBold"/>
+                  <ItemsControl ItemsSource="{Binding Versions}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:StudioVersionItem">
+                        <Border Classes="card" Margin="0,0,0,10" Padding="12">
+                          <StackPanel Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                              <TextBlock Text="{Binding Version}" FontWeight="SemiBold"/>
+                              <TextBlock Grid.Column="1" Text="{Binding MetaText}" Classes="caption"/>
+                            </Grid>
+                            <TextBox PlaceholderText="Notatki do tej wersji" AcceptsReturn="True" TextWrapping="Wrap"
+                                     MinHeight="64" Text="{Binding EditNotes, Mode=TwoWay}"/>
+                            <Button Content="Zapisz opis zmian" Tag="{Binding}" Click="SaveNotes_OnClick"
+                                    HorizontalAlignment="Left" Padding="12,6"/>
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="12" IsVisible="{Binding IsDlcTab}">
+              <Border Classes="card">
+                <StackPanel Spacing="8">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Dodatki" FontWeight="SemiBold"/>
+                    <Button Grid.Column="1" Content="Dodaj DLC" Click="AddDlc_OnClick"/>
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding SelectedGame.Dlcs}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border Classes="card" Margin="0,0,0,8" Padding="12">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                              <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                              <TextBlock Text="{Binding MetaText}" Classes="caption"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Usuń" Tag="{Binding}" Click="DeleteDlc_OnClick"/>
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </StackPanel>
           </StackPanel>
         </ScrollViewer>
 
@@ -261,8 +432,8 @@
             <Panel>
               <TextBlock Text="{Binding HeroPreview.TileLabel}" FontSize="56" FontWeight="SemiBold" Opacity="0.16"
                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
-              <Image Source="{Binding HeroPreview.CoverBitmap}" Stretch="UniformToFill"
-                     IsVisible="{Binding HeroPreview.HasCover}"/>
+              <Image Source="{Binding HeroPreview.HeaderImageUrl}" Stretch="UniformToFill"
+                     IsVisible="{Binding HeroPreview.HasHeaderArt}"/>
               <Border VerticalAlignment="Bottom">
                 <Border.Background>
                   <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">

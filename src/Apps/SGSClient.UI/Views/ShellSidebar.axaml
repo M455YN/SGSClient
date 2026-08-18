@@ -85,7 +85,7 @@
               <TextBlock x:Name="NavLibraryLabel" Text="Biblioteka" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
-          <Button x:Name="NavPublish" Tag="Publish" Click="Nav_OnClick"
+          <Button x:Name="NavPublish" Tag="Publish" Click="Nav_OnClick" IsVisible="False"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                   MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
                   ToolTip.Tip="Publikuj">
@@ -97,10 +97,10 @@
           <Button x:Name="NavStudio" Tag="Studio" Click="Nav_OnClick"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                   MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
-                  ToolTip.Tip="Moje gry">
+                  ToolTip.Tip="Panel twórcy">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ui:FASymbolIcon Symbol="Library" FontSize="16" />
-              <TextBlock x:Name="NavStudioLabel" Text="Moje gry" VerticalAlignment="Center" />
+              <TextBlock x:Name="NavStudioLabel" Text="Panel twórcy" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button x:Name="NavAdmin" Tag="Admin" Click="Nav_OnClick" IsVisible="False"

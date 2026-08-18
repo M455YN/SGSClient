@@ -347,7 +347,7 @@ public partial class LibraryViewModel : ViewModelBase
             try
             {
                 var game = await _api.GetGameAsync(row.GameId);
-                if (string.IsNullOrWhiteSpace(game?.CoverUrl))
+                if (string.IsNullOrWhiteSpace(game?.ThumbnailUrl))
                 {
                     continue;
                 }
@@ -358,7 +358,7 @@ public partial class LibraryViewModel : ViewModelBase
                     continue;
                 }
 
-                model.CoverUrl = game.CoverUrl;
+                model.CoverUrl = game.ThumbnailUrl;
                 await library.UpsertAsync(model);
                 row.ApplyModel(model, _apiBaseUrl);
             }

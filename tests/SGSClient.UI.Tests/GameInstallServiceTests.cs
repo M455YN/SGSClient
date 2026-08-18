@@ -242,6 +242,19 @@ public class GameInstallServiceTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<GameDto?>(null);
 
+        public Task<GameDto?> UploadGameHeaderAsync(
+            int gameId,
+            string localFilePath,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<GameDto?> ClearGameHeaderAsync(
+            int gameId,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
         public Task<GameDto?> UploadGameIntroAsync(
             int gameId,
             string localFilePath,
@@ -286,6 +299,23 @@ public class GameInstallServiceTests
             Task.FromResult<GameStatsDto?>(null);
 
         public Task<GameBuildVersionDto?> UpdateVersionNotesAsync(
+            int gameId,
+            int versionId,
+            string? releaseNotes,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameBuildVersionDto?>(null);
+
+        public Task<IReadOnlyList<GameBuildVersionDto>> GetAdminVersionsAsync(
+            int gameId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameBuildVersionDto>>([]);
+
+        public Task<GameStatsDto?> GetAdminGameStatsAsync(
+            int gameId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameStatsDto?>(null);
+
+        public Task<GameBuildVersionDto?> UpdateAdminVersionNotesAsync(
             int gameId,
             int versionId,
             string? releaseNotes,
