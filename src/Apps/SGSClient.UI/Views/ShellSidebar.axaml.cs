@@ -47,7 +47,7 @@ public partial class ShellSidebar : UserControl
                 or nameof(ShellSidebarViewModel.ProfileDisplayName)
                 or nameof(ShellSidebarViewModel.ProfileStatus)
                 or nameof(ShellSidebarViewModel.HasAvatar)
-                or nameof(ShellSidebarViewModel.ProfileAvatarBitmap)
+                or nameof(ShellSidebarViewModel.ProfileAvatarUrl)
                 or nameof(ShellSidebarViewModel.InstalledHeader)
                 or nameof(ShellSidebarViewModel.IsPaneOpen)
                 or null)
@@ -125,7 +125,6 @@ public partial class ShellSidebar : UserControl
         NavPublish.IsVisible = false;
         NavStudio.IsVisible = vm.IsCreatorVisible;
         InstalledHeaderText.Text = vm.InstalledHeader.ToUpperInvariant();
-        AvatarImage.Source = vm.ProfileAvatarBitmap;
         AvatarBorder.IsVisible = vm.HasAvatar;
         ProfileIcon.IsVisible = !vm.HasAvatar;
 

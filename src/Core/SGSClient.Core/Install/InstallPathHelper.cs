@@ -27,6 +27,11 @@ public static class InstallPathHelper
         return Path.Combine([installDirectory, .. parts]);
     }
 
+    public static string? TryResolveDownloadUrl(string apiBaseUrl, string? relativeOrAbsolute) =>
+        string.IsNullOrWhiteSpace(relativeOrAbsolute)
+            ? null
+            : ResolveDownloadUrl(apiBaseUrl, relativeOrAbsolute);
+
     public static string ResolveDownloadUrl(string apiBaseUrl, string zipLink)
     {
         if (string.IsNullOrWhiteSpace(zipLink))

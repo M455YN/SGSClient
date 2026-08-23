@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using SGSClient.Core.Models;
-using SGSClient.UI.WinUI.ViewModels;
+using SGSClient.UI.ViewModels;
 using Windows.Media.Core;
 
 namespace SGSClient.UI.WinUI.Views;

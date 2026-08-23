@@ -12,7 +12,7 @@ using SGSClient.Core.Models;
 
 namespace SGSClient.UI.ViewModels;
 
-public partial class GamesViewModel : ViewModelBase
+public partial class GamesViewModel : ObservableObject
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
@@ -21,20 +21,17 @@ public partial class GamesViewModel : ViewModelBase
     private bool _loaded;
 
     public GamesViewModel()
+        : this(null)
     {
-        StatusText = "API not configured";
-        _apiBaseUrl = new ApiClientSettings().BaseUrl;
     }
 
     public GamesViewModel(
         ISgsApiService? api,
         IServiceScopeFactory? scopes = null,
-        Action<int>? openDetails = null,
         IConfiguration? configuration = null)
     {
         _api = api;
         _scopes = scopes;
-        _openDetails = openDetails;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = api is null ? "API not registered" : "Ładowanie sklepu…";
@@ -47,16 +44,16 @@ public partial class GamesViewModel : ViewModelBase
     public ObservableCollection<GameListItem> Games { get; } = [];
 
     [ObservableProperty]
-    private string _statusText = string.Empty;
+    public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private bool _isBusy;
+    public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
-    private bool _hasGames;
+    public partial bool HasGames { get; set; }
 
     [ObservableProperty]
-    private bool _showEmpty;
+    public partial bool ShowEmpty { get; set; }
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -111,12 +108,10 @@ public partial class GamesViewModel : ViewModelBase
     [RelayCommand]
     private void OpenDetails(GameListItem? item)
     {
-        if (item is null)
+        if (item is not null)
         {
-            return;
+            _openDetails?.Invoke(item.Id);
         }
-
-        _openDetails?.Invoke(item.Id);
     }
 
     [RelayCommand]
@@ -210,17 +205,12 @@ public partial class GameListItem : ObservableObject
     public string? Version { get; init; }
     public string? CoverUrl { get; init; }
     public string? CoverImageUrl { get; init; }
-
-    [ObservableProperty]
-    private Avalonia.Media.Imaging.Bitmap? _coverBitmap;
-
-    [ObservableProperty]
-    private bool _hasCover;
+    public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanAdd))]
     [NotifyPropertyChangedFor(nameof(ActionLabel))]
-    private bool _inLibrary;
+    public partial bool InLibrary { get; set; }
 
     public bool CanAdd => !InLibrary && BuildId > 0;
     public string ActionLabel => InLibrary ? "W bibliotece" : (BuildId > 0 ? "Dodaj do biblioteki" : "Brak builda");
@@ -233,11 +223,9 @@ public partial class GameListItem : ObservableObject
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        var coverImageUrl = string.IsNullOrWhiteSpace(dto.LandscapeUrl)
-            ? null
-            : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, dto.LandscapeUrl);
+        var coverImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, dto.LandscapeUrl);
 
-        var item = new GameListItem
+        return new GameListItem
         {
             Id = dto.Id,
             Title = dto.Title,
@@ -255,37 +243,9 @@ public partial class GameListItem : ObservableObject
             Architecture = build?.Architecture,
             Version = build?.CurrentVersion,
             CoverUrl = dto.ThumbnailUrl,
-            CoverImageUrl = string.IsNullOrWhiteSpace(coverImageUrl) ? null : coverImageUrl,
+            CoverImageUrl = coverImageUrl,
             InLibrary = inLibrary
         };
-        _ = item.LoadCoverAsync();
-        return item;
-    }
-
-    private async Task LoadCoverAsync()
-    {
-        if (string.IsNullOrWhiteSpace(CoverImageUrl))
-        {
-            CoverBitmap = null;
-            HasCover = false;
-            return;
-        }
-
-        try
-        {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-            await using var stream = await http.GetStreamAsync(CoverImageUrl);
-            await using var memory = new MemoryStream();
-            await stream.CopyToAsync(memory);
-            memory.Position = 0;
-            CoverBitmap = new Avalonia.Media.Imaging.Bitmap(memory);
-            HasCover = true;
-        }
-        catch
-        {
-            CoverBitmap = null;
-            HasCover = false;
-        }
     }
 
     public static GameBuildDto? PickPreferredBuild(IReadOnlyList<GameBuildDto> builds)

@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
-using SGSClient.UI.WinUI.ViewModels;
+using SGSClient.UI.ViewModels;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 

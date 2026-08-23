@@ -41,7 +41,7 @@
                     <TextBlock Text="{Binding TileLabel}" FontWeight="SemiBold" FontSize="12"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsVisible="{Binding !HasCover}" Opacity="0.7"/>
-                    <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                    <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                            IsVisible="{Binding HasCover}"/>
                   </Panel>
                 </Border>
@@ -87,7 +87,7 @@
                         <TextBlock Text="{Binding TileLabel}" FontSize="32" FontWeight="SemiBold" Opacity="0.35"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    IsVisible="{Binding !HasCover}"/>
-                        <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                        <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                                IsVisible="{Binding HasCover}"/>
                         <Border VerticalAlignment="Bottom" Padding="12,10"
                                 Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
@@ -133,7 +133,7 @@
                       <TextBlock Text="{Binding TileLabel}" FontSize="26" FontWeight="SemiBold" Opacity="0.35"
                                  HorizontalAlignment="Center" VerticalAlignment="Center"
                                  IsVisible="{Binding !HasCover}"/>
-                      <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                      <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                              IsVisible="{Binding HasCover}"/>
                       <Border VerticalAlignment="Bottom" Padding="8,8"
                               Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">

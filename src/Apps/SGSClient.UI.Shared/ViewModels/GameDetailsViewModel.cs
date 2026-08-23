@@ -11,7 +11,7 @@ using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
 using SGSClient.Core.Playtime;
 
-namespace SGSClient.UI.WinUI.ViewModels;
+namespace SGSClient.UI.ViewModels;
 
 public partial class GameDetailsViewModel : ObservableObject
 {
@@ -20,7 +20,13 @@ public partial class GameDetailsViewModel : ObservableObject
     private readonly string _apiBaseUrl;
     private string? _coverUrl;
     private GameLibraryItem? _libraryItem;
+    private Action? _close;
     private Action<GameLibraryItem>? _openProperties;
+
+    public GameDetailsViewModel()
+        : this(null, null)
+    {
+    }
 
     public GameDetailsViewModel(
         ISgsApiService? api,
@@ -34,6 +40,7 @@ public partial class GameDetailsViewModel : ObservableObject
         StatusText = "Ładowanie…";
     }
 
+    public void SetCloseHandler(Action close) => _close = close;
     public void SetOpenPropertiesHandler(Action<GameLibraryItem> open) => _openProperties = open;
 
     public ObservableCollection<string> Badges { get; } = [];
@@ -186,6 +193,9 @@ public partial class GameDetailsViewModel : ObservableObject
     public partial bool ShowStoreActions { get; set; } = true;
 
     [ObservableProperty]
+    public partial bool ShowFeaturedBadge { get; set; }
+
+    [ObservableProperty]
     public partial bool IsInstalling { get; set; }
 
     [ObservableProperty]
@@ -252,6 +262,9 @@ public partial class GameDetailsViewModel : ObservableObject
             IsBusy = false;
         }
     }
+
+    [RelayCommand]
+    private void Close() => _close?.Invoke();
 
     [RelayCommand]
     private void SelectTab(string? tab)
@@ -521,6 +534,7 @@ public partial class GameDetailsViewModel : ObservableObject
         _coverUrl = game.ThumbnailUrl;
         CoverImageUrl = ResolveMediaUrl(game.LandscapeUrl);
         HasCover = !string.IsNullOrWhiteSpace(CoverImageUrl);
+        ShowFeaturedBadge = game.FeaturedP;
         IntroMediaUrl = ResolveMediaUrl(game.IntroUrl);
         HasIntro = !string.IsNullOrWhiteSpace(IntroMediaUrl);
         TileLabel = string.IsNullOrWhiteSpace(game.Symbol)
@@ -597,7 +611,7 @@ public partial class GameDetailsViewModel : ObservableObject
             MediaThumbs.Add(new MediaThumbItem { Label = "UI" });
         }
 
-        var preferredPlatform = GamePlatform.Windows;
+        var preferredPlatform = GameListItem.DetectCurrentPlatform();
         Builds.Clear();
         foreach (var build in game.Builds)
         {
@@ -761,16 +775,8 @@ public partial class GameDetailsViewModel : ObservableObject
         return InLibrary;
     }
 
-    private string? ResolveMediaUrl(string? relativeOrAbsolute)
-    {
-        if (string.IsNullOrWhiteSpace(relativeOrAbsolute))
-        {
-            return null;
-        }
-
-        var resolved = InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, relativeOrAbsolute);
-        return string.IsNullOrWhiteSpace(resolved) ? null : resolved;
-    }
+    private string? ResolveMediaUrl(string? relativeOrAbsolute) =>
+        InstallPathHelper.TryResolveDownloadUrl(_apiBaseUrl, relativeOrAbsolute);
 
     private static string FormatPlatform(GamePlatform platform, string? architecture)
     {

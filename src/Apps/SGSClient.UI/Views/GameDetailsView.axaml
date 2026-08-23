@@ -110,7 +110,7 @@
                              HorizontalAlignment="Center" VerticalAlignment="Center"
                              IsVisible="{Binding !HasCover}"/>
                   <Image x:Name="CoverImage"
-                         Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                         Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                          IsVisible="{Binding HasCover}"/>
                   <Panel x:Name="IntroHost" IsVisible="False" />
                   <Border x:Name="PlayOverlay"
@@ -139,8 +139,8 @@
                       <Panel>
                         <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <Image Source="{Binding Bitmap}" Stretch="UniformToFill"
-                               IsVisible="{Binding HasBitmap}"/>
+                        <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"
+                               IsVisible="{Binding HasMedia}"/>
                       </Panel>
                     </Border>
                   </DataTemplate>
@@ -250,7 +250,7 @@
           <Button Content="‹" FontSize="36" Command="{Binding PreviewPreviousCommand}"
                   IsEnabled="{Binding CanPreviewPrevious}"
                   Padding="18,10" VerticalAlignment="Center" Margin="8,0" Classes="subtle"/>
-          <Image Grid.Column="1" Source="{Binding MediaPreviewBitmap}" Stretch="Uniform"
+          <Image Grid.Column="1" Source="{Binding MediaPreviewUrl}" Stretch="Uniform"
                  HorizontalAlignment="Center" VerticalAlignment="Center"
                  Cursor="Hand"
                  PointerPressed="MediaPreviewImage_OnPointerPressed"/>

@@ -9,7 +9,7 @@ using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
 
-namespace SGSClient.UI.WinUI.ViewModels;
+namespace SGSClient.UI.ViewModels;
 
 public partial class ShellSidebarViewModel : ObservableObject
 {
@@ -21,6 +21,11 @@ public partial class ShellSidebarViewModel : ObservableObject
     private Action<string>? _navigate;
     private Action<int>? _openDetails;
     private Action<SidebarInstalledGame>? _openProperties;
+
+    public ShellSidebarViewModel()
+        : this(null)
+    {
+    }
 
     public ShellSidebarViewModel(
         IServiceScopeFactory? scopes = null,
@@ -124,9 +129,8 @@ public partial class ShellSidebarViewModel : ObservableObject
                 : string.IsNullOrWhiteSpace(user.Email)
                     ? $"Zalogowany{roleSuffix}"
                     : $"{user.Email}{roleSuffix}";
-            ProfileAvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
-                ? null
-                : CacheBust(InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl));
+            var avatar = InstallPathHelper.TryResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl);
+            ProfileAvatarUrl = avatar is null ? null : CacheBust(avatar);
             HasAvatar = !string.IsNullOrWhiteSpace(ProfileAvatarUrl);
             IsAdminVisible = user.IsAdmin;
             IsCreatorVisible = user.CanPublish;
@@ -282,8 +286,7 @@ public sealed class SidebarInstalledGame
     public required string Symbol { get; init; }
     public string? ExecutablePath { get; init; }
     public string? CoverImageUrl { get; init; }
-    public Microsoft.UI.Xaml.Media.Imaging.BitmapImage? CoverImage { get; init; }
-    public bool HasCover { get; init; }
+    public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
     public string StateText { get; init; } = string.Empty;
     public bool CanLaunch { get; init; }
     public string TileLabel { get; init; } = string.Empty;
@@ -297,12 +300,11 @@ public sealed class SidebarInstalledGame
         {
             cover = new Uri(item.CustomCoverPath).AbsoluteUri;
         }
-        else if (!string.IsNullOrWhiteSpace(item.CoverUrl))
+        else
         {
-            cover = InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, item.CoverUrl);
+            cover = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, item.CoverUrl);
         }
 
-        var bitmap = TryCreateBitmap(cover);
         return new SidebarInstalledGame
         {
             GameId = item.GameId,
@@ -311,41 +313,11 @@ public sealed class SidebarInstalledGame
             Symbol = item.Symbol,
             ExecutablePath = item.ExecutablePath,
             CoverImageUrl = cover,
-            CoverImage = bitmap,
-            HasCover = bitmap is not null,
             CanLaunch = canLaunch,
             StateText = canLaunch ? "Gotowa do uruchomienia" : "Brak pliku wykonywalnego",
             TileLabel = string.IsNullOrWhiteSpace(item.Symbol)
                 ? item.Title[..Math.Min(2, item.Title.Length)].ToUpperInvariant()
                 : item.Symbol[..Math.Min(3, item.Symbol.Length)].ToUpperInvariant()
         };
-    }
-
-    private static Microsoft.UI.Xaml.Media.Imaging.BitmapImage? TryCreateBitmap(string? cover)
-    {
-        if (string.IsNullOrWhiteSpace(cover))
-        {
-            return null;
-        }
-
-        try
-        {
-            if (!Uri.TryCreate(cover, UriKind.Absolute, out var uri))
-            {
-                return null;
-            }
-
-            // WinUI Image Source conversion rejects many non-http absolute URIs at bind time.
-            if (uri.IsFile || uri.Scheme is "http" or "https" or "ms-appx" or "ms-appdata")
-            {
-                return new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(uri);
-            }
-        }
-        catch
-        {
-            // leave without cover
-        }
-
-        return null;
     }
 }

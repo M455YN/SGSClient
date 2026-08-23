@@ -8,7 +8,7 @@ using SGSClient.Infrastructure.Client.Services;
 
 namespace SGSClient.UI.ViewModels;
 
-public partial class PublishViewModel : ViewModelBase
+public partial class PublishViewModel : ObservableObject
 {
     private readonly IGamePackagePacker? _packer;
     private readonly IGameUploadClient? _upload;
@@ -18,9 +18,8 @@ public partial class PublishViewModel : ViewModelBase
     private SgsPackageHints? _packageHints;
 
     public PublishViewModel()
+        : this(null, null, null)
     {
-        Title = "Publikuj grę";
-        StatusText = "Wybierz folder z grą (musi zawierać sgs-manifest.json).";
     }
 
     public PublishViewModel(
@@ -39,107 +38,44 @@ public partial class PublishViewModel : ViewModelBase
     }
 
     public string Title { get; }
-
     public ObservableCollection<string> Issues { get; } = [];
-
     public ObservableCollection<string> ParentGameOptions { get; } = [];
-
     public IReadOnlyList<string> PlatformOptions { get; } = ["windows", "linux", "macos"];
-
     public IReadOnlyList<string> ArchitectureOptions { get; } = ["x64", "x86", "arm64"];
-
     public IReadOnlyList<string> GenreOptions { get; } =
         SgsGameTaxonomy.Genres.Select(g => g.Symbol).Prepend("").ToArray();
-
     public IReadOnlyList<string> EngineOptions { get; } =
         SgsGameTaxonomy.Engines.Select(e => e.Symbol).Prepend("").ToArray();
 
-    [ObservableProperty]
-    private string _statusText = string.Empty;
-
-    [ObservableProperty]
-    private string _selectedFolder = string.Empty;
-
-    [ObservableProperty]
-    private bool _hasManifestForm;
-
-    [ObservableProperty]
-    private bool _isDlc;
-
-    [ObservableProperty]
-    private string _parentSymbol = string.Empty;
-
-    [ObservableProperty]
-    private string _gameTitle = string.Empty;
-
-    [ObservableProperty]
-    private string _gameSymbol = string.Empty;
-
-    [ObservableProperty]
-    private string _gameDescription = string.Empty;
-
-    [ObservableProperty]
-    private string _hardwareRequirements = string.Empty;
-
-    [ObservableProperty]
-    private string _otherInformation = string.Empty;
-
-    [ObservableProperty]
-    private string _gameGenre = string.Empty;
-
-    [ObservableProperty]
-    private string _gameEngine = string.Empty;
-
-    [ObservableProperty]
-    private string _mediaCover = string.Empty;
-
-    [ObservableProperty]
-    private string _mediaHeader = string.Empty;
-
-    [ObservableProperty]
-    private string _mediaIntro = string.Empty;
-
-    [ObservableProperty]
-    private string _mediaScreenshots = string.Empty;
-
-    [ObservableProperty]
-    private string _buildVersion = string.Empty;
-
-    [ObservableProperty]
-    private string _releaseNotes = string.Empty;
-
-    [ObservableProperty]
-    private string _buildPlatform = "windows";
-
-    [ObservableProperty]
-    private string _buildArchitecture = "x64";
-
-    [ObservableProperty]
-    private string _buildExecutable = string.Empty;
-
-    [ObservableProperty]
-    private string _summaryTitle = string.Empty;
-
-    [ObservableProperty]
-    private string _summaryMeta = string.Empty;
-
-    [ObservableProperty]
-    private bool _hasSummary;
-
-    [ObservableProperty]
-    private bool _canPublish;
-
-    [ObservableProperty]
-    private bool _isBusy;
-
-    [ObservableProperty]
-    private double _progress;
-
-    [ObservableProperty]
-    private bool _showProgress;
-
-    [ObservableProperty]
-    private string _authHint = string.Empty;
+    [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
+    [ObservableProperty] public partial string SelectedFolder { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool HasManifestForm { get; set; }
+    [ObservableProperty] public partial bool IsDlc { get; set; }
+    [ObservableProperty] public partial string ParentSymbol { get; set; } = string.Empty;
+    [ObservableProperty] public partial string GameTitle { get; set; } = string.Empty;
+    [ObservableProperty] public partial string GameSymbol { get; set; } = string.Empty;
+    [ObservableProperty] public partial string GameDescription { get; set; } = string.Empty;
+    [ObservableProperty] public partial string HardwareRequirements { get; set; } = string.Empty;
+    [ObservableProperty] public partial string OtherInformation { get; set; } = string.Empty;
+    [ObservableProperty] public partial string GameGenre { get; set; } = string.Empty;
+    [ObservableProperty] public partial string GameEngine { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MediaCover { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MediaHeader { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MediaIntro { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MediaScreenshots { get; set; } = string.Empty;
+    [ObservableProperty] public partial string BuildVersion { get; set; } = string.Empty;
+    [ObservableProperty] public partial string ReleaseNotes { get; set; } = string.Empty;
+    [ObservableProperty] public partial string BuildPlatform { get; set; } = "windows";
+    [ObservableProperty] public partial string BuildArchitecture { get; set; } = "x64";
+    [ObservableProperty] public partial string BuildExecutable { get; set; } = string.Empty;
+    [ObservableProperty] public partial string SummaryTitle { get; set; } = string.Empty;
+    [ObservableProperty] public partial string SummaryMeta { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool HasSummary { get; set; }
+    [ObservableProperty] public partial bool CanPublish { get; set; }
+    [ObservableProperty] public partial bool IsBusy { get; set; }
+    [ObservableProperty] public partial double Progress { get; set; }
+    [ObservableProperty] public partial bool ShowProgress { get; set; }
+    [ObservableProperty] public partial string AuthHint { get; set; } = string.Empty;
 
     public bool ShowParentField => IsDlc;
 
@@ -265,6 +201,14 @@ public partial class PublishViewModel : ViewModelBase
             {
                 ParentGameOptions.Add(symbol);
             }
+
+            if (IsDlc
+                && !string.IsNullOrWhiteSpace(ParentSymbol)
+                && !ParentGameOptions.Contains(ParentSymbol, StringComparer.OrdinalIgnoreCase)
+                && ParentGameOptions.Count > 0)
+            {
+                // keep typed/deep-linked value even if not yet in list
+            }
         }
         catch
         {
@@ -287,7 +231,6 @@ public partial class PublishViewModel : ViewModelBase
         HasSummary = false;
         CleanupPackedZip();
         StatusText = "Zapisuję dane i pakuję grę…";
-
         try
         {
             var manifest = BuildManifestFromForm();
@@ -337,7 +280,6 @@ public partial class PublishViewModel : ViewModelBase
         Progress = 0;
         Issues.Clear();
         StatusText = "Wysyłanie do sklepu…";
-
         try
         {
             var progress = new Progress<double>(p => Progress = p);

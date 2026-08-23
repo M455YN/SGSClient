@@ -39,7 +39,7 @@
           <TextBlock Text="{Binding TileLabel}" FontSize="28" FontWeight="SemiBold" Opacity="0.28"
                      HorizontalAlignment="Center" VerticalAlignment="Center"
                      IsVisible="{Binding !HasCover}"/>
-          <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+          <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                  IsVisible="{Binding HasCover}"/>
           <Border VerticalAlignment="Bottom" Padding="12,10"
                   Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}">
@@ -63,7 +63,7 @@
             <TextBlock Text="{Binding TileLabel}" FontSize="28" FontWeight="SemiBold" Opacity="0.28"
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        IsVisible="{Binding !HasCover}"/>
-            <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+            <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                    IsVisible="{Binding HasCover}"/>
           </Panel>
           <Border Grid.Row="1" Padding="12,10"
@@ -128,7 +128,7 @@
             <TextBlock Text="{Binding Hero.TileLabel}" FontSize="96" FontWeight="SemiBold" Opacity="0.16"
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        IsVisible="{Binding !Hero.HasCover}"/>
-            <Image Source="{Binding Hero.CoverBitmap}" Stretch="UniformToFill"
+            <Image Source="{Binding Hero.CoverImageUrl}" Stretch="UniformToFill"
                    IsVisible="{Binding Hero.HasCover}"/>
             <Border VerticalAlignment="Bottom">
               <Border.Background>

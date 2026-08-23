@@ -12,7 +12,7 @@ using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
 using SGSClient.Core.Playtime;
 
-namespace SGSClient.UI.WinUI.ViewModels;
+namespace SGSClient.UI.ViewModels;
 
 public partial class HomeViewModel : ObservableObject
 {
@@ -22,6 +22,12 @@ public partial class HomeViewModel : ObservableObject
     private readonly IServiceScopeFactory? _scopes;
     private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
+    private Action<string>? _navigate;
+
+    public HomeViewModel()
+        : this(null)
+    {
+    }
 
     public HomeViewModel(
         ISgsApiService? api,
@@ -36,6 +42,8 @@ public partial class HomeViewModel : ObservableObject
             ?? new ApiClientSettings().BaseUrl;
         RefreshGreeting();
     }
+
+    public void SetNavigateHandler(Action<string> navigate) => _navigate = navigate;
 
     public ObservableCollection<HomeGameCard> ContinuePlaying { get; } = [];
     public ObservableCollection<HomeGameCard> ReadyToInstall { get; } = [];
@@ -99,27 +107,36 @@ public partial class HomeViewModel : ObservableObject
     public event Action<int>? OpenGameRequested;
 
     [RelayCommand]
-    private void OpenStore() => NavigateRequested?.Invoke("Games");
+    private void OpenStore() => RequestNavigate("Games");
 
     [RelayCommand]
-    private void OpenLibrary() => NavigateRequested?.Invoke("Library");
+    private void OpenLibrary() => RequestNavigate("Library");
 
     [RelayCommand]
-    private void OpenPublish() => NavigateRequested?.Invoke("Studio");
+    private void OpenPublish() => RequestNavigate("Studio");
 
     [RelayCommand]
-    private void OpenFriends() => NavigateRequested?.Invoke("Friends");
+    private void OpenFriends() => RequestNavigate("Friends");
 
     [RelayCommand]
-    private void OpenCategory(HomeCategoryItem? item) => NavigateRequested?.Invoke("Games");
+    private void OpenCategory(HomeCategoryItem? item) => RequestNavigate("Games");
 
     [RelayCommand]
     private void OpenGame(HomeGameCard? item)
     {
-        if (item is not null)
+        if (item is null)
         {
-            OpenGameRequested?.Invoke(item.Id);
+            return;
         }
+
+        OpenGameRequested?.Invoke(item.Id);
+        _navigate?.Invoke($"Game:{item.Id}");
+    }
+
+    private void RequestNavigate(string tag)
+    {
+        _navigate?.Invoke(tag);
+        NavigateRequested?.Invoke(tag);
     }
 
     [RelayCommand]
@@ -354,9 +371,7 @@ public sealed class HomeGameCard
     }
 
     private static string? ResolveCover(string? coverUrl, string apiBaseUrl) =>
-        string.IsNullOrWhiteSpace(coverUrl)
-            ? null
-            : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, coverUrl);
+        InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, coverUrl);
 
     private static string? ResolveLibraryCover(GameLibraryItem item, string apiBaseUrl)
     {

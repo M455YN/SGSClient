@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using SGSClient.UI.WinUI.ViewModels;
+using SGSClient.UI.ViewModels;
 using Windows.UI;
 
 namespace SGSClient.UI.WinUI.Views;

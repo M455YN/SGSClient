@@ -15,6 +15,7 @@
       <Deploy />
     </Project>
     <Project Path="src/Apps/SGSClient.UI/SGSClient.UI.csproj" />
+    <Project Path="src/Apps/SGSClient.UI.Shared/SGSClient.UI.Shared.csproj" />
   </Folder>
   <Folder Name="/src/Core/">
     <Project Path="src/Core/SGSClient.Core/SGSClient.Core.csproj" />

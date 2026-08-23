@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using SGSClient.UI.ViewModels;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace SGSClient.UI;
 
@@ -32,6 +32,6 @@ public class ViewLocator : IDataTemplate
 
     public bool Match(object? data)
     {
-        return data is ViewModelBase;
+        return data is ObservableObject && data.GetType().Name.EndsWith("ViewModel", StringComparison.Ordinal);
     }
 }

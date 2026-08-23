@@ -6,6 +6,7 @@ using SGSClient.Core.Interfaces;
 using SGSClient.Infrastructure.Client;
 using SGSClient.Infrastructure.Client.Persistence;
 using SGSClient.Infrastructure.Client.Services;
+using SGSClient.UI.ViewModels;
 using SGSClient.UI.WinUI.ViewModels;
 using SGSClient.UI.WinUI.Views;
 

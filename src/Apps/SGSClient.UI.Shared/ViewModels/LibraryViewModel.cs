@@ -10,7 +10,7 @@ using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
 using SGSClient.Core.Playtime;
 
-namespace SGSClient.UI.WinUI.ViewModels;
+namespace SGSClient.UI.ViewModels;
 
 public partial class LibraryViewModel : ObservableObject
 {
@@ -22,6 +22,11 @@ public partial class LibraryViewModel : ObservableObject
     private readonly string _apiBaseUrl;
     private Action<LibraryGameItem>? _openProperties;
     private Action<int>? _openDetails;
+
+    public LibraryViewModel()
+        : this(null)
+    {
+    }
 
     public LibraryViewModel(
         IServiceScopeFactory? scopes,
@@ -513,9 +518,7 @@ public partial class LibraryGameItem : ObservableObject
             return new Uri(item.CustomCoverPath).AbsoluteUri;
         }
 
-        return string.IsNullOrWhiteSpace(item.CoverUrl)
-            ? null
-            : InstallPathHelper.ResolveDownloadUrl(apiBaseUrl, item.CoverUrl);
+        return InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, item.CoverUrl);
     }
 
     public void ApplyInstallState(InstallState state)

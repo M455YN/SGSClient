@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using SGSClient.UI.ViewModels;
 using SGSClient.UI.WinUI.ViewModels;
 using SGSClient.UI.WinUI.Views;
 

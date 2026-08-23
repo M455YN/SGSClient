@@ -83,7 +83,7 @@
                       <Panel>
                         <TextBlock Text="{Binding TileLabel}" FontSize="10" FontWeight="SemiBold" Opacity="0.7"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                        <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                                IsVisible="{Binding HasCover}"/>
                       </Panel>
                     </Border>
@@ -403,7 +403,7 @@
                         <Panel>
                           <TextBlock Text="{Binding TileLabel}" FontSize="10" FontWeight="SemiBold" Opacity="0.7"
                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                          <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
+                          <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
                         </Panel>
                       </Border>
                       <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">

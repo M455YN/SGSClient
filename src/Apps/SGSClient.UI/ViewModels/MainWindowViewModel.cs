@@ -78,7 +78,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public ShellSidebarViewModel Sidebar { get; }
 
     [ObservableProperty]
-    private ViewModelBase _currentPage;
+    private ObservableObject _currentPage;
 
     [ObservableProperty]
     private string _selectedNavTag = "Home";

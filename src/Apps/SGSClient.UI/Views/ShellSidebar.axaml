@@ -41,8 +41,10 @@
               <Panel>
                 <ui:FASymbolIcon x:Name="ProfileIcon" Symbol="Contact" FontSize="14"
                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <Border x:Name="AvatarBorder" CornerRadius="16" ClipToBounds="True" IsVisible="False">
-                  <Image x:Name="AvatarImage" Stretch="UniformToFill" Width="32" Height="32" />
+                <Border x:Name="AvatarBorder" CornerRadius="16" ClipToBounds="True"
+                        IsVisible="{Binding HasAvatar}">
+                  <Image x:Name="AvatarImage" Source="{Binding ProfileAvatarUrl}"
+                         Stretch="UniformToFill" Width="32" Height="32" />
                 </Border>
               </Panel>
             </Border>
@@ -131,7 +133,7 @@
                       <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center"
                                  VerticalAlignment="Center" FontSize="10" FontWeight="SemiBold"
                                  Opacity="0.7" />
-                      <Image Source="{Binding CoverBitmap}" Stretch="UniformToFill"
+                      <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                              IsVisible="{Binding HasCover}" />
                     </Panel>
                   </Border>

@@ -40,6 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SGSClient.UI.Shared\SGSClient.UI.Shared.csproj" />
     <ProjectReference Include="..\..\Core\SGSClient.Core\SGSClient.Core.csproj" />
     <ProjectReference Include="..\..\Infrastructure\SGSClient.Infrastructure.Client\SGSClient.Infrastructure.Client.csproj" />
   </ItemGroup>
