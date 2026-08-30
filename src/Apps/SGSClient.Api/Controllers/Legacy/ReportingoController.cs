@@ -9,6 +9,7 @@ namespace SGSClient.Api.Controllers.Legacy;
 [ApiController]
 [AllowAnonymous]
 [Route("api/reportingo")]
+[Route("reportingo")]
 public sealed class ReportingoController(IReportingoLegacyService reportingo) : ControllerBase
 {
     [HttpPost("report-bug")]

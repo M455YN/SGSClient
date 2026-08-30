@@ -113,12 +113,12 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 LogLegacyApi(
     app,
     app.Services.GetRequiredService<IRofwLegacyService>().IsConfigured,
-    "ROFW compatibility API is enabled (/api/rofw/*).",
+    "ROFW compatibility API is enabled (/api/rofw/* and /rofw/*).",
     "ROFW compatibility API is disabled. Set ConnectionStrings:RofwDatabase to keep Realm of Five Winds working.");
 LogLegacyApi(
     app,
     app.Services.GetRequiredService<IReportingoLegacyService>().IsConfigured,
-    "Reportingo compatibility API is enabled (/api/reportingo/*).",
+    "Reportingo compatibility API is enabled (/api/reportingo/* and /reportingo/*).",
     "Reportingo compatibility API is disabled. Set ConnectionStrings:ReportingoDatabase to keep bug reports working.");
 
 app.UseAuthentication();

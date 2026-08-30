@@ -9,6 +9,7 @@ namespace SGSClient.Api.Controllers.Legacy;
 [ApiController]
 [AllowAnonymous]
 [Route("api/rofw")]
+[Route("rofw")]
 public sealed class RofwController(IRofwLegacyService rofw) : ControllerBase
 {
     [HttpPost("submit-score")]
