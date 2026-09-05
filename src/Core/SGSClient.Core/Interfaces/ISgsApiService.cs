@@ -34,6 +34,8 @@ public interface ISgsApiService
     Task<GameDto?> ClearGameCoverAsync(int gameId, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> UploadGameHeaderAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> ClearGameHeaderAsync(int gameId, bool asAdmin, CancellationToken cancellationToken = default);
+    Task<GameDto?> UploadGameLogoAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);
+    Task<GameDto?> ClearGameLogoAsync(int gameId, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> UploadGameIntroAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> ClearGameIntroAsync(int gameId, bool asAdmin, CancellationToken cancellationToken = default);
     Task<GameDto?> AddGameScreenshotAsync(int gameId, string localFilePath, bool asAdmin, CancellationToken cancellationToken = default);

@@ -493,6 +493,26 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
             HttpMethod.Delete,
             cancellationToken);
 
+    public Task<GameDto?> UploadGameLogoAsync(
+        int gameId,
+        string localFilePath,
+        bool asAdmin,
+        CancellationToken cancellationToken = default) =>
+        UploadMediaFileAsync(
+            asAdmin ? $"api/admin/games/{gameId}/media/logo" : $"api/Games/{gameId}/media/logo",
+            HttpMethod.Put,
+            localFilePath,
+            cancellationToken);
+
+    public Task<GameDto?> ClearGameLogoAsync(
+        int gameId,
+        bool asAdmin,
+        CancellationToken cancellationToken = default) =>
+        SendMediaAsync(
+            asAdmin ? $"api/admin/games/{gameId}/media/logo" : $"api/Games/{gameId}/media/logo",
+            HttpMethod.Delete,
+            cancellationToken);
+
     public Task<GameDto?> UploadGameIntroAsync(
         int gameId,
         string localFilePath,

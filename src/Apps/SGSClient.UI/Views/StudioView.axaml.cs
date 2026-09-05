@@ -137,6 +137,22 @@ public partial class StudioView : UserControl
         }
     }
 
+    private async void PickLogo_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is StudioViewModel vm)
+        {
+            await vm.PickLogoCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async void ClearLogo_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is StudioViewModel vm)
+        {
+            await vm.ClearLogoCommand.ExecuteAsync(null);
+        }
+    }
+
     private async void PickIntro_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is StudioViewModel vm)

@@ -156,6 +156,7 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.OtherInformation).HasMaxLength(8000);
             entity.Property(x => x.CoverUrl).HasMaxLength(2048);
             entity.Property(x => x.HeaderUrl).HasMaxLength(2048);
+            entity.Property(x => x.LogoUrl).HasMaxLength(2048);
             entity.Property(x => x.IntroUrl).HasMaxLength(2048);
             entity.Property(x => x.Kind).HasConversion<int>();
             entity.Property(x => x.CreatedAtUtc).HasDefaultValueSql("GETUTCDATE()");

@@ -275,6 +275,27 @@ public sealed class AdminController(
     public Task<ActionResult<GameDto>> ClearHeader(int id, CancellationToken cancellationToken) =>
         ClearMediaAsync(id, AdminMediaKind.Header, cancellationToken);
 
+    [HttpPut("games/{id:int}/media/logo")]
+    [AllowAnonymous]
+    [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxMediaFileBytes)]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> UploadLogo(int id, IFormFile? file, CancellationToken cancellationToken) =>
+        UploadMediaAsync(id, file, AdminMediaKind.Logo, cancellationToken);
+
+    [HttpDelete("games/{id:int}/media/logo")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<GameDto>> ClearLogo(int id, CancellationToken cancellationToken) =>
+        ClearMediaAsync(id, AdminMediaKind.Logo, cancellationToken);
+
     [HttpPut("games/{id:int}/media/intro")]
     [AllowAnonymous]
     [RequestSizeLimit(SgsPackageRules.MaxMediaFileBytes)]
@@ -351,6 +372,7 @@ public sealed class AdminController(
             {
                 AdminMediaKind.Cover => await media.SetCoverAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken),
                 AdminMediaKind.Header => await media.SetHeaderAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken),
+                AdminMediaKind.Logo => await media.SetLogoAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken),
                 AdminMediaKind.Intro => await media.SetIntroAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken),
                 _ => await media.AddScreenshotAsync(id, stream, file.FileName, requireOwnerUserId: null, cancellationToken)
             };
@@ -376,6 +398,7 @@ public sealed class AdminController(
         {
             AdminMediaKind.Cover => await media.ClearCoverAsync(id, requireOwnerUserId: null, cancellationToken),
             AdminMediaKind.Header => await media.ClearHeaderAsync(id, requireOwnerUserId: null, cancellationToken),
+            AdminMediaKind.Logo => await media.ClearLogoAsync(id, requireOwnerUserId: null, cancellationToken),
             _ => await media.ClearIntroAsync(id, requireOwnerUserId: null, cancellationToken)
         };
         return updated is null ? NotFound() : Ok(updated);
@@ -385,6 +408,7 @@ public sealed class AdminController(
     {
         Cover,
         Header,
+        Logo,
         Intro,
         Screenshot
     }

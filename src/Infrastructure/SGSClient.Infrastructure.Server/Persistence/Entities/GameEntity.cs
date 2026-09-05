@@ -18,6 +18,9 @@ public sealed class GameEntity
     /// <summary>Landscape Steam-style store header. Distinct from <see cref="CoverUrl"/> (list thumbnail).</summary>
     public string? HeaderUrl { get; set; }
 
+    /// <summary>Square game logo (e.g. 512×512). Distinct from portrait capsule and landscape header.</summary>
+    public string? LogoUrl { get; set; }
+
     public string? IntroUrl { get; set; }
     public bool DraftP { get; set; }
     public bool FeaturedP { get; set; }

@@ -87,6 +87,15 @@
               <TextBlock x:Name="NavLibraryLabel" Text="Biblioteka" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
+          <Button x:Name="NavWishlist" Tag="Wishlist" Click="Nav_OnClick"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Lista życzeń">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="OutlineStar" FontSize="16" />
+              <TextBlock x:Name="NavWishlistLabel" Text="Lista życzeń" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
           <Button x:Name="NavPublish" Tag="Publish" Click="Nav_OnClick" IsVisible="False"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                   MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"

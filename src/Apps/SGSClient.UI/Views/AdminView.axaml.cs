@@ -135,6 +135,22 @@ public partial class AdminView : UserControl
         }
     }
 
+    private async void PickLogo_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AdminViewModel vm)
+        {
+            await vm.PickLogoCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async void ClearLogo_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AdminViewModel vm)
+        {
+            await vm.ClearLogoCommand.ExecuteAsync(null);
+        }
+    }
+
     private async void PickIntro_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is AdminViewModel vm)

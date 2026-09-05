@@ -115,6 +115,7 @@ public sealed partial class MainWindow : Window
         {
             "Games" => typeof(GamesPage),
             "Library" => typeof(LibraryPage),
+            "Wishlist" => typeof(WishlistPage),
             "Publish" => typeof(PublishPage),
             "Studio" => typeof(StudioPage),
             "Admin" => typeof(AdminPage),

@@ -19,10 +19,28 @@ public partial class App : Application
 
     public App()
     {
+        UnhandledException += (_, e) =>
+        {
+            LogStartupFailure("UnhandledException", e.Exception);
+            e.Handled = true;
+        };
         InitializeComponent();
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
+    {
+        try
+        {
+            LaunchCore();
+        }
+        catch (Exception ex)
+        {
+            LogStartupFailure("OnLaunched", ex);
+            throw;
+        }
+    }
+
+    private void LaunchCore()
     {
         var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
             ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
@@ -55,14 +73,20 @@ public partial class App : Application
             configuration: configuration,
             queue: sp.GetService<IInstallQueueService>(),
             auth: sp.GetService<IAuthSession>()));
+        // Do not resolve IGameInstallService from the root provider (it needs scoped ILocalLibraryStore).
         services.AddSingleton(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
-            sp.GetService<IGameInstallService>(),
+            installer: null,
             sp.GetService<ILibraryDiscoveryService>(),
             sp.GetService<ISgsApiService>(),
             configuration,
             sp.GetService<IInstallQueueService>(),
+            sp.GetService<IAuthSession>()));
+        services.AddSingleton(sp => new WishlistViewModel(
+            sp.GetService<ISgsApiService>(),
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            configuration,
             sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new GamePropertiesViewModel(
             sp.GetService<ISgsApiService>(),
@@ -118,8 +142,12 @@ public partial class App : Application
 
         var gamesVm = Services.GetRequiredService<GamesViewModel>();
         var detailsVm = Services.GetRequiredService<GameDetailsViewModel>();
+        var wishlistVm = Services.GetRequiredService<WishlistViewModel>();
         gamesVm.SetOpenAccountHandler(() => MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account"));
         detailsVm.SetOpenAccountHandler(() => MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account"));
+        wishlistVm.SetOpenAccountHandler(() => MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account"));
+        wishlistVm.SetOpenDetailsHandler(id =>
+            MainWindow?.NavigateTo(typeof(GameDetailsPage), new GameDetailsNavArgs(id, "Wishlist"), selectTag: "Wishlist"));
 
         var auth = Services.GetService<IAuthSession>();
         if (auth?.IsAvailable != true)
@@ -130,27 +158,51 @@ public partial class App : Application
         _ = WarmSilentLoginAsync();
     }
 
+    private static void LogStartupFailure(string source, Exception? ex)
+    {
+        try
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "SGSClient");
+            Directory.CreateDirectory(dir);
+            var path = Path.Combine(dir, "startup-error.log");
+            File.WriteAllText(path, $"[{DateTimeOffset.Now:O}] {source}\n{ex}\n");
+        }
+        catch
+        {
+            // ignore logging failures
+        }
+    }
+
     private static async Task WarmSilentLoginAsync()
     {
-        var auth = Services.GetService<IAuthSession>();
-        if (auth?.IsAvailable == true)
+        try
         {
-            await auth.TrySilentLoginAsync();
-            if (auth.IsLoggedIn)
+            var auth = Services.GetService<IAuthSession>();
+            if (auth?.IsAvailable == true)
             {
-                var users = Services.GetService<IUserApiClient>();
-                var profile = users is null ? auth.CurrentUser : await users.GetMeAsync();
-                if (profile is not null)
+                await auth.TrySilentLoginAsync();
+                if (auth.IsLoggedIn)
                 {
-                    auth.SetCurrentUser(profile);
-                    MainWindow?.SetAdminNavVisible(profile.IsAdmin);
-                    MainWindow?.RefreshSidebar();
-                    if (profile.NeedsPlayerTag)
+                    var users = Services.GetService<IUserApiClient>();
+                    var profile = users is null ? auth.CurrentUser : await users.GetMeAsync();
+                    if (profile is not null)
                     {
-                        MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account");
+                        auth.SetCurrentUser(profile);
+                        MainWindow?.SetAdminNavVisible(profile.IsAdmin);
+                        MainWindow?.RefreshSidebar();
+                        if (profile.NeedsPlayerTag)
+                        {
+                            MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account");
+                        }
                     }
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            LogStartupFailure("WarmSilentLoginAsync", ex);
         }
     }
 }

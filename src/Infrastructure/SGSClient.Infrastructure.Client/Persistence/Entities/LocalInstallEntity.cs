@@ -16,6 +16,7 @@ public sealed class LocalInstallEntity
     public string? InstalledVersion { get; set; }
     public string? TargetVersion { get; set; }
     public string? CoverUrl { get; set; }
+    public string? LogoUrl { get; set; }
     public string? CustomCoverPath { get; set; }
     public DateTimeOffset? LastPlayedUtc { get; set; }
 }

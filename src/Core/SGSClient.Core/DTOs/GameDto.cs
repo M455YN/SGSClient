@@ -27,13 +27,19 @@ public sealed class GameDto
     /// <summary>Landscape store header (Steam-style). Lists use <see cref="CoverUrl"/>.</summary>
     public string? HeaderUrl { get; init; }
 
+    /// <summary>Square logo (e.g. 512×512). Used on small square tiles.</summary>
+    public string? LogoUrl { get; init; }
+
     public string? IntroUrl { get; init; }
 
-    /// <summary>Portrait/square tile; falls back to the landscape header.</summary>
+    /// <summary>Portrait capsule for lists; falls back to the landscape header.</summary>
     public string? ThumbnailUrl => string.IsNullOrWhiteSpace(CoverUrl) ? HeaderUrl : CoverUrl;
 
     /// <summary>Wide store art; falls back to the thumbnail.</summary>
     public string? LandscapeUrl => string.IsNullOrWhiteSpace(HeaderUrl) ? CoverUrl : HeaderUrl;
+
+    /// <summary>Square logo; falls back to the portrait capsule.</summary>
+    public string? SquareLogoUrl => string.IsNullOrWhiteSpace(LogoUrl) ? ThumbnailUrl : LogoUrl;
     public IReadOnlyList<string> ScreenshotUrls { get; init; } = [];
     public IReadOnlyList<GameScreenshotDto> Screenshots { get; init; } = [];
     public bool DraftP { get; init; }

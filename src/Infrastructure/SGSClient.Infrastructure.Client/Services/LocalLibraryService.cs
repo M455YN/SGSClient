@@ -55,6 +55,7 @@ public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibrarySt
                 InstalledVersion = item.InstalledVersion,
                 TargetVersion = item.TargetVersion,
                 CoverUrl = item.CoverUrl,
+                LogoUrl = item.LogoUrl,
                 CustomCoverPath = item.CustomCoverPath,
                 LastPlayedUtc = item.LastPlayedUtc
             });
@@ -72,6 +73,7 @@ public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibrarySt
             entity.InstalledVersion = item.InstalledVersion;
             entity.TargetVersion = item.TargetVersion;
             entity.CoverUrl = item.CoverUrl;
+            entity.LogoUrl = item.LogoUrl;
             entity.CustomCoverPath = item.CustomCoverPath;
             entity.LastPlayedUtc = item.LastPlayedUtc;
         }
@@ -105,6 +107,7 @@ public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibrarySt
         InstalledVersion = entity.InstalledVersion,
         TargetVersion = entity.TargetVersion,
         CoverUrl = entity.CoverUrl,
+        LogoUrl = entity.LogoUrl,
         CustomCoverPath = entity.CustomCoverPath,
         LastPlayedUtc = entity.LastPlayedUtc
     };

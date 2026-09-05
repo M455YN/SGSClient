@@ -171,6 +171,12 @@ public sealed partial class AdminPage : Page
     private async void ClearHeader_Click(object sender, RoutedEventArgs e) =>
         await ViewModel.ClearHeaderCommand.ExecuteAsync(null);
 
+    private async void PickLogo_Click(object sender, RoutedEventArgs e) =>
+        await ViewModel.PickLogoCommand.ExecuteAsync(null);
+
+    private async void ClearLogo_Click(object sender, RoutedEventArgs e) =>
+        await ViewModel.ClearLogoCommand.ExecuteAsync(null);
+
     private async void PickIntro_Click(object sender, RoutedEventArgs e) =>
         await ViewModel.PickIntroCommand.ExecuteAsync(null);
 

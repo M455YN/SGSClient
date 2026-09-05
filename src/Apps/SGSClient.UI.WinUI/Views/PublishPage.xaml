@@ -118,6 +118,20 @@
           </StackPanel>
 
           <StackPanel Spacing="4">
+            <TextBlock Text="Logo (kwadratowe)" Opacity="0.55" FontSize="12" />
+            <Grid ColumnSpacing="8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="LogoBox" Grid.Column="0" PlaceholderText="media/logo.png" IsReadOnly="True" />
+              <Button Grid.Column="1" Content="Wybierz…" Click="PickLogo_Click" Padding="12,8" />
+              <Button Grid.Column="2" Content="Wyczyść" Click="ClearLogo_Click" Padding="12,8" />
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
             <TextBlock Text="Intro / trailer" Opacity="0.55" FontSize="12" />
             <Grid ColumnSpacing="8">
               <Grid.ColumnDefinitions>

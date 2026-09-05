@@ -280,6 +280,19 @@ public class GameInstallServiceTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<GameDto?>(null);
 
+        public Task<GameDto?> UploadGameLogoAsync(
+            int gameId,
+            string localFilePath,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<GameDto?> ClearGameLogoAsync(
+            int gameId,
+            bool asAdmin,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
         public Task<GameDto?> UploadGameIntroAsync(
             int gameId,
             string localFilePath,

@@ -126,6 +126,11 @@ public sealed partial class PublishPage : Page
             HeaderBox.Text = ViewModel.MediaHeader;
         }
 
+        if (LogoBox.Text != ViewModel.MediaLogo)
+        {
+            LogoBox.Text = ViewModel.MediaLogo;
+        }
+
         if (IntroBox.Text != ViewModel.MediaIntro)
         {
             IntroBox.Text = ViewModel.MediaIntro;
@@ -197,6 +202,7 @@ public sealed partial class PublishPage : Page
         ViewModel.OtherInformation = OtherInfoBox.Text ?? string.Empty;
         ViewModel.MediaCover = CoverBox.Text ?? string.Empty;
         ViewModel.MediaHeader = HeaderBox.Text ?? string.Empty;
+        ViewModel.MediaLogo = LogoBox.Text ?? string.Empty;
         ViewModel.MediaIntro = IntroBox.Text ?? string.Empty;
         ViewModel.MediaScreenshots = ScreenshotsBox.Text ?? string.Empty;
         ViewModel.BuildVersion = VersionBox.Text ?? string.Empty;
@@ -269,6 +275,27 @@ public sealed partial class PublishPage : Page
         RefreshUi();
     }
 
+    private async void PickLogo_Click(object sender, RoutedEventArgs e)
+    {
+        var path = await PickSingleFileAsync(
+            [".png", ".jpg", ".jpeg", ".webp", ".gif"],
+            "Obrazy");
+        if (path is null)
+        {
+            return;
+        }
+
+        if (!ViewModel.TrySetLogoFromFile(path, out var error))
+        {
+            ViewModel.Issues.Clear();
+            ViewModel.Issues.Add(error ?? "Nie udało się ustawić logo.");
+            ViewModel.StatusText = "Nie udało się dodać logo.";
+        }
+
+        PushFormFromViewModel();
+        RefreshUi();
+    }
+
     private async void PickIntro_Click(object sender, RoutedEventArgs e)
     {
         var path = await PickSingleFileAsync([".mp4", ".webm"], "Wideo");
@@ -327,6 +354,13 @@ public sealed partial class PublishPage : Page
     private void ClearHeader_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.ClearHeader();
+        PushFormFromViewModel();
+        RefreshUi();
+    }
+
+    private void ClearLogo_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ClearLogo();
         PushFormFromViewModel();
         RefreshUi();
     }

@@ -9,6 +9,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly GamesViewModel _games;
     private readonly GameDetailsViewModel _gameDetails;
     private readonly LibraryViewModel _library;
+    private readonly WishlistViewModel _wishlist;
     private readonly PublishViewModel _publish;
     private readonly StudioViewModel _studio;
     private readonly AdminViewModel _admin;
@@ -23,6 +24,7 @@ public partial class MainWindowViewModel : ViewModelBase
             new GamesViewModel(),
             new GameDetailsViewModel(),
             new LibraryViewModel(),
+            new WishlistViewModel(),
             new PublishViewModel(),
             new StudioViewModel(),
             new AdminViewModel(),
@@ -38,6 +40,7 @@ public partial class MainWindowViewModel : ViewModelBase
         GamesViewModel games,
         GameDetailsViewModel gameDetails,
         LibraryViewModel library,
+        WishlistViewModel wishlist,
         PublishViewModel publish,
         StudioViewModel studio,
         AdminViewModel admin,
@@ -50,6 +53,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _games = games;
         _gameDetails = gameDetails;
         _library = library;
+        _wishlist = wishlist;
         _publish = publish;
         _studio = studio;
         _admin = admin;
@@ -62,6 +66,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _games.SetOpenDetailsHandler(id => OpenGameDetails(id, "Games"));
         _library.SetOpenDetailsHandler(id => OpenGameDetails(id, "Library"));
+        _wishlist.SetOpenDetailsHandler(id => OpenGameDetails(id, "Wishlist"));
+        _wishlist.SetOpenAccountHandler(() => Navigate("Account"));
         _gameDetails.SetCloseHandler(CloseGameDetails);
         _home.SetNavigateHandler(NavigateFromHome);
         _account.SetNavigateHandler(OpenSocial);
@@ -149,6 +155,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             "Games" => _games,
             "Library" => _library,
+            "Wishlist" => _wishlist,
             "Publish" => _publish,
             "Studio" => _studio,
             "Admin" => _admin,
@@ -166,6 +173,11 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _ = _library.LoadAsync();
             _ = Sidebar.LoadInstalledAsync();
+        }
+
+        if (tag == "Wishlist")
+        {
+            _ = _wishlist.LoadAsync();
         }
 
         if (tag is "Home")
@@ -246,10 +258,18 @@ public partial class MainWindowViewModel : ViewModelBase
     public void OpenGameDetails(int gameId, string returnTag = "Games")
     {
         _detailsReturnTag = string.IsNullOrWhiteSpace(returnTag) ? "Games" : returnTag;
-        SelectedNavTag = _detailsReturnTag == "Library" ? "Library" : "Games";
+        SelectedNavTag = _detailsReturnTag switch
+        {
+            "Library" => "Library",
+            "Wishlist" => "Wishlist",
+            _ => "Games"
+        };
         Sidebar.SelectNav(SelectedNavTag);
         CurrentPage = _gameDetails;
-        _ = _gameDetails.LoadAsync(gameId, fromLibrary: _detailsReturnTag == "Library");
+        _ = _gameDetails.LoadAsync(
+            gameId,
+            fromLibrary: _detailsReturnTag == "Library",
+            returnTag: _detailsReturnTag);
     }
 
     public void CloseGameDetails()
@@ -260,6 +280,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentPage = tag switch
         {
             "Library" => _library,
+            "Wishlist" => _wishlist,
             _ => _games
         };
 
@@ -267,6 +288,10 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _ = _library.LoadAsync();
             _ = Sidebar.LoadInstalledAsync();
+        }
+        else if (tag == "Wishlist")
+        {
+            _ = _wishlist.LoadAsync();
         }
         else
         {

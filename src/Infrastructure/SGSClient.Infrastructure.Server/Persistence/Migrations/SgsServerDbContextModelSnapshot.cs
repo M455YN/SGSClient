@@ -232,6 +232,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
 
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<string>("IntroUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");

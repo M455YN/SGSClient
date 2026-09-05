@@ -725,6 +725,7 @@ public sealed class EfGameRepository(
             EngineName = g.Engine != null ? g.Engine.Name : null,
             CoverUrl = g.CoverUrl,
             HeaderUrl = g.HeaderUrl,
+            LogoUrl = g.LogoUrl,
             IntroUrl = g.IntroUrl,
             ScreenshotUrls = g.Screenshots
                 .OrderBy(s => s.SortOrder)

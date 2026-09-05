@@ -29,6 +29,18 @@ public interface IGameMediaService
         int? requireOwnerUserId,
         CancellationToken cancellationToken = default);
 
+    Task<GameDto?> SetLogoAsync(
+        int gameId,
+        Stream content,
+        string fileName,
+        int? requireOwnerUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<GameDto?> ClearLogoAsync(
+        int gameId,
+        int? requireOwnerUserId,
+        CancellationToken cancellationToken = default);
+
     Task<GameDto?> SetIntroAsync(
         int gameId,
         Stream content,

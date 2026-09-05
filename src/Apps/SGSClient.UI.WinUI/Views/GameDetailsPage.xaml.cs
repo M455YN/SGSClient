@@ -49,11 +49,11 @@ public sealed partial class GameDetailsPage : Page
         base.OnNavigatedTo(e);
         StopIntro();
 
-        var (gameId, fromLibrary) = e.Parameter switch
+        var (gameId, fromLibrary, returnTag) = e.Parameter switch
         {
-            GameDetailsNavArgs args => (args.GameId, args.ReturnTag == "Library"),
-            int id => (id, false),
-            _ => (0, false)
+            GameDetailsNavArgs args => (args.GameId, args.ReturnTag == "Library", args.ReturnTag),
+            int id => (id, false, "Games"),
+            _ => (0, false, "Games")
         };
 
         if (gameId <= 0)
@@ -63,7 +63,7 @@ public sealed partial class GameDetailsPage : Page
             return;
         }
 
-        await ViewModel.LoadAsync(gameId, fromLibrary);
+        await ViewModel.LoadAsync(gameId, fromLibrary, returnTag);
         RefreshUi();
     }
 
@@ -359,6 +359,12 @@ public sealed partial class GameDetailsPage : Page
         if (returnTag == "Library")
         {
             App.MainWindow?.NavigateTo(typeof(LibraryPage), selectTag: "Library");
+            return;
+        }
+
+        if (returnTag == "Wishlist")
+        {
+            App.MainWindow?.NavigateTo(typeof(WishlistPage), selectTag: "Wishlist");
             return;
         }
 

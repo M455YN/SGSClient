@@ -83,6 +83,7 @@ public partial class ShellSidebarViewModel : ObservableObject
     public bool IsHomeSelected => SelectedNavTag == "Home";
     public bool IsGamesSelected => SelectedNavTag == "Games";
     public bool IsLibrarySelected => SelectedNavTag == "Library";
+    public bool IsWishlistSelected => SelectedNavTag == "Wishlist";
     public bool IsPublishSelected => SelectedNavTag == "Publish";
     public bool IsStudioSelected => SelectedNavTag is "Studio" or "Publish";
     public bool IsAdminSelected => SelectedNavTag == "Admin";
@@ -94,6 +95,7 @@ public partial class ShellSidebarViewModel : ObservableObject
         OnPropertyChanged(nameof(IsHomeSelected));
         OnPropertyChanged(nameof(IsGamesSelected));
         OnPropertyChanged(nameof(IsLibrarySelected));
+        OnPropertyChanged(nameof(IsWishlistSelected));
         OnPropertyChanged(nameof(IsPublishSelected));
         OnPropertyChanged(nameof(IsStudioSelected));
         OnPropertyChanged(nameof(IsAdminSelected));
@@ -298,11 +300,12 @@ public sealed class SidebarInstalledGame
         string? cover = null;
         if (!string.IsNullOrWhiteSpace(item.CustomCoverPath) && File.Exists(item.CustomCoverPath))
         {
-            cover = new Uri(item.CustomCoverPath).AbsoluteUri;
+            cover = ToImageSourceUrl(new Uri(Path.GetFullPath(item.CustomCoverPath)).AbsoluteUri);
         }
         else
         {
-            cover = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, item.CoverUrl);
+            var square = !string.IsNullOrWhiteSpace(item.LogoUrl) ? item.LogoUrl : item.CoverUrl;
+            cover = ToImageSourceUrl(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, square));
         }
 
         return new SidebarInstalledGame
@@ -319,5 +322,23 @@ public sealed class SidebarInstalledGame
                 ? item.Title[..Math.Min(2, item.Title.Length)].ToUpperInvariant()
                 : item.Symbol[..Math.Min(3, item.Symbol.Length)].ToUpperInvariant()
         };
+    }
+
+    /// <summary>
+    /// WinUI <c>x:Bind</c> to <see cref="Microsoft.UI.Xaml.Controls.Image.Source"/> throws on relative/invalid URIs.
+    /// </summary>
+    private static string? ToImageSourceUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        return uri.Scheme is "http" or "https" or "file" ? uri.AbsoluteUri : null;
     }
 }

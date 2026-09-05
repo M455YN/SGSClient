@@ -49,6 +49,14 @@ public static class SgsClientDbInitializer
                 cancellationToken);
         }
 
+        if (!await ColumnExistsAsync(db, "local_installs", "LogoUrl", cancellationToken))
+        {
+            await ExecuteNonQueryAsync(
+                db,
+                "ALTER TABLE local_installs ADD COLUMN LogoUrl TEXT NULL;",
+                cancellationToken);
+        }
+
         if (!await ColumnExistsAsync(db, "local_installs", "CustomCoverPath", cancellationToken))
         {
             await ExecuteNonQueryAsync(

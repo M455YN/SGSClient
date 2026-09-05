@@ -21,6 +21,7 @@ public partial class GameDetailsViewModel : ObservableObject
     private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
     private string? _coverUrl;
+    private string? _logoUrl;
     private GameLibraryItem? _libraryItem;
     private Action? _close;
     private Action? _openAccount;
@@ -234,14 +235,26 @@ public partial class GameDetailsViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowMoreTab));
     }
 
-    public async Task LoadAsync(int gameId, bool fromLibrary = false)
+    public async Task LoadAsync(int gameId, bool fromLibrary = false, string? returnTag = null)
     {
         CloseMediaPreview();
         GameId = gameId;
         FromLibrary = fromLibrary;
-        ReturnTag = fromLibrary ? "Library" : "Games";
-        BackLabel = fromLibrary ? "← Biblioteka" : "← Sklep";
-        ContextLabel = fromLibrary ? "BIBLIOTEKA" : "SGS STORE";
+        ReturnTag = string.IsNullOrWhiteSpace(returnTag)
+            ? (fromLibrary ? "Library" : "Games")
+            : returnTag.Trim();
+        BackLabel = ReturnTag switch
+        {
+            "Library" => "← Biblioteka",
+            "Wishlist" => "← Lista życzeń",
+            _ => "← Sklep"
+        };
+        ContextLabel = ReturnTag switch
+        {
+            "Library" => "BIBLIOTEKA",
+            "Wishlist" => "LISTA ŻYCZEŃ",
+            _ => "SGS STORE"
+        };
         if (_api is null)
         {
             StatusText = "Brak klienta API.";
@@ -418,6 +431,7 @@ public partial class GameDetailsViewModel : ObservableObject
                 InstalledVersion = null,
                 TargetVersion = selectedVersion,
                 CoverUrl = _coverUrl,
+                LogoUrl = _logoUrl,
                 ExecutablePath = null,
                 InstallPath = null
             });
@@ -619,6 +633,7 @@ public partial class GameDetailsViewModel : ObservableObject
         Symbol = game.Symbol;
         IsDlc = game.Kind == GameContentKind.Dlc;
         _coverUrl = game.ThumbnailUrl;
+        _logoUrl = game.LogoUrl;
         CoverImageUrl = ResolveMediaUrl(game.LandscapeUrl);
         HasCover = !string.IsNullOrWhiteSpace(CoverImageUrl);
         ShowFeaturedBadge = game.FeaturedP;
@@ -667,6 +682,7 @@ public partial class GameDetailsViewModel : ObservableObject
         MediaThumbs.Clear();
         var thumbUrl = ResolveMediaUrl(game.CoverUrl);
         var headerUrl = ResolveMediaUrl(game.HeaderUrl);
+        var logoUrl = ResolveMediaUrl(game.LogoUrl);
         if (!string.IsNullOrWhiteSpace(thumbUrl))
         {
             MediaThumbs.Add(new MediaThumbItem { Label = "Miniaturka", ImageUrl = thumbUrl, IsImage = true });
@@ -676,6 +692,13 @@ public partial class GameDetailsViewModel : ObservableObject
             && !string.Equals(headerUrl, thumbUrl, StringComparison.OrdinalIgnoreCase))
         {
             MediaThumbs.Add(new MediaThumbItem { Label = "Okładka pozioma", ImageUrl = headerUrl, IsImage = true });
+        }
+
+        if (!string.IsNullOrWhiteSpace(logoUrl)
+            && !string.Equals(logoUrl, thumbUrl, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(logoUrl, headerUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            MediaThumbs.Add(new MediaThumbItem { Label = "Logo", ImageUrl = logoUrl, IsImage = true });
         }
 
         var shotIndex = 1;

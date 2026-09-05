@@ -42,6 +42,20 @@ public sealed class GameMediaService(
         CancellationToken cancellationToken = default) =>
         ClearSlotAsync(gameId, MediaSlot.Header, requireOwnerUserId, cancellationToken);
 
+    public Task<GameDto?> SetLogoAsync(
+        int gameId,
+        Stream content,
+        string fileName,
+        int? requireOwnerUserId,
+        CancellationToken cancellationToken = default) =>
+        SetSlotAsync(gameId, content, fileName, MediaSlot.Logo, requireOwnerUserId, cancellationToken);
+
+    public Task<GameDto?> ClearLogoAsync(
+        int gameId,
+        int? requireOwnerUserId,
+        CancellationToken cancellationToken = default) =>
+        ClearSlotAsync(gameId, MediaSlot.Logo, requireOwnerUserId, cancellationToken);
+
     public Task<GameDto?> SetIntroAsync(
         int gameId,
         Stream content,
@@ -143,6 +157,7 @@ public sealed class GameMediaService(
         {
             MediaSlot.Cover => "cover",
             MediaSlot.Header => "header",
+            MediaSlot.Logo => "logo",
             _ => "intro"
         };
 
@@ -309,6 +324,7 @@ public sealed class GameMediaService(
                 EngineName = g.Engine != null ? g.Engine.Name : null,
                 CoverUrl = g.CoverUrl,
                 HeaderUrl = g.HeaderUrl,
+                LogoUrl = g.LogoUrl,
                 IntroUrl = g.IntroUrl,
                 ScreenshotUrls = g.Screenshots
                     .OrderBy(s => s.SortOrder)
@@ -363,6 +379,7 @@ public sealed class GameMediaService(
     {
         MediaSlot.Cover => game.CoverUrl,
         MediaSlot.Header => game.HeaderUrl,
+        MediaSlot.Logo => game.LogoUrl,
         _ => game.IntroUrl
     };
 
@@ -376,6 +393,9 @@ public sealed class GameMediaService(
             case MediaSlot.Header:
                 game.HeaderUrl = url;
                 break;
+            case MediaSlot.Logo:
+                game.LogoUrl = url;
+                break;
             default:
                 game.IntroUrl = url;
                 break;
@@ -386,6 +406,7 @@ public sealed class GameMediaService(
     {
         Cover,
         Header,
+        Logo,
         Intro
     }
 }

@@ -58,11 +58,16 @@ public partial class App : Application
         services.AddTransient(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
-            sp.GetService<IGameInstallService>(),
+            installer: null,
             sp.GetService<ILibraryDiscoveryService>(),
             sp.GetService<ISgsApiService>(),
             configuration,
             sp.GetService<IInstallQueueService>(),
+            sp.GetService<IAuthSession>()));
+        services.AddTransient(sp => new WishlistViewModel(
+            sp.GetService<ISgsApiService>(),
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            configuration,
             sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new GamePropertiesViewModel(
             sp.GetService<ISgsApiService>(),
@@ -104,6 +109,7 @@ public partial class App : Application
             sp.GetRequiredService<GamesViewModel>(),
             sp.GetRequiredService<GameDetailsViewModel>(),
             sp.GetRequiredService<LibraryViewModel>(),
+            sp.GetRequiredService<WishlistViewModel>(),
             sp.GetRequiredService<PublishViewModel>(),
             sp.GetRequiredService<StudioViewModel>(),
             sp.GetRequiredService<AdminViewModel>(),
@@ -130,6 +136,7 @@ public partial class App : Application
             var vm = Services.GetRequiredService<MainWindowViewModel>();
             vm.Games.SetOpenAccountHandler(() => vm.NavigateCommand.Execute("Account"));
             vm.GameDetails.SetOpenAccountHandler(() => vm.NavigateCommand.Execute("Account"));
+            // Wishlist handlers are set in MainWindowViewModel ctor
             desktop.MainWindow = new MainWindow
             {
                 DataContext = vm,

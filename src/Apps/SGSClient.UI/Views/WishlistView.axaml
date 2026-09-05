@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.WishlistView"
+             x:DataType="vm:WishlistViewModel">
+  <DockPanel Margin="28,24">
+    <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,18">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding StatusText}" Opacity="0.65" FontSize="13"/>
+        </StackPanel>
+        <Button Grid.Column="1" Content="Zaloguj się" Command="{Binding OpenAccountCommand}"
+                IsVisible="{Binding NeedsLogin}" Padding="12,6" VerticalAlignment="Top"/>
+        <Button Grid.Column="2" Content="Odśwież" Command="{Binding LoadCommand}" Padding="12,6" VerticalAlignment="Top"/>
+      </Grid>
+    </StackPanel>
+
+    <TextBlock Text="{Binding StatusText}"
+               IsVisible="{Binding ShowEmpty}"
+               Opacity="0.6"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"/>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasGames}">
+      <ItemsControl ItemsSource="{Binding Games}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:GameListItem">
+            <Border Width="280" Margin="0,0,16,16" Padding="14" CornerRadius="8"
+                    Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
+                    Cursor="Hand" Tag="{Binding}" PointerPressed="GameCard_OnPointerPressed">
+              <StackPanel Spacing="10">
+                <Border Height="140" CornerRadius="8" Background="#333" ClipToBounds="True">
+                  <Panel>
+                    <TextBlock Text="{Binding TileLabel}" FontWeight="Bold" FontSize="28" Opacity="0.35"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsVisible="{Binding !HasCover}"/>
+                    <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                           IsVisible="{Binding HasCover}"/>
+                  </Panel>
+                </Border>
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding PlatformsText}" Opacity="0.55" FontSize="11"/>
+                <Button Content="{Binding ActionLabel}"
+                        Tag="{Binding}"
+                        Click="AddToLibrary_OnClick"
+                        IsEnabled="{Binding CanAdd}"
+                        HorizontalAlignment="Stretch"
+                        Padding="10,8"/>
+                <Button Content="Usuń z listy"
+                        Tag="{Binding}"
+                        Command="{Binding $parent[UserControl].((vm:WishlistViewModel)DataContext).RemoveCommand}"
+                        CommandParameter="{Binding}"
+                        HorizontalAlignment="Stretch"
+                        Padding="10,6"/>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

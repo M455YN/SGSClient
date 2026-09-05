@@ -125,6 +125,7 @@ public sealed class GamePackagePublisher(
                     EngineId = engineId,
                     CoverUrl = mediaResult.CoverUrl,
                     HeaderUrl = mediaResult.HeaderUrl,
+                    LogoUrl = mediaResult.LogoUrl,
                     IntroUrl = mediaResult.IntroUrl,
                     DraftP = false,
                     FeaturedP = false,
@@ -169,6 +170,11 @@ public sealed class GamePackagePublisher(
                 if (mediaResult.HeaderUrl is not null)
                 {
                     game.HeaderUrl = mediaResult.HeaderUrl;
+                }
+
+                if (mediaResult.LogoUrl is not null)
+                {
+                    game.LogoUrl = mediaResult.LogoUrl;
                 }
 
                 if (mediaResult.IntroUrl is not null)
@@ -267,6 +273,7 @@ public sealed class GamePackagePublisher(
                     EngineName = g.Engine != null ? g.Engine.Name : null,
                     CoverUrl = g.CoverUrl,
                     HeaderUrl = g.HeaderUrl,
+                    LogoUrl = g.LogoUrl,
                     IntroUrl = g.IntroUrl,
                     ScreenshotUrls = g.Screenshots
                         .OrderBy(s => s.SortOrder)
@@ -360,6 +367,7 @@ public sealed class GamePackagePublisher(
         if (media is null
             || (string.IsNullOrWhiteSpace(media.Cover)
                 && string.IsNullOrWhiteSpace(media.Header)
+                && string.IsNullOrWhiteSpace(media.Logo)
                 && string.IsNullOrWhiteSpace(media.Intro)
                 && (media.Screenshots is null || media.Screenshots.Count == 0)))
         {
@@ -372,6 +380,7 @@ public sealed class GamePackagePublisher(
         var mediaBase = storage.MediaPublicBaseUrl.TrimEnd('/');
         string? coverUrl = null;
         string? headerUrl = null;
+        string? logoUrl = null;
         string? introUrl = null;
         var screenshots = new List<(string Url, string SourcePath)>();
 
@@ -401,6 +410,17 @@ public sealed class GamePackagePublisher(
                 headerUrl = extracted.Url;
             }
 
+            if (!string.IsNullOrWhiteSpace(media.Logo))
+            {
+                var extracted = ExtractOne(archive, media.Logo, mediaRoot, mediaBase, manifest.Game.Symbol);
+                if (!extracted.Success)
+                {
+                    return MediaExtractResult.Fail(extracted.Error!);
+                }
+
+                logoUrl = extracted.Url;
+            }
+
             if (!string.IsNullOrWhiteSpace(media.Intro))
             {
                 var extracted = ExtractOne(archive, media.Intro, mediaRoot, mediaBase, manifest.Game.Symbol);
@@ -426,7 +446,7 @@ public sealed class GamePackagePublisher(
                 }
             }
 
-            return MediaExtractResult.Ok(coverUrl, headerUrl, introUrl, screenshots);
+            return MediaExtractResult.Ok(coverUrl, headerUrl, logoUrl, introUrl, screenshots);
         }
         catch (Exception ex)
         {
@@ -622,6 +642,7 @@ public sealed class GamePackagePublisher(
         public bool Success { get; init; }
         public string? CoverUrl { get; init; }
         public string? HeaderUrl { get; init; }
+        public string? LogoUrl { get; init; }
         public string? IntroUrl { get; init; }
         public IReadOnlyList<(string Url, string SourcePath)> Screenshots { get; init; } = [];
         public IReadOnlyList<string> Errors { get; init; } = [];
@@ -631,12 +652,14 @@ public sealed class GamePackagePublisher(
         public static MediaExtractResult Ok(
             string? coverUrl,
             string? headerUrl,
+            string? logoUrl,
             string? introUrl,
             IReadOnlyList<(string Url, string SourcePath)> screenshots) => new()
         {
             Success = true,
             CoverUrl = coverUrl,
             HeaderUrl = headerUrl,
+            LogoUrl = logoUrl,
             IntroUrl = introUrl,
             Screenshots = screenshots
         };

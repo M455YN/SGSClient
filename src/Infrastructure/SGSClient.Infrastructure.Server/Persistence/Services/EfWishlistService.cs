@@ -89,6 +89,7 @@ public sealed class EfWishlistService(SgsServerDbContext db) : IWishlistService
             EngineName = g.Engine != null ? g.Engine.Name : null,
             CoverUrl = g.CoverUrl,
             HeaderUrl = g.HeaderUrl,
+            LogoUrl = g.LogoUrl,
             IntroUrl = g.IntroUrl,
             ScreenshotUrls = g.Screenshots
                 .OrderBy(s => s.SortOrder)

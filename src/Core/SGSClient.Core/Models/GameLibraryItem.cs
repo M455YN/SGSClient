@@ -23,6 +23,9 @@ public sealed class GameLibraryItem
     /// <summary>Optional capsule/cover art URL from the store catalog.</summary>
     public string? CoverUrl { get; set; }
 
+    /// <summary>Optional square logo URL for sidebar tiles; falls back to <see cref="CoverUrl"/>.</summary>
+    public string? LogoUrl { get; set; }
+
     /// <summary>Optional local path to a user-chosen library tile image. Overrides CoverUrl in the library UI.</summary>
     public string? CustomCoverPath { get; set; }
 

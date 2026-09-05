@@ -270,6 +270,22 @@
                 </Grid>
               </Border>
               <Border Classes="card">
+                <Grid ColumnDefinitions="140,*" ColumnSpacing="16">
+                  <Border Height="140" Width="140" CornerRadius="6" Background="#1AFFFFFF">
+                    <Image Source="{Binding SelectedGame.OwnLogoImageUrl}" Stretch="Uniform"/>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="Logo (kwadratowe)" FontWeight="SemiBold"/>
+                    <TextBlock Text="Kwadratowe logo na małe kafelki (np. lista zainstalowanych w sidebarze). Zalecane 512×512."
+                               Classes="caption" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Button Content="Wybierz plik" Click="PickLogo_OnClick"/>
+                      <Button Content="Usuń" Click="ClearLogo_OnClick"/>
+                    </StackPanel>
+                  </StackPanel>
+                </Grid>
+              </Border>
+              <Border Classes="card">
                 <StackPanel Spacing="8">
                   <TextBlock Text="Intro" FontWeight="SemiBold"/>
                   <StackPanel Orientation="Horizontal" Spacing="8">

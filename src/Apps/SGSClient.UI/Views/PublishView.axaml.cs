@@ -131,6 +131,27 @@ public partial class PublishView : UserControl
         }
     }
 
+    private async void PickLogo_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not PublishViewModel vm)
+        {
+            return;
+        }
+
+        var path = await PickSingleFileAsync("Wybierz logo (kwadratowe)", ImageFiles);
+        if (path is null)
+        {
+            return;
+        }
+
+        if (!vm.TrySetLogoFromFile(path, out var error))
+        {
+            vm.Issues.Clear();
+            vm.Issues.Add(error ?? "Nie udało się ustawić logo.");
+            vm.StatusText = "Nie udało się dodać logo.";
+        }
+    }
+
     private async void PickIntro_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not PublishViewModel vm)
@@ -199,6 +220,14 @@ public partial class PublishView : UserControl
         if (DataContext is PublishViewModel vm)
         {
             vm.ClearHeader();
+        }
+    }
+
+    private void ClearLogo_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is PublishViewModel vm)
+        {
+            vm.ClearLogo();
         }
     }
 

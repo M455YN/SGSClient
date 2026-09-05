@@ -39,11 +39,14 @@ public sealed class SgsPackageGameInfo
 
 public sealed class SgsPackageMediaInfo
 {
-    /// <summary>Relative path in the ZIP to the list thumbnail (portrait/square).</summary>
+    /// <summary>Relative path in the ZIP to the list thumbnail (portrait capsule).</summary>
     public string? Cover { get; set; }
 
     /// <summary>Relative path in the ZIP to the landscape Steam-style store header.</summary>
     public string? Header { get; set; }
+
+    /// <summary>Relative path in the ZIP to the square game logo (e.g. 512×512).</summary>
+    public string? Logo { get; set; }
 
     /// <summary>Relative path in the ZIP to intro/trailer video.</summary>
     public string? Intro { get; set; }

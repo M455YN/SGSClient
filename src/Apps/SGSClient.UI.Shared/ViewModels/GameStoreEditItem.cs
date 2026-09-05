@@ -19,6 +19,7 @@ public abstract partial class GameStoreEditItem : ObservableObject
     [ObservableProperty] public partial string? HeaderImageUrl { get; set; }
     [ObservableProperty] public partial string? OwnCoverImageUrl { get; set; }
     [ObservableProperty] public partial string? OwnHeaderImageUrl { get; set; }
+    [ObservableProperty] public partial string? OwnLogoImageUrl { get; set; }
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPublished))]
     [NotifyPropertyChangedFor(nameof(DraftLabel))]
@@ -67,6 +68,7 @@ public abstract partial class GameStoreEditItem : ObservableObject
 
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
     public bool HasHeaderArt => !string.IsNullOrWhiteSpace(HeaderImageUrl);
+    public bool HasLogoArt => !string.IsNullOrWhiteSpace(OwnLogoImageUrl);
     public bool HasIntro => !string.IsNullOrWhiteSpace(IntroUrl);
     public bool IsPublished => !DraftP;
     public string DraftLabel => DraftP ? "Szkic" : "W sklepie";
@@ -165,6 +167,7 @@ public abstract partial class GameStoreEditItem : ObservableObject
         HeaderImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.LandscapeUrl);
         OwnCoverImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.CoverUrl);
         OwnHeaderImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.HeaderUrl);
+        OwnLogoImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.LogoUrl);
     }
 
     protected void ApplyCatalogLists(GameDto game, string apiBaseUrl)
@@ -203,6 +206,7 @@ public abstract partial class GameStoreEditItem : ObservableObject
     {
         OnPropertyChanged(nameof(HasCover));
         OnPropertyChanged(nameof(HasHeaderArt));
+        OnPropertyChanged(nameof(HasLogoArt));
         OnPropertyChanged(nameof(HasIntro));
         OnPropertyChanged(nameof(IsPublished));
         OnPropertyChanged(nameof(DraftLabel));

@@ -204,6 +204,7 @@ public partial class GamesViewModel : ObservableObject
                 InstalledVersion = null,
                 TargetVersion = item.Version,
                 CoverUrl = item.CoverUrl,
+                LogoUrl = item.LogoUrl,
                 ExecutablePath = null,
                 InstallPath = null
             });
@@ -410,6 +411,7 @@ public partial class GameListItem : ObservableObject
     public string? Architecture { get; init; }
     public string? Version { get; init; }
     public string? CoverUrl { get; init; }
+    public string? LogoUrl { get; init; }
     public string? CoverImageUrl { get; init; }
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
 
@@ -434,7 +436,7 @@ public partial class GameListItem : ObservableObject
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
-        var coverImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, dto.LandscapeUrl);
+        var coverImageUrl = ToImageSourceUrl(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, dto.LandscapeUrl));
 
         return new GameListItem
         {
@@ -454,10 +456,26 @@ public partial class GameListItem : ObservableObject
             Architecture = build?.Architecture,
             Version = build?.CurrentVersion,
             CoverUrl = dto.ThumbnailUrl,
+            LogoUrl = dto.LogoUrl,
             CoverImageUrl = coverImageUrl,
             InLibrary = inLibrary,
             InWishlist = inWishlist
         };
+    }
+
+    private static string? ToImageSourceUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        return uri.Scheme is "http" or "https" or "file" ? uri.AbsoluteUri : null;
     }
 
     public static GameBuildDto? PickPreferredBuild(IReadOnlyList<GameBuildDto> builds)

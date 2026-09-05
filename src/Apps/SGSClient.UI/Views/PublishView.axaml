@@ -116,6 +116,18 @@
           </StackPanel>
 
           <StackPanel Spacing="4">
+            <TextBlock Text="Logo (kwadratowe)" Opacity="0.55" FontSize="12"/>
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+              <TextBox Grid.Column="0" Text="{Binding MediaLogo}" PlaceholderText="media/logo.png"
+                       IsReadOnly="True"/>
+              <Button Grid.Column="1" Content="Wybierz…" Click="PickLogo_OnClick"
+                      Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+              <Button Grid.Column="2" Content="Wyczyść" Click="ClearLogo_OnClick"
+                      Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+            </Grid>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
             <TextBlock Text="Intro / trailer" Opacity="0.55" FontSize="12"/>
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
               <TextBox Grid.Column="0" Text="{Binding MediaIntro}" PlaceholderText="media/intro.mp4"

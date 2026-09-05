@@ -30,6 +30,7 @@ public sealed partial class ShellSidebar : UserControl
                 or nameof(ShellSidebarViewModel.HasAvatar)
                 or nameof(ShellSidebarViewModel.InstalledHeader)
                 or nameof(ShellSidebarViewModel.IsPaneOpen)
+                or nameof(ShellSidebarViewModel.IsWishlistSelected)
                 or null)
             {
                 RefreshChrome();
@@ -59,6 +60,7 @@ public sealed partial class ShellSidebar : UserControl
         SetLabelVisibility(NavHomeLabel, expanded);
         SetLabelVisibility(NavGamesLabel, expanded);
         SetLabelVisibility(NavLibraryLabel, expanded);
+        SetLabelVisibility(NavWishlistLabel, expanded);
         SetLabelVisibility(NavPublishLabel, expanded);
         SetLabelVisibility(NavStudioLabel, expanded);
         SetLabelVisibility(NavAdminLabel, expanded);
@@ -69,6 +71,7 @@ public sealed partial class ShellSidebar : UserControl
         ApplyCompactChrome(NavHome, expanded, isProfile: false);
         ApplyCompactChrome(NavGames, expanded, isProfile: false);
         ApplyCompactChrome(NavLibrary, expanded, isProfile: false);
+        ApplyCompactChrome(NavWishlist, expanded, isProfile: false);
         ApplyCompactChrome(NavPublish, expanded, isProfile: false);
         ApplyCompactChrome(NavStudio, expanded, isProfile: false);
         ApplyCompactChrome(NavAdmin, expanded, isProfile: false);
@@ -119,6 +122,7 @@ public sealed partial class ShellSidebar : UserControl
         HighlightNav(NavHome, ViewModel.IsHomeSelected);
         HighlightNav(NavGames, ViewModel.IsGamesSelected);
         HighlightNav(NavLibrary, ViewModel.IsLibrarySelected);
+        HighlightNav(NavWishlist, ViewModel.IsWishlistSelected);
         HighlightNav(NavPublish, ViewModel.IsPublishSelected);
         HighlightNav(NavStudio, ViewModel.IsStudioSelected);
         HighlightNav(NavAdmin, ViewModel.IsAdminSelected);

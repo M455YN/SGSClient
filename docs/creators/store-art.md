@@ -1,8 +1,8 @@
 # Store art / Grafika sklepowa
 
-Two separate images per game. Thumbnail and landscape header are **different files** — do not upload the same frame to both slots.
+Three separate images per game. Thumbnail, landscape header, and square logo are **different files** — do not upload the same frame to every slot.
 
-Dwa osobne obrazy na grę. Miniaturka i okładka pozioma to **różne pliki** — nie wgrywaj tego samego kadru do obu slotów.
+Trzy osobne obrazy na grę. Miniaturka, okładka pozioma i kwadratowe logo to **różne pliki** — nie wgrywaj tego samego kadru do wszystkich slotów.
 
 The client **does not validate pixels**, only format and file size (max 80 MB). Sizes below are recommendations so art does not crop badly on tiles and hero.
 
@@ -14,6 +14,7 @@ Klient **nie waliduje pikseli**, tylko format i rozmiar pliku (max 80 MB). Poni�
 |-------|----------|---------------------|
 | Thumbnail / Miniaturka | `media.cover` | `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif` |
 | Landscape header / Okładka pozioma | `media.header` | same / to samo |
+| Square logo / Logo kwadratowe | `media.logo` | same / to samo |
 | Intro | `media.intro` | `.mp4`, `.webm` |
 | Screenshots / Zrzuty | `media.screenshots` | images, max 12 / obrazy, max 12 |
 
@@ -25,12 +26,12 @@ Preferuj **PNG** (lub WebP) bez mocnej kompresji JPG.
 
 | Asset | Source (recommended) / Źródło (zalecane) | Minimum | Aspect / Proporcje | Where / Gdzie |
 |-------|------------------------------------------|---------|---------------------|---------------|
-| **Thumbnail / Miniaturka** | **600 × 900** | 300 × 450 | 2:3 portrait / pion | library, sidebar, 168×248 posters |
-| **Landscape / Okładka pozioma** | **920 × 430** | 460 × 215 | ~2.14:1 (Steam header) | title page, hero, featured, store grid |
-| **Logo** | **640 × 360** | 320 × 180 | wide, no background / szerokie, bez tła | *slot not shipped yet / slot jeszcze nie istnieje* |
+| **Thumbnail / Miniaturka** | **600 × 900** | 300 × 450 | 2:3 portrait / pion | library, store lists, 168×248 posters |
+| **Landscape / Okładka pozioma** | **920 × 430** | 460 × 215 | ~2.14:1 (Steam header) | title page, hero, featured |
+| **Logo** | **512 × 512** | 256 × 256 | 1:1 square / kwadrat | sidebar installed list, small square tiles |
 | **Screen** | **1920 × 1080** | 1280 × 720 | 16:9 | title-page gallery / galeria na stronie gry |
 
-2× landscape: **1840 × 860**. 2× thumbnail: **1200 × 1800**.
+2× landscape: **1840 × 860**. 2× thumbnail: **1200 × 1800**. 2× logo: **1024 × 1024**.
 
 ### Thumbnail / Miniaturka
 
@@ -42,9 +43,9 @@ Do not paint the game title into the image; the caption sits under the tile.
 
 Nie wstawiaj tytułu gry w grafikę: podpis jest pod kafelkiem.
 
-A square (e.g. 512 × 512) works but crops hard on a 168×248 poster.
+A square (e.g. 512 × 512) works but crops hard on a 168×248 poster — use the dedicated logo slot for squares.
 
-Kwadrat zadziała, ale na plakacie 168×248 dostanie mocne kadrowanie.
+Kwadrat zadziała, ale na plakacie 168×248 dostanie mocne kadrowanie — do kwadratów użyj slotu logo.
 
 ### Landscape header / Okładka pozioma
 
@@ -58,19 +59,16 @@ Bez headera klient pokazuje miniaturkę (źle na hero). Bez miniaturki — heade
 
 ### Game logo / Logo gry
 
-There is **no** `media.logo` field yet. Planned: transparent PNG, about **640 × 360**, no extra padding. It does not replace thumbnail or header.
+Transparent PNG preferred, about **512 × 512**, no extra padding. Used on small square tiles (sidebar). It does not replace thumbnail or header — without a logo the client falls back to the thumbnail.
 
-Osobnego pola `media.logo` **jeszcze nie ma**. Plan: PNG z przezroczystością, ok. **640 × 360**. Nie zastępuje miniaturki ani headera.
-
-Do not add `logo` to the manifest until the slot exists — the server rejects unknown `media` keys.
-
-Do tego czasu nie dodawaj `logo` do manifestu — serwer odrzuci nieznane pola w `media`.
+Preferuj PNG z przezroczystością, ok. **512 × 512**, bez zbędnego paddingu. Trafia na małe kwadratowe kafelki (sidebar). Nie zastępuje miniaturki ani headera — bez logo klient używa miniaturki.
 
 ## File layout / Gdzie wrzucić pliki
 
 ```text
 media/cover.png      ← thumbnail / miniaturka
 media/header.png     ← landscape / okładka pozioma
+media/logo.png       ← square logo / logo kwadratowe
 media/intro.mp4      ← optional / opcjonalnie
 media/screen-01.png
 ```
@@ -79,10 +77,11 @@ media/screen-01.png
 "media": {
   "cover": "media/cover.png",
   "header": "media/header.png",
+  "logo": "media/logo.png",
   "screenshots": ["media/screen-01.png"]
 }
 ```
 
-Or after publish: **Creator panel** / **Admin** → **Media** → separate **Thumbnail** and **Landscape header** slots. Empty slots do not show a fallback — you see what is missing.
+Or after publish: **Creator panel** / **Admin** → **Media** → separate **Thumbnail**, **Landscape header**, and **Square logo** slots. Empty slots do not show a fallback in the media editor — you see what is missing.
 
-Albo po publikacji: **Panel twórcy** / **Admin** → **Multimedia** → sloty „Miniaturka” i „Okładka pozioma”. Puste sloty nie pokazują fallbacku.
+Albo po publikacji: **Panel twórcy** / **Admin** → **Multimedia** → sloty „Miniaturka”, „Okładka pozioma” i „Logo (kwadratowe)”. Puste sloty w edytorze nie pokazują fallbacku.

@@ -61,6 +61,7 @@ public partial class PublishViewModel : ObservableObject
     [ObservableProperty] public partial string GameEngine { get; set; } = string.Empty;
     [ObservableProperty] public partial string MediaCover { get; set; } = string.Empty;
     [ObservableProperty] public partial string MediaHeader { get; set; } = string.Empty;
+    [ObservableProperty] public partial string MediaLogo { get; set; } = string.Empty;
     [ObservableProperty] public partial string MediaIntro { get; set; } = string.Empty;
     [ObservableProperty] public partial string MediaScreenshots { get; set; } = string.Empty;
     [ObservableProperty] public partial string BuildVersion { get; set; } = string.Empty;
@@ -334,6 +335,18 @@ public partial class PublishViewModel : ObservableObject
         return true;
     }
 
+    public bool TrySetLogoFromFile(string sourcePath, out string? error)
+    {
+        if (!TryImportMediaFile(sourcePath, SgsPackageRules.AllowedImageExtensions, "logo", out var relative, out error))
+        {
+            return false;
+        }
+
+        MediaLogo = relative;
+        StatusText = $"Ustawiono logo: {relative}";
+        return true;
+    }
+
     public bool TrySetIntroFromFile(string sourcePath, out string? error)
     {
         if (!TryImportMediaFile(sourcePath, SgsPackageRules.AllowedVideoExtensions, "intro", out var relative, out error))
@@ -399,6 +412,12 @@ public partial class PublishViewModel : ObservableObject
     {
         MediaHeader = string.Empty;
         StatusText = "Usunięto okładkę poziomą z formularza.";
+    }
+
+    public void ClearLogo()
+    {
+        MediaLogo = string.Empty;
+        StatusText = "Usunięto logo z formularza.";
     }
 
     public void ClearIntro()
@@ -510,6 +529,7 @@ public partial class PublishViewModel : ObservableObject
         GameEngine = manifest.Game.Engine ?? string.Empty;
         MediaCover = manifest.Game.Media?.Cover ?? string.Empty;
         MediaHeader = manifest.Game.Media?.Header ?? string.Empty;
+        MediaLogo = manifest.Game.Media?.Logo ?? string.Empty;
         MediaIntro = manifest.Game.Media?.Intro ?? string.Empty;
         MediaScreenshots = manifest.Game.Media?.Screenshots is { Count: > 0 } shots
             ? string.Join(Environment.NewLine, shots)
@@ -532,6 +552,7 @@ public partial class PublishViewModel : ObservableObject
         SgsPackageMediaInfo? media = null;
         if (!string.IsNullOrWhiteSpace(MediaCover)
             || !string.IsNullOrWhiteSpace(MediaHeader)
+            || !string.IsNullOrWhiteSpace(MediaLogo)
             || !string.IsNullOrWhiteSpace(MediaIntro)
             || screenshots.Count > 0)
         {
@@ -539,6 +560,7 @@ public partial class PublishViewModel : ObservableObject
             {
                 Cover = NullIfWhiteSpace(MediaCover),
                 Header = NullIfWhiteSpace(MediaHeader),
+                Logo = NullIfWhiteSpace(MediaLogo),
                 Intro = NullIfWhiteSpace(MediaIntro),
                 Screenshots = screenshots
             };
@@ -586,6 +608,7 @@ public partial class PublishViewModel : ObservableObject
         GameEngine = string.Empty;
         MediaCover = string.Empty;
         MediaHeader = string.Empty;
+        MediaLogo = string.Empty;
         MediaIntro = string.Empty;
         MediaScreenshots = string.Empty;
         BuildVersion = string.Empty;

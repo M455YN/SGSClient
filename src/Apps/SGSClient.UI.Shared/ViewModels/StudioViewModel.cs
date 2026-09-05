@@ -386,6 +386,27 @@ public partial class StudioViewModel : ObservableObject
                 "Usunięto okładkę poziomą.");
 
     [RelayCommand]
+    private Task PickLogoAsync() =>
+        _api is null
+            ? Task.CompletedTask
+            : GameMediaActions.PickAsync(
+                _pickImage,
+                SelectedGame?.Id,
+                (id, path) => _api.UploadGameLogoAsync(id, path, asAdmin: false),
+                ReloadAfterMediaAsync,
+                "Zaktualizowano logo.");
+
+    [RelayCommand]
+    private Task ClearLogoAsync() =>
+        _api is null
+            ? Task.CompletedTask
+            : GameMediaActions.ClearAsync(
+                SelectedGame?.Id,
+                id => _api.ClearGameLogoAsync(id, asAdmin: false),
+                ReloadAfterMediaAsync,
+                "Usunięto logo.");
+
+    [RelayCommand]
     private Task PickIntroAsync() =>
         _api is null
             ? Task.CompletedTask

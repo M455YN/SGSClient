@@ -208,7 +208,8 @@ public partial class LibraryViewModel : ObservableObject
                     Architecture = build.Architecture,
                     InstallState = InstallState.NotInstalled,
                     TargetVersion = build.CurrentVersion,
-                    CoverUrl = game.ThumbnailUrl
+                    CoverUrl = game.ThumbnailUrl,
+                    LogoUrl = game.LogoUrl
                 });
             }
         }
@@ -327,16 +328,12 @@ public partial class LibraryViewModel : ObservableObject
             return;
         }
 
-        if (_installer is null)
-        {
-            return;
-        }
-
         item.IsInstalling = true;
         try
         {
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            var installer = _installer ?? scope.ServiceProvider.GetRequiredService<IGameInstallService>();
             var model = await library.GetByGameIdAsync(item.GameId);
             if (model is null)
             {
@@ -363,7 +360,7 @@ public partial class LibraryViewModel : ObservableObject
                 }
             });
 
-            var result = await _installer.InstallAsync(model, version: targetVersion, progress: progress);
+            var result = await installer.InstallAsync(model, version: targetVersion, progress: progress);
             await library.UpsertAsync(model);
             item.ApplyModel(model, _apiBaseUrl);
             RebuildShelves();
@@ -403,7 +400,7 @@ public partial class LibraryViewModel : ObservableObject
     private async Task UninstallAsync(LibraryGameItem? item)
     {
         item ??= SelectedGame;
-        if (item is null || _scopes is null || _installer is null || item.IsInstalling)
+        if (item is null || _scopes is null || item.IsInstalling)
         {
             return;
         }
@@ -413,6 +410,7 @@ public partial class LibraryViewModel : ObservableObject
         {
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            var installer = _installer ?? scope.ServiceProvider.GetRequiredService<IGameInstallService>();
             var model = await library.GetByGameIdAsync(item.GameId);
             if (model is null)
             {
@@ -420,7 +418,7 @@ public partial class LibraryViewModel : ObservableObject
                 return;
             }
 
-            var result = await _installer.UninstallAsync(model);
+            var result = await installer.UninstallAsync(model);
             await library.UpsertAsync(model);
             item.ApplyModel(model, _apiBaseUrl);
             RebuildShelves();
@@ -496,7 +494,7 @@ public partial class LibraryViewModel : ObservableObject
             try
             {
                 var game = await _api.GetGameAsync(row.GameId);
-                if (string.IsNullOrWhiteSpace(game?.ThumbnailUrl))
+                if (string.IsNullOrWhiteSpace(game?.ThumbnailUrl) && string.IsNullOrWhiteSpace(game?.LogoUrl))
                 {
                     continue;
                 }
@@ -507,9 +505,39 @@ public partial class LibraryViewModel : ObservableObject
                     continue;
                 }
 
-                model.CoverUrl = game.ThumbnailUrl;
+                if (!string.IsNullOrWhiteSpace(game.ThumbnailUrl))
+                {
+                    model.CoverUrl = game.ThumbnailUrl;
+                }
+
+                model.LogoUrl = game.LogoUrl;
                 await library.UpsertAsync(model);
                 row.ApplyModel(model, _apiBaseUrl);
+            }
+            catch
+            {
+                // best-effort
+            }
+        }
+
+        foreach (var row in Games)
+        {
+            try
+            {
+                var model = await library.GetByGameIdAsync(row.GameId);
+                if (model is null || !string.IsNullOrWhiteSpace(model.LogoUrl))
+                {
+                    continue;
+                }
+
+                var game = await _api.GetGameAsync(row.GameId);
+                if (string.IsNullOrWhiteSpace(game?.LogoUrl))
+                {
+                    continue;
+                }
+
+                model.LogoUrl = game.LogoUrl;
+                await library.UpsertAsync(model);
             }
             catch
             {
