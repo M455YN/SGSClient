@@ -89,6 +89,7 @@
               <StackPanel Spacing="4" IsVisible="{Binding IsInstalling}">
                 <TextBlock Text="{Binding InstallProgressText}" Opacity="0.7" FontSize="12"/>
                 <ProgressBar Minimum="0" Maximum="1" Value="{Binding InstallProgressFraction}" Height="4"/>
+                <Button Content="Anuluj" Click="CancelInstall_OnClick" Padding="12,6" HorizontalAlignment="Left"/>
               </StackPanel>
 
               <TextBlock Text="{Binding StatusText}" Opacity="0.65" FontSize="12"/>
@@ -158,7 +159,6 @@
             <StackPanel Orientation="Horizontal" Spacing="4">
               <Button Content="Szczegóły" Tag="Details" Click="Tab_OnClick" Padding="14,8"
                       FontWeight="SemiBold"/>
-              <Button Content="Recenzje" Tag="Reviews" Click="Tab_OnClick" Padding="14,8"/>
               <Button Content="Więcej" Tag="More" Click="Tab_OnClick" Padding="14,8"/>
             </StackPanel>
             <Border Height="1" Background="#33FFFFFF"/>
@@ -218,11 +218,6 @@
                 <TextBlock Text="Dodatkowe informacje" FontSize="18" FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding OtherInformation}" Opacity="0.85" TextWrapping="Wrap"/>
               </StackPanel>
-            </StackPanel>
-
-            <StackPanel Spacing="8" IsVisible="{Binding ShowReviewsTab}">
-              <TextBlock Text="Recenzje" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="Recenzje społeczności pojawią się tutaj." Opacity="0.6"/>
             </StackPanel>
 
             <StackPanel Spacing="8" IsVisible="{Binding ShowMoreTab}">

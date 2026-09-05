@@ -138,11 +138,7 @@ public partial class LibraryViewModel : ObservableObject
             await EnrichCoversAsync(library);
             RebuildShelves();
             ApplyFilter();
-
-            if (_queue is not null)
-            {
-                await _queue.CheckForUpdatesAsync();
-            }
+            await CheckUpdatesOnStartupAsync();
 
             HasGames = Games.Count > 0;
             ShowEmpty = !HasGames;
@@ -168,6 +164,25 @@ public partial class LibraryViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    /// <summary>Runs auto-update scan (safe to call at app startup without opening Library).</summary>
+    public async Task CheckUpdatesOnStartupAsync()
+    {
+        if (_queue is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await _queue.CheckForUpdatesAsync();
+            await SyncQueueProgressAsync();
+        }
+        catch
+        {
+            // best-effort at startup
         }
     }
 
@@ -241,6 +256,16 @@ public partial class LibraryViewModel : ObservableObject
             return;
         }
 
+        foreach (var row in Games)
+        {
+            row.IsInstalling = _queue.IsQueuedOrActive(row.GameId);
+            if (!row.IsInstalling)
+            {
+                row.InstallProgressFraction = 0;
+                row.InstallProgressText = string.Empty;
+            }
+        }
+
         foreach (var entry in _queue.Entries)
         {
             var row = Games.FirstOrDefault(g => g.GameId == entry.GameId);
@@ -258,12 +283,13 @@ public partial class LibraryViewModel : ObservableObject
             }
         }
 
-        // Refresh finished installs from store
+        // Refresh finished / cancelled installs from store
         if (_queue.Entries.Any(e => e.State is InstallState.Installed or InstallState.Failed or InstallState.NotInstalled))
         {
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            foreach (var entry in _queue.Entries.Where(e => e.State is InstallState.Installed or InstallState.Failed))
+            foreach (var entry in _queue.Entries.Where(e =>
+                         e.State is InstallState.Installed or InstallState.Failed or InstallState.NotInstalled))
             {
                 var model = await library.GetByGameIdAsync(entry.GameId);
                 var row = Games.FirstOrDefault(g => g.GameId == entry.GameId);
@@ -276,6 +302,23 @@ public partial class LibraryViewModel : ObservableObject
 
             RebuildShelves();
         }
+    }
+
+    [RelayCommand]
+    private void CancelInstall(LibraryGameItem? item)
+    {
+        item ??= SelectedGame;
+        if (item is null || _queue is null || !item.IsInstalling)
+        {
+            return;
+        }
+
+        _queue.Cancel(item.GameId);
+        item.IsInstalling = false;
+        item.InstallProgressFraction = 0;
+        item.InstallProgressText = string.Empty;
+        StatusText = $"Anulowano: {item.Title}";
+        _ = SyncQueueProgressAsync();
     }
 
     [RelayCommand]

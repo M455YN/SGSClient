@@ -46,6 +46,12 @@ public partial class GameDetailsViewModel : ObservableObject
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = "Ładowanie…";
+
+        if (_queue is not null)
+        {
+            _queue.Changed += (_, _) => SyncInstallQueueState();
+            _queue.ProgressChanged += OnQueueProgress;
+        }
     }
 
     public void SetCloseHandler(Action close) => _close = close;
@@ -225,8 +231,10 @@ public partial class GameDetailsViewModel : ObservableObject
     public string ReturnTag { get; private set; } = "Games";
 
     public bool ShowDetailsTab => SelectedTab == "Details";
-    public bool ShowReviewsTab => SelectedTab == "Reviews";
+    public bool ShowReviewsTab => false;
     public bool ShowMoreTab => SelectedTab == "More";
+
+    public bool ReviewsAvailable => false;
 
     partial void OnSelectedTabChanged(string value)
     {
@@ -300,6 +308,11 @@ public partial class GameDetailsViewModel : ObservableObject
     [RelayCommand]
     private void SelectTab(string? tab)
     {
+        if (string.Equals(tab, "Reviews", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(tab))
         {
             SelectedTab = tab;
@@ -535,6 +548,7 @@ public partial class GameDetailsViewModel : ObservableObject
             IsInstalling = true;
             StatusText = "Dodano do kolejki instalacji…";
             await _queue.EnqueueInstallAsync(GameId, _libraryItem.TargetVersion);
+            SyncInstallQueueState();
             return;
         }
 
@@ -575,6 +589,23 @@ public partial class GameDetailsViewModel : ObservableObject
             InstallProgressFraction = 0;
             InstallProgressText = string.Empty;
         }
+    }
+
+    [RelayCommand]
+    private void CancelInstall()
+    {
+        if (_queue is null || GameId <= 0 || !IsInstalling)
+        {
+            return;
+        }
+
+        _queue.Cancel(GameId);
+        IsInstalling = false;
+        InstallProgressFraction = 0;
+        InstallProgressText = string.Empty;
+        StatusText = "Anulowano instalację.";
+        SyncInstallQueueState();
+        _ = RefreshLibraryStateAsync(GameId);
     }
 
     [RelayCommand]
@@ -887,6 +918,50 @@ public partial class GameDetailsViewModel : ObservableObject
         catch
         {
             PlaytimeText = string.Empty;
+        }
+    }
+
+    private void OnQueueProgress(object? sender, InstallQueueProgressEventArgs e)
+    {
+        if (e.GameId != GameId)
+        {
+            return;
+        }
+
+        InstallProgressFraction = e.Progress.Fraction;
+        InstallProgressText = e.Progress.Message ?? string.Empty;
+        IsInstalling = e.State is InstallState.Queued or InstallState.Downloading
+            or InstallState.Installing or InstallState.Updating;
+        if (!IsInstalling)
+        {
+            _ = RefreshLibraryStateAsync(GameId);
+        }
+    }
+
+    private void SyncInstallQueueState()
+    {
+        if (_queue is null || GameId <= 0)
+        {
+            return;
+        }
+
+        var active = _queue.IsQueuedOrActive(GameId);
+        IsInstalling = active;
+        if (!active)
+        {
+            InstallProgressFraction = 0;
+            if (string.Equals(InstallProgressText, "Dodano do kolejki instalacji…", StringComparison.Ordinal))
+            {
+                InstallProgressText = string.Empty;
+            }
+
+            var entry = _queue.Entries.FirstOrDefault(e => e.GameId == GameId);
+            if (!string.IsNullOrWhiteSpace(entry?.Error))
+            {
+                StatusText = entry.Error!;
+            }
+
+            _ = RefreshLibraryStateAsync(GameId);
         }
     }
 

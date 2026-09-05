@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using SGSClient.Core.Configuration;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Packaging;
 using SGSClient.Infrastructure.Server.Persistence.Entities;
@@ -13,11 +15,24 @@ public static class SgsServerDbInitializer
         await db.Database.MigrateAsync(cancellationToken);
         await EnsureTaxonomyAsync(db, cancellationToken);
 
-        if (await db.Games.AnyAsync(cancellationToken))
+        if (!await db.Games.AnyAsync(cancellationToken))
         {
-            return;
+            await SeedCatalogAsync(db, cancellationToken);
         }
+    }
 
+    public static async Task InitializeAsync(IServiceProvider services, CancellationToken cancellationToken = default)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<SgsServerDbContext>();
+        await InitializeAsync(db, cancellationToken);
+
+        var storage = scope.ServiceProvider.GetRequiredService<IOptions<GameStorageSettings>>();
+        await SeedGamePackageWriter.EnsurePackagesAsync(db, storage, cancellationToken);
+    }
+
+    private static async Task SeedCatalogAsync(SgsServerDbContext db, CancellationToken cancellationToken)
+    {
         var actionGenreId = await db.GameGenres
             .Where(g => g.Symbol == "action")
             .Select(g => g.Id)
@@ -31,12 +46,13 @@ public static class SgsServerDbInitializer
             .Select(e => e.Id)
             .FirstAsync(cancellationToken);
 
+        // ZipLink placeholders — SeedGamePackageWriter rewrites them to real storage packages.
         var demoRunner = new GameEntity
         {
             UserId = 1,
             Title = "Demo Runner",
             Symbol = "demo-runner",
-            Description = "Sample catalog game for local development.",
+            Description = "Sample catalog game for local development (claim → install → play).",
             HardwareRequirements = "RAM: 4 GB",
             OtherInformation = null,
             EngineId = customEngineId,
@@ -50,8 +66,8 @@ public static class SgsServerDbInitializer
                     Platform = GamePlatform.Windows,
                     Architecture = "x64",
                     CurrentVersion = "0.1.0",
-                    ExeName = "DemoRunner.exe",
-                    ZipLink = "https://example.com/games/demo-runner-win-x64.zip",
+                    ExeName = "bin/DemoRunner.cmd",
+                    ZipLink = "/api/games/packages/demo-runner/0.1.0/windows-x64.zip",
                     IsDefault = true
                 },
                 new GameBuildEntity
@@ -59,8 +75,8 @@ public static class SgsServerDbInitializer
                     Platform = GamePlatform.Linux,
                     Architecture = "x64",
                     CurrentVersion = "0.1.0",
-                    ExeName = "DemoRunner",
-                    ZipLink = "https://example.com/games/demo-runner-linux-x64.zip",
+                    ExeName = "bin/DemoRunner.sh",
+                    ZipLink = "/api/games/packages/demo-runner/0.1.0/linux-x64.zip",
                     IsDefault = true
                 }
             ]
@@ -71,7 +87,7 @@ public static class SgsServerDbInitializer
             UserId = 1,
             Title = "Sky Arena",
             Symbol = "sky-arena",
-            Description = "Another sample title seeded for API smoke tests.",
+            Description = "Another sample title with a seed package for smoke tests.",
             HardwareRequirements = "RAM: 8 GB",
             OtherInformation = "Early access notes.",
             EngineId = customEngineId,
@@ -85,8 +101,8 @@ public static class SgsServerDbInitializer
                     Platform = GamePlatform.Windows,
                     Architecture = "x64",
                     CurrentVersion = "1.0.0",
-                    ExeName = "SkyArena.exe",
-                    ZipLink = "https://example.com/games/sky-arena-win-x64.zip",
+                    ExeName = "bin/DemoRunner.cmd",
+                    ZipLink = "/api/games/packages/sky-arena/1.0.0/windows-x64.zip",
                     IsDefault = true
                 },
                 new GameBuildEntity
@@ -94,8 +110,8 @@ public static class SgsServerDbInitializer
                     Platform = GamePlatform.MacOS,
                     Architecture = "arm64",
                     CurrentVersion = "1.0.0",
-                    ExeName = "SkyArena.app",
-                    ZipLink = "https://example.com/games/sky-arena-osx-arm64.zip",
+                    ExeName = "bin/DemoRunner.sh",
+                    ZipLink = "/api/games/packages/sky-arena/1.0.0/macos-arm64.zip",
                     IsDefault = true
                 }
             ]
@@ -124,12 +140,5 @@ public static class SgsServerDbInitializer
         }
 
         await db.SaveChangesAsync(cancellationToken);
-    }
-
-    public static async Task InitializeAsync(IServiceProvider services, CancellationToken cancellationToken = default)
-    {
-        await using var scope = services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<SgsServerDbContext>();
-        await InitializeAsync(db, cancellationToken);
     }
 }

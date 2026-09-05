@@ -38,10 +38,13 @@ Two stored art files (do not merge on the server):
 
 | Slot | Manifest / DTO | Used for |
 |------|----------------|----------|
-| Thumbnail | `media.cover` → `CoverUrl` | lists, library, sidebar |
+| Thumbnail | `media.cover` → `CoverUrl` | lists, library posters |
 | Landscape | `media.header` → `HeaderUrl` | title page, hero |
+| Square logo | `media.logo` → `LogoUrl` | sidebar tiles |
 
-`ThumbnailUrl` / `LandscapeUrl` are client fallbacks, not a third blob.
+`ThumbnailUrl` / `LandscapeUrl` / `SquareLogoUrl` are client fallbacks.
+
+Empty databases seed **Demo Runner** and **Sky Arena** with real ZIP packages under `Games:StoragePath` (claim → install → play works without publishing first).
 
 ## Data
 

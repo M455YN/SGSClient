@@ -66,24 +66,26 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
                 _activeCts?.Cancel();
             }
 
-            var removed = _entries.RemoveAll(e =>
-                e.GameId == gameId && e.State is InstallState.Queued);
-            if (removed > 0)
+            foreach (var entry in _entries.Where(e =>
+                         e.GameId == gameId && e.State == InstallState.Queued))
             {
-                // Drop matching pending items by rebuilding the queue.
-                var remaining = new List<InstallQueueEntry>();
-                while (_pending.TryDequeue(out var item))
-                {
-                    if (item.GameId != gameId || item.State != InstallState.Queued)
-                    {
-                        remaining.Add(item);
-                    }
-                }
+                entry.State = InstallState.NotInstalled;
+                entry.Error = "Anulowano.";
+            }
 
-                foreach (var item in remaining)
+            // Drop matching pending items by rebuilding the queue.
+            var remaining = new List<InstallQueueEntry>();
+            while (_pending.TryDequeue(out var item))
+            {
+                if (item.GameId != gameId || item.State != InstallState.Queued)
                 {
-                    _pending.Enqueue(item);
+                    remaining.Add(item);
                 }
+            }
+
+            foreach (var item in remaining)
+            {
+                _pending.Enqueue(item);
             }
         }
 

@@ -307,6 +307,8 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             Navigate("Account");
         }
+
         await Sidebar.LoadInstalledAsync();
+        await _library.CheckUpdatesOnStartupAsync();
     }
 }

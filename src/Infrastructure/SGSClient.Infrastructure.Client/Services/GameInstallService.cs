@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
@@ -118,6 +119,8 @@ public sealed class GameInstallService(
 
             Directory.CreateDirectory(installDir);
             ZipFile.ExtractToDirectory(tempZip, installDir, overwriteFiles: true);
+
+            TryMarkUnixExecutable(InstallPathHelper.CombineExecutablePath(installDir, exeName));
 
             var executablePath = InstallPathHelper.CombineExecutablePath(installDir, exeName);
             if (!File.Exists(executablePath))
@@ -439,6 +442,36 @@ public sealed class GameInstallService(
             {
                 Directory.Delete(symbolDir, recursive: false);
             }
+        }
+    }
+
+    private static void TryMarkUnixExecutable(string path)
+    {
+        if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS())
+        {
+            return;
+        }
+
+        if (!File.Exists(path))
+        {
+            return;
+        }
+
+        try
+        {
+            // Best-effort: extracted scripts from ZIP are often non-executable.
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "chmod",
+                ArgumentList = { "+x", path },
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+            process?.WaitForExit(2000);
+        }
+        catch
+        {
+            // ignore
         }
     }
 

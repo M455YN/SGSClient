@@ -76,6 +76,48 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
     private static Process? StartProcess(string exe)
     {
         var workingDirectory = Path.GetDirectoryName(exe);
+        var ext = Path.GetExtension(exe);
+
+        // Seed packages use .cmd / .sh so claim → install → play works without a real PE.
+        if (OperatingSystem.IsWindows()
+            && (string.Equals(ext, ".cmd", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(ext, ".bat", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                return Process.Start(new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c \"{exe}\"",
+                    UseShellExecute = false,
+                    WorkingDirectory = workingDirectory
+                });
+            }
+            catch
+            {
+                // fall through
+            }
+        }
+
+        if ((OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+            && (string.Equals(ext, ".sh", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(ext)))
+        {
+            try
+            {
+                return Process.Start(new ProcessStartInfo
+                {
+                    FileName = "/bin/sh",
+                    ArgumentList = { exe },
+                    UseShellExecute = false,
+                    WorkingDirectory = workingDirectory
+                });
+            }
+            catch
+            {
+                // fall through
+            }
+        }
+
         try
         {
             return Process.Start(new ProcessStartInfo

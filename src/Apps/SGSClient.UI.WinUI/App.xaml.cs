@@ -156,6 +156,23 @@ public partial class App : Application
         }
 
         _ = WarmSilentLoginAsync();
+        _ = CheckUpdatesOnStartupAsync();
+    }
+
+    private static async Task CheckUpdatesOnStartupAsync()
+    {
+        try
+        {
+            var library = Services.GetService<LibraryViewModel>();
+            if (library is not null)
+            {
+                await library.CheckUpdatesOnStartupAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            LogStartupFailure("CheckUpdatesOnStartupAsync", ex);
+        }
     }
 
     private static void LogStartupFailure(string source, Exception? ex)

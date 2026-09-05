@@ -144,6 +144,14 @@ public partial class GameDetailsView : UserControl
         }
     }
 
+    private void CancelInstall_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is GameDetailsViewModel vm)
+        {
+            vm.CancelInstallCommand.Execute(null);
+        }
+    }
+
     private async void Uninstall_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is GameDetailsViewModel vm)

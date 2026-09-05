@@ -135,7 +135,6 @@ public sealed partial class GameDetailsPage : Page
         OtherPanel.Visibility = ViewModel.ShowOther ? Visibility.Visible : Visibility.Collapsed;
 
         DetailsPanel.Visibility = ViewModel.ShowDetailsTab ? Visibility.Visible : Visibility.Collapsed;
-        ReviewsPanel.Visibility = ViewModel.ShowReviewsTab ? Visibility.Visible : Visibility.Collapsed;
         MorePanel.Visibility = ViewModel.ShowMoreTab ? Visibility.Visible : Visibility.Collapsed;
 
         RefreshMediaPreview();
@@ -398,6 +397,12 @@ public sealed partial class GameDetailsPage : Page
     private async void Install_Click(object sender, RoutedEventArgs e)
     {
         await ViewModel.InstallCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private void CancelInstall_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.CancelInstallCommand.Execute(null);
         RefreshUi();
     }
 
