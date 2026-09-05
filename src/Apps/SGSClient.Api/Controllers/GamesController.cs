@@ -17,15 +17,33 @@ public sealed class GamesController(
     IGamePackagePublisher publisher,
     IGameMediaService media,
     IUserService users,
+    IEntitlementService entitlements,
+    IAdminAuthorization adminAuth,
     IOptions<GameStorageSettings> storageOptions,
     IOptions<AzureAdSettings> azureOptions) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<GameDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<GameDto>>> GetGames(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<GameDto>>> GetGames(
+        [FromQuery] string? q,
+        [FromQuery] string? genre,
+        [FromQuery] string? tag,
+        [FromQuery] GameReleaseStatus? releaseStatus,
+        [FromQuery] bool? featured,
+        [FromQuery] string? sort,
+        CancellationToken cancellationToken)
     {
-        var result = await games.GetPublishedGamesAsync(cancellationToken);
+        var query = new GameCatalogQuery
+        {
+            Q = q,
+            Genre = genre,
+            Tag = tag,
+            ReleaseStatus = releaseStatus,
+            Featured = featured,
+            Sort = sort
+        };
+        var result = await games.GetPublishedGamesAsync(query, cancellationToken);
         return Ok(result);
     }
 
@@ -434,6 +452,8 @@ public sealed class GamesController(
     [HttpGet("packages/{symbol}/{version}/{fileName}")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadPackage(
         string symbol,
@@ -449,6 +469,28 @@ public sealed class GamesController(
             || fileName.Contains('\\'))
         {
             return NotFound();
+        }
+
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var profile = await users.GetByIdAsync(ownerUserId.Value, cancellationToken);
+        var isAdmin = profile is not null
+            && adminAuth.IsAdmin(User, profile.Email, profile.Role);
+
+        var allowed = await entitlements.CanDownloadPackageAsync(
+            ownerUserId.Value,
+            symbol,
+            isAdmin,
+            cancellationToken);
+        if (!allowed)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new { errors = new[] { "Brak uprawnień do pobrania tej gry. Dodaj ją do biblioteki." } });
         }
 
         var root = Path.GetFullPath(storageOptions.Value.StoragePath);

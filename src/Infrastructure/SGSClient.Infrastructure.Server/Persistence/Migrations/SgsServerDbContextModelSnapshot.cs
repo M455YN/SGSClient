@@ -408,6 +408,9 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<DateTimeOffset?>("LastLoginUtc")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateTimeOffset?>("LastSeenUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Location")
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
@@ -433,11 +436,38 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
 
                     b.HasIndex("Email");
 
+                    b.HasIndex("LastSeenUtc");
+
                     b.HasIndex("PlayerTag")
                         .IsUnique()
                         .HasFilter("[PlayerTag] IS NOT NULL");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameEntitlementEntity", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("GrantedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("UserId", "GameId");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("UserId", "GrantedAtUtc");
+
+                    b.ToTable("user_game_entitlements", (string)null);
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGamePlaytimeEntity", b =>
@@ -464,6 +494,26 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.HasIndex("UserId", "LastPlayedUtc");
 
                     b.ToTable("user_game_playtime", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameWishlistEntity", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("AddedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("UserId", "GameId");
+
+                    b.HasIndex("GameId");
+
+                    b.HasIndex("UserId", "AddedAtUtc");
+
+                    b.ToTable("user_game_wishlists", (string)null);
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserRelationshipEntity", b =>
@@ -572,7 +622,45 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("Game");
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameEntitlementEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGamePlaytimeEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameWishlistEntity", b =>
                 {
                     b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
                         .WithMany()

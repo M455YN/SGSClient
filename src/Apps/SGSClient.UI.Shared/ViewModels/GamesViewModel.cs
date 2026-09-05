@@ -16,9 +16,12 @@ public partial class GamesViewModel : ObservableObject
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
+    private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
     private Action<int>? _openDetails;
+    private Action? _openAccount;
     private bool _loaded;
+    private CancellationTokenSource? _reloadCts;
 
     public GamesViewModel()
         : this(null)
@@ -28,20 +31,26 @@ public partial class GamesViewModel : ObservableObject
     public GamesViewModel(
         ISgsApiService? api,
         IServiceScopeFactory? scopes = null,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        IAuthSession? auth = null)
     {
         _api = api;
         _scopes = scopes;
+        _auth = auth;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = api is null ? "API not registered" : "Ładowanie sklepu…";
+        SortOptions = ["Wyróżnione", "Tytuł", "Najnowsze"];
+        SelectedSort = SortOptions[0];
     }
 
     public void SetOpenDetailsHandler(Action<int> openDetails) => _openDetails = openDetails;
+    public void SetOpenAccountHandler(Action openAccount) => _openAccount = openAccount;
 
     public string Title { get; } = "Sklep";
 
     public ObservableCollection<GameListItem> Games { get; } = [];
+    public IReadOnlyList<string> SortOptions { get; }
 
     [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
@@ -54,6 +63,32 @@ public partial class GamesViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool ShowEmpty { get; set; }
+
+    [ObservableProperty]
+    public partial string SearchText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string GenreFilter { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string SelectedSort { get; set; } = "Wyróżnione";
+
+    [ObservableProperty]
+    public partial string WishlistSectionTitle { get; set; } = "Lista życzeń";
+
+    public ObservableCollection<GameListItem> Wishlist { get; } = [];
+
+    [ObservableProperty]
+    public partial bool HasWishlist { get; set; }
+
+    partial void OnSearchTextChanged(string value) => _ = DebouncedReloadAsync();
+    partial void OnGenreFilterChanged(string value) => _ = DebouncedReloadAsync();
+    partial void OnSelectedSortChanged(string value) => _ = DebouncedReloadAsync();
+
+    public void ApplyGenreFilter(string? genre)
+    {
+        GenreFilter = genre?.Trim() ?? string.Empty;
+    }
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -75,14 +110,18 @@ public partial class GamesViewModel : ObservableObject
         try
         {
             StatusText = "Ładowanie sklepu…";
-            var games = await _api.GetGamesAsync();
+            var query = BuildQuery();
+            var games = await _api.GetGamesAsync(query);
             var owned = await GetOwnedGameIdsAsync();
+            var wishIds = await GetWishlistIdsAsync();
 
             Games.Clear();
             foreach (var game in games)
             {
-                Games.Add(GameListItem.FromDto(game, owned.Contains(game.Id), _apiBaseUrl));
+                Games.Add(GameListItem.FromDto(game, owned.Contains(game.Id), _apiBaseUrl, wishIds.Contains(game.Id)));
             }
+
+            await LoadWishlistSectionAsync(owned);
 
             _loaded = true;
             HasGames = Games.Count > 0;
@@ -104,6 +143,9 @@ public partial class GamesViewModel : ObservableObject
     }
 
     public Task EnsureLoadedAsync() => _loaded && Games.Count > 0 ? RefreshOwnedFlagsAsync() : LoadAsync();
+
+    [RelayCommand]
+    private void ClearGenreFilter() => GenreFilter = string.Empty;
 
     [RelayCommand]
     private void OpenDetails(GameListItem? item)
@@ -128,8 +170,26 @@ public partial class GamesViewModel : ObservableObject
             return;
         }
 
+        if (_auth is { IsAvailable: true } && !_auth.IsLoggedIn)
+        {
+            StatusText = "Zaloguj się, żeby dodać grę do biblioteki.";
+            _openAccount?.Invoke();
+            return;
+        }
+
         try
         {
+            GameDto? claimed = null;
+            if (_api is not null)
+            {
+                claimed = await _api.ClaimGameAsync(item.Id);
+                if (claimed is null)
+                {
+                    StatusText = "Nie udało się dodać gry (zaloguj się lub sprawdź uprawnienia).";
+                    return;
+                }
+            }
+
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
             await library.UpsertAsync(new GameLibraryItem
@@ -137,7 +197,7 @@ public partial class GamesViewModel : ObservableObject
                 GameId = item.Id,
                 BuildId = item.BuildId,
                 Symbol = item.Symbol,
-                Title = item.Title,
+                Title = claimed?.Title ?? item.Title,
                 Platform = item.Platform,
                 Architecture = item.Architecture,
                 InstallState = InstallState.NotInstalled,
@@ -149,7 +209,9 @@ public partial class GamesViewModel : ObservableObject
             });
 
             item.InLibrary = true;
+            item.InWishlist = false;
             StatusText = $"Dodano do biblioteki: {item.Title}";
+            await LoadWishlistSectionAsync(await GetOwnedGameIdsAsync());
         }
         catch (Exception ex)
         {
@@ -157,28 +219,172 @@ public partial class GamesViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task ToggleWishlistAsync(GameListItem? item)
+    {
+        if (item is null || _api is null)
+        {
+            return;
+        }
+
+        if (_auth is { IsAvailable: true } && !_auth.IsLoggedIn)
+        {
+            StatusText = "Zaloguj się, żeby zarządzać listą życzeń.";
+            _openAccount?.Invoke();
+            return;
+        }
+
+        try
+        {
+            if (item.InWishlist)
+            {
+                if (await _api.RemoveFromWishlistAsync(item.Id))
+                {
+                    item.InWishlist = false;
+                    StatusText = $"Usunięto z listy życzeń: {item.Title}";
+                }
+            }
+            else
+            {
+                if (await _api.AddToWishlistAsync(item.Id) is not null)
+                {
+                    item.InWishlist = true;
+                    StatusText = $"Dodano do listy życzeń: {item.Title}";
+                }
+            }
+
+            await LoadWishlistSectionAsync(await GetOwnedGameIdsAsync());
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Lista życzeń: {ex.Message}";
+        }
+    }
+
+    private async Task DebouncedReloadAsync()
+    {
+        _reloadCts?.Cancel();
+        _reloadCts = new CancellationTokenSource();
+        var token = _reloadCts.Token;
+        try
+        {
+            await Task.Delay(350, token);
+            if (!token.IsCancellationRequested)
+            {
+                await LoadAsync();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // superseded
+        }
+    }
+
+    private GameCatalogQuery BuildQuery()
+    {
+        var sort = SelectedSort switch
+        {
+            "Tytuł" => "title",
+            "Najnowsze" => "newest",
+            _ => "featured"
+        };
+
+        return new GameCatalogQuery
+        {
+            Q = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim(),
+            Genre = string.IsNullOrWhiteSpace(GenreFilter) ? null : GenreFilter.Trim(),
+            Sort = sort
+        };
+    }
+
+    private async Task LoadWishlistSectionAsync(HashSet<int> owned)
+    {
+        Wishlist.Clear();
+        if (_api is null || _auth is { IsAvailable: true, IsLoggedIn: false })
+        {
+            HasWishlist = false;
+            return;
+        }
+
+        try
+        {
+            var wish = await _api.GetWishlistAsync();
+            foreach (var game in wish)
+            {
+                Wishlist.Add(GameListItem.FromDto(game, owned.Contains(game.Id), _apiBaseUrl, inWishlist: true));
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+
+        HasWishlist = Wishlist.Count > 0;
+    }
+
     private async Task RefreshOwnedFlagsAsync()
     {
         var owned = await GetOwnedGameIdsAsync();
+        var wish = await GetWishlistIdsAsync();
         foreach (var game in Games)
         {
             game.InLibrary = owned.Contains(game.Id);
+            game.InWishlist = wish.Contains(game.Id);
         }
+
+        await LoadWishlistSectionAsync(owned);
     }
 
     private async Task<HashSet<int>> GetOwnedGameIdsAsync()
     {
+        var ids = new HashSet<int>();
+        if (_api is not null && (_auth is null || !_auth.IsAvailable || _auth.IsLoggedIn))
+        {
+            try
+            {
+                foreach (var g in await _api.GetMyLibraryAsync())
+                {
+                    ids.Add(g.Id);
+                }
+            }
+            catch
+            {
+                // fall through to local
+            }
+        }
+
         if (_scopes is null)
         {
-            return [];
+            return ids;
         }
 
         try
         {
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            var items = await library.GetAllAsync();
-            return items.Select(x => x.GameId).ToHashSet();
+            foreach (var item in await library.GetAllAsync())
+            {
+                ids.Add(item.GameId);
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+
+        return ids;
+    }
+
+    private async Task<HashSet<int>> GetWishlistIdsAsync()
+    {
+        if (_api is null)
+        {
+            return [];
+        }
+
+        try
+        {
+            return (await _api.GetWishlistAsync()).Select(g => g.Id).ToHashSet();
         }
         catch
         {
@@ -212,10 +418,15 @@ public partial class GameListItem : ObservableObject
     [NotifyPropertyChangedFor(nameof(ActionLabel))]
     public partial bool InLibrary { get; set; }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WishlistLabel))]
+    public partial bool InWishlist { get; set; }
+
     public bool CanAdd => !InLibrary && BuildId > 0;
     public string ActionLabel => InLibrary ? "W bibliotece" : (BuildId > 0 ? "Dodaj do biblioteki" : "Brak builda");
+    public string WishlistLabel => InWishlist ? "Na liście życzeń" : "Lista życzeń";
 
-    public static GameListItem FromDto(GameDto dto, bool inLibrary, string apiBaseUrl)
+    public static GameListItem FromDto(GameDto dto, bool inLibrary, string apiBaseUrl, bool inWishlist = false)
     {
         var build = PickPreferredBuild(dto.Builds);
         var platforms = dto.Builds
@@ -244,7 +455,8 @@ public partial class GameListItem : ObservableObject
             Version = build?.CurrentVersion,
             CoverUrl = dto.ThumbnailUrl,
             CoverImageUrl = coverImageUrl,
-            InLibrary = inLibrary
+            InLibrary = inLibrary,
+            InWishlist = inWishlist
         };
     }
 

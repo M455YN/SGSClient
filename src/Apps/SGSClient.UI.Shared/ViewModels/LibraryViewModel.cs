@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SGSClient.Core.Configuration;
+using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
@@ -17,8 +18,10 @@ public partial class LibraryViewModel : ObservableObject
     private readonly IServiceScopeFactory? _scopes;
     private readonly IGameLauncherService? _launcher;
     private readonly IGameInstallService? _installer;
+    private readonly IInstallQueueService? _queue;
     private readonly ILibraryDiscoveryService? _discovery;
     private readonly ISgsApiService? _api;
+    private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
     private Action<LibraryGameItem>? _openProperties;
     private Action<int>? _openDetails;
@@ -34,16 +37,26 @@ public partial class LibraryViewModel : ObservableObject
         IGameInstallService? installer = null,
         ILibraryDiscoveryService? discovery = null,
         ISgsApiService? api = null,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        IInstallQueueService? queue = null,
+        IAuthSession? auth = null)
     {
         _scopes = scopes;
         _launcher = launcher;
         _installer = installer;
         _discovery = discovery;
         _api = api;
+        _queue = queue;
+        _auth = auth;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = "Ładowanie biblioteki…";
+
+        if (_queue is not null)
+        {
+            _queue.Changed += (_, _) => _ = SyncQueueProgressAsync();
+            _queue.ProgressChanged += OnQueueProgress;
+        }
     }
 
     public void SetOpenPropertiesHandler(Action<LibraryGameItem> open) => _openProperties = open;
@@ -107,6 +120,7 @@ public partial class LibraryViewModel : ObservableObject
 
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            await SyncEntitlementsAsync(library);
             var items = await library.GetAllAsync();
             var playtime = scope.ServiceProvider.GetService<IPlaytimeStore>();
             if (playtime is not null)
@@ -124,6 +138,11 @@ public partial class LibraryViewModel : ObservableObject
             await EnrichCoversAsync(library);
             RebuildShelves();
             ApplyFilter();
+
+            if (_queue is not null)
+            {
+                await _queue.CheckForUpdatesAsync();
+            }
 
             HasGames = Games.Count > 0;
             ShowEmpty = !HasGames;
@@ -149,6 +168,112 @@ public partial class LibraryViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    private async Task SyncEntitlementsAsync(ILocalLibraryStore library)
+    {
+        if (_api is null || (_auth is { IsAvailable: true } && !_auth.IsLoggedIn))
+        {
+            return;
+        }
+
+        try
+        {
+            var remote = await _api.GetMyLibraryAsync();
+            var local = await library.GetAllAsync();
+            var localIds = local.Select(x => x.GameId).ToHashSet();
+
+            foreach (var game in remote)
+            {
+                if (localIds.Contains(game.Id))
+                {
+                    continue;
+                }
+
+                var build = GameListItem.PickPreferredBuild(game.Builds)
+                    ?? game.Builds.FirstOrDefault();
+                if (build is null)
+                {
+                    continue;
+                }
+
+                await library.UpsertAsync(new GameLibraryItem
+                {
+                    GameId = game.Id,
+                    BuildId = build.Id,
+                    Symbol = game.Symbol,
+                    Title = game.Title,
+                    Platform = build.Platform,
+                    Architecture = build.Architecture,
+                    InstallState = InstallState.NotInstalled,
+                    TargetVersion = build.CurrentVersion,
+                    CoverUrl = game.ThumbnailUrl
+                });
+            }
+        }
+        catch
+        {
+            // offline / not logged in — keep local library
+        }
+    }
+
+    private void OnQueueProgress(object? sender, InstallQueueProgressEventArgs e)
+    {
+        var row = Games.FirstOrDefault(g => g.GameId == e.GameId);
+        if (row is null)
+        {
+            return;
+        }
+
+        row.InstallProgressFraction = e.Progress.Fraction;
+        row.InstallProgressText = e.Progress.Message ?? string.Empty;
+        row.ApplyInstallState(e.State);
+        row.IsInstalling = e.State is InstallState.Queued or InstallState.Downloading
+            or InstallState.Installing or InstallState.Updating;
+    }
+
+    private async Task SyncQueueProgressAsync()
+    {
+        if (_queue is null || _scopes is null)
+        {
+            return;
+        }
+
+        foreach (var entry in _queue.Entries)
+        {
+            var row = Games.FirstOrDefault(g => g.GameId == entry.GameId);
+            if (row is null)
+            {
+                continue;
+            }
+
+            row.ApplyInstallState(entry.State);
+            row.IsInstalling = entry.State is InstallState.Queued or InstallState.Downloading
+                or InstallState.Installing or InstallState.Updating;
+            if (!string.IsNullOrWhiteSpace(entry.Error))
+            {
+                StatusText = entry.Error;
+            }
+        }
+
+        // Refresh finished installs from store
+        if (_queue.Entries.Any(e => e.State is InstallState.Installed or InstallState.Failed or InstallState.NotInstalled))
+        {
+            using var scope = _scopes.CreateScope();
+            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            foreach (var entry in _queue.Entries.Where(e => e.State is InstallState.Installed or InstallState.Failed))
+            {
+                var model = await library.GetByGameIdAsync(entry.GameId);
+                var row = Games.FirstOrDefault(g => g.GameId == entry.GameId);
+                if (model is not null && row is not null)
+                {
+                    row.ApplyModel(model, _apiBaseUrl);
+                    row.IsInstalling = false;
+                }
+            }
+
+            RebuildShelves();
         }
     }
 
@@ -188,7 +313,21 @@ public partial class LibraryViewModel : ObservableObject
     private async Task InstallAsync(LibraryGameItem? item)
     {
         item ??= SelectedGame;
-        if (item is null || _scopes is null || _installer is null || item.IsInstalling)
+        if (item is null || _scopes is null || item.IsInstalling)
+        {
+            return;
+        }
+
+        if (_queue is not null)
+        {
+            item.IsInstalling = true;
+            item.ApplyInstallState(InstallState.Queued);
+            StatusText = $"W kolejce: {item.Title}";
+            await _queue.EnqueueInstallAsync(item.GameId, item.TargetVersion);
+            return;
+        }
+
+        if (_installer is null)
         {
             return;
         }
@@ -245,6 +384,19 @@ public partial class LibraryViewModel : ObservableObject
             item.InstallProgressFraction = 0;
             item.InstallProgressText = string.Empty;
         }
+    }
+
+    [RelayCommand]
+    private async Task UpdateAsync(LibraryGameItem? item)
+    {
+        item ??= SelectedGame;
+        if (item is null || _queue is null)
+        {
+            return;
+        }
+
+        StatusText = $"Aktualizacja w kolejce: {item.Title}";
+        await _queue.EnqueueUpdateAsync(item.GameId);
     }
 
     [RelayCommand]

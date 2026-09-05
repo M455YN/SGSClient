@@ -56,6 +56,9 @@
                         Padding="18,12"
                         MinWidth="200"
                         Style="{StaticResource AccentButtonStyle}" />
+                <Button x:Name="WishlistButton"
+                        Click="Wishlist_Click"
+                        Padding="14,12" />
                 <Button x:Name="LaunchButton"
                         Content="Graj"
                         Click="Launch_Click"

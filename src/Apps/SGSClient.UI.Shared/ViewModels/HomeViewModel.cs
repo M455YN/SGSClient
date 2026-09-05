@@ -119,7 +119,16 @@ public partial class HomeViewModel : ObservableObject
     private void OpenFriends() => RequestNavigate("Friends");
 
     [RelayCommand]
-    private void OpenCategory(HomeCategoryItem? item) => RequestNavigate("Games");
+    private void OpenCategory(HomeCategoryItem? item)
+    {
+        if (item is null)
+        {
+            RequestNavigate("Games");
+            return;
+        }
+
+        RequestNavigate($"Games:genre:{item.Name}");
+    }
 
     [RelayCommand]
     private void OpenGame(HomeGameCard? item)

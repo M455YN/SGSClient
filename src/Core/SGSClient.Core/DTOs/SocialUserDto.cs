@@ -11,6 +11,11 @@ public sealed class SocialUserDto
     public string? Bio { get; init; }
     public string? PlayerTag { get; init; }
     public DateTimeOffset? LastLoginUtc { get; init; }
+    public DateTimeOffset? LastSeenUtc { get; init; }
+
+    /// <summary>True when <see cref="LastSeenUtc"/> is within the last 5 minutes.</summary>
+    public bool IsOnline { get; init; }
+
     public FriendRelation FriendRelation { get; init; }
     public bool IsFollowing { get; init; }
     public bool IsFollower { get; init; }

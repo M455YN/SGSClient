@@ -17,10 +17,13 @@ public partial class GameDetailsViewModel : ObservableObject
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
+    private readonly IInstallQueueService? _queue;
+    private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
     private string? _coverUrl;
     private GameLibraryItem? _libraryItem;
     private Action? _close;
+    private Action? _openAccount;
     private Action<GameLibraryItem>? _openProperties;
 
     public GameDetailsViewModel()
@@ -31,16 +34,21 @@ public partial class GameDetailsViewModel : ObservableObject
     public GameDetailsViewModel(
         ISgsApiService? api,
         IServiceScopeFactory? scopes,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        IInstallQueueService? queue = null,
+        IAuthSession? auth = null)
     {
         _api = api;
         _scopes = scopes;
+        _queue = queue;
+        _auth = auth;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = "Ładowanie…";
     }
 
     public void SetCloseHandler(Action close) => _close = close;
+    public void SetOpenAccountHandler(Action openAccount) => _openAccount = openAccount;
     public void SetOpenPropertiesHandler(Action<GameLibraryItem> open) => _openProperties = open;
 
     public ObservableCollection<string> Badges { get; } = [];
@@ -199,6 +207,15 @@ public partial class GameDetailsViewModel : ObservableObject
     public partial bool IsInstalling { get; set; }
 
     [ObservableProperty]
+    public partial bool InWishlist { get; set; }
+
+    [ObservableProperty]
+    public partial string WishlistLabel { get; set; } = "Lista życzeń";
+
+    [ObservableProperty]
+    public partial bool CanToggleWishlist { get; set; } = true;
+
+    [ObservableProperty]
     public partial double InstallProgressFraction { get; set; }
 
     [ObservableProperty]
@@ -248,6 +265,7 @@ public partial class GameDetailsViewModel : ObservableObject
             await EnrichBuildHistoryAsync(game.Id);
             await RefreshLibraryStateAsync(game.Id);
             await SyncAndRefreshPlaytimeAsync(game.Id);
+            await RefreshWishlistStateAsync(game.Id);
             UpdateActionState(game);
             HasContent = true;
             StatusText = string.Empty;
@@ -358,6 +376,13 @@ public partial class GameDetailsViewModel : ObservableObject
             return;
         }
 
+        if (_auth is { IsAvailable: true } && !_auth.IsLoggedIn)
+        {
+            StatusText = "Zaloguj się, żeby dodać grę do biblioteki.";
+            _openAccount?.Invoke();
+            return;
+        }
+
         var preferred = Builds.FirstOrDefault(b => b.IsPreferred) ?? Builds.FirstOrDefault();
         if (preferred is null || preferred.BuildId <= 0)
         {
@@ -369,6 +394,16 @@ public partial class GameDetailsViewModel : ObservableObject
 
         try
         {
+            if (_api is not null)
+            {
+                var claimed = await _api.ClaimGameAsync(GameId);
+                if (claimed is null)
+                {
+                    StatusText = "Nie udało się dodać gry (zaloguj się lub sprawdź uprawnienia).";
+                    return;
+                }
+            }
+
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
             await library.UpsertAsync(new GameLibraryItem
@@ -388,6 +423,8 @@ public partial class GameDetailsViewModel : ObservableObject
             });
 
             InLibrary = true;
+            InWishlist = false;
+            WishlistLabel = "Lista życzeń";
             CanAdd = false;
             PrimaryActionLabel = "W bibliotece";
             StatusText = preferred.SelectedVersion?.IsCurrent == true || preferred.SelectedVersion is null
@@ -398,6 +435,48 @@ public partial class GameDetailsViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusText = $"Nie udało się dodać: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task ToggleWishlistAsync()
+    {
+        if (_api is null || GameId <= 0)
+        {
+            return;
+        }
+
+        if (_auth is { IsAvailable: true } && !_auth.IsLoggedIn)
+        {
+            StatusText = "Zaloguj się, żeby zarządzać listą życzeń.";
+            _openAccount?.Invoke();
+            return;
+        }
+
+        try
+        {
+            if (InWishlist)
+            {
+                if (await _api.RemoveFromWishlistAsync(GameId))
+                {
+                    InWishlist = false;
+                    WishlistLabel = "Lista życzeń";
+                    StatusText = "Usunięto z listy życzeń.";
+                }
+            }
+            else
+            {
+                if (await _api.AddToWishlistAsync(GameId) is not null)
+                {
+                    InWishlist = true;
+                    WishlistLabel = "Na liście życzeń";
+                    StatusText = "Dodano do listy życzeń.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Lista życzeń: {ex.Message}";
         }
     }
 
@@ -434,6 +513,14 @@ public partial class GameDetailsViewModel : ObservableObject
     {
         if (_scopes is null || _libraryItem is null || IsInstalling)
         {
+            return;
+        }
+
+        if (_queue is not null)
+        {
+            IsInstalling = true;
+            StatusText = "Dodano do kolejki instalacji…";
+            await _queue.EnqueueInstallAsync(GameId, _libraryItem.TargetVersion);
             return;
         }
 
@@ -674,6 +761,28 @@ public partial class GameDetailsViewModel : ObservableObject
                 : "Dodaj do biblioteki";
         ShowLibraryActions = InLibrary;
         ShowStoreActions = !InLibrary;
+        CanToggleWishlist = !InLibrary;
+    }
+
+    private async Task RefreshWishlistStateAsync(int gameId)
+    {
+        InWishlist = false;
+        WishlistLabel = "Lista życzeń";
+        if (_api is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var wish = await _api.GetWishlistAsync();
+            InWishlist = wish.Any(g => g.Id == gameId);
+            WishlistLabel = InWishlist ? "Na liście życzeń" : "Lista życzeń";
+        }
+        catch
+        {
+            // ignore
+        }
     }
 
     private async Task RefreshLibraryStateAsync(int gameId)

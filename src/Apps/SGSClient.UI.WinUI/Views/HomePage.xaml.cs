@@ -80,6 +80,12 @@ public sealed partial class HomePage : Page
             return;
         }
 
+        if (tag.StartsWith("Games:genre:", StringComparison.OrdinalIgnoreCase))
+        {
+            App.MainWindow.NavigateByTagPublic(tag);
+            return;
+        }
+
         var pageType = tag switch
         {
             "Games" => typeof(GamesPage),

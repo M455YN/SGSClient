@@ -1,0 +1,119 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using SGSClient.Core.Configuration;
+using SGSClient.Core.DTOs;
+using SGSClient.Core.Enums;
+using SGSClient.Core.Install;
+using SGSClient.Core.Interfaces;
+using SGSClient.Core.Models;
+using SGSClient.Infrastructure.Client.Services;
+
+namespace SGSClient.UI.Tests;
+
+public class InstallQueueServiceTests
+{
+    [Fact]
+    public async Task Enqueue_ProcessesSequentially()
+    {
+        var installer = new TrackingInstaller();
+        var library = new InMemoryLibrary();
+        library.Items[1] = MakeItem(1, "One");
+        library.Items[2] = MakeItem(2, "Two");
+
+        var services = new ServiceCollection();
+        services.AddSingleton<ILocalLibraryStore>(library);
+        services.AddSingleton<IGameInstallService>(installer);
+        services.AddSingleton(Options.Create(new ClientInstallSettings { AutoUpdateEnabled = false }));
+        await using var provider = services.BuildServiceProvider();
+
+        var queue = new InstallQueueService(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            Options.Create(new ClientInstallSettings { AutoUpdateEnabled = false }));
+
+        await queue.EnqueueInstallAsync(1);
+        await queue.EnqueueInstallAsync(2);
+
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (DateTime.UtcNow < deadline
+               && installer.StartedOrder.Count < 2)
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.Equal([1, 2], installer.StartedOrder);
+        Assert.True(installer.MaxConcurrent <= 1);
+    }
+
+    private static GameLibraryItem MakeItem(int id, string title) => new()
+    {
+        GameId = id,
+        BuildId = id,
+        Symbol = $"g{id}",
+        Title = title,
+        Platform = GamePlatform.Windows,
+        InstallState = InstallState.NotInstalled
+    };
+
+    private sealed class TrackingInstaller : IGameInstallService
+    {
+        private int _concurrent;
+        public int MaxConcurrent { get; private set; }
+        public List<int> StartedOrder { get; } = [];
+
+        public string ResolveDownloadUrl(GameBuildDto build) => build.ZipLink;
+
+        public async Task<GameInstallResult> InstallAsync(
+            GameLibraryItem item,
+            string? version = null,
+            IProgress<InstallProgress>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            StartedOrder.Add(item.GameId);
+            var c = Interlocked.Increment(ref _concurrent);
+            MaxConcurrent = Math.Max(MaxConcurrent, c);
+            await Task.Delay(80, cancellationToken);
+            Interlocked.Decrement(ref _concurrent);
+            item.InstallState = InstallState.Installed;
+            item.InstalledVersion = "1.0.0";
+            return GameInstallResult.Ok(item);
+        }
+
+        public Task<GameInstallResult> UninstallAsync(
+            GameLibraryItem item,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(GameInstallResult.Ok(item));
+
+        public Task<GameInstallResult> MoveAsync(
+            GameLibraryItem item,
+            string destinationLibraryRoot,
+            IProgress<InstallProgress>? progress = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(GameInstallResult.Ok(item));
+    }
+
+    private sealed class InMemoryLibrary : ILocalLibraryStore
+    {
+        public Dictionary<int, GameLibraryItem> Items { get; } = new();
+
+        public Task<IReadOnlyList<GameLibraryItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameLibraryItem>>(Items.Values.ToList());
+
+        public Task<GameLibraryItem?> GetByGameIdAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.GetValueOrDefault(gameId));
+
+        public Task<GameLibraryItem?> GetBySymbolAsync(string symbol, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Items.Values.FirstOrDefault(x => x.Symbol == symbol));
+
+        public Task UpsertAsync(GameLibraryItem item, CancellationToken cancellationToken = default)
+        {
+            Items[item.GameId] = item;
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveAsync(int gameId, CancellationToken cancellationToken = default)
+        {
+            Items.Remove(gameId);
+            return Task.CompletedTask;
+        }
+    }
+}

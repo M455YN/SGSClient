@@ -338,8 +338,9 @@ public sealed class SocialPersonItem
 
     public static SocialPersonItem FromDto(SocialUserDto user)
     {
-        var isOnline = user.LastLoginUtc is { } at
-            && DateTimeOffset.UtcNow - at.ToUniversalTime() <= TimeSpan.FromMinutes(20);
+        var isOnline = user.IsOnline
+            || (user.LastSeenUtc is { } seen
+                && DateTimeOffset.UtcNow - seen.ToUniversalTime() <= TimeSpan.FromMinutes(5));
         var title = string.IsNullOrWhiteSpace(user.PlayerTag) ? user.DisplayName : user.PlayerTag!;
         var relation = user.FriendRelation switch
         {

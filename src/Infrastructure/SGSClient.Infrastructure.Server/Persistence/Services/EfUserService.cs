@@ -214,6 +214,23 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
         return MapAdmin(user);
     }
 
+    public async Task TouchPresenceAsync(string azureSub, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(azureSub))
+        {
+            return;
+        }
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.AzureSub == azureSub, cancellationToken);
+        if (user is null)
+        {
+            return;
+        }
+
+        user.LastSeenUtc = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     private AdminUserDto MapAdmin(UserEntity user) => new()
     {
         Id = user.Id,

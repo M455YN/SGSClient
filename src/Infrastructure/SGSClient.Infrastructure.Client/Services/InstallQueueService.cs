@@ -1,0 +1,318 @@
+using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using SGSClient.Core.Configuration;
+using SGSClient.Core.Enums;
+using SGSClient.Core.Interfaces;
+using SGSClient.Core.Models;
+
+namespace SGSClient.Infrastructure.Client.Services;
+
+public sealed class InstallQueueService : IInstallQueueService, IDisposable
+{
+    private readonly IServiceScopeFactory _scopes;
+    private readonly IOptions<ClientInstallSettings> _installOptions;
+    private readonly ConcurrentQueue<InstallQueueEntry> _pending = new();
+    private readonly List<InstallQueueEntry> _entries = [];
+    private readonly object _gate = new();
+    private readonly SemaphoreSlim _workerLock = new(1, 1);
+    private CancellationTokenSource? _activeCts;
+    private int? _activeGameId;
+    private bool _pumpRunning;
+
+    public InstallQueueService(
+        IServiceScopeFactory scopes,
+        IOptions<ClientInstallSettings> installOptions)
+    {
+        _scopes = scopes;
+        _installOptions = installOptions;
+    }
+
+    public IReadOnlyList<InstallQueueEntry> Entries
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _entries.ToList();
+            }
+        }
+    }
+
+    public event EventHandler? Changed;
+    public event EventHandler<InstallQueueProgressEventArgs>? ProgressChanged;
+
+    public async Task EnqueueInstallAsync(
+        int gameId,
+        string? version = null,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await EnqueueCoreAsync(gameId, version, isUpdate: false).ConfigureAwait(false);
+    }
+
+    public async Task EnqueueUpdateAsync(int gameId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await EnqueueCoreAsync(gameId, version: null, isUpdate: true).ConfigureAwait(false);
+    }
+
+    public void Cancel(int gameId)
+    {
+        lock (_gate)
+        {
+            if (_activeGameId == gameId)
+            {
+                _activeCts?.Cancel();
+            }
+
+            var removed = _entries.RemoveAll(e =>
+                e.GameId == gameId && e.State is InstallState.Queued);
+            if (removed > 0)
+            {
+                // Drop matching pending items by rebuilding the queue.
+                var remaining = new List<InstallQueueEntry>();
+                while (_pending.TryDequeue(out var item))
+                {
+                    if (item.GameId != gameId || item.State != InstallState.Queued)
+                    {
+                        remaining.Add(item);
+                    }
+                }
+
+                foreach (var item in remaining)
+                {
+                    _pending.Enqueue(item);
+                }
+            }
+        }
+
+        RaiseChanged();
+    }
+
+    public bool IsQueuedOrActive(int gameId)
+    {
+        lock (_gate)
+        {
+            return _entries.Any(e =>
+                e.GameId == gameId
+                && e.State is InstallState.Queued or InstallState.Downloading
+                    or InstallState.Installing or InstallState.Updating);
+        }
+    }
+
+    public async Task CheckForUpdatesAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_installOptions.Value.AutoUpdateEnabled)
+        {
+            return;
+        }
+
+        using var scope = _scopes.CreateScope();
+        var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+        var api = scope.ServiceProvider.GetService<ISgsApiService>();
+        if (api is null)
+        {
+            return;
+        }
+
+        var items = await library.GetAllAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var item in items.Where(x => x.InstallState == InstallState.Installed))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (IsQueuedOrActive(item.GameId))
+            {
+                continue;
+            }
+
+            try
+            {
+                var game = await api.GetGameAsync(item.GameId, cancellationToken).ConfigureAwait(false);
+                var build = game?.Builds.FirstOrDefault(b => b.Id == item.BuildId)
+                    ?? game?.Builds.FirstOrDefault(b => b.IsDefault)
+                    ?? game?.Builds.FirstOrDefault();
+                if (build is null || string.IsNullOrWhiteSpace(build.CurrentVersion))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(item.InstalledVersion, build.CurrentVersion, StringComparison.OrdinalIgnoreCase))
+                {
+                    await EnqueueUpdateAsync(item.GameId, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch
+            {
+                // best-effort auto-update scan
+            }
+        }
+    }
+
+    private async Task EnqueueCoreAsync(int gameId, string? version, bool isUpdate)
+    {
+        InstallQueueEntry entry;
+        lock (_gate)
+        {
+            if (_entries.Any(e =>
+                    e.GameId == gameId
+                    && e.State is InstallState.Queued or InstallState.Downloading
+                        or InstallState.Installing or InstallState.Updating))
+            {
+                return;
+            }
+
+            entry = new InstallQueueEntry
+            {
+                GameId = gameId,
+                Version = version,
+                IsUpdate = isUpdate,
+                State = InstallState.Queued
+            };
+            _entries.Add(entry);
+            _pending.Enqueue(entry);
+        }
+
+        RaiseChanged();
+        await EnsurePumpAsync().ConfigureAwait(false);
+    }
+
+    private async Task EnsurePumpAsync()
+    {
+        lock (_gate)
+        {
+            if (_pumpRunning)
+            {
+                return;
+            }
+
+            _pumpRunning = true;
+        }
+
+        _ = Task.Run(PumpAsync);
+        await Task.CompletedTask.ConfigureAwait(false);
+    }
+
+    private async Task PumpAsync()
+    {
+        try
+        {
+            while (_pending.TryDequeue(out var entry))
+            {
+                await _workerLock.WaitAsync().ConfigureAwait(false);
+                try
+                {
+                    await ProcessEntryAsync(entry).ConfigureAwait(false);
+                }
+                finally
+                {
+                    _workerLock.Release();
+                }
+            }
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _pumpRunning = false;
+                if (!_pending.IsEmpty)
+                {
+                    _pumpRunning = true;
+                    _ = Task.Run(PumpAsync);
+                }
+            }
+        }
+    }
+
+    private async Task ProcessEntryAsync(InstallQueueEntry entry)
+    {
+        using var cts = new CancellationTokenSource();
+        lock (_gate)
+        {
+            _activeCts = cts;
+            _activeGameId = entry.GameId;
+            entry.State = entry.IsUpdate ? InstallState.Updating : InstallState.Downloading;
+        }
+
+        RaiseChanged();
+
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            var installer = scope.ServiceProvider.GetRequiredService<IGameInstallService>();
+            var model = await library.GetByGameIdAsync(entry.GameId, cts.Token).ConfigureAwait(false);
+            if (model is null)
+            {
+                entry.State = InstallState.Failed;
+                entry.Error = "Nie znaleziono gry w lokalnej bibliotece.";
+                RaiseChanged();
+                return;
+            }
+
+            entry.Title = model.Title;
+            model.InstallState = entry.State;
+            await library.UpsertAsync(model, cts.Token).ConfigureAwait(false);
+
+            var progress = new Progress<InstallProgress>(p =>
+            {
+                var state = p.Phase switch
+                {
+                    InstallPhase.Downloading => entry.IsUpdate ? InstallState.Updating : InstallState.Downloading,
+                    InstallPhase.Installing => InstallState.Installing,
+                    InstallPhase.Completed => InstallState.Installed,
+                    _ => entry.State
+                };
+                entry.State = state;
+                ProgressChanged?.Invoke(this, new InstallQueueProgressEventArgs
+                {
+                    GameId = entry.GameId,
+                    Progress = p,
+                    State = state
+                });
+            });
+
+            var result = await installer.InstallAsync(
+                    model,
+                    version: entry.IsUpdate ? null : entry.Version ?? model.TargetVersion,
+                    progress: progress,
+                    cancellationToken: cts.Token)
+                .ConfigureAwait(false);
+
+            await library.UpsertAsync(model, cts.Token).ConfigureAwait(false);
+            entry.State = result.Success ? InstallState.Installed : InstallState.Failed;
+            entry.Error = result.Success ? null : result.Errors.FirstOrDefault();
+        }
+        catch (OperationCanceledException)
+        {
+            entry.State = InstallState.NotInstalled;
+            entry.Error = "Anulowano.";
+        }
+        catch (Exception ex)
+        {
+            entry.State = InstallState.Failed;
+            entry.Error = ex.Message;
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                if (_activeGameId == entry.GameId)
+                {
+                    _activeGameId = null;
+                    _activeCts = null;
+                }
+            }
+
+            RaiseChanged();
+        }
+    }
+
+    private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
+
+    public void Dispose()
+    {
+        _activeCts?.Cancel();
+        _activeCts?.Dispose();
+        _workerLock.Dispose();
+    }
+}

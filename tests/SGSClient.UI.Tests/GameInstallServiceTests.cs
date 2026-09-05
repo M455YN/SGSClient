@@ -130,6 +130,7 @@ public class GameInstallServiceTests
             var service = new GameInstallService(
                 new HttpClient(),
                 new NullSgsApiService(),
+                auth: null,
                 Options.Create(new ApiClientSettings { BaseUrl = "https://localhost:7142/" }),
                 new FixedLibraryPathProvider(sourceRoot, destRoot),
                 new NullLibraryStore());
@@ -162,6 +163,7 @@ public class GameInstallServiceTests
         new(
             new HttpClient(),
             new NullSgsApiService(),
+            auth: null,
             Options.Create(new ApiClientSettings { BaseUrl = "https://localhost:7142/" }),
             new FixedLibraryPathProvider(gamesRoot),
             new NullLibraryStore());
@@ -193,7 +195,9 @@ public class GameInstallServiceTests
 
     private sealed class NullSgsApiService : ISgsApiService
     {
-        public Task<IReadOnlyList<GameDto>> GetGamesAsync(CancellationToken cancellationToken = default) =>
+        public Task<IReadOnlyList<GameDto>> GetGamesAsync(
+            GameCatalogQuery? query = null,
+            CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<GameDto>>([]);
 
         public Task<GameDto?> GetGameAsync(int id, CancellationToken cancellationToken = default) =>
@@ -204,6 +208,27 @@ public class GameInstallServiceTests
 
         public Task<IReadOnlyList<GameDto>> GetMyGamesAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<GameDto>>([]);
+
+        public Task<IReadOnlyList<GameDto>> GetMyLibraryAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameDto>>([]);
+
+        public Task<GameDto?> ClaimGameAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<bool> RemoveFromLibraryAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<IReadOnlyList<GameDto>> GetWishlistAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameDto>>([]);
+
+        public Task<GameDto?> AddToWishlistAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameDto?>(null);
+
+        public Task<bool> RemoveFromWishlistAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> SendPresenceAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
 
         public Task<GameDto?> UpdateGameAsync(int gameId, UpdateGameRequestDto request, CancellationToken cancellationToken = default) =>
             Task.FromResult<GameDto?>(null);

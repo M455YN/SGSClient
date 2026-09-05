@@ -8,6 +8,7 @@ namespace SGSClient.Infrastructure.Server.Persistence.Services;
 
 public sealed class FriendsService(SgsServerDbContext db) : IFriendsService
 {
+    public static readonly TimeSpan OnlineWindow = TimeSpan.FromMinutes(5);
     public Task<SocialOverviewDto> GetOverviewAsync(int userId, CancellationToken cancellationToken = default) =>
         BuildOverviewAsync(userId, cancellationToken);
 
@@ -320,6 +321,9 @@ public sealed class FriendsService(SgsServerDbContext db) : IFriendsService
             Bio = user.Bio,
             PlayerTag = user.PlayerTag,
             LastLoginUtc = user.LastLoginUtc,
+            LastSeenUtc = user.LastSeenUtc,
+            IsOnline = user.LastSeenUtc is { } seen
+                && DateTimeOffset.UtcNow - seen <= OnlineWindow,
             FriendRelation = relation,
             IsFollowing = relations.Any(r =>
                 r.Kind == UserRelationshipKind.Follow

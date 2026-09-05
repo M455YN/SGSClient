@@ -24,12 +24,19 @@ public sealed partial class GamesPage : Page
         InitializeComponent();
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
         TitleText.Text = ViewModel.Title;
+        SortBox.ItemsSource = ViewModel.SortOptions;
+        SortBox.SelectedItem = ViewModel.SelectedSort;
+        SearchBox.Text = ViewModel.SearchText;
+        GenreBox.Text = ViewModel.GenreFilter;
         RefreshUi();
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        SearchBox.Text = ViewModel.SearchText;
+        GenreBox.Text = ViewModel.GenreFilter;
+        SortBox.SelectedItem = ViewModel.SelectedSort;
         await ViewModel.EnsureLoadedAsync();
         RefreshUi();
     }
@@ -49,11 +56,40 @@ public sealed partial class GamesPage : Page
         RefreshUi();
     }
 
+    private void Filter_Changed(object sender, TextChangedEventArgs e)
+    {
+        ViewModel.SearchText = SearchBox.Text ?? string.Empty;
+        ViewModel.GenreFilter = GenreBox.Text ?? string.Empty;
+    }
+
+    private void Sort_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (SortBox.SelectedItem is string sort)
+        {
+            ViewModel.SelectedSort = sort;
+        }
+    }
+
+    private void ClearGenre_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ClearGenreFilterCommand.Execute(null);
+        GenreBox.Text = string.Empty;
+    }
+
     private async void AddToLibrary_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is GameListItem item)
         {
             await ViewModel.AddToLibraryCommand.ExecuteAsync(item);
+            RefreshUi();
+        }
+    }
+
+    private async void Wishlist_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is GameListItem item)
+        {
+            await ViewModel.ToggleWishlistCommand.ExecuteAsync(item);
             RefreshUi();
         }
     }

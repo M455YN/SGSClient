@@ -15,5 +15,9 @@ public sealed class UserEntity
     public UserRole Role { get; set; } = UserRole.User;
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? LastLoginUtc { get; set; }
+
+    /// <summary>Last presence heartbeat from the client (online indicator).</summary>
+    public DateTimeOffset? LastSeenUtc { get; set; }
+
     public string SettingsJson { get; set; } = "{}";
 }

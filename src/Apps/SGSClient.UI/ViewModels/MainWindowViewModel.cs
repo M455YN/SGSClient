@@ -75,6 +75,8 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     public AccountViewModel Account => _account;
+    public GamesViewModel Games => _games;
+    public GameDetailsViewModel GameDetails => _gameDetails;
     public ShellSidebarViewModel Sidebar { get; }
 
     [ObservableProperty]
@@ -109,6 +111,19 @@ public partial class MainWindowViewModel : ViewModelBase
                 OpenGameDetails(gameId, "Games");
             }
 
+            return;
+        }
+
+        if (tag.StartsWith("Games:genre:", StringComparison.OrdinalIgnoreCase))
+        {
+            var genre = tag["Games:genre:".Length..];
+            _games.ApplyGenreFilter(genre);
+            _contentNavTag = "Games";
+            CloseSocial();
+            SelectedNavTag = "Games";
+            Sidebar.SelectNav("Games");
+            CurrentPage = _games;
+            _ = _games.LoadAsync();
             return;
         }
 

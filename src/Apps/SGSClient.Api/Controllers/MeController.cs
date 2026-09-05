@@ -18,6 +18,8 @@ public sealed class MeController(
     IUserAvatarService avatars,
     IGameRepository games,
     IPlaytimeService playtime,
+    IEntitlementService entitlements,
+    IWishlistService wishlists,
     IAdminAuthorization adminAuth,
     IOptions<AzureAdSettings> azureOptions,
     IOptions<GameStorageSettings> storageOptions) : ControllerBase
@@ -247,6 +249,140 @@ public sealed class MeController(
 
         var result = await games.GetOwnedGamesAsync(ownerUserId.Value, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpGet("library")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<GameDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IReadOnlyList<GameDto>>> GetLibrary(CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await entitlements.ListAsync(ownerUserId.Value, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("library/{gameId:int}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameDto>> ClaimLibraryGame(int gameId, CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var result = await entitlements.ClaimFreeAsync(ownerUserId.Value, gameId, cancellationToken);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    [HttpDelete("library/{gameId:int}")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveLibraryGame(int gameId, CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var removed = await entitlements.RevokeAsync(ownerUserId.Value, gameId, cancellationToken);
+        return removed ? NoContent() : NotFound();
+    }
+
+    [HttpGet("wishlist")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<GameDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IReadOnlyList<GameDto>>> GetWishlist(CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await wishlists.ListAsync(ownerUserId.Value, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("wishlist/{gameId:int}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameDto>> AddWishlist(int gameId, CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await wishlists.AddAsync(ownerUserId.Value, gameId, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
+    }
+
+    [HttpDelete("wishlist/{gameId:int}")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveWishlist(int gameId, CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var removed = await wishlists.RemoveAsync(ownerUserId.Value, gameId, cancellationToken);
+        return removed ? NoContent() : NotFound();
+    }
+
+    [HttpPost("presence")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Heartbeat(CancellationToken cancellationToken)
+    {
+        var resolved = await ResolveIdentityAsync(cancellationToken);
+        if (resolved is null)
+        {
+            return Unauthorized();
+        }
+
+        await users.UpsertFromClaimsAsync(
+            resolved.AzureSub,
+            resolved.DisplayName,
+            resolved.Email,
+            avatarUrl: null,
+            cancellationToken);
+        await users.TouchPresenceAsync(resolved.AzureSub, cancellationToken);
+        return NoContent();
     }
 
     [HttpGet("playtime")]

@@ -47,18 +47,23 @@ public partial class App : Application
         services.AddTransient(sp => new GamesViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
-            configuration: configuration));
+            configuration: configuration,
+            auth: sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new GameDetailsViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
-            configuration: configuration));
+            configuration: configuration,
+            queue: sp.GetService<IInstallQueueService>(),
+            auth: sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
             sp.GetService<IGameInstallService>(),
             sp.GetService<ILibraryDiscoveryService>(),
             sp.GetService<ISgsApiService>(),
-            configuration));
+            configuration,
+            sp.GetService<IInstallQueueService>(),
+            sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new GamePropertiesViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>()));
@@ -112,6 +117,7 @@ public partial class App : Application
         SgsClientDbInitializer.InitializeAsync(Services).GetAwaiter().GetResult();
 
         Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
+        Services.GetService<PresenceHeartbeatService>()?.Start();
 
         using (var scope = Services.CreateScope())
         {
@@ -122,6 +128,8 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var vm = Services.GetRequiredService<MainWindowViewModel>();
+            vm.Games.SetOpenAccountHandler(() => vm.NavigateCommand.Execute("Account"));
+            vm.GameDetails.SetOpenAccountHandler(() => vm.NavigateCommand.Execute("Account"));
             desktop.MainWindow = new MainWindow
             {
                 DataContext = vm,

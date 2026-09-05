@@ -33,6 +33,9 @@ public interface IUserService
 
     Task<IReadOnlyList<AdminUserDto>> GetAllUsersAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>Updates <c>LastSeenUtc</c> for presence heartbeats.</summary>
+    Task TouchPresenceAsync(string azureSub, CancellationToken cancellationToken = default);
+
     /// <summary>Assigns a role. Throws when the target is a configuration-locked owner account.</summary>
     Task<AdminUserDto?> SetUserRoleAsync(
         int userId,

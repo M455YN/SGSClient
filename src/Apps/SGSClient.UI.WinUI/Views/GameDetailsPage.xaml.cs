@@ -111,6 +111,8 @@ public sealed partial class GameDetailsPage : Page
         PrimaryActionButton.Content = ViewModel.PrimaryActionLabel;
         PrimaryActionButton.IsEnabled = ViewModel.CanAdd;
         PrimaryActionButton.Visibility = ViewModel.ShowStoreActions ? Visibility.Visible : Visibility.Collapsed;
+        WishlistButton.Content = ViewModel.WishlistLabel;
+        WishlistButton.Visibility = ViewModel.CanToggleWishlist ? Visibility.Visible : Visibility.Collapsed;
 
         LaunchButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
         LaunchButton.IsEnabled = ViewModel.CanLaunch;
@@ -372,6 +374,12 @@ public sealed partial class GameDetailsPage : Page
     private async void AddToLibrary_Click(object sender, RoutedEventArgs e)
     {
         await ViewModel.AddToLibraryCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private async void Wishlist_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.ToggleWishlistCommand.ExecuteAsync(null);
         RefreshUi();
     }
 

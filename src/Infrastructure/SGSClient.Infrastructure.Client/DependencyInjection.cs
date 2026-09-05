@@ -72,6 +72,9 @@ public static class DependencyInjection
                 client.Timeout = TimeSpan.FromMinutes(60);
             });
 
+            services.AddSingleton<IInstallQueueService, InstallQueueService>();
+            services.AddSingleton<PresenceHeartbeatService>();
+
             services.AddSingleton<IAuthSession>(sp =>
                 new MsalAuthSession(
                     sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AzureAdSettings>>(),

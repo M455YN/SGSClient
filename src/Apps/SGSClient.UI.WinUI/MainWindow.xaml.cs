@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SGSClient.UI.ViewModels;
@@ -75,6 +76,11 @@ public sealed partial class MainWindow : Window
 
     private void NavigateByTag(string tag)
     {
+        NavigateByTagPublic(tag);
+    }
+
+    public void NavigateByTagPublic(string tag)
+    {
         if (tag == "Friends")
         {
             if (_socialOpen)
@@ -86,6 +92,19 @@ public sealed partial class MainWindow : Window
                 OpenSocialOverlay();
             }
 
+            return;
+        }
+
+        if (tag.StartsWith("Games:genre:", StringComparison.OrdinalIgnoreCase))
+        {
+            var genre = tag["Games:genre:".Length..];
+            var gamesVm = App.Services.GetRequiredService<GamesViewModel>();
+            gamesVm.ApplyGenreFilter(genre);
+            _contentNavTag = "Games";
+            CloseSocialOverlay();
+            Sidebar.ViewModel.SelectNav("Games");
+            ContentFrame.Navigate(typeof(GamesPage));
+            _ = gamesVm.LoadAsync();
             return;
         }
 

@@ -14,14 +14,66 @@ public sealed class EfGameRepository(
     SgsServerDbContext db,
     IOptions<GameStorageSettings> storageOptions) : IGameRepository
 {
-    public async Task<IReadOnlyList<GameDto>> GetPublishedGamesAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<GameDto>> GetPublishedGamesAsync(
+        GameCatalogQuery? query = null,
+        CancellationToken cancellationToken = default)
     {
-        return await db.Games
+        var games = db.Games
             .AsNoTracking()
-            .Where(g => !g.DraftP && g.Kind == GameContentKind.Game)
-            .OrderByDescending(g => g.FeaturedP)
-            .ThenBy(g => g.FeaturedOrder ?? int.MaxValue)
-            .ThenBy(g => g.Title)
+            .Where(g => !g.DraftP && g.Kind == GameContentKind.Game);
+
+        if (query is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(query.Q))
+            {
+                var q = query.Q.Trim();
+                games = games.Where(g =>
+                    g.Title.Contains(q)
+                    || g.Symbol.Contains(q)
+                    || (g.StudioName != null && g.StudioName.Contains(q))
+                    || (g.TagsCsv != null && g.TagsCsv.Contains(q)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Genre))
+            {
+                var genre = query.Genre.Trim();
+                games = games.Where(g =>
+                    g.Genre != null
+                    && (g.Genre.Name == genre
+                        || g.Genre.Symbol == genre
+                        || g.Genre.Name.Contains(genre)
+                        || g.Genre.Symbol.Contains(genre)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.Tag))
+            {
+                var tag = query.Tag.Trim().ToLowerInvariant();
+                games = games.Where(g => g.TagsCsv != null && g.TagsCsv.ToLower().Contains(tag));
+            }
+
+            if (query.ReleaseStatus is { } status)
+            {
+                games = games.Where(g => g.ReleaseStatus == status);
+            }
+
+            if (query.Featured is { } featured)
+            {
+                games = games.Where(g => g.FeaturedP == featured);
+            }
+        }
+
+        var sort = query?.Sort?.Trim().ToLowerInvariant();
+        IOrderedQueryable<GameEntity> ordered = sort switch
+        {
+            "title" => games.OrderBy(g => g.Title),
+            "newest" => games.OrderByDescending(g => g.CreatedAtUtc).ThenBy(g => g.Title),
+            _ => games
+                .OrderByDescending(g => g.FeaturedP)
+                .ThenBy(g => g.FeaturedOrder ?? int.MaxValue)
+                .ThenBy(g => g.Title)
+        };
+
+        return await ordered
             .Select(ProjectGame(includeDlcs: false))
             .ToListAsync(cancellationToken);
     }

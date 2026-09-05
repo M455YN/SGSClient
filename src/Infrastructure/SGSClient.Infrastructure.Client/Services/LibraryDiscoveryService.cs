@@ -346,7 +346,7 @@ public sealed class LibraryDiscoveryService(
 
         try
         {
-            var games = await api.GetGamesAsync(cancellationToken).ConfigureAwait(false);
+            var games = await api.GetGamesAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
             var game = games.FirstOrDefault(g => string.Equals(g.Symbol, symbol, StringComparison.OrdinalIgnoreCase));
             if (game is null)
             {

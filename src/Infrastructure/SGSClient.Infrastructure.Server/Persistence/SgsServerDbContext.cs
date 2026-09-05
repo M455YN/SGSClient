@@ -16,6 +16,8 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
     public DbSet<UserEntity> Users => Set<UserEntity>();
     public DbSet<UserRelationshipEntity> UserRelationships => Set<UserRelationshipEntity>();
     public DbSet<UserGamePlaytimeEntity> UserGamePlaytimes => Set<UserGamePlaytimeEntity>();
+    public DbSet<UserGameEntitlementEntity> UserGameEntitlements => Set<UserGameEntitlementEntity>();
+    public DbSet<UserGameWishlistEntity> UserGameWishlists => Set<UserGameWishlistEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,7 +40,46 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.HasIndex(x => x.PlayerTag)
                 .IsUnique()
                 .HasFilter("[PlayerTag] IS NOT NULL");
+            entity.HasIndex(x => x.LastSeenUtc);
         });
+
+        modelBuilder.Entity<UserGameEntitlementEntity>(entity =>
+        {
+            entity.ToTable("user_game_entitlements");
+            entity.HasKey(x => new { x.UserId, x.GameId });
+            entity.Property(x => x.Source).HasMaxLength(64).IsRequired();
+            entity.HasIndex(x => x.GameId);
+            entity.HasIndex(x => new { x.UserId, x.GrantedAtUtc });
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Game)
+                .WithMany()
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserGameWishlistEntity>(entity =>
+        {
+            entity.ToTable("user_game_wishlists");
+            entity.HasKey(x => new { x.UserId, x.GameId });
+            entity.HasIndex(x => x.GameId);
+            entity.HasIndex(x => new { x.UserId, x.AddedAtUtc });
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Game)
+                .WithMany()
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
 
         modelBuilder.Entity<UserRelationshipEntity>(entity =>
         {

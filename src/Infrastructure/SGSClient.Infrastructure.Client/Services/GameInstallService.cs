@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Net;
+using System.Net.Http.Headers;
 using Microsoft.Extensions.Options;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
@@ -14,6 +15,7 @@ namespace SGSClient.Infrastructure.Client.Services;
 public sealed class GameInstallService(
     HttpClient http,
     ISgsApiService api,
+    IAuthSession? auth,
     IOptions<ApiClientSettings> apiOptions,
     ILibraryPathProvider libraryPaths,
     ILocalLibraryStore library) : IGameInstallService
@@ -361,8 +363,29 @@ public sealed class GameInstallService(
         IProgress<InstallProgress>? progress,
         CancellationToken cancellationToken)
     {
-        using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (auth is { IsAvailable: true, IsLoggedIn: true })
+        {
+            var token = await auth.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+        }
+
+        using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            throw new InvalidOperationException("Zaloguj się, żeby pobrać grę (401).");
+        }
+
+        if (response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            throw new InvalidOperationException(
+                "Brak uprawnień do pobrania. Dodaj grę do biblioteki (403).");
+        }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {

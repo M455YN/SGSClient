@@ -58,6 +58,10 @@
                         Padding="18,12"
                         MinWidth="200"
                         Classes="accent"/>
+                <Button Content="{Binding WishlistLabel}"
+                        Command="{Binding ToggleWishlistCommand}"
+                        IsVisible="{Binding CanToggleWishlist}"
+                        Padding="14,12"/>
                 <Button Content="Graj"
                         Click="Launch_OnClick"
                         IsVisible="{Binding ShowLibraryActions}"
