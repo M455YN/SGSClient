@@ -57,52 +57,6 @@
           </Grid>
         </Button>
 
-        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                Background="Transparent" BorderThickness="0" Padding="8" MinHeight="40"
-                CornerRadius="4" Command="{Binding Notifications.ToggleCommand}"
-                ToolTip.Tip="Powiadomienia">
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-            <ui:FASymbolIcon Symbol="Important" FontSize="16" />
-            <TextBlock Grid.Column="1" Text="Powiadomienia" VerticalAlignment="Center" />
-            <Border Grid.Column="2" MinWidth="18" Height="18" CornerRadius="9"
-                    Background="#C62828" Padding="4,0"
-                    IsVisible="{Binding Notifications.HasUnread}"
-                    VerticalAlignment="Center">
-              <TextBlock Text="{Binding Notifications.UnreadCount}" FontSize="11"
-                         Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Border>
-          </Grid>
-        </Button>
-        <Border IsVisible="{Binding Notifications.IsOpen}"
-                Margin="4,0,4,8" Padding="8" CornerRadius="6"
-                Background="{DynamicResource LayerFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1" MaxHeight="220">
-          <Grid RowDefinitions="Auto,*">
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Text="Powiadomienia" FontWeight="SemiBold" FontSize="13"/>
-              <Button Grid.Column="1" Content="Przeczytaj wszystkie" FontSize="11"
-                      Padding="6,2" Command="{Binding Notifications.MarkAllReadCommand}"/>
-            </Grid>
-            <ScrollViewer Grid.Row="1" MaxHeight="180" Margin="0,6,0,0">
-              <ItemsControl ItemsSource="{Binding Notifications.Items}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                            Background="Transparent" BorderThickness="0" Padding="4,6"
-                            Command="{Binding $parent[UserControl].((vm:ShellSidebarViewModel)DataContext).Notifications.MarkReadCommand}"
-                            CommandParameter="{Binding}">
-                      <StackPanel Spacing="2">
-                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap"/>
-                        <TextBlock Text="{Binding Body}" FontSize="11" Opacity="0.75" TextWrapping="Wrap"/>
-                      </StackPanel>
-                    </Button>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-          </Grid>
-        </Border>
       </StackPanel>
 
       <Grid Grid.Row="1" RowDefinitions="Auto,*">
@@ -132,6 +86,15 @@
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ui:FASymbolIcon Symbol="Library" FontSize="16" />
               <TextBlock x:Name="NavLibraryLabel" Text="Biblioteka" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button x:Name="NavDownloads" Tag="Downloads" Click="Nav_OnClick" IsVisible="False"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Pobrania">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Download" FontSize="16" />
+              <TextBlock x:Name="NavDownloadsLabel" Text="Pobrania" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button x:Name="NavWishlist" Tag="Wishlist" Click="Nav_OnClick"

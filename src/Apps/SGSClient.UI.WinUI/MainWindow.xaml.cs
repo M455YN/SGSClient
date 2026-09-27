@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
 using SGSClient.UI.ViewModels;
 using SGSClient.UI.WinUI.ViewModels;
@@ -25,7 +26,101 @@ public sealed partial class MainWindow : Window
         Sidebar.ViewModel.SetOpenPropertiesHandler(OpenGameProperties);
         ContentFrame.Navigate(typeof(HomePage));
         _ = Sidebar.InitializeAsync();
+        WireDownloadStatusBar();
+        WireNotificationsStatusBar();
     }
+
+    private void WireNotificationsStatusBar()
+    {
+        var notifications = Sidebar.ViewModel.Notifications;
+        void Refresh()
+        {
+            NotificationsBadge.Visibility = notifications.HasUnread ? Visibility.Visible : Visibility.Collapsed;
+            NotificationsBadgeText.Text = notifications.UnreadCount > 99
+                ? "99+"
+                : notifications.UnreadCount.ToString();
+            NotificationsList.ItemsSource = notifications.Items;
+        }
+
+        notifications.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(NotificationsViewModel.HasUnread)
+                or nameof(NotificationsViewModel.UnreadCount)
+                or null)
+            {
+                Refresh();
+            }
+        };
+        notifications.Items.CollectionChanged += (_, _) => Refresh();
+        Refresh();
+    }
+
+    private async void MarkAllNotificationsRead_OnClick(object sender, RoutedEventArgs e)
+    {
+        await Sidebar.ViewModel.Notifications.MarkAllReadCommand.ExecuteAsync(null);
+        NotificationsList.ItemsSource = null;
+        NotificationsList.ItemsSource = Sidebar.ViewModel.Notifications.Items;
+        NotificationsBadge.Visibility = Sidebar.ViewModel.Notifications.HasUnread
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+        NotificationsBadgeText.Text = Sidebar.ViewModel.Notifications.UnreadCount.ToString();
+    }
+
+    private async void NotificationItem_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: NotificationDto item })
+        {
+            await Sidebar.ViewModel.Notifications.MarkReadCommand.ExecuteAsync(item);
+            NotificationsList.ItemsSource = null;
+            NotificationsList.ItemsSource = Sidebar.ViewModel.Notifications.Items;
+            NotificationsBadge.Visibility = Sidebar.ViewModel.Notifications.HasUnread
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            NotificationsBadgeText.Text = Sidebar.ViewModel.Notifications.UnreadCount.ToString();
+        }
+    }
+
+    private void WireDownloadStatusBar()
+    {
+        var downloads = App.Services.GetService<DownloadsViewModel>();
+        if (downloads is null)
+        {
+            return;
+        }
+
+        void Refresh()
+        {
+            var active = downloads.HasActiveDownload;
+            DownloadStatusActivePanel.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+            DownloadStatusIdleText.Visibility = active ? Visibility.Collapsed : Visibility.Visible;
+            DownloadStatusTitle.Text = string.IsNullOrWhiteSpace(downloads.ActiveDownloadDetail)
+                ? downloads.ActiveDownloadTitle
+                : $"{downloads.ActiveDownloadTitle} — {downloads.ActiveDownloadDetail}";
+            DownloadStatusProgress.Value = downloads.ActiveDownloadProgress;
+            DownloadStatusPercent.Text = active ? downloads.ActiveDownloadProgressText : string.Empty;
+        }
+
+        downloads.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(DownloadsViewModel.HasActiveDownload)
+                or nameof(DownloadsViewModel.ActiveDownloadTitle)
+                or nameof(DownloadsViewModel.ActiveDownloadDetail)
+                or nameof(DownloadsViewModel.ActiveDownloadProgress)
+                or nameof(DownloadsViewModel.ActiveDownloadProgressText)
+                or null)
+            {
+                Refresh();
+            }
+        };
+        downloads.Items.CollectionChanged += (_, _) => Refresh();
+        Refresh();
+    }
+
+    private void DownloadStatusButton_OnClick(object sender, RoutedEventArgs e) =>
+        NavigateByTagPublic("Downloads");
+
+    private void FriendsStatusButton_OnClick(object sender, RoutedEventArgs e) =>
+        NavigateByTagPublic("Friends");
 
     public void RefreshSidebar()
     {
@@ -124,6 +219,7 @@ public sealed partial class MainWindow : Window
         {
             "Games" => typeof(GamesPage),
             "Library" => typeof(LibraryPage),
+            "Downloads" => typeof(DownloadsPage),
             "Wishlist" => typeof(WishlistPage),
             "Publish" => typeof(PublishPage),
             "Studio" => typeof(StudioPage),

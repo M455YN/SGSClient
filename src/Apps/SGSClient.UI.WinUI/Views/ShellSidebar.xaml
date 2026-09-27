@@ -75,6 +75,7 @@
           </StackPanel>
         </Grid>
       </Button>
+
     </Grid>
 
     <Grid Grid.Row="1" Margin="4,0,4,0">
@@ -103,6 +104,14 @@
           <StackPanel Orientation="Horizontal" Spacing="12">
             <FontIcon Glyph="&#xE8F1;" FontSize="16" />
             <TextBlock x:Name="NavLibraryLabel" Text="Biblioteka" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button x:Name="NavDownloads" Tag="Downloads" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
+                Visibility="Collapsed"
+                ToolTipService.ToolTip="Pobrania">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <FontIcon Glyph="&#xE896;" FontSize="16" />
+            <TextBlock x:Name="NavDownloadsLabel" Text="Pobrania" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="NavWishlist" Tag="Wishlist" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"

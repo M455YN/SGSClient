@@ -16,24 +16,126 @@
   </Design.DataContext>
 
   <Panel>
-    <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !ShowLoginGate}">
-      <views:ShellSidebar x:Name="Sidebar" Grid.Column="0"
-                          DataContext="{Binding Sidebar}" />
-      <Grid Grid.Column="1">
-        <ContentControl Content="{Binding CurrentPage}" Margin="0"/>
-        <Border IsVisible="{Binding IsSocialOpen}"
-                Width="360"
-                HorizontalAlignment="Right"
-                Margin="0,12,12,12"
-                CornerRadius="8"
-                ClipToBounds="True"
-                Background="{DynamicResource LayerFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                BoxShadow="0 8 24 0 #40000000">
-          <views:FriendsView DataContext="{Binding Friends}"/>
-        </Border>
+    <Grid RowDefinitions="*,Auto" IsVisible="{Binding !ShowLoginGate}">
+      <Grid ColumnDefinitions="Auto,*">
+        <views:ShellSidebar x:Name="Sidebar" Grid.Column="0"
+                            DataContext="{Binding Sidebar}" />
+        <Grid Grid.Column="1">
+          <ContentControl Content="{Binding CurrentPage}" Margin="0"/>
+          <Border IsVisible="{Binding IsSocialOpen}"
+                  Width="360"
+                  HorizontalAlignment="Right"
+                  Margin="0,12,12,12"
+                  CornerRadius="8"
+                  ClipToBounds="True"
+                  Background="{DynamicResource LayerFillColorDefaultBrush}"
+                  BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                  BorderThickness="1"
+                  BoxShadow="0 8 24 0 #40000000">
+            <views:FriendsView DataContext="{Binding Friends}"/>
+          </Border>
+        </Grid>
       </Grid>
+
+      <Border Grid.Row="1"
+              Background="{DynamicResource LayerFillColorDefaultBrush}"
+              BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+              BorderThickness="0,1,0,0"
+              MinHeight="40" Padding="8,0">
+        <Grid ColumnDefinitions="*,Auto,*">
+          <Button Padding="12,6" HorizontalAlignment="Left" VerticalAlignment="Center"
+                  Cursor="Hand" Background="Transparent" BorderThickness="0"
+                  Command="{Binding Sidebar.Notifications.ToggleCommand}"
+                  ToolTip.Tip="Powiadomienia">
+            <Panel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="🔔" FontSize="12" VerticalAlignment="Center"/>
+                <TextBlock Text="Powiadomienia" FontSize="12" VerticalAlignment="Center"/>
+                <Border MinWidth="18" Height="18" CornerRadius="9" Background="#C62828" Padding="4,0"
+                        IsVisible="{Binding Sidebar.Notifications.HasUnread}"
+                        VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Sidebar.Notifications.UnreadCount}" FontSize="11"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+              </StackPanel>
+              <Popup IsOpen="{Binding Sidebar.Notifications.IsOpen}" Placement="Top"
+                     PlacementAnchor="TopLeft" PlacementGravity="Top"
+                     IsLightDismissEnabled="True">
+                <Border Width="320" MaxHeight="280" Padding="8" Margin="0,0,0,8"
+                        Background="{DynamicResource LayerFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1" CornerRadius="6"
+                        BoxShadow="0 8 24 0 #40000000">
+                  <Grid RowDefinitions="Auto,*">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                      <TextBlock Text="Powiadomienia" FontWeight="SemiBold" FontSize="13"/>
+                      <Button Grid.Column="1" Content="Przeczytaj wszystkie" FontSize="11" Padding="6,2"
+                              Command="{Binding Sidebar.Notifications.MarkAllReadCommand}"/>
+                    </Grid>
+                    <ScrollViewer Grid.Row="1" MaxHeight="220">
+                      <ItemsControl ItemsSource="{Binding Sidebar.Notifications.Items}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                    Background="Transparent" BorderThickness="0" Padding="4,6"
+                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).Sidebar.Notifications.MarkReadCommand}"
+                                    CommandParameter="{Binding}">
+                              <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Body}" FontSize="11" Opacity="0.75" TextWrapping="Wrap"/>
+                              </StackPanel>
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </ScrollViewer>
+                  </Grid>
+                </Border>
+              </Popup>
+            </Panel>
+          </Button>
+
+          <Button Grid.Column="1" Padding="12,4" MinWidth="280" MaxWidth="420"
+                  VerticalAlignment="Center" Cursor="Hand"
+                  Background="Transparent" BorderThickness="0"
+                  HorizontalContentAlignment="Stretch"
+                  Command="{Binding NavigateCommand}" CommandParameter="Downloads"
+                  ToolTip.Tip="Pobrania">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" MinWidth="240">
+              <TextBlock Text="↓" FontSize="14" VerticalAlignment="Center"/>
+              <Panel Grid.Column="1">
+                <StackPanel Spacing="2" VerticalAlignment="Center"
+                            IsVisible="{Binding Downloads.HasActiveDownload}">
+                  <TextBlock Text="{Binding Downloads.ActiveDownloadTitle}"
+                             FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Text="{Binding Downloads.ActiveDownloadDetail}"
+                             FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"/>
+                  <ProgressBar Minimum="0" Maximum="1" Height="3"
+                               Value="{Binding Downloads.ActiveDownloadProgress}"/>
+                </StackPanel>
+                <TextBlock Text="Zarządzaj pobieraniem" FontSize="12" Opacity="0.7"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding !Downloads.HasActiveDownload}"/>
+              </Panel>
+              <TextBlock Grid.Column="2" FontSize="11" Opacity="0.7" MinWidth="36"
+                         VerticalAlignment="Center" HorizontalAlignment="Right"
+                         Text="{Binding Downloads.ActiveDownloadProgressText}"
+                         IsVisible="{Binding Downloads.HasActiveDownload}"/>
+            </Grid>
+          </Button>
+
+          <Button Grid.Column="2" Padding="12,6"
+                  HorizontalAlignment="Right" VerticalAlignment="Center" Cursor="Hand"
+                  Background="Transparent" BorderThickness="0"
+                  Command="{Binding NavigateCommand}" CommandParameter="Friends"
+                  ToolTip.Tip="Znajomi">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="👥" FontSize="12" VerticalAlignment="Center"/>
+              <TextBlock Text="Znajomi" FontSize="12" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
     </Grid>
 
     <Panel IsVisible="{Binding ShowLoginGate}">

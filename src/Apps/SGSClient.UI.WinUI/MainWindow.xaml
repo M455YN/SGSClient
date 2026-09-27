@@ -7,34 +7,169 @@
 
   <Grid>
     <Grid x:Name="ShellRoot" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="Auto" />
-        <ColumnDefinition Width="*" />
-      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
 
-      <views:ShellSidebar x:Name="Sidebar" Grid.Column="0" />
+      <Grid Grid.Row="0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-      <Grid Grid.Column="1">
-        <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                BorderThickness="1,0,0,0">
-          <Frame x:Name="ContentFrame" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
-        </Border>
+        <views:ShellSidebar x:Name="Sidebar" Grid.Column="0" />
 
-        <Border x:Name="SocialPanel"
-                Width="360"
-                HorizontalAlignment="Right"
-                Margin="0,12,12,12"
-                CornerRadius="8"
-                Visibility="Collapsed"
-                Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1">
-          <Border.Shadow>
-            <ThemeShadow />
-          </Border.Shadow>
-          <Frame x:Name="SocialFrame" Background="Transparent" />
-        </Border>
+        <Grid Grid.Column="1">
+          <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                  BorderThickness="1,0,0,0">
+            <Frame x:Name="ContentFrame" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+          </Border>
+
+          <Border x:Name="SocialPanel"
+                  Width="360"
+                  HorizontalAlignment="Right"
+                  Margin="0,12,12,12"
+                  CornerRadius="8"
+                  Visibility="Collapsed"
+                  Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  BorderThickness="1">
+            <Border.Shadow>
+              <ThemeShadow />
+            </Border.Shadow>
+            <Frame x:Name="SocialFrame" Background="Transparent" />
+          </Border>
+        </Grid>
       </Grid>
+
+      <!-- Fluent bottom status strip -->
+      <Border Grid.Row="1"
+              Background="{ThemeResource LayerFillColorDefaultBrush}"
+              BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+              BorderThickness="0,1,0,0"
+              MinHeight="40"
+              Padding="8,0">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+
+          <Button x:Name="NotificationsStatusButton"
+                  Style="{StaticResource SubtleButtonStyle}"
+                  Padding="12,6"
+                  HorizontalAlignment="Left"
+                  VerticalAlignment="Center"
+                  ToolTipService.ToolTip="Powiadomienia">
+            <Button.Flyout>
+              <Flyout x:Name="NotificationsFlyout" Placement="TopEdgeAlignedLeft">
+                <Border Width="320" MaxHeight="280" Padding="8">
+                  <Grid>
+                    <Grid.RowDefinitions>
+                      <RowDefinition Height="Auto" />
+                      <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Margin="0,0,0,8">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <TextBlock Text="Powiadomienia" FontWeight="SemiBold" FontSize="13"
+                                 VerticalAlignment="Center" />
+                      <Button Grid.Column="1" Content="Przeczytaj wszystkie" FontSize="11"
+                              Padding="6,2" Click="MarkAllNotificationsRead_OnClick" />
+                    </Grid>
+                    <ScrollViewer Grid.Row="1" MaxHeight="220">
+                      <ItemsControl x:Name="NotificationsList">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                    Background="Transparent" BorderThickness="0" Padding="4,6"
+                                    Click="NotificationItem_OnClick" Tag="{Binding}">
+                              <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Body}" FontSize="11" Opacity="0.75"
+                                           TextWrapping="Wrap" />
+                              </StackPanel>
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </ScrollViewer>
+                  </Grid>
+                </Border>
+              </Flyout>
+            </Button.Flyout>
+            <Grid ColumnSpacing="8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <FontIcon Glyph="&#xEA8F;" FontSize="14" />
+              <TextBlock Grid.Column="1" Text="Powiadomienia" VerticalAlignment="Center" FontSize="12" />
+              <Border x:Name="NotificationsBadge" Grid.Column="2"
+                      MinWidth="18" Height="18" CornerRadius="9"
+                      Background="#C62828" Padding="4,0"
+                      Visibility="Collapsed" VerticalAlignment="Center">
+                <TextBlock x:Name="NotificationsBadgeText" FontSize="11" Foreground="White"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+            </Grid>
+          </Button>
+
+          <Button x:Name="DownloadStatusButton"
+                  Grid.Column="1"
+                  Style="{StaticResource SubtleButtonStyle}"
+                  Padding="12,4"
+                  MinWidth="280"
+                  MaxWidth="420"
+                  HorizontalContentAlignment="Stretch"
+                  VerticalAlignment="Center"
+                  Click="DownloadStatusButton_OnClick"
+                  ToolTipService.ToolTip="Pobrania">
+            <Grid ColumnSpacing="12" MinWidth="240">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <FontIcon Glyph="&#xE896;" FontSize="14" VerticalAlignment="Center" />
+              <StackPanel x:Name="DownloadStatusActivePanel" Grid.Column="1" Spacing="2"
+                          VerticalAlignment="Center" Visibility="Collapsed">
+                <TextBlock x:Name="DownloadStatusTitle" FontSize="12" FontWeight="SemiBold"
+                           TextTrimming="CharacterEllipsis" />
+                <ProgressBar x:Name="DownloadStatusProgress" Minimum="0" Maximum="1" Height="3"
+                             HorizontalAlignment="Stretch" />
+              </StackPanel>
+              <TextBlock x:Name="DownloadStatusIdleText" Grid.Column="1"
+                         Text="Zarządzaj pobieraniem"
+                         FontSize="12" VerticalAlignment="Center"
+                         Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+              <TextBlock x:Name="DownloadStatusPercent" Grid.Column="2"
+                         FontSize="11" Opacity="0.7" MinWidth="36"
+                         VerticalAlignment="Center" HorizontalAlignment="Right" />
+            </Grid>
+          </Button>
+
+          <Button x:Name="FriendsStatusButton"
+                  Grid.Column="2"
+                  Style="{StaticResource SubtleButtonStyle}"
+                  Padding="12,6"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  Click="FriendsStatusButton_OnClick"
+                  ToolTipService.ToolTip="Znajomi">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <FontIcon Glyph="&#xE716;" FontSize="14" />
+              <TextBlock Text="Znajomi" VerticalAlignment="Center" FontSize="12" />
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
     </Grid>
 
     <Grid x:Name="LoginGatePanel" Visibility="Collapsed">
