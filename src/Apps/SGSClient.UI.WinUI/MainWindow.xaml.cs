@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using SGSClient.Core.Interfaces;
 using SGSClient.UI.ViewModels;
 using SGSClient.UI.WinUI.ViewModels;
 using SGSClient.UI.WinUI.Views;
@@ -17,6 +18,7 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         Title = "SGSClient";
+        AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico"));
 
         Sidebar.ViewModel.SetNavigateHandler(NavigateByTag);
         Sidebar.ViewModel.SetOpenDetailsHandler(OpenGameDetails);
@@ -39,6 +41,11 @@ public sealed partial class MainWindow : Window
 
     public void NavigateTo(Type pageType, object? parameter = null, string? selectTag = null)
     {
+        if (LoginGatePanel.Visibility == Visibility.Visible)
+        {
+            return;
+        }
+
         if (selectTag is not null && selectTag != "Friends")
         {
             _contentNavTag = selectTag;
@@ -74,13 +81,15 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void NavigateByTag(string tag)
-    {
-        NavigateByTagPublic(tag);
-    }
+    private void NavigateByTag(string tag) => NavigateByTagPublic(tag);
 
     public void NavigateByTagPublic(string tag)
     {
+        if (LoginGatePanel.Visibility == Visibility.Visible)
+        {
+            return;
+        }
+
         if (tag == "Friends")
         {
             if (_socialOpen)
@@ -137,6 +146,11 @@ public sealed partial class MainWindow : Window
 
     public void OpenSocialOverlay(string? tab = null)
     {
+        if (LoginGatePanel.Visibility == Visibility.Visible)
+        {
+            return;
+        }
+
         if (SocialFrame.Content is FriendsPage page)
         {
             _ = page.ViewModel.InitializeAsync(tab);
@@ -176,5 +190,107 @@ public sealed partial class MainWindow : Window
         var dialog = new GamePropertiesDialog();
         await dialog.ShowForGameAsync(item.GameId, item.BuildId, item.Title, Content.XamlRoot);
         await Sidebar.ViewModel.LoadInstalledAsync();
+    }
+
+    public void ShowLoginGate(LoginGateViewModel gate)
+    {
+        if (!ReferenceEquals(LoginGatePanel.DataContext, gate))
+        {
+            if (LoginGatePanel.DataContext is LoginGateViewModel previous)
+            {
+                previous.PropertyChanged -= OnLoginGatePropertyChanged;
+            }
+
+            gate.PropertyChanged += OnLoginGatePropertyChanged;
+            LoginGatePanel.DataContext = gate;
+        }
+
+        UpdateLoginGateUi(gate);
+        ShellRoot.Visibility = Visibility.Collapsed;
+        LoginGatePanel.Visibility = Visibility.Visible;
+    }
+
+    private void OnLoginGatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (sender is LoginGateViewModel gate
+            && e.PropertyName is nameof(LoginGateViewModel.StatusText) or nameof(LoginGateViewModel.IsBusy))
+        {
+            UpdateLoginGateUi(gate);
+        }
+    }
+
+    private void UpdateLoginGateUi(LoginGateViewModel gate)
+    {
+        LoginStatusText.Text = gate.StatusText;
+        LoginVersionText.Text = gate.VersionText;
+        LoginButton.IsEnabled = !gate.IsBusy;
+        SignUpLink.IsEnabled = !gate.IsBusy;
+        LoginCancelLink.Visibility = gate.IsBusy ? Visibility.Visible : Visibility.Collapsed;
+        LoginProgress.IsActive = gate.IsBusy;
+        LoginProgress.Visibility = gate.IsBusy ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public void HideLoginGate()
+    {
+        LoginGatePanel.Visibility = Visibility.Collapsed;
+        ShellRoot.Visibility = Visibility.Visible;
+    }
+
+    private async void LoginButton_OnClick(object sender, RoutedEventArgs e) =>
+        await RunLoginGateAsync(signUp: false);
+
+    private async void SignUpLink_OnClick(object sender, RoutedEventArgs e) =>
+        await RunLoginGateAsync(signUp: true);
+
+    private void LoginCancelLink_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (LoginGatePanel.DataContext is LoginGateViewModel gate)
+        {
+            gate.CancelCommand.Execute(null);
+        }
+    }
+
+    private async Task RunLoginGateAsync(bool signUp)
+    {
+        if (LoginGatePanel.DataContext is not LoginGateViewModel gate)
+        {
+            return;
+        }
+
+        gate.SetParentWindowHandle(() =>
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            return hwnd;
+        });
+        gate.SetOnAuthenticated(async () =>
+        {
+            HideLoginGate();
+            var auth = App.Services.GetService<IAuthSession>();
+            if (auth?.CurrentUser is { } profile)
+            {
+                SetAdminNavVisible(profile.IsAdmin);
+            }
+
+            RefreshSidebar();
+            var library = App.Services.GetService<LibraryViewModel>();
+            if (library is not null)
+            {
+                await library.LoadAsync();
+            }
+
+            await Sidebar.ViewModel.Notifications.StartAsync();
+            if (auth?.CurrentUser?.NeedsPlayerTag == true)
+            {
+                NavigateTo(typeof(AccountPage), selectTag: "Account");
+            }
+        });
+        if (signUp)
+        {
+            await gate.SignUpCommand.ExecuteAsync(null);
+        }
+        else
+        {
+            await gate.LoginCommand.ExecuteAsync(null);
+        }
     }
 }

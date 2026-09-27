@@ -16,6 +16,17 @@ public partial class MainWindow : Window
             Wire();
             if (DataContext is MainWindowViewModel vm)
             {
+                try
+                {
+                    var handle = TryGetPlatformHandle()?.Handle ?? 0;
+                    vm.LoginGate.SetParentWindowHandle(() => handle);
+                    vm.Account.SetParentWindowHandleProvider(() => handle);
+                }
+                catch
+                {
+                    // best-effort for MSAL parent window
+                }
+
                 await vm.InitializeAsync();
             }
         };

@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.LoginView"
+             x:DataType="vm:LoginGateViewModel">
+  <Grid ColumnDefinitions="*,440">
+    <Panel Grid.Column="0">
+      <Image Source="avares://SGSClient.UI/Assets/Login/login-background.jpg"
+             Stretch="UniformToFill"/>
+      <Border BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+              BorderThickness="0,0,1,0"/>
+    </Panel>
+
+    <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" Margin="56,48"
+          Background="Transparent">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Image Source="avares://SGSClient.UI/Assets/Login/sgs-logo.png"
+               Width="32" Height="32"/>
+        <TextBlock Text="SGSClient" FontSize="14" FontWeight="SemiBold"
+                   VerticalAlignment="Center"/>
+      </StackPanel>
+
+      <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="8">
+        <TextBlock Text="Zaloguj się" FontSize="28" FontWeight="SemiBold"/>
+        <TextBlock Text="Użyj konta SGS." FontSize="14"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+
+        <Button Content="Zaloguj się"
+                Classes="accent"
+                Command="{Binding LoginCommand}"
+                IsEnabled="{Binding !IsBusy}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                MinHeight="36"
+                Margin="0,24,0,0"/>
+
+        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+          <TextBlock Text="Nie masz konta?" FontSize="12" VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+          <Button Command="{Binding SignUpCommand}"
+                  IsEnabled="{Binding !IsBusy}"
+                  Background="Transparent" BorderThickness="0"
+                  Padding="4,2" Cursor="Hand">
+            <TextBlock Text="Zarejestruj się" FontSize="12"
+                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+          </Button>
+        </StackPanel>
+
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}"
+                     Margin="0,12,0,0"/>
+        <StackPanel Orientation="Horizontal" Spacing="4">
+          <TextBlock Text="{Binding StatusText}" FontSize="12" TextWrapping="Wrap"
+                     MaxWidth="240" VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+          <Button Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}"
+                  Background="Transparent" BorderThickness="0"
+                  Padding="4,2" Cursor="Hand" VerticalAlignment="Center">
+            <TextBlock Text="Anuluj" FontSize="12"
+                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
+          </Button>
+        </StackPanel>
+      </StackPanel>
+
+      <TextBlock Grid.Row="2" Text="{Binding VersionText}" FontSize="12"
+                 Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+    </Grid>
+  </Grid>
+</UserControl>

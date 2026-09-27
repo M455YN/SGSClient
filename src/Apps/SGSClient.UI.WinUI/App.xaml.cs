@@ -114,20 +114,30 @@ public partial class App : Application
             sp.GetService<IUserApiClient>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration));
+        services.AddSingleton(sp => new LoginGateViewModel(
+            sp.GetService<IAuthSession>(),
+            sp.GetService<IUserApiClient>()));
         services.AddSingleton(sp => new FriendsViewModel(
             sp.GetService<IUserApiClient>(),
-            sp.GetService<IAuthSession>()));
+            sp.GetService<IAuthSession>(),
+            sp.GetService<SocialRealtimeService>()));
+        services.AddSingleton(sp => new NotificationsViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<IAuthSession>(),
+            sp.GetService<SocialRealtimeService>()));
         services.AddSingleton(sp => new ShellSidebarViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
             sp.GetService<ILibraryDiscoveryService>(),
             sp.GetService<IAuthSession>(),
-            configuration));
+            configuration,
+            sp.GetService<NotificationsViewModel>()));
 
         Services = services.BuildServiceProvider();
         SgsClientDbInitializer.InitializeAsync(Services).GetAwaiter().GetResult();
 
         Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
+        Services.GetService<IInstallQueueService>()?.RestorePersistedAsync().GetAwaiter().GetResult();
         Services.GetService<PresenceHeartbeatService>()?.Start();
 
         using (var scope = Services.CreateScope())
@@ -149,29 +159,55 @@ public partial class App : Application
         wishlistVm.SetOpenDetailsHandler(id =>
             MainWindow?.NavigateTo(typeof(GameDetailsPage), new GameDetailsNavArgs(id, "Wishlist"), selectTag: "Wishlist"));
 
-        var auth = Services.GetService<IAuthSession>();
-        if (auth?.IsAvailable != true)
-        {
-            MainWindow.SetAdminNavVisible(true);
-        }
+        var loginGate = Services.GetRequiredService<LoginGateViewModel>();
+        loginGate.SetOnAuthenticated(EnterAuthenticatedShellAsync);
 
         _ = WarmSilentLoginAsync();
-        _ = CheckUpdatesOnStartupAsync();
     }
 
-    private static async Task CheckUpdatesOnStartupAsync()
+    public static void ReturnToLoginGate()
     {
-        try
+        var loginGate = Services.GetRequiredService<LoginGateViewModel>();
+        loginGate.RequiresLogin = true;
+        loginGate.StatusText = string.Empty;
+        var sidebar = Services.GetService<ShellSidebarViewModel>();
+        _ = sidebar?.Notifications.StopAsync();
+        MainWindow?.RefreshSidebar();
+        MainWindow?.NavigateTo(typeof(HomePage), selectTag: "Home");
+        MainWindow?.ShowLoginGate(loginGate);
+    }
+
+    private static async Task EnterAuthenticatedShellAsync()
+    {
+        MainWindow?.HideLoginGate();
+        var auth = Services.GetService<IAuthSession>();
+        if (auth?.CurrentUser is not null)
         {
-            var library = Services.GetService<LibraryViewModel>();
-            if (library is not null)
+            MainWindow?.SetAdminNavVisible(auth.CurrentUser.IsAdmin);
+        }
+
+        MainWindow?.RefreshSidebar();
+        var library = Services.GetService<LibraryViewModel>();
+        if (library is not null)
+        {
+            await library.LoadAsync();
+            await library.CheckUpdatesOnStartupAsync();
+        }
+
+        var account = Services.GetService<AccountViewModel>();
+        if (account is not null)
+        {
+            await account.InitializeAsync();
+            if (account.NeedsPlayerTagSetup)
             {
-                await library.CheckUpdatesOnStartupAsync();
+                MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account");
             }
         }
-        catch (Exception ex)
+
+        var sidebar = Services.GetService<ShellSidebarViewModel>();
+        if (sidebar is not null)
         {
-            LogStartupFailure("CheckUpdatesOnStartupAsync", ex);
+            await sidebar.Notifications.StartAsync();
         }
     }
 
@@ -196,30 +232,24 @@ public partial class App : Application
     {
         try
         {
-            var auth = Services.GetService<IAuthSession>();
-            if (auth?.IsAvailable == true)
+            var loginGate = Services.GetRequiredService<LoginGateViewModel>();
+            var entered = await loginGate.TrySilentEnterAsync();
+            if (!entered)
             {
-                await auth.TrySilentLoginAsync();
-                if (auth.IsLoggedIn)
-                {
-                    var users = Services.GetService<IUserApiClient>();
-                    var profile = users is null ? auth.CurrentUser : await users.GetMeAsync();
-                    if (profile is not null)
-                    {
-                        auth.SetCurrentUser(profile);
-                        MainWindow?.SetAdminNavVisible(profile.IsAdmin);
-                        MainWindow?.RefreshSidebar();
-                        if (profile.NeedsPlayerTag)
-                        {
-                            MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account");
-                        }
-                    }
-                }
+                MainWindow?.ShowLoginGate(loginGate);
+                return;
             }
+
+            await EnterAuthenticatedShellAsync();
         }
         catch (Exception ex)
         {
             LogStartupFailure("WarmSilentLoginAsync", ex);
+            var loginGate = Services.GetService<LoginGateViewModel>();
+            if (loginGate is not null)
+            {
+                MainWindow?.ShowLoginGate(loginGate);
+            }
         }
     }
 }

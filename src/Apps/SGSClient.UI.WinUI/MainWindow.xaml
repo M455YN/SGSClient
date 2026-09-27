@@ -5,34 +5,101 @@
     xmlns:views="using:SGSClient.UI.WinUI.Views"
     Title="SGSClient">
 
-  <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="Auto" />
-      <ColumnDefinition Width="*" />
-    </Grid.ColumnDefinitions>
+  <Grid>
+    <Grid x:Name="ShellRoot" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
 
-    <views:ShellSidebar x:Name="Sidebar" Grid.Column="0" />
+      <views:ShellSidebar x:Name="Sidebar" Grid.Column="0" />
 
-    <Grid Grid.Column="1">
-      <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-              BorderThickness="1,0,0,0">
-        <Frame x:Name="ContentFrame" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
-      </Border>
+      <Grid Grid.Column="1">
+        <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="1,0,0,0">
+          <Frame x:Name="ContentFrame" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
+        </Border>
 
-      <Border x:Name="SocialPanel"
-              Width="360"
-              HorizontalAlignment="Right"
-              Margin="0,12,12,12"
-              CornerRadius="8"
-              Visibility="Collapsed"
-              Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
-              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-              BorderThickness="1">
-        <Border.Shadow>
-          <ThemeShadow />
-        </Border.Shadow>
-        <Frame x:Name="SocialFrame" Background="Transparent" />
-      </Border>
+        <Border x:Name="SocialPanel"
+                Width="360"
+                HorizontalAlignment="Right"
+                Margin="0,12,12,12"
+                CornerRadius="8"
+                Visibility="Collapsed"
+                Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+          <Border.Shadow>
+            <ThemeShadow />
+          </Border.Shadow>
+          <Frame x:Name="SocialFrame" Background="Transparent" />
+        </Border>
+      </Grid>
+    </Grid>
+
+    <Grid x:Name="LoginGatePanel" Visibility="Collapsed">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="440" />
+      </Grid.ColumnDefinitions>
+
+      <Grid Grid.Column="0">
+        <Image Source="ms-appx:///Assets/Login/login-background.jpg" Stretch="UniformToFill" />
+        <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,1,0" />
+      </Grid>
+
+      <Grid Grid.Column="1" Padding="56,48">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Image Source="ms-appx:///Assets/Login/sgs-logo.png" Width="32" Height="32" />
+          <TextBlock Text="SGSClient" Style="{StaticResource BodyStrongTextBlockStyle}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="8">
+          <TextBlock Text="Zaloguj się" Style="{StaticResource TitleTextBlockStyle}" />
+          <TextBlock Text="Użyj konta SGS."
+                     Style="{StaticResource BodyTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+          <Button x:Name="LoginButton"
+                  Content="Zaloguj się"
+                  Style="{StaticResource AccentButtonStyle}"
+                  HorizontalAlignment="Stretch"
+                  MinHeight="36"
+                  Margin="0,24,0,0"
+                  Click="LoginButton_OnClick" />
+
+          <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+            <TextBlock Text="Nie masz konta?" VerticalAlignment="Center"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <HyperlinkButton x:Name="SignUpLink" Content="Zarejestruj się" Padding="4,2" FontSize="12"
+                             Click="SignUpLink_OnClick" />
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
+            <ProgressRing x:Name="LoginProgress" Width="16" Height="16"
+                          IsActive="False" Visibility="Collapsed" />
+            <TextBlock x:Name="LoginStatusText" TextWrapping="Wrap" MaxWidth="240"
+                       VerticalAlignment="Center"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <HyperlinkButton x:Name="LoginCancelLink" Content="Anuluj" Padding="4,2" FontSize="12"
+                             VerticalAlignment="Center" Visibility="Collapsed"
+                             Click="LoginCancelLink_OnClick" />
+          </StackPanel>
+        </StackPanel>
+
+        <TextBlock x:Name="LoginVersionText" Grid.Row="2"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+      </Grid>
     </Grid>
   </Grid>
 </Window>

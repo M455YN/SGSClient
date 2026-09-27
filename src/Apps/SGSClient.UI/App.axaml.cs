@@ -95,15 +95,24 @@ public partial class App : Application
             sp.GetService<IUserApiClient>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration));
+        services.AddSingleton(sp => new LoginGateViewModel(
+            sp.GetService<IAuthSession>(),
+            sp.GetService<IUserApiClient>()));
         services.AddSingleton(sp => new FriendsViewModel(
             sp.GetService<IUserApiClient>(),
-            sp.GetService<IAuthSession>()));
+            sp.GetService<IAuthSession>(),
+            sp.GetService<SocialRealtimeService>()));
+        services.AddSingleton(sp => new NotificationsViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<IAuthSession>(),
+            sp.GetService<SocialRealtimeService>()));
         services.AddSingleton(sp => new ShellSidebarViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
             sp.GetService<ILibraryDiscoveryService>(),
             sp.GetService<IAuthSession>(),
-            configuration));
+            configuration,
+            sp.GetService<NotificationsViewModel>()));
         services.AddTransient(sp => new MainWindowViewModel(
             sp.GetRequiredService<HomeViewModel>(),
             sp.GetRequiredService<GamesViewModel>(),
@@ -116,13 +125,15 @@ public partial class App : Application
             sp.GetRequiredService<SettingsViewModel>(),
             sp.GetRequiredService<AccountViewModel>(),
             sp.GetRequiredService<FriendsViewModel>(),
-            sp.GetRequiredService<ShellSidebarViewModel>()));
+            sp.GetRequiredService<ShellSidebarViewModel>(),
+            sp.GetRequiredService<LoginGateViewModel>()));
 
         Services = services.BuildServiceProvider();
 
         SgsClientDbInitializer.InitializeAsync(Services).GetAwaiter().GetResult();
 
         Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
+        Services.GetService<IInstallQueueService>()?.RestorePersistedAsync().GetAwaiter().GetResult();
         Services.GetService<PresenceHeartbeatService>()?.Start();
 
         using (var scope = Services.CreateScope())
@@ -136,13 +147,13 @@ public partial class App : Application
             var vm = Services.GetRequiredService<MainWindowViewModel>();
             vm.Games.SetOpenAccountHandler(() => vm.NavigateCommand.Execute("Account"));
             vm.GameDetails.SetOpenAccountHandler(() => vm.NavigateCommand.Execute("Account"));
-            // Wishlist handlers are set in MainWindowViewModel ctor
+            vm.LoginGate.SetParentWindowHandle(() =>
+                desktop.MainWindow?.TryGetPlatformHandle()?.Handle ?? 0);
             desktop.MainWindow = new MainWindow
             {
                 DataContext = vm,
             };
-
-            _ = vm.InitializeAsync();
+            // InitializeAsync runs from MainWindow.Opened (needs window handle for MSAL).
         }
 
         base.OnFrameworkInitializationCompleted();

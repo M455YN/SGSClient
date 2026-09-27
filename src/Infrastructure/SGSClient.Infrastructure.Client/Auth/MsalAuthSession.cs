@@ -77,7 +77,13 @@ public sealed class MsalAuthSession : IAuthSession
         }
     }
 
-    public async Task<bool> LoginAsync(nint parentWindowHandle = 0, CancellationToken cancellationToken = default)
+    public Task<bool> LoginAsync(nint parentWindowHandle = 0, CancellationToken cancellationToken = default) =>
+        InteractiveAsync(parentWindowHandle, signUp: false, cancellationToken);
+
+    public Task<bool> SignUpAsync(nint parentWindowHandle = 0, CancellationToken cancellationToken = default) =>
+        InteractiveAsync(parentWindowHandle, signUp: true, cancellationToken);
+
+    private async Task<bool> InteractiveAsync(nint parentWindowHandle, bool signUp, CancellationToken cancellationToken)
     {
         LastError = null;
         if (_msal is null)
@@ -95,6 +101,13 @@ public sealed class MsalAuthSession : IAuthSession
             }
 
             var request = _msal.AcquireTokenInteractive(_settings.Scopes);
+            if (signUp)
+            {
+                request = request
+                    .WithB2CAuthority(_settings.SignUpAuthority)
+                    .WithPrompt(Prompt.ForceLogin);
+            }
+
             if (parentWindowHandle != 0)
             {
                 request = request.WithParentActivityOrWindow(parentWindowHandle);

@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:SGSClient.UI.ViewModels"
         xmlns:views="using:SGSClient.UI.Views"
@@ -7,7 +7,7 @@
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
         x:Class="SGSClient.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/app.ico"
         Width="1100" Height="700"
         Title="SGSClient">
 
@@ -15,23 +15,29 @@
     <vm:MainWindowViewModel/>
   </Design.DataContext>
 
-  <Grid ColumnDefinitions="Auto,*">
-    <views:ShellSidebar x:Name="Sidebar" Grid.Column="0"
-                        DataContext="{Binding Sidebar}" />
-    <Grid Grid.Column="1">
-      <ContentControl Content="{Binding CurrentPage}" Margin="0"/>
-      <Border IsVisible="{Binding IsSocialOpen}"
-              Width="360"
-              HorizontalAlignment="Right"
-              Margin="0,12,12,12"
-              CornerRadius="8"
-              ClipToBounds="True"
-              Background="{DynamicResource LayerFillColorDefaultBrush}"
-              BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-              BorderThickness="1"
-              BoxShadow="0 8 24 0 #40000000">
-        <views:FriendsView DataContext="{Binding Friends}"/>
-      </Border>
+  <Panel>
+    <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding !ShowLoginGate}">
+      <views:ShellSidebar x:Name="Sidebar" Grid.Column="0"
+                          DataContext="{Binding Sidebar}" />
+      <Grid Grid.Column="1">
+        <ContentControl Content="{Binding CurrentPage}" Margin="0"/>
+        <Border IsVisible="{Binding IsSocialOpen}"
+                Width="360"
+                HorizontalAlignment="Right"
+                Margin="0,12,12,12"
+                CornerRadius="8"
+                ClipToBounds="True"
+                Background="{DynamicResource LayerFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                BoxShadow="0 8 24 0 #40000000">
+          <views:FriendsView DataContext="{Binding Friends}"/>
+        </Border>
+      </Grid>
     </Grid>
-  </Grid>
+
+    <Panel IsVisible="{Binding ShowLoginGate}">
+      <views:LoginView DataContext="{Binding LoginGate}"/>
+    </Panel>
+  </Panel>
 </Window>

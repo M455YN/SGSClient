@@ -16,6 +16,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly SettingsViewModel _settings;
     private readonly AccountViewModel _account;
     private readonly FriendsViewModel _friends;
+    private readonly LoginGateViewModel _loginGate;
     private string _friendsTab = "Friends";
 
     public MainWindowViewModel()
@@ -31,7 +32,8 @@ public partial class MainWindowViewModel : ViewModelBase
             new SettingsViewModel(),
             new AccountViewModel(),
             new FriendsViewModel(),
-            new ShellSidebarViewModel())
+            new ShellSidebarViewModel(),
+            new LoginGateViewModel())
     {
     }
 
@@ -47,7 +49,8 @@ public partial class MainWindowViewModel : ViewModelBase
         SettingsViewModel settings,
         AccountViewModel account,
         FriendsViewModel friends,
-        ShellSidebarViewModel sidebar)
+        ShellSidebarViewModel sidebar,
+        LoginGateViewModel loginGate)
     {
         _home = home;
         _games = games;
@@ -60,6 +63,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _settings = settings;
         _account = account;
         _friends = friends;
+        _loginGate = loginGate;
         Sidebar = sidebar;
         CurrentPage = _home;
         SelectedNavTag = "Home";
@@ -77,6 +81,14 @@ public partial class MainWindowViewModel : ViewModelBase
             Sidebar.SetRoleVisibility(visible, visible);
             Sidebar.RefreshProfile();
         });
+        _account.SetLogoutHandler(() =>
+        {
+            ShowLoginGate = _loginGate.IsAuthConfigured;
+            CloseSocial();
+            Sidebar.RefreshProfile();
+            _ = Sidebar.Notifications.StopAsync();
+        });
+        _loginGate.SetOnAuthenticated(EnterAuthenticatedShellAsync);
         Sidebar.SelectNav("Home");
     }
 
@@ -84,6 +96,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public GamesViewModel Games => _games;
     public GameDetailsViewModel GameDetails => _gameDetails;
     public ShellSidebarViewModel Sidebar { get; }
+    public LoginGateViewModel LoginGate => _loginGate;
+    public FriendsViewModel Friends => _friends;
 
     [ObservableProperty]
     private ObservableObject _currentPage;
@@ -97,7 +111,8 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSocialOpen;
 
-    public FriendsViewModel Friends => _friends;
+    [ObservableProperty]
+    private bool _showLoginGate;
 
     private string _detailsReturnTag = "Games";
     private string _contentNavTag = "Home";
@@ -301,6 +316,19 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async Task InitializeAsync()
     {
+        var entered = await _loginGate.TrySilentEnterAsync();
+        if (!entered && _loginGate.IsAuthConfigured)
+        {
+            ShowLoginGate = true;
+            return;
+        }
+
+        await EnterAuthenticatedShellAsync();
+    }
+
+    public async Task EnterAuthenticatedShellAsync()
+    {
+        ShowLoginGate = false;
         await _account.InitializeAsync();
         Sidebar.RefreshProfile();
         if (_account.NeedsPlayerTagSetup)
@@ -309,6 +337,8 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         await Sidebar.LoadInstalledAsync();
+        await _library.LoadAsync();
         await _library.CheckUpdatesOnStartupAsync();
+        await Sidebar.Notifications.StartAsync();
     }
 }

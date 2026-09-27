@@ -15,6 +15,7 @@ public interface IAuthSession
 
     Task<bool> TrySilentLoginAsync(CancellationToken cancellationToken = default);
     Task<bool> LoginAsync(nint parentWindowHandle = 0, CancellationToken cancellationToken = default);
+    Task<bool> SignUpAsync(nint parentWindowHandle = 0, CancellationToken cancellationToken = default);
     Task LogoutAsync(CancellationToken cancellationToken = default);
     Task<string?> GetAccessTokenAsync(CancellationToken cancellationToken = default);
 

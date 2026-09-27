@@ -9,6 +9,10 @@ public sealed class AzureAdSettings
     public string TenantName { get; set; } = string.Empty;
     public string SigninPolicy { get; set; } = string.Empty;
     public string PasswordResetPolicy { get; set; } = string.Empty;
+
+    /// <summary>User flow opened by "Utwórz konto". Falls back to <see cref="SigninPolicy"/> when empty.</summary>
+    public string SignUpPolicy { get; set; } = string.Empty;
+
     public string[] Scopes { get; set; } = ["openid", "offline_access"];
 
     /// <summary>
@@ -20,6 +24,9 @@ public sealed class AzureAdSettings
 
     public string Authority =>
         $"https://{TenantName}.b2clogin.com/tfp/{Domain}/{SigninPolicy}";
+
+    public string SignUpAuthority =>
+        $"https://{TenantName}.b2clogin.com/tfp/{Domain}/{(string.IsNullOrWhiteSpace(SignUpPolicy) ? SigninPolicy : SignUpPolicy)}";
 
     public string PasswordResetAuthority =>
         $"https://{TenantName}.b2clogin.com/tfp/{Domain}/{PasswordResetPolicy}";
