@@ -359,5 +359,21 @@ public class GameInstallServiceTests
             string? releaseNotes,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<GameBuildVersionDto?>(null);
+
+        public Task<GameReviewsSummaryDto?> GetGameReviewsAsync(
+            int gameId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameReviewsSummaryDto?>(null);
+
+        public Task<(GameReviewDto? Review, string? Error)> UpsertGameReviewAsync(
+            int gameId,
+            UpsertGameReviewRequest request,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(GameReviewDto?, string?)>((null, "not supported"));
+
+        public Task<bool> DeleteGameReviewAsync(
+            int gameId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
     }
 }

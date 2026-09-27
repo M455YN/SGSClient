@@ -197,40 +197,102 @@ public partial class LibraryViewModel : ObservableObject
         {
             var remote = await _api.GetMyLibraryAsync();
             var local = await library.GetAllAsync();
-            var localIds = local.Select(x => x.GameId).ToHashSet();
+            var remoteById = remote.ToDictionary(g => g.Id);
+            var localById = local.ToDictionary(x => x.GameId);
 
             foreach (var game in remote)
             {
-                if (localIds.Contains(game.Id))
+                GameBuildDto? build = null;
+                if (game.Builds.Count > 0)
                 {
-                    continue;
+                    var preferredPlatform = OperatingSystem.IsWindows() ? GamePlatform.Windows
+                        : OperatingSystem.IsLinux() ? GamePlatform.Linux
+                        : OperatingSystem.IsMacOS() ? GamePlatform.MacOS
+                        : GamePlatform.Windows;
+                    build = game.Builds.FirstOrDefault(b => b.Platform == preferredPlatform && b.IsDefault)
+                        ?? game.Builds.FirstOrDefault(b => b.Platform == preferredPlatform)
+                        ?? game.Builds.FirstOrDefault(b => b.IsDefault)
+                        ?? game.Builds[0];
                 }
 
-                var build = GameListItem.PickPreferredBuild(game.Builds)
-                    ?? game.Builds.FirstOrDefault();
-                if (build is null)
+                var buildId = build?.Id ?? 0;
+                var platform = build?.Platform ?? default;
+                var architecture = build?.Architecture;
+                var targetVersion = build?.CurrentVersion;
+
+                if (localById.TryGetValue(game.Id, out var existing))
                 {
+                    var nextBuildId = buildId > 0 ? buildId : existing.BuildId;
+                    var changed = existing.Title != game.Title
+                        || existing.CoverUrl != game.ThumbnailUrl
+                        || existing.LogoUrl != game.LogoUrl
+                        || existing.Symbol != game.Symbol
+                        || (buildId > 0 && existing.BuildId != buildId)
+                        || (targetVersion is not null && existing.TargetVersion != targetVersion);
+
+                    if (!changed)
+                    {
+                        continue;
+                    }
+
+                    await library.UpsertAsync(new GameLibraryItem
+                    {
+                        GameId = existing.GameId,
+                        BuildId = nextBuildId,
+                        Symbol = game.Symbol,
+                        Title = game.Title,
+                        Platform = build?.Platform ?? existing.Platform,
+                        Architecture = architecture ?? existing.Architecture,
+                        InstallState = existing.InstallState,
+                        InstallPath = existing.InstallPath,
+                        ExecutablePath = existing.ExecutablePath,
+                        InstalledVersion = existing.InstalledVersion,
+                        TargetVersion = targetVersion ?? existing.TargetVersion,
+                        CoverUrl = game.ThumbnailUrl ?? existing.CoverUrl,
+                        LogoUrl = game.LogoUrl ?? existing.LogoUrl,
+                        CustomCoverPath = existing.CustomCoverPath,
+                        LastPlayedUtc = existing.LastPlayedUtc
+                    });
                     continue;
                 }
 
                 await library.UpsertAsync(new GameLibraryItem
                 {
                     GameId = game.Id,
-                    BuildId = build.Id,
+                    BuildId = buildId,
                     Symbol = game.Symbol,
                     Title = game.Title,
-                    Platform = build.Platform,
-                    Architecture = build.Architecture,
+                    Platform = platform,
+                    Architecture = architecture,
                     InstallState = InstallState.NotInstalled,
-                    TargetVersion = build.CurrentVersion,
+                    TargetVersion = targetVersion,
                     CoverUrl = game.ThumbnailUrl,
                     LogoUrl = game.LogoUrl
                 });
             }
+
+            foreach (var item in local)
+            {
+                if (remoteById.ContainsKey(item.GameId))
+                {
+                    continue;
+                }
+
+                if (item.InstallState is InstallState.Installed
+                    or InstallState.Downloading
+                    or InstallState.Installing
+                    or InstallState.Updating
+                    or InstallState.Queued)
+                {
+                    continue;
+                }
+
+                await library.RemoveAsync(item.GameId);
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            // offline / not logged in — keep local library
+            StatusText = $"Sync biblioteki: {ex.Message}";
         }
     }
 

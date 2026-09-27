@@ -23,6 +23,9 @@ public interface IInstallQueueService
     /// Compares installed versions with catalog and enqueues updates when auto-update is enabled.
     /// </summary>
     Task CheckForUpdatesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Restores queued installs from SQLite after app restart.</summary>
+    Task RestorePersistedAsync(CancellationToken cancellationToken = default);
 }
 
 public sealed class InstallQueueEntry

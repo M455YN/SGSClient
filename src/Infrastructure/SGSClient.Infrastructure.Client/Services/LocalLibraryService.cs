@@ -38,7 +38,7 @@ public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibrarySt
 
     public async Task UpsertAsync(GameLibraryItem item, CancellationToken cancellationToken = default)
     {
-        var entity = await db.Installs.FirstOrDefaultAsync(x => x.BuildId == item.BuildId, cancellationToken);
+        var entity = await db.Installs.FirstOrDefaultAsync(x => x.GameId == item.GameId, cancellationToken);
         if (entity is null)
         {
             db.Installs.Add(new LocalInstallEntity
@@ -62,7 +62,7 @@ public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibrarySt
         }
         else
         {
-            entity.GameId = item.GameId;
+            entity.BuildId = item.BuildId;
             entity.Symbol = item.Symbol;
             entity.Title = item.Title;
             entity.Platform = item.Platform;

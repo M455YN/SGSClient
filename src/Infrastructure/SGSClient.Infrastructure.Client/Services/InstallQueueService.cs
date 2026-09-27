@@ -1,10 +1,13 @@
 using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
+using SGSClient.Infrastructure.Client.Persistence;
+using SGSClient.Infrastructure.Client.Persistence.Entities;
 
 namespace SGSClient.Infrastructure.Client.Services;
 
@@ -42,6 +45,22 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
     public event EventHandler? Changed;
     public event EventHandler<InstallQueueProgressEventArgs>? ProgressChanged;
 
+    public async Task RestorePersistedAsync(CancellationToken cancellationToken = default)
+    {
+        using var scope = _scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<SgsClientDbContext>();
+        var rows = (await db.InstallQueue.AsNoTracking()
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .OrderBy(x => x.EnqueuedAtUtc)
+            .ToList();
+
+        foreach (var row in rows)
+        {
+            await EnqueueCoreAsync(row.GameId, row.Version, row.IsUpdate, persist: false).ConfigureAwait(false);
+        }
+    }
+
     public async Task EnqueueInstallAsync(
         int gameId,
         string? version = null,
@@ -73,7 +92,6 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
                 entry.Error = "Anulowano.";
             }
 
-            // Drop matching pending items by rebuilding the queue.
             var remaining = new List<InstallQueueEntry>();
             while (_pending.TryDequeue(out var item))
             {
@@ -89,6 +107,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
             }
         }
 
+        _ = RemovePersistedAsync(gameId);
         RaiseChanged();
     }
 
@@ -150,7 +169,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         }
     }
 
-    private async Task EnqueueCoreAsync(int gameId, string? version, bool isUpdate)
+    private async Task EnqueueCoreAsync(int gameId, string? version, bool isUpdate, bool persist = true)
     {
         InstallQueueEntry entry;
         lock (_gate)
@@ -174,8 +193,69 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
             _pending.Enqueue(entry);
         }
 
+        if (persist)
+        {
+            await PersistAsync(entry).ConfigureAwait(false);
+        }
+
         RaiseChanged();
         await EnsurePumpAsync().ConfigureAwait(false);
+    }
+
+    private async Task PersistAsync(InstallQueueEntry entry)
+    {
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SgsClientDbContext>();
+            var existing = await db.InstallQueue.FirstOrDefaultAsync(x => x.GameId == entry.GameId)
+                .ConfigureAwait(false);
+            if (existing is null)
+            {
+                db.InstallQueue.Add(new LocalInstallQueueEntity
+                {
+                    GameId = entry.GameId,
+                    Version = entry.Version,
+                    IsUpdate = entry.IsUpdate,
+                    Title = entry.Title,
+                    EnqueuedAtUtc = DateTimeOffset.UtcNow
+                });
+            }
+            else
+            {
+                existing.Version = entry.Version;
+                existing.IsUpdate = entry.IsUpdate;
+                existing.Title = entry.Title;
+            }
+
+            await db.SaveChangesAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // queue persistence is best-effort
+        }
+    }
+
+    private async Task RemovePersistedAsync(int gameId)
+    {
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SgsClientDbContext>();
+            var existing = await db.InstallQueue.FirstOrDefaultAsync(x => x.GameId == gameId)
+                .ConfigureAwait(false);
+            if (existing is null)
+            {
+                return;
+            }
+
+            db.InstallQueue.Remove(existing);
+            await db.SaveChangesAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // ignore
+        }
     }
 
     private async Task EnsurePumpAsync()
@@ -296,6 +376,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         }
         finally
         {
+            await RemovePersistedAsync(entry.GameId).ConfigureAwait(false);
             lock (_gate)
             {
                 if (_activeGameId == entry.GameId)

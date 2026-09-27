@@ -7,13 +7,14 @@ public sealed class SgsClientDbContext(DbContextOptions<SgsClientDbContext> opti
 {
     public DbSet<LocalInstallEntity> Installs => Set<LocalInstallEntity>();
     public DbSet<LocalPlaytimeEntity> Playtimes => Set<LocalPlaytimeEntity>();
+    public DbSet<LocalInstallQueueEntity> InstallQueue => Set<LocalInstallQueueEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<LocalInstallEntity>(entity =>
         {
             entity.ToTable("local_installs");
-            entity.HasKey(x => x.BuildId);
+            entity.HasKey(x => x.GameId);
             entity.Property(x => x.Symbol).HasMaxLength(128).IsRequired();
             entity.Property(x => x.Title).HasMaxLength(256).IsRequired();
             entity.Property(x => x.Platform).HasConversion<int>();
@@ -26,9 +27,8 @@ public sealed class SgsClientDbContext(DbContextOptions<SgsClientDbContext> opti
             entity.Property(x => x.LogoUrl).HasMaxLength(2048);
             entity.Property(x => x.CustomCoverPath).HasMaxLength(2048);
             entity.Property(x => x.InstallState).HasConversion<int>();
-            entity.HasIndex(x => x.GameId);
             entity.HasIndex(x => x.Symbol);
-            entity.HasIndex(x => new { x.GameId, x.Platform, x.Architecture }).IsUnique();
+            entity.HasIndex(x => x.BuildId);
         });
 
         modelBuilder.Entity<LocalPlaytimeEntity>(entity =>
@@ -36,6 +36,14 @@ public sealed class SgsClientDbContext(DbContextOptions<SgsClientDbContext> opti
             entity.ToTable("local_playtime");
             entity.HasKey(x => new { x.UserId, x.GameId });
             entity.HasIndex(x => x.GameId);
+        });
+
+        modelBuilder.Entity<LocalInstallQueueEntity>(entity =>
+        {
+            entity.ToTable("local_install_queue");
+            entity.HasKey(x => x.GameId);
+            entity.Property(x => x.Version).HasMaxLength(64);
+            entity.Property(x => x.Title).HasMaxLength(256);
         });
     }
 }
