@@ -6,7 +6,7 @@ using SGSClient.Infrastructure.Server.Persistence.Entities;
 
 namespace SGSClient.Infrastructure.Server.Persistence.Services;
 
-public sealed class FriendsService(SgsServerDbContext db) : IFriendsService
+public sealed class FriendsService(SgsServerDbContext db, INotificationService notifications) : IFriendsService
 {
     public static readonly TimeSpan OnlineWindow = TimeSpan.FromMinutes(5);
     public Task<SocialOverviewDto> GetOverviewAsync(int userId, CancellationToken cancellationToken = default) =>
@@ -78,6 +78,18 @@ public sealed class FriendsService(SgsServerDbContext db) : IFriendsService
             CreatedAtUtc = DateTimeOffset.UtcNow
         });
         await db.SaveChangesAsync(cancellationToken);
+
+        var requester = await db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        var requesterName = requester?.DisplayName ?? "Gracz";
+        await notifications.CreateAsync(
+            targetUserId,
+            "friend_request",
+            "Nowe zaproszenie do znajomych",
+            $"{requesterName} chce dodać Cię do znajomych.",
+            $"{{\"fromUserId\":{userId}}}",
+            cancellationToken);
+
         return await BuildOverviewAsync(userId, cancellationToken);
     }
 

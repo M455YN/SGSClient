@@ -18,6 +18,10 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
     public DbSet<UserGamePlaytimeEntity> UserGamePlaytimes => Set<UserGamePlaytimeEntity>();
     public DbSet<UserGameEntitlementEntity> UserGameEntitlements => Set<UserGameEntitlementEntity>();
     public DbSet<UserGameWishlistEntity> UserGameWishlists => Set<UserGameWishlistEntity>();
+    public DbSet<GameReviewEntity> GameReviews => Set<GameReviewEntity>();
+    public DbSet<UserProfileCommentEntity> UserProfileComments => Set<UserProfileCommentEntity>();
+    public DbSet<DirectMessageEntity> DirectMessages => Set<DirectMessageEntity>();
+    public DbSet<UserNotificationEntity> UserNotifications => Set<UserNotificationEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,6 +81,83 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.HasOne(x => x.Game)
                 .WithMany()
                 .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameReviewEntity>(entity =>
+        {
+            entity.ToTable("game_reviews");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Text).HasMaxLength(4000).IsRequired();
+            entity.HasIndex(x => new { x.GameId, x.AuthorUserId }).IsUnique();
+            entity.HasIndex(x => new { x.GameId, x.UpdatedAtUtc });
+
+            entity.HasOne(x => x.Game)
+                .WithMany()
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Author)
+                .WithMany()
+                .HasForeignKey(x => x.AuthorUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserProfileCommentEntity>(entity =>
+        {
+            entity.ToTable("user_profile_comments");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Text).HasMaxLength(1000).IsRequired();
+            entity.HasIndex(x => new { x.TargetUserId, x.CreatedAtUtc });
+
+            entity.HasOne(x => x.TargetUser)
+                .WithMany()
+                .HasForeignKey(x => x.TargetUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Author)
+                .WithMany()
+                .HasForeignKey(x => x.AuthorUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DirectMessageEntity>(entity =>
+        {
+            entity.ToTable("direct_messages");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Text).HasMaxLength(2000).IsRequired();
+            entity.HasIndex(x => new { x.SenderUserId, x.RecipientUserId, x.CreatedAtUtc });
+            entity.HasIndex(x => new { x.RecipientUserId, x.ReadAtUtc });
+
+            entity.HasOne(x => x.Sender)
+                .WithMany()
+                .HasForeignKey(x => x.SenderUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(x => x.Recipient)
+                .WithMany()
+                .HasForeignKey(x => x.RecipientUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<UserNotificationEntity>(entity =>
+        {
+            entity.ToTable("user_notifications");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Kind).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Title).HasMaxLength(256).IsRequired();
+            entity.Property(x => x.Body).HasMaxLength(1000);
+            entity.Property(x => x.DataJson).HasMaxLength(2000);
+            entity.HasIndex(x => new { x.UserId, x.CreatedAtUtc });
+            entity.HasIndex(x => new { x.UserId, x.ReadAtUtc });
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

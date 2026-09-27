@@ -18,6 +18,7 @@ public sealed class GamesController(
     IGameMediaService media,
     IUserService users,
     IEntitlementService entitlements,
+    IGameReviewService reviews,
     IAdminAuthorization adminAuth,
     IOptions<GameStorageSettings> storageOptions,
     IOptions<AzureAdSettings> azureOptions) : ControllerBase
@@ -57,6 +58,75 @@ public sealed class GamesController(
         return result is null ? NotFound() : Ok(result);
     }
 
+
+    [HttpGet("{id:int}/reviews")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameReviewsSummaryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameReviewsSummaryDto>> GetReviews(int id, CancellationToken cancellationToken)
+    {
+        var viewerId = await ResolveOwnerUserIdAsync(cancellationToken);
+        try
+        {
+            return Ok(await reviews.GetForGameAsync(id, viewerId, cancellationToken));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpPut("{id:int}/reviews/me")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameReviewDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameReviewDto>> UpsertMyReview(
+        int id,
+        [FromBody] UpsertGameReviewRequest request,
+        CancellationToken cancellationToken)
+    {
+        var viewerId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (viewerId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            return Ok(await reviews.UpsertAsync(id, viewerId.Value, request, cancellationToken));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { errors = new[] { ex.Message } });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    [HttpDelete("{id:int}/reviews/me")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DeleteMyReview(int id, CancellationToken cancellationToken)
+    {
+        var viewerId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (viewerId is null)
+        {
+            return Unauthorized();
+        }
+
+        await reviews.DeleteAsync(id, viewerId.Value, cancellationToken);
+        return NoContent();
+    }
     [HttpGet("{id:int}/dlcs")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<GameDlcDto>), StatusCodes.Status200OK)]

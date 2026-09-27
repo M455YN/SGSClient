@@ -20,6 +20,7 @@ public sealed class MeController(
     IPlaytimeService playtime,
     IEntitlementService entitlements,
     IWishlistService wishlists,
+    INotificationService notifications,
     IAdminAuthorization adminAuth,
     IOptions<AzureAdSettings> azureOptions,
     IOptions<GameStorageSettings> storageOptions) : ControllerBase
@@ -447,6 +448,72 @@ public sealed class MeController(
         {
             return NotFound();
         }
+    }
+
+    [HttpGet("notifications")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<NotificationDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetNotifications(
+        [FromQuery] int take = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await notifications.ListAsync(ownerUserId.Value, take, cancellationToken));
+    }
+
+    [HttpPost("notifications/{id:long}/read")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MarkNotificationRead(long id, CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var ok = await notifications.MarkReadAsync(ownerUserId.Value, id, cancellationToken);
+        return ok ? NoContent() : NotFound();
+    }
+
+    [HttpPost("notifications/read-all")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> MarkAllNotificationsRead(CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        await notifications.MarkAllReadAsync(ownerUserId.Value, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpGet("notifications/unread-count")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<object>> UnreadNotificationCount(CancellationToken cancellationToken)
+    {
+        var ownerUserId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (ownerUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var count = await notifications.CountUnreadAsync(ownerUserId.Value, cancellationToken);
+        return Ok(new { count });
     }
 
     private UserProfileDto WithAdminFlag(UserProfileDto profile) => new()

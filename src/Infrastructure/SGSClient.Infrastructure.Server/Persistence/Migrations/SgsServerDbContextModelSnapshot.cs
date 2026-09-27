@@ -22,6 +22,40 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.DirectMessageEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ReadAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("RecipientUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SenderUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientUserId", "ReadAtUtc");
+
+                    b.HasIndex("SenderUserId", "RecipientUserId", "CreatedAtUtc");
+
+                    b.ToTable("direct_messages", (string)null);
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -232,10 +266,6 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
 
-                    b.Property<string>("LogoUrl")
-                        .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
-
                     b.Property<string>("IntroUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");
@@ -246,6 +276,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<string>("LanguagesCsv")
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
 
                     b.Property<string>("OtherInformation")
                         .HasMaxLength(8000)
@@ -344,6 +378,49 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("game_genres", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameReviewEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AuthorUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("PlaytimeSecondsAtReview")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("Recommended")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorUserId");
+
+                    b.HasIndex("GameId", "AuthorUserId")
+                        .IsUnique();
+
+                    b.HasIndex("GameId", "UpdatedAtUtc");
+
+                    b.ToTable("game_reviews", (string)null);
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameScreenshotEntity", b =>
@@ -520,6 +597,81 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.ToTable("user_game_wishlists", (string)null);
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserNotificationEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Body")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DataJson")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("ReadAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAtUtc");
+
+                    b.HasIndex("UserId", "ReadAtUtc");
+
+                    b.ToTable("user_notifications", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserProfileCommentEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AuthorUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("TargetUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorUserId");
+
+                    b.HasIndex("TargetUserId", "CreatedAtUtc");
+
+                    b.ToTable("user_profile_comments", (string)null);
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserRelationshipEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -556,6 +708,25 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.HasIndex("RequesterUserId", "Kind", "Status");
 
                     b.ToTable("user_relationships", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.DirectMessageEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "Recipient")
+                        .WithMany()
+                        .HasForeignKey("RecipientUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Recipient");
+
+                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildEntity", b =>
@@ -613,6 +784,25 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("Genre");
 
                     b.Navigation("ParentGame");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameReviewEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Game");
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameScreenshotEntity", b =>
@@ -681,6 +871,36 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("Game");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserNotificationEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserProfileCommentEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "TargetUser")
+                        .WithMany()
+                        .HasForeignKey("TargetUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("TargetUser");
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserRelationshipEntity", b =>

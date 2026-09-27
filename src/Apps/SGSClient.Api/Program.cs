@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using SGSClient.Api.Auth;
+using SGSClient.Api.Hubs;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.Interfaces;
 using SGSClient.Infrastructure.Server;
@@ -16,6 +17,7 @@ builder.Services.Configure<AdminSettings>(builder.Configuration.GetSection(Admin
 var azureAd = builder.Configuration.GetSection(AzureAdSettings.SectionName).Get<AzureAdSettings>() ?? new AzureAdSettings();
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = SGSClient.Core.Packaging.SgsPackageRules.MaxZipBytes;
@@ -55,6 +57,18 @@ if (azureAd.IsConfigured)
             };
             options.Events = new JwtBearerEvents
             {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(accessToken)
+                        && path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+
+                    return Task.CompletedTask;
+                },
                 OnAuthenticationFailed = context =>
                 {
                     var logger = context.HttpContext.RequestServices
@@ -124,6 +138,7 @@ LogLegacyApi(
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/social");
 
 app.Run();
 
