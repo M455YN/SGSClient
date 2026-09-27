@@ -9,6 +9,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly GamesViewModel _games;
     private readonly GameDetailsViewModel _gameDetails;
     private readonly LibraryViewModel _library;
+    private readonly DownloadsViewModel _downloads;
     private readonly WishlistViewModel _wishlist;
     private readonly PublishViewModel _publish;
     private readonly StudioViewModel _studio;
@@ -25,6 +26,7 @@ public partial class MainWindowViewModel : ViewModelBase
             new GamesViewModel(),
             new GameDetailsViewModel(),
             new LibraryViewModel(),
+            new DownloadsViewModel(),
             new WishlistViewModel(),
             new PublishViewModel(),
             new StudioViewModel(),
@@ -42,6 +44,7 @@ public partial class MainWindowViewModel : ViewModelBase
         GamesViewModel games,
         GameDetailsViewModel gameDetails,
         LibraryViewModel library,
+        DownloadsViewModel downloads,
         WishlistViewModel wishlist,
         PublishViewModel publish,
         StudioViewModel studio,
@@ -56,6 +59,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _games = games;
         _gameDetails = gameDetails;
         _library = library;
+        _downloads = downloads;
         _wishlist = wishlist;
         _publish = publish;
         _studio = studio;
@@ -70,6 +74,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _games.SetOpenDetailsHandler(id => OpenGameDetails(id, "Games"));
         _library.SetOpenDetailsHandler(id => OpenGameDetails(id, "Library"));
+        _downloads.SetOpenDetailsHandler(id => OpenGameDetails(id, "Downloads"));
         _wishlist.SetOpenDetailsHandler(id => OpenGameDetails(id, "Wishlist"));
         _wishlist.SetOpenAccountHandler(() => Navigate("Account"));
         _gameDetails.SetCloseHandler(CloseGameDetails);
@@ -97,6 +102,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public GameDetailsViewModel GameDetails => _gameDetails;
     public ShellSidebarViewModel Sidebar { get; }
     public LoginGateViewModel LoginGate => _loginGate;
+    public DownloadsViewModel Downloads => _downloads;
     public FriendsViewModel Friends => _friends;
 
     [ObservableProperty]
@@ -170,6 +176,7 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             "Games" => _games,
             "Library" => _library,
+            "Downloads" => _downloads,
             "Wishlist" => _wishlist,
             "Publish" => _publish,
             "Studio" => _studio,
@@ -188,6 +195,11 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _ = _library.LoadAsync();
             _ = Sidebar.LoadInstalledAsync();
+        }
+
+        if (tag == "Downloads")
+        {
+            _downloads.Refresh();
         }
 
         if (tag == "Wishlist")
@@ -276,6 +288,7 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedNavTag = _detailsReturnTag switch
         {
             "Library" => "Library",
+            "Downloads" => "Downloads",
             "Wishlist" => "Wishlist",
             _ => "Games"
         };
@@ -283,7 +296,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentPage = _gameDetails;
         _ = _gameDetails.LoadAsync(
             gameId,
-            fromLibrary: _detailsReturnTag == "Library",
+            fromLibrary: _detailsReturnTag is "Library" or "Downloads",
             returnTag: _detailsReturnTag);
     }
 
@@ -295,6 +308,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentPage = tag switch
         {
             "Library" => _library,
+            "Downloads" => _downloads,
             "Wishlist" => _wishlist,
             _ => _games
         };
@@ -303,6 +317,10 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _ = _library.LoadAsync();
             _ = Sidebar.LoadInstalledAsync();
+        }
+        else if (tag == "Downloads")
+        {
+            _downloads.Refresh();
         }
         else if (tag == "Wishlist")
         {

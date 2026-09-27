@@ -8,4 +8,7 @@ public sealed class ClientUserSettings
     /// <c>{LibraryFolder}/{symbol}/{version}/</c>.
     /// </summary>
     public string? LibraryFolder { get; set; }
+
+    /// <summary>When true, startup library sync enqueues updates for installed games.</summary>
+    public bool AutoUpdateEnabled { get; set; } = true;
 }

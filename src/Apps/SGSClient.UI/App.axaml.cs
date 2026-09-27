@@ -64,6 +64,8 @@ public partial class App : Application
             configuration,
             sp.GetService<IInstallQueueService>(),
             sp.GetService<IAuthSession>()));
+        services.AddSingleton(sp => new DownloadsViewModel(
+            sp.GetService<IInstallQueueService>()));
         services.AddTransient(sp => new WishlistViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -71,7 +73,9 @@ public partial class App : Application
             sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new GamePropertiesViewModel(
             sp.GetService<ISgsApiService>(),
-            sp.GetRequiredService<IServiceScopeFactory>()));
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetService<IInstallQueueService>(),
+            sp.GetService<IClientUserSettingsStore>()));
         services.AddTransient(sp => new PublishViewModel(
             sp.GetService<IGamePackagePacker>(),
             sp.GetService<IGameUploadClient>(),
@@ -118,6 +122,7 @@ public partial class App : Application
             sp.GetRequiredService<GamesViewModel>(),
             sp.GetRequiredService<GameDetailsViewModel>(),
             sp.GetRequiredService<LibraryViewModel>(),
+            sp.GetRequiredService<DownloadsViewModel>(),
             sp.GetRequiredService<WishlistViewModel>(),
             sp.GetRequiredService<PublishViewModel>(),
             sp.GetRequiredService<StudioViewModel>(),

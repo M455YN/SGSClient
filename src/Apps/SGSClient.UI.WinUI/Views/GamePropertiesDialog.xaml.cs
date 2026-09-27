@@ -62,7 +62,22 @@ public sealed partial class GamePropertiesDialog : UserControl
         FilesPanel.Visibility = ViewModel.ShowFiles ? Visibility.Visible : Visibility.Collapsed;
         PersonalizationPanel.Visibility = ViewModel.ShowPersonalization ? Visibility.Visible : Visibility.Collapsed;
         DlcPanel.Visibility = ViewModel.ShowDlc ? Visibility.Visible : Visibility.Collapsed;
+        GeneralPanel.Visibility = ViewModel.ShowGeneral ? Visibility.Visible : Visibility.Collapsed;
+        UpdatesPanel.Visibility = ViewModel.ShowUpdates ? Visibility.Visible : Visibility.Collapsed;
         PlaceholderPanel.Visibility = ViewModel.ShowPlaceholder ? Visibility.Visible : Visibility.Collapsed;
+        GeneralSummaryText.Text = ViewModel.GeneralSummaryText;
+        GeneralStateText.Text = ViewModel.InstallStateText;
+        GeneralVersionText.Text = ViewModel.InstalledVersionText;
+        GeneralPathText.Text = ViewModel.InstallPathText;
+        GeneralBrowseButton.IsEnabled = ViewModel.CanBrowseFiles;
+        UpdatesStatusText.Text = ViewModel.UpdatesStatusText;
+        UpdatesInstalledText.Text = ViewModel.InstalledVersionText;
+        UpdatesLatestText.Text = ViewModel.LatestVersionText;
+        UpdateNowButton.IsEnabled = ViewModel.CanUpdateNow;
+        if (AutoUpdateSwitch.IsOn != ViewModel.AutoUpdateEnabled)
+        {
+            AutoUpdateSwitch.IsOn = ViewModel.AutoUpdateEnabled;
+        }
         DlcList.ItemsSource = ViewModel.FilteredDlcRows;
         DlcStatusText.Text = ViewModel.DlcStatusText;
         if (DlcSearchBox.Text != ViewModel.DlcSearchText)
@@ -195,6 +210,23 @@ public sealed partial class GamePropertiesDialog : UserControl
     {
         ViewModel.ViewMoreInStoreCommand.Execute(null);
         App.MainWindow?.NavigateTo(typeof(GameDetailsPage), ViewModel.GameId, "Games");
+    }
+
+    private void AutoUpdateSwitch_Toggled(object sender, RoutedEventArgs e)
+    {
+        ViewModel.AutoUpdateEnabled = AutoUpdateSwitch.IsOn;
+    }
+
+    private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.CheckForUpdatesCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private async void UpdateNow_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.UpdateNowCommand.ExecuteAsync(null);
+        RefreshUi();
     }
 
     private void BrowseLocalFiles_Click(object sender, RoutedEventArgs e)

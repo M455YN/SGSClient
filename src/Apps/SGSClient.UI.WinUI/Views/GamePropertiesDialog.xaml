@@ -310,6 +310,68 @@
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
         </StackPanel>
 
+        <StackPanel x:Name="GeneralPanel" Spacing="14" Visibility="Collapsed">
+          <TextBlock Text="Ogólne" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock x:Name="GeneralSummaryText"
+                     Style="{StaticResource BodyTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                     TextWrapping="Wrap" />
+          <Grid ColumnSpacing="24" RowSpacing="8">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="160" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Status" Opacity="0.65" />
+            <TextBlock x:Name="GeneralStateText" Grid.Column="1" FontWeight="SemiBold" />
+            <TextBlock Grid.Row="1" Text="Wersja" Opacity="0.65" />
+            <TextBlock x:Name="GeneralVersionText" Grid.Row="1" Grid.Column="1" />
+            <TextBlock Grid.Row="2" Text="Lokalizacja" Opacity="0.65" />
+            <TextBlock x:Name="GeneralPathText" Grid.Row="2" Grid.Column="1"
+                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
+          </Grid>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Otwórz folder" Click="BrowseLocalFiles_Click" x:Name="GeneralBrowseButton" />
+            <Button Content="Zobacz w sklepie" Click="ViewMoreInStore_Click" />
+          </StackPanel>
+        </StackPanel>
+
+        <StackPanel x:Name="UpdatesPanel" Spacing="14" Visibility="Collapsed">
+          <TextBlock Text="Aktualizacje" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock x:Name="UpdatesStatusText"
+                     Style="{StaticResource BodyTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                     TextWrapping="Wrap" />
+          <Grid ColumnSpacing="24" RowSpacing="8">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="180" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Zainstalowana" Opacity="0.65" />
+            <TextBlock x:Name="UpdatesInstalledText" Grid.Column="1" />
+            <TextBlock Grid.Row="1" Text="Dostępna w sklepie" Opacity="0.65" />
+            <TextBlock x:Name="UpdatesLatestText" Grid.Row="1" Grid.Column="1" />
+          </Grid>
+          <ToggleSwitch x:Name="AutoUpdateSwitch"
+                        OffContent="Aktualizacje ręczne"
+                        OnContent="Aktualizuj automatycznie"
+                        Toggled="AutoUpdateSwitch_Toggled" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Sprawdź aktualizacje" Click="CheckForUpdates_Click" />
+            <Button x:Name="UpdateNowButton" Content="Aktualizuj teraz"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Click="UpdateNow_Click" />
+          </StackPanel>
+        </StackPanel>
+
         <StackPanel x:Name="PlaceholderPanel" Spacing="8" Visibility="Collapsed">
           <InfoBar x:Name="PlaceholderInfo"
                    IsOpen="True"

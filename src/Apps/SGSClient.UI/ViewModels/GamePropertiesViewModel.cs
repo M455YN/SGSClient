@@ -17,9 +17,13 @@ public partial class GamePropertiesViewModel : ViewModelBase
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
+    private readonly IInstallQueueService? _queue;
+    private readonly IClientUserSettingsStore? _userSettings;
     private bool _suppressVersionPersist;
+    private bool _suppressAutoUpdatePersist;
     private string? _installPath;
     private string? _currentLibraryRoot;
+    private string? _latestVersion;
 
     public GamePropertiesViewModel()
     {
@@ -27,15 +31,26 @@ public partial class GamePropertiesViewModel : ViewModelBase
     }
 
     public GamePropertiesViewModel(ISgsApiService? api, IServiceScopeFactory? scopes)
+        : this(api, scopes, null, null)
+    {
+    }
+
+    public GamePropertiesViewModel(
+        ISgsApiService? api,
+        IServiceScopeFactory? scopes,
+        IInstallQueueService? queue,
+        IClientUserSettingsStore? userSettings)
     {
         _api = api;
         _scopes = scopes;
+        _queue = queue;
+        _userSettings = userSettings;
     }
 
     public ObservableCollection<PropertiesNavItem> NavItems { get; } =
     [
-        new("general", "Ogólne", Implemented: false),
-        new("updates", "Aktualizacje", Implemented: false),
+        new("general", "Ogólne", Implemented: true),
+        new("updates", "Aktualizacje", Implemented: true),
         new("files", "Zainstalowane pliki", Implemented: true),
         new("betas", "Wersje i bety gry", Implemented: true),
         new("dlc", "DLC", Implemented: true),
@@ -58,13 +73,31 @@ public partial class GamePropertiesViewModel : ViewModelBase
     private string _statusText = string.Empty;
 
     [ObservableProperty]
-    private string _selectedSection = "betas";
+    private string _selectedSection = "general";
 
     [ObservableProperty]
     private BetaVersionItem? _selectedVersion;
 
     [ObservableProperty]
     private bool _isBusy;
+
+    [ObservableProperty]
+    private string _latestVersionText = "—";
+
+    [ObservableProperty]
+    private string _updatesStatusText = string.Empty;
+
+    [ObservableProperty]
+    private bool _updateAvailable;
+
+    [ObservableProperty]
+    private bool _autoUpdateEnabled = true;
+
+    [ObservableProperty]
+    private bool _canUpdateNow;
+
+    [ObservableProperty]
+    private string _generalSummaryText = string.Empty;
 
     [ObservableProperty]
     private string? _customCoverPath;
@@ -129,7 +162,9 @@ public partial class GamePropertiesViewModel : ViewModelBase
     public bool ShowPersonalization => SelectedSection == "personalization";
     public bool ShowFiles => SelectedSection == "files";
     public bool ShowDlc => SelectedSection == "dlc";
-    public bool ShowPlaceholder => SelectedSection is not ("betas" or "personalization" or "files" or "dlc");
+    public bool ShowGeneral => SelectedSection == "general";
+    public bool ShowUpdates => SelectedSection == "updates";
+    public bool ShowPlaceholder => SelectedSection is not ("betas" or "personalization" or "files" or "dlc" or "general" or "updates");
     public string PlaceholderText => "Ta sekcja pojawi się w kolejnej wersji klienta.";
 
     partial void OnSelectedSectionChanged(string value)
@@ -138,6 +173,8 @@ public partial class GamePropertiesViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowPersonalization));
         OnPropertyChanged(nameof(ShowFiles));
         OnPropertyChanged(nameof(ShowDlc));
+        OnPropertyChanged(nameof(ShowGeneral));
+        OnPropertyChanged(nameof(ShowUpdates));
         OnPropertyChanged(nameof(ShowPlaceholder));
         foreach (var nav in NavItems)
         {
@@ -148,6 +185,26 @@ public partial class GamePropertiesViewModel : ViewModelBase
         {
             _ = LoadDlcsAsync();
         }
+
+        if (value == "updates")
+        {
+            RefreshUpdateState();
+        }
+    }
+
+    partial void OnAutoUpdateEnabledChanged(bool value)
+    {
+        if (_suppressAutoUpdatePersist || _userSettings is null)
+        {
+            return;
+        }
+
+        var settings = _userSettings.Load();
+        settings.AutoUpdateEnabled = value;
+        _ = _userSettings.SaveAsync(settings);
+        UpdatesStatusText = value
+            ? "Automatyczne aktualizacje włączone."
+            : "Automatyczne aktualizacje wyłączone.";
     }
 
     partial void OnDlcSearchTextChanged(string value) => ApplyDlcFilter();
@@ -167,7 +224,7 @@ public partial class GamePropertiesViewModel : ViewModelBase
         GameId = gameId;
         BuildId = buildId;
         GameTitle = title.ToUpperInvariant();
-        SelectedSection = "betas";
+        SelectedSection = "general";
         StatusText = "Ładowanie…";
         IsBusy = true;
 
@@ -183,6 +240,15 @@ public partial class GamePropertiesViewModel : ViewModelBase
             FilteredDlcRows.Clear();
             DlcSearchText = string.Empty;
             DlcStatusText = string.Empty;
+            _latestVersion = null;
+            LatestVersionText = "—";
+            UpdateAvailable = false;
+            CanUpdateNow = false;
+            UpdatesStatusText = string.Empty;
+
+            _suppressAutoUpdatePersist = true;
+            AutoUpdateEnabled = _userSettings?.Load().AutoUpdateEnabled ?? true;
+            _suppressAutoUpdatePersist = false;
 
             if (_scopes is not null)
             {
@@ -206,6 +272,27 @@ public partial class GamePropertiesViewModel : ViewModelBase
             {
                 history = await _api.GetBuildVersionsAsync(gameId, BuildId);
             }
+
+            if (_api is not null)
+            {
+                var game = await _api.GetGameAsync(gameId);
+                var build = game?.Builds.FirstOrDefault(b => b.Id == BuildId)
+                    ?? game?.Builds.FirstOrDefault(b => b.IsDefault)
+                    ?? game?.Builds.FirstOrDefault();
+                _latestVersion = build?.CurrentVersion
+                    ?? history.FirstOrDefault(v => v.IsCurrent)?.Version
+                    ?? history.FirstOrDefault()?.Version;
+                LatestVersionText = string.IsNullOrWhiteSpace(_latestVersion) ? "—" : _latestVersion!;
+                GeneralSummaryText = game is null
+                    ? "Podstawowe informacje o instalacji na tym komputerze."
+                    : $"{game.Title} · lokalna instalacja i skróty.";
+            }
+            else
+            {
+                GeneralSummaryText = "Podstawowe informacje o instalacji na tym komputerze.";
+            }
+
+            RefreshUpdateState();
 
             _suppressVersionPersist = true;
             if (history.Count == 0)
@@ -466,6 +553,68 @@ public partial class GamePropertiesViewModel : ViewModelBase
 
     [RelayCommand]
     private void ViewMoreInStore() => ViewInStoreRequested?.Invoke(this, EventArgs.Empty);
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        if (_queue is null)
+        {
+            UpdatesStatusText = "Kolejka aktualizacji niedostępna.";
+            return;
+        }
+
+        StatusText = "Sprawdzanie aktualizacji…";
+        try
+        {
+            if (_api is not null)
+            {
+                var game = await _api.GetGameAsync(GameId);
+                var build = game?.Builds.FirstOrDefault(b => b.Id == BuildId)
+                    ?? game?.Builds.FirstOrDefault(b => b.IsDefault)
+                    ?? game?.Builds.FirstOrDefault();
+                _latestVersion = build?.CurrentVersion ?? _latestVersion;
+                LatestVersionText = string.IsNullOrWhiteSpace(_latestVersion) ? "—" : _latestVersion!;
+            }
+
+            RefreshUpdateState();
+            StatusText = UpdateAvailable
+                ? "Dostępna jest nowsza wersja."
+                : "Gra jest aktualna.";
+        }
+        catch (Exception ex)
+        {
+            StatusText = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UpdateNowAsync()
+    {
+        if (_queue is null || GameId <= 0)
+        {
+            return;
+        }
+
+        await _queue.EnqueueUpdateAsync(GameId);
+        UpdatesStatusText = "Aktualizacja dodana do kolejki.";
+        StatusText = UpdatesStatusText;
+        CanUpdateNow = false;
+    }
+
+    private void RefreshUpdateState()
+    {
+        var installed = InstalledVersionText is "—" or "" ? null : InstalledVersionText;
+        UpdateAvailable = IsInstalled
+            && !string.IsNullOrWhiteSpace(_latestVersion)
+            && !string.IsNullOrWhiteSpace(installed)
+            && !string.Equals(installed, _latestVersion, StringComparison.OrdinalIgnoreCase);
+        CanUpdateNow = UpdateAvailable && _queue is not null && !_queue.IsQueuedOrActive(GameId);
+        UpdatesStatusText = !IsInstalled
+            ? "Gra nie jest zainstalowana na tym komputerze."
+            : UpdateAvailable
+                ? $"Dostępna aktualizacja: {installed} → {_latestVersion}"
+                : "Zainstalowana jest najnowsza wersja.";
+    }
 
     [RelayCommand]
     private async Task ToggleDlcInstallAsync(DlcRowItem? row)

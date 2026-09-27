@@ -87,6 +87,7 @@ public partial class ShellSidebarViewModel : ObservableObject
     public bool IsHomeSelected => SelectedNavTag == "Home";
     public bool IsGamesSelected => SelectedNavTag == "Games";
     public bool IsLibrarySelected => SelectedNavTag == "Library";
+    public bool IsDownloadsSelected => SelectedNavTag == "Downloads";
     public bool IsWishlistSelected => SelectedNavTag == "Wishlist";
     public bool IsPublishSelected => SelectedNavTag == "Publish";
     public bool IsStudioSelected => SelectedNavTag is "Studio" or "Publish";
@@ -99,6 +100,7 @@ public partial class ShellSidebarViewModel : ObservableObject
         OnPropertyChanged(nameof(IsHomeSelected));
         OnPropertyChanged(nameof(IsGamesSelected));
         OnPropertyChanged(nameof(IsLibrarySelected));
+        OnPropertyChanged(nameof(IsDownloadsSelected));
         OnPropertyChanged(nameof(IsWishlistSelected));
         OnPropertyChanged(nameof(IsPublishSelected));
         OnPropertyChanged(nameof(IsStudioSelected));

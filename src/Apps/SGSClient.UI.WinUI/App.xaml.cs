@@ -83,6 +83,8 @@ public partial class App : Application
             configuration,
             sp.GetService<IInstallQueueService>(),
             sp.GetService<IAuthSession>()));
+        services.AddSingleton(sp => new DownloadsViewModel(
+            sp.GetService<IInstallQueueService>()));
         services.AddSingleton(sp => new WishlistViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -90,7 +92,9 @@ public partial class App : Application
             sp.GetService<IAuthSession>()));
         services.AddTransient(sp => new GamePropertiesViewModel(
             sp.GetService<ISgsApiService>(),
-            sp.GetRequiredService<IServiceScopeFactory>()));
+            sp.GetRequiredService<IServiceScopeFactory>(),
+            sp.GetService<IInstallQueueService>(),
+            sp.GetService<IClientUserSettingsStore>()));
         services.AddTransient(sp => new PublishViewModel(
             sp.GetService<IGamePackagePacker>(),
             sp.GetService<IGameUploadClient>(),
@@ -153,11 +157,14 @@ public partial class App : Application
         var gamesVm = Services.GetRequiredService<GamesViewModel>();
         var detailsVm = Services.GetRequiredService<GameDetailsViewModel>();
         var wishlistVm = Services.GetRequiredService<WishlistViewModel>();
+        var downloadsVm = Services.GetRequiredService<DownloadsViewModel>();
         gamesVm.SetOpenAccountHandler(() => MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account"));
         detailsVm.SetOpenAccountHandler(() => MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account"));
         wishlistVm.SetOpenAccountHandler(() => MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account"));
         wishlistVm.SetOpenDetailsHandler(id =>
             MainWindow?.NavigateTo(typeof(GameDetailsPage), new GameDetailsNavArgs(id, "Wishlist"), selectTag: "Wishlist"));
+        downloadsVm.SetOpenDetailsHandler(id =>
+            MainWindow?.NavigateTo(typeof(GameDetailsPage), new GameDetailsNavArgs(id, "Downloads"), selectTag: "Downloads"));
 
         var loginGate = Services.GetRequiredService<LoginGateViewModel>();
         loginGate.SetOnAuthenticated(EnterAuthenticatedShellAsync);

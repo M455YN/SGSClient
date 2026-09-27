@@ -15,6 +15,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
 {
     private readonly IServiceScopeFactory _scopes;
     private readonly IOptions<ClientInstallSettings> _installOptions;
+    private readonly IClientUserSettingsStore _userSettings;
     private readonly ConcurrentQueue<InstallQueueEntry> _pending = new();
     private readonly List<InstallQueueEntry> _entries = [];
     private readonly object _gate = new();
@@ -25,10 +26,12 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
 
     public InstallQueueService(
         IServiceScopeFactory scopes,
-        IOptions<ClientInstallSettings> installOptions)
+        IOptions<ClientInstallSettings> installOptions,
+        IClientUserSettingsStore userSettings)
     {
         _scopes = scopes;
         _installOptions = installOptions;
+        _userSettings = userSettings;
     }
 
     public IReadOnlyList<InstallQueueEntry> Entries
@@ -124,7 +127,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
 
     public async Task CheckForUpdatesAsync(CancellationToken cancellationToken = default)
     {
-        if (!_installOptions.Value.AutoUpdateEnabled)
+        if (!IsAutoUpdateEnabled())
         {
             return;
         }
@@ -391,6 +394,18 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
     }
 
     private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
+
+    private bool IsAutoUpdateEnabled()
+    {
+        try
+        {
+            return _userSettings.Load().AutoUpdateEnabled;
+        }
+        catch
+        {
+            return _installOptions.Value.AutoUpdateEnabled;
+        }
+    }
 
     public void Dispose()
     {
