@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
 using Avalonia.Media;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
+using SGSClient.Infrastructure.Client.Services;
 
 namespace SGSClient.UI.ViewModels;
 
@@ -12,19 +14,75 @@ public partial class FriendsViewModel : ViewModelBase
 {
     private readonly IUserApiClient? _userApi;
     private readonly IAuthSession? _auth;
+    private readonly SocialRealtimeService? _realtime;
+    private readonly DispatcherTimer _chatPollTimer;
+    private int? _activeChatPeerId;
+    private bool _realtimeWired;
 
     public FriendsViewModel()
-        : this(null, null)
+        : this(null, null, null)
     {
     }
 
-    public FriendsViewModel(IUserApiClient? userApi, IAuthSession? auth)
+    public FriendsViewModel(
+        IUserApiClient? userApi,
+        IAuthSession? auth,
+        SocialRealtimeService? realtime = null)
     {
         _userApi = userApi;
         _auth = auth;
+        _realtime = realtime;
         StatusText = auth?.IsAvailable != true
             ? "Zaloguj się, żeby zobaczyć znajomych."
             : "Ładowanie…";
+        _chatPollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _chatPollTimer.Tick += async (_, _) => await PollChatAsync();
+        WireRealtime();
+    }
+
+    private void WireRealtime()
+    {
+        if (_realtime is null || _realtimeWired)
+        {
+            return;
+        }
+
+        _realtimeWired = true;
+        _realtime.MessageReceived += OnRealtimeMessage;
+        _realtime.ConnectionChanged += connected =>
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (ShowChatTab)
+                {
+                    if (connected)
+                    {
+                        _chatPollTimer.Stop();
+                    }
+                    else
+                    {
+                        _chatPollTimer.Start();
+                    }
+                }
+            });
+        };
+    }
+
+    private void OnRealtimeMessage(ChatMessageDto message)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_activeChatPeerId is int peer
+                && (message.SenderUserId == peer || message.RecipientUserId == peer))
+            {
+                if (ChatMessages.All(m => m.Id != message.Id))
+                {
+                    ChatMessages.Add(ChatMessageItem.FromDto(message));
+                }
+            }
+
+            _ = LoadChatThreadsAsync();
+        });
     }
 
     public ObservableCollection<SocialPersonItem> Friends { get; } = [];
@@ -35,6 +93,9 @@ public partial class FriendsViewModel : ViewModelBase
     public ObservableCollection<SocialPersonItem> SearchResults { get; } = [];
     public ObservableCollection<SocialPersonItem> OnlineFriends { get; } = [];
     public ObservableCollection<SocialPersonItem> OfflineFriends { get; } = [];
+    public ObservableCollection<ProfileCommentItem> ProfileComments { get; } = [];
+    public ObservableCollection<ChatThreadItem> ChatThreads { get; } = [];
+    public ObservableCollection<ChatMessageItem> ChatMessages { get; } = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowFriendsTab))]
@@ -42,12 +103,16 @@ public partial class FriendsViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(ShowFollowingTab))]
     [NotifyPropertyChangedFor(nameof(ShowFollowersTab))]
     [NotifyPropertyChangedFor(nameof(ShowSearchTab))]
+    [NotifyPropertyChangedFor(nameof(ShowChatTab))]
+    [NotifyPropertyChangedFor(nameof(ShowProfileView))]
     [NotifyPropertyChangedFor(nameof(ShowEmptyFriends))]
     [NotifyPropertyChangedFor(nameof(ShowEmptyFollowing))]
     [NotifyPropertyChangedFor(nameof(ShowEmptyFollowers))]
     [NotifyPropertyChangedFor(nameof(ShowEmptySearch))]
     [NotifyPropertyChangedFor(nameof(ShowFriendsGroups))]
+    [NotifyPropertyChangedFor(nameof(ShowEmptyChat))]
     [NotifyPropertyChangedFor(nameof(SearchPlaceholder))]
+    [NotifyPropertyChangedFor(nameof(ShowMainList))]
     private string _selectedTab = "Friends";
 
     [ObservableProperty]
@@ -73,15 +138,59 @@ public partial class FriendsViewModel : ViewModelBase
     [ObservableProperty]
     private bool _incomingExpanded = true;
 
-    public bool ShowFriendsTab => SelectedTab == "Friends";
-    public bool ShowRequestsTab => SelectedTab == "Requests";
-    public bool ShowFollowingTab => SelectedTab == "Following";
-    public bool ShowFollowersTab => SelectedTab == "Followers";
-    public bool ShowSearchTab => SelectedTab == "Search";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowProfileView))]
+    [NotifyPropertyChangedFor(nameof(ShowMainList))]
+    private SocialPersonItem? _viewedProfile;
+
+    [ObservableProperty]
+    private string _profileHeader = string.Empty;
+
+    [ObservableProperty]
+    private string _profileSubtitle = string.Empty;
+
+    [ObservableProperty]
+    private string _profileCommentDraft = string.Empty;
+
+    [ObservableProperty]
+    private string _profileStatus = string.Empty;
+
+    [ObservableProperty]
+    private int? _profileUserId;
+
+    [ObservableProperty]
+    private bool _canMessageProfile;
+
+    [ObservableProperty]
+    private ChatThreadItem? _selectedChatThread;
+
+    [ObservableProperty]
+    private string _chatDraft = string.Empty;
+
+    [ObservableProperty]
+    private string _chatStatus = string.Empty;
+
+    [ObservableProperty]
+    private string _chatPeerTitle = "Wybierz rozmowę";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowChatConversation))]
+    private bool _hasActiveChat;
+
+    public bool ShowFriendsTab => SelectedTab == "Friends" && ViewedProfile is null;
+    public bool ShowRequestsTab => SelectedTab == "Requests" && ViewedProfile is null;
+    public bool ShowFollowingTab => SelectedTab == "Following" && ViewedProfile is null;
+    public bool ShowFollowersTab => SelectedTab == "Followers" && ViewedProfile is null;
+    public bool ShowSearchTab => SelectedTab == "Search" && ViewedProfile is null;
+    public bool ShowChatTab => SelectedTab == "Chat" && ViewedProfile is null;
+    public bool ShowProfileView => ViewedProfile is not null;
+    public bool ShowMainList => ViewedProfile is null && SelectedTab is not "Chat";
     public bool ShowEmptyFriends => ShowFriendsTab && Friends.Count == 0;
     public bool ShowEmptyFollowing => ShowFollowingTab && Following.Count == 0;
     public bool ShowEmptyFollowers => ShowFollowersTab && Followers.Count == 0;
     public bool ShowEmptySearch => ShowSearchTab && SearchResults.Count == 0 && !IsBusy;
+    public bool ShowEmptyChat => ShowChatTab && ChatThreads.Count == 0 && !HasActiveChat;
+    public bool ShowChatConversation => ShowChatTab && HasActiveChat;
     public bool HasIncoming => Incoming.Count > 0;
     public bool HasOutgoing => Outgoing.Count > 0;
     public bool ShowFriendsGroups => ShowFriendsTab && Friends.Count > 0;
@@ -97,7 +206,16 @@ public partial class FriendsViewModel : ViewModelBase
             SelectedTab = tab;
         }
 
+        if (_realtime is not null)
+        {
+            await _realtime.EnsureConnectedAsync();
+        }
+
         await LoadAsync();
+        if (ShowChatTab)
+        {
+            await LoadChatThreadsAsync();
+        }
     }
 
     partial void OnSearchQueryChanged(string value)
@@ -108,13 +226,41 @@ public partial class FriendsViewModel : ViewModelBase
         }
     }
 
-    partial void OnSelectedTabChanged(string value) => RebuildPresenceLists();
+    partial void OnSelectedTabChanged(string value)
+    {
+        RebuildPresenceLists();
+        if (value == "Chat")
+        {
+            _ = LoadChatThreadsAsync();
+            _ = EnsureChatRealtimeOrPollAsync();
+        }
+        else
+        {
+            _chatPollTimer.Stop();
+        }
+    }
+
+    private async Task EnsureChatRealtimeOrPollAsync()
+    {
+        if (_realtime is not null)
+        {
+            await _realtime.EnsureConnectedAsync();
+            if (_realtime.IsConnected)
+            {
+                _chatPollTimer.Stop();
+                return;
+            }
+        }
+
+        _chatPollTimer.Start();
+    }
 
     [RelayCommand]
     private void SelectTab(string? tab)
     {
         if (!string.IsNullOrWhiteSpace(tab))
         {
+            ViewedProfile = null;
             SelectedTab = tab;
         }
     }
@@ -156,6 +302,7 @@ public partial class FriendsViewModel : ViewModelBase
     [RelayCommand]
     private async Task SearchAsync()
     {
+        ViewedProfile = null;
         SelectedTab = "Search";
         if (_userApi is null)
         {
@@ -196,6 +343,196 @@ public partial class FriendsViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task OpenProfileAsync(SocialPersonItem? person)
+    {
+        if (person is null || _userApi is null)
+        {
+            return;
+        }
+
+        IsBusy = true;
+        ProfileStatus = "Ładowanie profilu…";
+        try
+        {
+            var profile = await _userApi.GetPublicProfileAsync(person.UserId);
+            if (profile is null)
+            {
+                ProfileStatus = "Nie udało się wczytać profilu.";
+                return;
+            }
+
+            ApplyPublicProfile(profile);
+        }
+        catch (Exception ex)
+        {
+            ProfileStatus = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private void CloseProfile()
+    {
+        ViewedProfile = null;
+        ProfileUserId = null;
+        ProfileComments.Clear();
+        ProfileCommentDraft = string.Empty;
+        ProfileStatus = string.Empty;
+        NotifyLists();
+    }
+
+    [RelayCommand]
+    private async Task PostProfileCommentAsync()
+    {
+        if (_userApi is null || ProfileUserId is not int userId)
+        {
+            return;
+        }
+
+        var text = ProfileCommentDraft.Trim();
+        if (text.Length < 2)
+        {
+            ProfileStatus = "Wpisz dłuższy komentarz.";
+            return;
+        }
+
+        ProfileStatus = "Wysyłanie…";
+        var (comment, error) = await _userApi.AddProfileCommentAsync(userId, text);
+        if (comment is null)
+        {
+            ProfileStatus = error ?? "Nie udało się dodać komentarza.";
+            return;
+        }
+
+        ProfileCommentDraft = string.Empty;
+        ProfileComments.Insert(0, ProfileCommentItem.FromDto(comment));
+        ProfileStatus = "Dodano podpis.";
+    }
+
+    [RelayCommand]
+    private async Task DeleteProfileCommentAsync(ProfileCommentItem? comment)
+    {
+        if (comment is null || _userApi is null || ProfileUserId is not int userId)
+        {
+            return;
+        }
+
+        var (ok, error) = await _userApi.DeleteProfileCommentAsync(userId, comment.Id);
+        if (!ok)
+        {
+            ProfileStatus = error ?? "Nie udało się usunąć.";
+            return;
+        }
+
+        ProfileComments.Remove(comment);
+        ProfileStatus = "Usunięto.";
+    }
+
+    [RelayCommand]
+    private async Task MessageFromProfileAsync()
+    {
+        if (ViewedProfile is null)
+        {
+            return;
+        }
+
+        var person = ViewedProfile;
+        CloseProfile();
+        SelectedTab = "Chat";
+        await OpenChatWithAsync(person);
+    }
+
+    [RelayCommand]
+    private async Task LoadChatThreadsAsync()
+    {
+        if (_userApi is null || _auth?.IsAvailable != true)
+        {
+            ChatStatus = "Zaloguj się, żeby pisać.";
+            return;
+        }
+
+        try
+        {
+            var threads = await _userApi.GetChatThreadsAsync();
+            ChatThreads.Clear();
+            foreach (var t in threads)
+            {
+                ChatThreads.Add(ChatThreadItem.FromDto(t));
+            }
+
+            if (ChatThreads.Count == 0 && Friends.Count > 0)
+            {
+                foreach (var friend in Friends.Take(20))
+                {
+                    ChatThreads.Add(ChatThreadItem.FromFriend(friend));
+                }
+            }
+
+            ChatStatus = ChatThreads.Count == 0
+                ? "Dodaj znajomych, żeby zacząć czat."
+                : string.Empty;
+            OnPropertyChanged(nameof(ShowEmptyChat));
+        }
+        catch (Exception ex)
+        {
+            ChatStatus = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenChatThreadAsync(ChatThreadItem? thread)
+    {
+        if (thread is null)
+        {
+            return;
+        }
+
+        await OpenChatWithPeerIdAsync(thread.PeerUserId, thread.Title);
+    }
+
+    [RelayCommand]
+    private async Task OpenChatWithAsync(SocialPersonItem? person)
+    {
+        if (person is null)
+        {
+            return;
+        }
+
+        SelectedTab = "Chat";
+        await OpenChatWithPeerIdAsync(person.UserId, person.Title);
+    }
+
+    [RelayCommand]
+    private async Task SendChatMessageAsync()
+    {
+        if (_userApi is null || _activeChatPeerId is not int peerId)
+        {
+            return;
+        }
+
+        var text = ChatDraft.Trim();
+        if (text.Length == 0)
+        {
+            return;
+        }
+
+        ChatDraft = string.Empty;
+        var (message, error) = await _userApi.SendChatMessageAsync(peerId, text);
+        if (message is null)
+        {
+            ChatStatus = error ?? "Nie wysłano.";
+            return;
+        }
+
+        ChatMessages.Add(ChatMessageItem.FromDto(message));
+        ChatStatus = string.Empty;
+        await LoadChatThreadsAsync();
+    }
+
+    [RelayCommand]
     private Task AddFriendAsync(SocialPersonItem? person) =>
         MutateAsync(person, id => _userApi!.SendFriendRequestAsync(id));
 
@@ -214,6 +551,95 @@ public partial class FriendsViewModel : ViewModelBase
     [RelayCommand]
     private Task UnfollowAsync(SocialPersonItem? person) =>
         MutateAsync(person, id => _userApi!.UnfollowAsync(id));
+
+    private async Task OpenChatWithPeerIdAsync(int peerUserId, string title)
+    {
+        if (_userApi is null)
+        {
+            return;
+        }
+
+        _activeChatPeerId = peerUserId;
+        HasActiveChat = true;
+        ChatPeerTitle = title;
+        SelectedChatThread = ChatThreads.FirstOrDefault(t => t.PeerUserId == peerUserId);
+        ChatStatus = "Ładowanie…";
+        await RefreshConversationAsync(peerUserId);
+        await EnsureChatRealtimeOrPollAsync();
+        OnPropertyChanged(nameof(ShowEmptyChat));
+        OnPropertyChanged(nameof(ShowChatConversation));
+    }
+
+    private async Task RefreshConversationAsync(int peerUserId)
+    {
+        if (_userApi is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var convo = await _userApi.GetChatConversationAsync(peerUserId);
+            ChatMessages.Clear();
+            if (convo is null)
+            {
+                ChatStatus = "Nie udało się wczytać rozmowy (tylko znajomi).";
+                return;
+            }
+
+            ChatPeerTitle = string.IsNullOrWhiteSpace(convo.Peer.PlayerTag)
+                ? convo.Peer.DisplayName
+                : convo.Peer.PlayerTag!;
+            foreach (var m in convo.Messages)
+            {
+                ChatMessages.Add(ChatMessageItem.FromDto(m));
+            }
+
+            ChatStatus = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            ChatStatus = ex.Message;
+        }
+    }
+
+    private async Task PollChatAsync()
+    {
+        if (!ShowChatTab || _activeChatPeerId is not int peerId)
+        {
+            return;
+        }
+
+        try
+        {
+            await RefreshConversationAsync(peerId);
+        }
+        catch
+        {
+            // ignore poll errors
+        }
+    }
+
+    private void ApplyPublicProfile(PublicUserProfileDto profile)
+    {
+        ViewedProfile = SocialPersonItem.FromDto(profile.User);
+        ProfileUserId = profile.User.Id;
+        ProfileHeader = ViewedProfile.Title;
+        ProfileSubtitle = profile.IsOwnProfile
+            ? "Twój profil — inni mogą się tu podpisać."
+            : $"{profile.User.DisplayName} · ściana komentarzy";
+        CanMessageProfile = !profile.IsOwnProfile && profile.User.FriendRelation == FriendRelation.Friends;
+        ProfileComments.Clear();
+        foreach (var c in profile.Comments)
+        {
+            ProfileComments.Add(ProfileCommentItem.FromDto(c));
+        }
+
+        ProfileStatus = ProfileComments.Count == 0
+            ? "Brak podpisów — napisz coś."
+            : $"{ProfileComments.Count} podpisów";
+        NotifyLists();
+    }
 
     private async Task MutateAsync(
         SocialPersonItem? person,
@@ -308,12 +734,91 @@ public partial class FriendsViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowEmptyFollowers));
         OnPropertyChanged(nameof(ShowEmptySearch));
         OnPropertyChanged(nameof(ShowFriendsGroups));
+        OnPropertyChanged(nameof(ShowFriendsTab));
+        OnPropertyChanged(nameof(ShowRequestsTab));
+        OnPropertyChanged(nameof(ShowFollowingTab));
+        OnPropertyChanged(nameof(ShowFollowersTab));
+        OnPropertyChanged(nameof(ShowSearchTab));
+        OnPropertyChanged(nameof(ShowChatTab));
+        OnPropertyChanged(nameof(ShowProfileView));
+        OnPropertyChanged(nameof(ShowMainList));
+        OnPropertyChanged(nameof(ShowEmptyChat));
+        OnPropertyChanged(nameof(ShowChatConversation));
         OnPropertyChanged(nameof(HasIncoming));
         OnPropertyChanged(nameof(HasOutgoing));
         OnPropertyChanged(nameof(RequestsTabLabel));
         OnPropertyChanged(nameof(OnlineCount));
         OnPropertyChanged(nameof(OfflineCount));
     }
+}
+
+public sealed class ProfileCommentItem
+{
+    public long Id { get; init; }
+    public required string AuthorLabel { get; init; }
+    public required string Text { get; init; }
+    public required string WhenText { get; init; }
+    public bool CanDelete { get; init; }
+
+    public static ProfileCommentItem FromDto(ProfileCommentDto dto) => new()
+    {
+        Id = dto.Id,
+        AuthorLabel = string.IsNullOrWhiteSpace(dto.AuthorPlayerTag)
+            ? dto.AuthorDisplayName
+            : $"{dto.AuthorDisplayName} (@{dto.AuthorPlayerTag})",
+        Text = dto.Text,
+        WhenText = dto.CreatedAtUtc.LocalDateTime.ToString("g"),
+        CanDelete = dto.CanDelete
+    };
+}
+
+public sealed class ChatThreadItem
+{
+    public int PeerUserId { get; init; }
+    public required string Title { get; init; }
+    public required string Preview { get; init; }
+    public int UnreadCount { get; init; }
+    public string UnreadBadge => UnreadCount > 0 ? UnreadCount.ToString() : string.Empty;
+
+    public static ChatThreadItem FromDto(ChatThreadDto dto)
+    {
+        var title = string.IsNullOrWhiteSpace(dto.Peer.PlayerTag) ? dto.Peer.DisplayName : dto.Peer.PlayerTag!;
+        return new ChatThreadItem
+        {
+            PeerUserId = dto.Peer.Id,
+            Title = title,
+            Preview = string.IsNullOrWhiteSpace(dto.LastMessagePreview)
+                ? "Brak wiadomości"
+                : dto.LastMessagePreview!,
+            UnreadCount = dto.UnreadCount
+        };
+    }
+
+    public static ChatThreadItem FromFriend(SocialPersonItem friend) => new()
+    {
+        PeerUserId = friend.UserId,
+        Title = friend.Title,
+        Preview = "Nowa rozmowa",
+        UnreadCount = 0
+    };
+}
+
+public sealed class ChatMessageItem
+{
+    public long Id { get; init; }
+    public required string Text { get; init; }
+    public required string Meta { get; init; }
+    public bool IsMine { get; init; }
+
+    public static ChatMessageItem FromDto(ChatMessageDto dto) => new()
+    {
+        Id = dto.Id,
+        Text = dto.Text,
+        Meta = dto.IsMine
+            ? $"Ty · {dto.CreatedAtUtc.LocalDateTime:t}"
+            : dto.CreatedAtUtc.LocalDateTime.ToString("t"),
+        IsMine = dto.IsMine
+    };
 }
 
 public sealed class SocialPersonItem
@@ -339,6 +844,7 @@ public sealed class SocialPersonItem
     public string RemoveFriendLabel => FriendRelation == FriendRelation.OutgoingRequest ? "Anuluj" : "Usuń";
     public bool ShowFollow => !IsFollowing && FriendRelation == FriendRelation.None;
     public bool ShowUnfollow => IsFollowing && FriendRelation != FriendRelation.Friends;
+    public bool ShowMessage => FriendRelation == FriendRelation.Friends;
     public bool HasActions => ShowAddFriend || ShowAccept || ShowRemoveFriend;
 
     public bool Matches(string query) =>

@@ -18,6 +18,7 @@ public sealed partial class AccountPage : Page
         InitializeComponent();
 
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
+        ViewModel.SetLogoutHandler(App.ReturnToLoginGate);
 
         if (App.MainWindow is not null)
         {
@@ -105,6 +106,33 @@ public sealed partial class AccountPage : Page
         LibraryList.ItemsSource = ViewModel.RecentGames;
         RecentGrid.ItemsSource = ViewModel.RecentGames;
         EmptyRecentText.Visibility = ViewModel.ShowEmptyRecentGames ? Visibility.Visible : Visibility.Collapsed;
+
+        WallStatusText.Text = ViewModel.WallStatus;
+        WallCommentsList.ItemsSource = ViewModel.WallComments;
+        if (WallCommentBox.FocusState == FocusState.Unfocused)
+        {
+            WallCommentBox.Text = ViewModel.WallCommentDraft;
+        }
+    }
+
+    private void WallCommentBox_TextChanged(object sender, TextChangedEventArgs e) =>
+        ViewModel.WallCommentDraft = WallCommentBox.Text ?? string.Empty;
+
+    private async void PostWall_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.WallCommentDraft = WallCommentBox.Text ?? string.Empty;
+        await ViewModel.PostWallCommentCommand.ExecuteAsync(null);
+        WallCommentBox.Text = ViewModel.WallCommentDraft;
+        RefreshUi();
+    }
+
+    private async void DeleteWall_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is ProfileCommentItem comment)
+        {
+            await ViewModel.DeleteWallCommentCommand.ExecuteAsync(comment);
+            RefreshUi();
+        }
     }
 
     private async void SignIn_Click(object sender, RoutedEventArgs e)

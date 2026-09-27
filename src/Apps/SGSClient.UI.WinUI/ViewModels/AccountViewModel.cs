@@ -21,6 +21,7 @@ public partial class AccountViewModel : ObservableObject
     private readonly string _apiBaseUrl;
     private Func<nint>? _parentWindowHandle;
     private Action<string>? _navigate;
+    private Action? _onLogout;
 
     public AccountViewModel(
         IAuthSession? auth = null,
@@ -41,6 +42,7 @@ public partial class AccountViewModel : ObservableObject
     }
 
     public ObservableCollection<RecentGameItem> RecentGames { get; } = [];
+    public ObservableCollection<ProfileCommentItem> WallComments { get; } = [];
 
     public bool ShowSignedOut => !IsLoggedIn;
     public bool ShowTagSetup => IsLoggedIn && NeedsPlayerTagSetup;
@@ -77,6 +79,15 @@ public partial class AccountViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string DisplayName { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string WallCommentDraft { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string WallStatus { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial int ProfileUserId { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PlayerTagDisplay))]
@@ -143,6 +154,7 @@ public partial class AccountViewModel : ObservableObject
 
     public void SetParentWindowHandleProvider(Func<nint> provider) => _parentWindowHandle = provider;
     public void SetNavigateHandler(Action<string> navigate) => _navigate = navigate;
+    public void SetLogoutHandler(Action onLogout) => _onLogout = onLogout;
 
     public async Task InitializeAsync()
     {
@@ -382,9 +394,90 @@ public partial class AccountViewModel : ObservableObject
         FriendsCount = FollowingCount = FollowersCount = 0;
         await LoadSocialCountsAsync();
         await LoadRecentGamesAsync();
+        await LoadWallAsync(user.Id);
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
         App.MainWindow?.SetAdminNavVisible(user.IsAdmin);
+    }
+
+    private async Task LoadWallAsync(int userId)
+    {
+        ProfileUserId = userId;
+        WallComments.Clear();
+        WallStatus = string.Empty;
+        if (_userApi is null || userId <= 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var profile = await _userApi.GetPublicProfileAsync(userId);
+            if (profile is null)
+            {
+                WallStatus = "Nie udało się wczytać ściany.";
+                return;
+            }
+
+            foreach (var c in profile.Comments)
+            {
+                WallComments.Add(ProfileCommentItem.FromDto(c));
+            }
+
+            WallStatus = WallComments.Count == 0
+                ? "Brak podpisów — znajomi mogą coś tu napisać."
+                : $"{WallComments.Count} podpisów na ścianie";
+        }
+        catch (Exception ex)
+        {
+            WallStatus = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PostWallCommentAsync()
+    {
+        if (_userApi is null || ProfileUserId <= 0)
+        {
+            return;
+        }
+
+        var text = WallCommentDraft.Trim();
+        if (text.Length < 2)
+        {
+            WallStatus = "Wpisz dłuższy komentarz.";
+            return;
+        }
+
+        var (comment, error) = await _userApi.AddProfileCommentAsync(ProfileUserId, text);
+        if (comment is null)
+        {
+            WallStatus = error ?? "Nie udało się dodać podpisu.";
+            return;
+        }
+
+        WallCommentDraft = string.Empty;
+        WallComments.Insert(0, ProfileCommentItem.FromDto(comment));
+        WallStatus = "Dodano podpis.";
+    }
+
+    [RelayCommand]
+    private async Task DeleteWallCommentAsync(ProfileCommentItem? comment)
+    {
+        if (comment is null || _userApi is null || ProfileUserId <= 0)
+        {
+            return;
+        }
+
+        var (ok, error) = await _userApi.DeleteProfileCommentAsync(ProfileUserId, comment.Id);
+        if (!ok)
+        {
+            WallStatus = error ?? "Nie udało się usunąć.";
+            return;
+        }
+
+        WallComments.Remove(comment);
+        WallStatus = "Usunięto.";
     }
 
     private void ApplySignedOut()
@@ -397,10 +490,14 @@ public partial class AccountViewModel : ObservableObject
         AvatarInitials = "?";
         FriendsCount = FollowingCount = FollowersCount = 0;
         RecentGames.Clear();
+        WallComments.Clear();
+        WallCommentDraft = WallStatus = string.Empty;
+        ProfileUserId = 0;
         AccountStatus = "Not signed in";
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
         App.MainWindow?.SetAdminNavVisible(false);
+        _onLogout?.Invoke();
     }
 
     [RelayCommand]

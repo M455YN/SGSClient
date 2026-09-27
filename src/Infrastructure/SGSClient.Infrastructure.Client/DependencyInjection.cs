@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddSingleton<ILibraryFolderService, LibraryFolderService>();
         services.AddSingleton<ILibraryPathProvider, LibraryPathProvider>();
         services.AddScoped<ILibraryDiscoveryService, LibraryDiscoveryService>();
+
         services.Configure<ClientInstallSettings>(_ => { });
         services.Configure<ApiClientSettings>(_ => { });
 
@@ -74,6 +75,7 @@ public static class DependencyInjection
 
             services.AddSingleton<IInstallQueueService, InstallQueueService>();
             services.AddSingleton<PresenceHeartbeatService>();
+            services.AddSingleton<SocialRealtimeService>();
 
             services.AddSingleton<IAuthSession>(sp =>
                 new MsalAuthSession(

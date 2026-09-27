@@ -136,6 +136,38 @@ public partial class GameDetailsView : UserControl
         }
     }
 
+    private void RecommendYes_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is GameDetailsViewModel vm)
+        {
+            vm.ReviewRecommended = true;
+        }
+    }
+
+    private void RecommendNo_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is GameDetailsViewModel vm)
+        {
+            vm.ReviewRecommended = false;
+        }
+    }
+
+    private async void SubmitReview_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is GameDetailsViewModel vm)
+        {
+            await vm.SubmitReviewCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async void DeleteReview_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is GameDetailsViewModel vm)
+        {
+            await vm.DeleteReviewCommand.ExecuteAsync(null);
+        }
+    }
+
     private async void Install_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is GameDetailsViewModel vm)

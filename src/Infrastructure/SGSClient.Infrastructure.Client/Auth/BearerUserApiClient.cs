@@ -162,6 +162,160 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         CancellationToken cancellationToken = default) =>
         SendResultAsync<SocialOverviewDto>(HttpMethod.Delete, $"api/me/follows/{userId}", body: null, cancellationToken);
 
+    public Task<PublicUserProfileDto?> GetPublicProfileAsync(int userId, CancellationToken cancellationToken = default) =>
+        SendAllowAnonymousAsync<PublicUserProfileDto>(HttpMethod.Get, $"api/users/{userId}", body: null, cancellationToken);
+
+    public Task<PublicUserProfileDto?> GetPublicProfileByTagAsync(string tag, CancellationToken cancellationToken = default)
+    {
+        var encoded = Uri.EscapeDataString((tag ?? string.Empty).Trim().TrimStart('@'));
+        return SendAllowAnonymousAsync<PublicUserProfileDto>(
+            HttpMethod.Get,
+            $"api/users/by-tag/{encoded}",
+            body: null,
+            cancellationToken);
+    }
+
+    public Task<(ProfileCommentDto? Comment, string? Error)> AddProfileCommentAsync(
+        int userId,
+        string text,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<ProfileCommentDto>(
+            HttpMethod.Post,
+            $"api/users/{userId}/comments",
+            new CreateProfileCommentRequest { Text = text },
+            cancellationToken);
+
+    public async Task<(bool Ok, string? Error)> DeleteProfileCommentAsync(
+        int userId,
+        long commentId,
+        CancellationToken cancellationToken = default)
+    {
+        var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return (false, "Zaloguj się, żeby usunąć komentarz.");
+        }
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/users/{userId}/comments/{commentId}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                return (true, null);
+            }
+
+            var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return (false, TryExtractError(text) ?? response.ReasonPhrase ?? "Nie udało się usunąć komentarza.");
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    public async Task<IReadOnlyList<ChatThreadDto>> GetChatThreadsAsync(CancellationToken cancellationToken = default)
+    {
+        var list = await SendAsync<List<ChatThreadDto>>(
+            HttpMethod.Get,
+            "api/me/chat/threads",
+            body: null,
+            cancellationToken).ConfigureAwait(false);
+        return list ?? [];
+    }
+
+    public Task<ChatConversationDto?> GetChatConversationAsync(int peerUserId, CancellationToken cancellationToken = default) =>
+        SendAsync<ChatConversationDto>(HttpMethod.Get, $"api/me/chat/{peerUserId}", body: null, cancellationToken);
+
+    public Task<(ChatMessageDto? Message, string? Error)> SendChatMessageAsync(
+        int peerUserId,
+        string text,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<ChatMessageDto>(
+            HttpMethod.Post,
+            $"api/me/chat/{peerUserId}",
+            new SendChatMessageRequest { Text = text },
+            cancellationToken);
+
+    public async Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync(
+        int take = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var list = await SendAsync<List<NotificationDto>>(
+            HttpMethod.Get,
+            $"api/me/notifications?take={take}",
+            body: null,
+            cancellationToken).ConfigureAwait(false);
+        return list ?? [];
+    }
+
+    public async Task<int> GetUnreadNotificationCountAsync(CancellationToken cancellationToken = default)
+    {
+        var dto = await SendAsync<UnreadCountDto>(
+            HttpMethod.Get,
+            "api/me/notifications/unread-count",
+            body: null,
+            cancellationToken).ConfigureAwait(false);
+        return dto?.Count ?? 0;
+    }
+
+    public async Task<(bool Ok, string? Error)> MarkNotificationReadAsync(
+        long notificationId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return (false, "Brak tokena.");
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"api/me/notifications/{notificationId}/read");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                return (true, null);
+            }
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return (false, TryExtractError(body) ?? response.ReasonPhrase);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
+    public async Task<(bool Ok, string? Error)> MarkAllNotificationsReadAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return (false, "Brak tokena.");
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/me/notifications/read-all");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                return (true, null);
+            }
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return (false, TryExtractError(body) ?? response.ReasonPhrase);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
     public async Task<IReadOnlyList<PlaytimeDto>> GetPlaytimeAsync(CancellationToken cancellationToken = default)
     {
         var list = await SendAllowAnonymousAsync<List<PlaytimeDto>>(
@@ -179,6 +333,11 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         RecordPlaytimeSessionRequest request,
         CancellationToken cancellationToken = default) =>
         SendAllowAnonymousAsync<PlaytimeDto>(HttpMethod.Post, "api/me/playtime/sessions", request, cancellationToken);
+
+    private sealed class UnreadCountDto
+    {
+        public int Count { get; set; }
+    }
 
     private static string? TryExtractError(string? body)
     {

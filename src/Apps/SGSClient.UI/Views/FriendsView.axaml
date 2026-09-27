@@ -28,28 +28,37 @@
   <UserControl.Resources>
     <DataTemplate x:Key="PersonRow" x:DataType="vm:SocialPersonItem">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="0,4">
-        <Grid Width="40" Height="40">
-          <Border Width="36" Height="36" CornerRadius="18" HorizontalAlignment="Center" VerticalAlignment="Center"
-                  Background="{DynamicResource AccentFillColorDefaultBrush}">
-            <TextBlock Text="{Binding Initials}" FontWeight="SemiBold" FontSize="13"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
-          </Border>
-          <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                   Fill="{DynamicResource SystemFillColorSuccessBrush}"
-                   Stroke="{DynamicResource SolidBackgroundFillColorBaseBrush}" StrokeThickness="2"
-                   IsVisible="{Binding IsOnline}"/>
-          <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                   Fill="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                   Stroke="{DynamicResource ControlStrongStrokeColorDefaultBrush}" StrokeThickness="2"
-                   IsVisible="{Binding !IsOnline}"/>
-        </Grid>
-        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-          <TextBlock Text="{Binding Subtitle}" FontSize="12"
-                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-        </StackPanel>
+        <Button Background="Transparent" BorderThickness="0" Padding="0" Tag="{Binding}"
+                Click="OpenProfile_OnClick" ToolTip.Tip="Otwórz profil">
+          <Grid Width="40" Height="40">
+            <Border Width="36" Height="36" CornerRadius="18" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="{DynamicResource AccentFillColorDefaultBrush}">
+              <TextBlock Text="{Binding Initials}" FontWeight="SemiBold" FontSize="13"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+            </Border>
+            <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                     Fill="{DynamicResource SystemFillColorSuccessBrush}"
+                     Stroke="{DynamicResource SolidBackgroundFillColorBaseBrush}" StrokeThickness="2"
+                     IsVisible="{Binding IsOnline}"/>
+            <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                     Fill="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                     Stroke="{DynamicResource ControlStrongStrokeColorDefaultBrush}" StrokeThickness="2"
+                     IsVisible="{Binding !IsOnline}"/>
+          </Grid>
+        </Button>
+        <Button Grid.Column="1" Background="Transparent" BorderThickness="0" Padding="0"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                Tag="{Binding}" Click="OpenProfile_OnClick">
+          <StackPanel VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+            <TextBlock Text="{Binding Subtitle}" FontSize="12"
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+          </StackPanel>
+        </Button>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <Button Content="Napisz" Tag="{Binding}" Click="Message_OnClick" Classes="compact"
+                  IsVisible="{Binding ShowMessage}"/>
           <Button Content="Akceptuj" Tag="{Binding}" Click="Accept_OnClick" Classes="accent compact"
                   IsVisible="{Binding ShowAccept}"/>
           <Button Content="Dodaj" Tag="{Binding}" Click="AddFriend_OnClick" Classes="accent compact"
@@ -68,7 +77,7 @@
   <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16,12">
     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
       <StackPanel Orientation="Horizontal" Spacing="4">
-        <Button Click="OverlayProfile_OnClick" ToolTip.Tip="Profil">
+        <Button Click="OverlayProfile_OnClick" ToolTip.Tip="Twój profil">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <ui:FASymbolIcon Symbol="Contact" FontSize="16"/>
             <TextBlock Text="Profil" VerticalAlignment="Center"/>
@@ -81,7 +90,8 @@
             <TextBlock Text="Znajomi" VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
-        <Button IsEnabled="False" ToolTip.Tip="Czat wkrótce">
+        <Button Tag="Chat" Click="Tab_OnClick" ToolTip.Tip="Czat"
+                Classes.accent="{Binding ShowChatTab}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <ui:FASymbolIcon Symbol="Message" FontSize="16"/>
             <TextBlock Text="Czat" VerticalAlignment="Center"/>
@@ -104,12 +114,97 @@
     <TextBlock Grid.Row="1" Text="Społeczność" FontSize="20" FontWeight="SemiBold" Margin="4,8,4,4"/>
 
     <TextBox Grid.Row="2" Text="{Binding SearchQuery}" PlaceholderText="{Binding SearchPlaceholder}"
-             MinHeight="32" KeyDown="SearchBox_OnKeyDown"/>
+             MinHeight="32" KeyDown="SearchBox_OnKeyDown"
+             IsVisible="{Binding ShowMainList}"/>
 
     <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled" Margin="0,8,0,0">
       <StackPanel Spacing="8">
         <TextBlock Text="{Binding StatusText}" FontSize="12"
-                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"
+                   IsVisible="{Binding !ShowProfileView}"/>
+
+        <!-- Public profile + wall -->
+        <StackPanel Spacing="10" IsVisible="{Binding ShowProfileView}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="← Wróć" Click="CloseProfile_OnClick" Classes="compact"/>
+            <Button Content="Napisz wiadomość" Click="MessageFromProfile_OnClick" Classes="accent compact"
+                    IsVisible="{Binding CanMessageProfile}"/>
+          </StackPanel>
+          <TextBlock Text="{Binding ProfileHeader}" FontSize="22" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding ProfileSubtitle}" Opacity="0.7" FontSize="13"/>
+          <TextBlock Text="Ściana" FontWeight="SemiBold" Margin="0,8,0,0"/>
+          <TextBox Text="{Binding ProfileCommentDraft}" PlaceholderText="Podpisz się pod profilem…"
+                   AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"/>
+          <Button Content="Dodaj podpis" Classes="accent compact" Click="PostComment_OnClick"
+                  HorizontalAlignment="Left"/>
+          <TextBlock Text="{Binding ProfileStatus}" FontSize="12" Opacity="0.65"/>
+          <ItemsControl ItemsSource="{Binding ProfileComments}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ProfileCommentItem">
+                <Border Margin="0,0,0,8" Padding="12" CornerRadius="8"
+                        Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{Binding AuthorLabel}" FontWeight="SemiBold"/>
+                      <TextBlock Text="{Binding WhenText}" FontSize="11" Opacity="0.55"/>
+                      <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Usuń" Classes="compact"
+                            Tag="{Binding}" Click="DeleteComment_OnClick"
+                            IsVisible="{Binding CanDelete}" VerticalAlignment="Top"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <!-- Chat -->
+        <Grid IsVisible="{Binding ShowChatTab}" ColumnDefinitions="140,*" ColumnSpacing="10" MinHeight="320">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Rozmowy" FontWeight="SemiBold"/>
+            <TextBlock Text="{Binding ChatStatus}" FontSize="11" Opacity="0.65" TextWrapping="Wrap"/>
+            <TextBlock Text="Brak rozmów." FontSize="12" Opacity="0.55" IsVisible="{Binding ShowEmptyChat}"/>
+            <ItemsControl ItemsSource="{Binding ChatThreads}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ChatThreadItem">
+                  <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                          Padding="8,6" Margin="0,0,0,4" Tag="{Binding}" Click="OpenThread_OnClick">
+                    <StackPanel Spacing="2">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Column="1" Text="{Binding UnreadBadge}" FontSize="11" Opacity="0.7"/>
+                      </Grid>
+                      <TextBlock Text="{Binding Preview}" FontSize="11" Opacity="0.55" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="8" IsVisible="{Binding ShowChatConversation}">
+            <TextBlock Text="{Binding ChatPeerTitle}" FontWeight="SemiBold" FontSize="16"/>
+            <ScrollViewer MaxHeight="240" HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding ChatMessages}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ChatMessageItem">
+                    <Border Margin="0,0,0,6" Padding="10,8" CornerRadius="8"
+                            Background="#22FFFFFF" HorizontalAlignment="Left" MaxWidth="280">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Meta}" FontSize="10" Opacity="0.55"/>
+                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBox Text="{Binding ChatDraft}" PlaceholderText="Wiadomość…" KeyDown="ChatDraft_OnKeyDown"/>
+              <Button Grid.Column="1" Content="Wyślij" Classes="accent" Click="SendChat_OnClick"/>
+            </Grid>
+          </StackPanel>
+        </Grid>
 
         <StackPanel Spacing="8" IsVisible="{Binding ShowFriendsTab}">
           <TextBlock Text="Nie masz jeszcze znajomych. Wpisz nazwę lub @tag, żeby kogoś znaleźć."

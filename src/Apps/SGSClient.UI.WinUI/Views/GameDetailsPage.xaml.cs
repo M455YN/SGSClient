@@ -135,7 +135,16 @@ public sealed partial class GameDetailsPage : Page
         OtherPanel.Visibility = ViewModel.ShowOther ? Visibility.Visible : Visibility.Collapsed;
 
         DetailsPanel.Visibility = ViewModel.ShowDetailsTab ? Visibility.Visible : Visibility.Collapsed;
+        ReviewsPanel.Visibility = ViewModel.ShowReviewsTab ? Visibility.Visible : Visibility.Collapsed;
         MorePanel.Visibility = ViewModel.ShowMoreTab ? Visibility.Visible : Visibility.Collapsed;
+
+        ReviewsSummaryText.Text = ViewModel.ReviewsSummaryText;
+        WriteReviewBox.Visibility = ViewModel.CanWriteReview ? Visibility.Visible : Visibility.Collapsed;
+        CannotReviewHint.Visibility = ViewModel.CanWriteReview ? Visibility.Collapsed : Visibility.Visible;
+        ReviewDraftBox.Text = ViewModel.ReviewDraftText;
+        ReviewStatusText.Text = ViewModel.ReviewStatusText;
+        DeleteReviewBtn.Visibility = ViewModel.HasMyReview ? Visibility.Visible : Visibility.Collapsed;
+        ReviewsList.ItemsSource = ViewModel.Reviews;
 
         RefreshMediaPreview();
     }
@@ -424,6 +433,31 @@ public sealed partial class GameDetailsPage : Page
             ViewModel.SelectTabCommand.Execute(tab);
             RefreshUi();
         }
+    }
+
+    private void RecommendYes_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ReviewRecommended = true;
+        RefreshUi();
+    }
+
+    private void RecommendNo_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ReviewRecommended = false;
+        RefreshUi();
+    }
+
+    private async void SubmitReview_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ReviewDraftText = ReviewDraftBox.Text ?? string.Empty;
+        await ViewModel.SubmitReviewCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private async void DeleteReview_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.DeleteReviewCommand.ExecuteAsync(null);
+        RefreshUi();
     }
 
     private async void OpenProperties(GameLibraryItem item)

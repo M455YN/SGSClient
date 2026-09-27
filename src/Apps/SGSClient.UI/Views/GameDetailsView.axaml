@@ -159,6 +159,7 @@
             <StackPanel Orientation="Horizontal" Spacing="4">
               <Button Content="Szczegóły" Tag="Details" Click="Tab_OnClick" Padding="14,8"
                       FontWeight="SemiBold"/>
+              <Button Content="Recenzje" Tag="Reviews" Click="Tab_OnClick" Padding="14,8"/>
               <Button Content="Więcej" Tag="More" Click="Tab_OnClick" Padding="14,8"/>
             </StackPanel>
             <Border Height="1" Background="#33FFFFFF"/>
@@ -218,6 +219,51 @@
                 <TextBlock Text="Dodatkowe informacje" FontSize="18" FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding OtherInformation}" Opacity="0.85" TextWrapping="Wrap"/>
               </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="12" IsVisible="{Binding ShowReviewsTab}">
+              <TextBlock Text="Recenzje" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="{Binding ReviewsSummaryText}" Opacity="0.75" FontWeight="SemiBold"/>
+
+              <Border IsVisible="{Binding CanWriteReview}" Padding="14" CornerRadius="8"
+                      Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Twoja recenzja" FontWeight="SemiBold"/>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Polecam" Click="RecommendYes_OnClick" Padding="12,6"
+                            Classes.accent="{Binding ReviewRecommended}"/>
+                    <Button Content="Nie polecam" Click="RecommendNo_OnClick" Padding="12,6"
+                            Classes.accent="{Binding !ReviewRecommended}"/>
+                  </StackPanel>
+                  <TextBox Text="{Binding ReviewDraftText}" AcceptsReturn="True" TextWrapping="Wrap"
+                           MinHeight="88" PlaceholderText="Napisz recenzję (min. 10 znaków)…"/>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Zapisz" Classes="accent" Click="SubmitReview_OnClick" Padding="14,8"/>
+                    <Button Content="Usuń" Click="DeleteReview_OnClick" IsVisible="{Binding HasMyReview}" Padding="14,8"/>
+                  </StackPanel>
+                  <TextBlock Text="{Binding ReviewStatusText}" Opacity="0.65" FontSize="12"/>
+                </StackPanel>
+              </Border>
+
+              <TextBlock Text="Żeby napisać recenzję, dodaj grę do biblioteki ( entitlement )."
+                         Opacity="0.55" FontSize="12" TextWrapping="Wrap"
+                         IsVisible="{Binding !CanWriteReview}"/>
+
+              <ItemsControl ItemsSource="{Binding Reviews}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:GameReviewItem">
+                    <Border Margin="0,0,0,10" Padding="14" CornerRadius="8"
+                            Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+                      <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding VerdictLabel}" FontWeight="SemiBold"
+                                   Foreground="#FF7CF5C8"/>
+                        <TextBlock Text="{Binding MetaText}" Opacity="0.55" FontSize="12"/>
+                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Opacity="0.9"/>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
             </StackPanel>
 
             <StackPanel Spacing="8" IsVisible="{Binding ShowMoreTab}">

@@ -96,6 +96,35 @@
             </StackPanel>
 
             <StackPanel Spacing="10" Margin="0,8,0,0">
+              <TextBlock Text="Ściana" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Jak na Steam — znajomi mogą się tu podpisać." Opacity="0.55" FontSize="12"/>
+              <TextBox Text="{Binding WallCommentDraft}" PlaceholderText="Napisz coś na swojej ścianie…"
+                       AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"/>
+              <Button Content="Dodaj podpis" HorizontalAlignment="Left" Padding="12,8"
+                      Click="PostWall_OnClick"/>
+              <TextBlock Text="{Binding WallStatus}" Opacity="0.6" FontSize="12"/>
+              <ItemsControl ItemsSource="{Binding WallComments}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ProfileCommentItem">
+                    <Border Margin="0,0,0,8" Padding="12" CornerRadius="8"
+                            Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="4">
+                          <TextBlock Text="{Binding AuthorLabel}" FontWeight="SemiBold"/>
+                          <TextBlock Text="{Binding WhenText}" FontSize="11" Opacity="0.55"/>
+                          <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Usuń" Padding="8,4"
+                                Tag="{Binding}" Click="DeleteWall_OnClick"
+                                IsVisible="{Binding CanDelete}" VerticalAlignment="Top"/>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
+            <StackPanel Spacing="10" Margin="0,8,0,0">
               <TextBlock Text="Biblioteka" FontSize="18" FontWeight="SemiBold"/>
               <TextBlock Text="Osiągnięcia i postęp gier pojawią się tutaj." Opacity="0.55" FontSize="13"/>
               <ItemsControl ItemsSource="{Binding RecentGames}">

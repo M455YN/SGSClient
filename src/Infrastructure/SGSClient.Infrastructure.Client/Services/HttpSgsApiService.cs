@@ -738,6 +738,72 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
         }
     }
 
+    public async Task<GameReviewsSummaryDto?> GetGameReviewsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/{gameId}/reviews");
+            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<GameReviewsSummaryDto>(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<(GameReviewDto? Review, string? Error)> UpsertGameReviewAsync(
+        int gameId,
+        UpsertGameReviewRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var message = new HttpRequestMessage(HttpMethod.Put, $"api/Games/{gameId}/reviews/me")
+            {
+                Content = JsonContent.Create(request)
+            };
+            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ReadErrorAsync(response, cancellationToken).ConfigureAwait(false));
+            }
+
+            var review = await response.Content.ReadFromJsonAsync<GameReviewDto>(cancellationToken)
+                .ConfigureAwait(false);
+            return (review, null);
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
+    public async Task<bool> DeleteGameReviewAsync(int gameId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/Games/{gameId}/reviews/me");
+            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private async Task AttachBearerAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         if (auth.IsAvailable && auth.IsLoggedIn)

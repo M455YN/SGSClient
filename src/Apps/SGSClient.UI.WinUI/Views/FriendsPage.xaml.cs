@@ -1,8 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using SGSClient.UI.WinUI.ViewModels;
+using Windows.System;
 
 namespace SGSClient.UI.WinUI.Views;
 
@@ -29,21 +31,53 @@ public sealed partial class FriendsPage : Page
     private void RefreshUi()
     {
         StatusText.Text = ViewModel.StatusText;
+        StatusText.Visibility = ViewModel.ShowProfileView ? Visibility.Collapsed : Visibility.Visible;
+
         if (SearchBox.FocusState == FocusState.Unfocused)
         {
             SearchBox.Text = ViewModel.SearchQuery;
             SearchBox.PlaceholderText = ViewModel.SearchPlaceholder;
         }
 
+        SearchBox.Visibility = ViewModel.ShowMainList ? Visibility.Visible : Visibility.Collapsed;
+
         _syncingTabs = true;
-        SocialTabs.SelectedItem = ViewModel.ShowSearchTab ? TabSearch : TabFriends;
+        SocialTabs.SelectedItem = ViewModel.ShowChatTab
+            ? TabChat
+            : ViewModel.ShowSearchTab
+                ? TabSearch
+                : TabFriends;
         _syncingTabs = false;
 
+        ProfilePanel.Visibility = ViewModel.ShowProfileView ? Visibility.Visible : Visibility.Collapsed;
+        ChatPanel.Visibility = ViewModel.ShowChatTab ? Visibility.Visible : Visibility.Collapsed;
         FriendsPanel.Visibility = ViewModel.ShowFriendsTab ? Visibility.Visible : Visibility.Collapsed;
         RequestsPanel.Visibility = ViewModel.ShowRequestsTab ? Visibility.Visible : Visibility.Collapsed;
         FollowingPanel.Visibility = ViewModel.ShowFollowingTab ? Visibility.Visible : Visibility.Collapsed;
         FollowersPanel.Visibility = ViewModel.ShowFollowersTab ? Visibility.Visible : Visibility.Collapsed;
         SearchPanel.Visibility = ViewModel.ShowSearchTab ? Visibility.Visible : Visibility.Collapsed;
+
+        ProfileHeaderText.Text = ViewModel.ProfileHeader;
+        ProfileSubtitleText.Text = ViewModel.ProfileSubtitle;
+        ProfileStatusText.Text = ViewModel.ProfileStatus;
+        MessageFromProfileButton.Visibility = ViewModel.CanMessageProfile ? Visibility.Visible : Visibility.Collapsed;
+        if (ProfileCommentBox.FocusState == FocusState.Unfocused)
+        {
+            ProfileCommentBox.Text = ViewModel.ProfileCommentDraft;
+        }
+
+        ProfileCommentsList.ItemsSource = ViewModel.ProfileComments;
+
+        ChatStatusText.Text = ViewModel.ChatStatus;
+        EmptyChatText.Visibility = ViewModel.ShowEmptyChat ? Visibility.Visible : Visibility.Collapsed;
+        ChatThreadsList.ItemsSource = ViewModel.ChatThreads;
+        ChatConversationPanel.Visibility = ViewModel.ShowChatConversation ? Visibility.Visible : Visibility.Collapsed;
+        ChatPeerTitleText.Text = ViewModel.ChatPeerTitle;
+        ChatMessagesList.ItemsSource = ViewModel.ChatMessages;
+        if (ChatDraftBox.FocusState == FocusState.Unfocused)
+        {
+            ChatDraftBox.Text = ViewModel.ChatDraft;
+        }
 
         EmptyFriendsText.Visibility = ViewModel.ShowEmptyFriends ? Visibility.Visible : Visibility.Collapsed;
         IncomingExpander.Visibility = ViewModel.ShowFriendsTab && ViewModel.HasIncoming
@@ -83,11 +117,6 @@ public sealed partial class FriendsPage : Page
         {
             App.MainWindow?.CloseSocialOverlay();
             App.MainWindow?.NavigateTo(typeof(AccountPage), selectTag: "Account");
-            return;
-        }
-
-        if (tag == "Chat")
-        {
             return;
         }
 
@@ -139,6 +168,90 @@ public sealed partial class FriendsPage : Page
         {
             RefreshUi();
         }
+    }
+
+    private async void OpenProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is SocialPersonItem person)
+        {
+            await ViewModel.OpenProfileCommand.ExecuteAsync(person);
+            RefreshUi();
+        }
+    }
+
+    private void CloseProfile_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.CloseProfileCommand.Execute(null);
+        RefreshUi();
+    }
+
+    private void ProfileCommentBox_TextChanged(object sender, TextChangedEventArgs e) =>
+        ViewModel.ProfileCommentDraft = ProfileCommentBox.Text ?? string.Empty;
+
+    private async void PostComment_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ProfileCommentDraft = ProfileCommentBox.Text ?? string.Empty;
+        await ViewModel.PostProfileCommentCommand.ExecuteAsync(null);
+        ProfileCommentBox.Text = ViewModel.ProfileCommentDraft;
+        RefreshUi();
+    }
+
+    private async void DeleteComment_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is ProfileCommentItem comment)
+        {
+            await ViewModel.DeleteProfileCommentCommand.ExecuteAsync(comment);
+            RefreshUi();
+        }
+    }
+
+    private async void MessageFromProfile_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.MessageFromProfileCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private async void Message_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is SocialPersonItem person)
+        {
+            await ViewModel.OpenChatWithCommand.ExecuteAsync(person);
+            RefreshUi();
+        }
+    }
+
+    private async void OpenThread_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is ChatThreadItem thread)
+        {
+            await ViewModel.OpenChatThreadCommand.ExecuteAsync(thread);
+            RefreshUi();
+        }
+    }
+
+    private void ChatDraftBox_TextChanged(object sender, TextChangedEventArgs e) =>
+        ViewModel.ChatDraft = ChatDraftBox.Text ?? string.Empty;
+
+    private async void SendChat_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ChatDraft = ChatDraftBox.Text ?? string.Empty;
+        await ViewModel.SendChatMessageCommand.ExecuteAsync(null);
+        ChatDraftBox.Text = ViewModel.ChatDraft;
+        RefreshUi();
+    }
+
+    private async void ChatDraft_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Enter)
+        {
+            return;
+        }
+
+        ViewModel.ChatDraft = ChatDraftBox.Text ?? string.Empty;
+        await ViewModel.SendChatMessageCommand.ExecuteAsync(null);
+        ChatDraftBox.Text = ViewModel.ChatDraft;
+        e.Handled = true;
+        RefreshUi();
     }
 
     private async void AddFriend_Click(object sender, RoutedEventArgs e)

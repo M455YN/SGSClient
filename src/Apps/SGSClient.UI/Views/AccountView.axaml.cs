@@ -121,6 +121,22 @@ public partial class AccountView : UserControl
         }
     }
 
+    private async void PostWall_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AccountViewModel vm)
+        {
+            await vm.PostWallCommentCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async void DeleteWall_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AccountViewModel vm && sender is Control { Tag: ProfileCommentItem comment })
+        {
+            await vm.DeleteWallCommentCommand.ExecuteAsync(comment);
+        }
+    }
+
     private void RefreshSidebar()
     {
         if (TopLevel.GetTopLevel(this)?.DataContext is MainWindowViewModel main)

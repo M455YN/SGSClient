@@ -32,16 +32,20 @@ public partial class ShellSidebarViewModel : ObservableObject
         IGameLauncherService? launcher = null,
         ILibraryDiscoveryService? discovery = null,
         IAuthSession? auth = null,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        NotificationsViewModel? notifications = null)
     {
         _scopes = scopes;
         _launcher = launcher;
         _discovery = discovery;
         _auth = auth;
+        Notifications = notifications ?? new NotificationsViewModel();
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         RefreshProfile();
     }
+
+    public NotificationsViewModel Notifications { get; }
 
     public void SetNavigateHandler(Action<string> navigate) => _navigate = navigate;
     public void SetOpenDetailsHandler(Action<int> open) => _openDetails = open;

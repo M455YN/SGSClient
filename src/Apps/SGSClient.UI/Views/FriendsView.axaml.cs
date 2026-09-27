@@ -32,30 +32,6 @@ public partial class FriendsView : UserControl
     private void Close_OnClick(object? sender, RoutedEventArgs e) =>
         Shell?.CloseSocial();
 
-    private void ToggleIncoming_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm)
-        {
-            vm.IncomingExpanded = !vm.IncomingExpanded;
-        }
-    }
-
-    private void ToggleOnline_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm)
-        {
-            vm.OnlineExpanded = !vm.OnlineExpanded;
-        }
-    }
-
-    private void ToggleOffline_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm)
-        {
-            vm.OfflineExpanded = !vm.OfflineExpanded;
-        }
-    }
-
     private async void SearchBox_OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key != Key.Enter || DataContext is not FriendsViewModel vm)
@@ -67,6 +43,81 @@ public partial class FriendsView : UserControl
         {
             await vm.SearchCommand.ExecuteAsync(null);
         }
+    }
+
+    private async void OpenProfile_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm && sender is Control { Tag: SocialPersonItem person })
+        {
+            await vm.OpenProfileCommand.ExecuteAsync(person);
+        }
+    }
+
+    private void CloseProfile_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm)
+        {
+            vm.CloseProfileCommand.Execute(null);
+        }
+    }
+
+    private async void PostComment_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm)
+        {
+            await vm.PostProfileCommentCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async void DeleteComment_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm && sender is Control { Tag: ProfileCommentItem comment })
+        {
+            await vm.DeleteProfileCommentCommand.ExecuteAsync(comment);
+        }
+    }
+
+    private async void MessageFromProfile_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm)
+        {
+            await vm.MessageFromProfileCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async void Message_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm && sender is Control { Tag: SocialPersonItem person })
+        {
+            await vm.OpenChatWithCommand.ExecuteAsync(person);
+        }
+    }
+
+    private async void OpenThread_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm && sender is Control { Tag: ChatThreadItem thread })
+        {
+            await vm.OpenChatThreadCommand.ExecuteAsync(thread);
+        }
+    }
+
+    private async void SendChat_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm)
+        {
+            await vm.SendChatMessageCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async void ChatDraft_OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || DataContext is not FriendsViewModel vm)
+        {
+            return;
+        }
+
+        await vm.SendChatMessageCommand.ExecuteAsync(null);
+        e.Handled = true;
     }
 
     private async void AddFriend_OnClick(object? sender, RoutedEventArgs e)

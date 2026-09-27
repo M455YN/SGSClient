@@ -231,10 +231,19 @@ public partial class GameDetailsViewModel : ObservableObject
     public string ReturnTag { get; private set; } = "Games";
 
     public bool ShowDetailsTab => SelectedTab == "Details";
-    public bool ShowReviewsTab => false;
+    public bool ShowReviewsTab => SelectedTab == "Reviews";
     public bool ShowMoreTab => SelectedTab == "More";
 
-    public bool ReviewsAvailable => false;
+    public bool ReviewsAvailable => true;
+
+    public ObservableCollection<GameReviewItem> Reviews { get; } = [];
+
+    [ObservableProperty] public partial string ReviewsSummaryText { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool CanWriteReview { get; set; }
+    [ObservableProperty] public partial bool ReviewRecommended { get; set; } = true;
+    [ObservableProperty] public partial string ReviewDraftText { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool HasMyReview { get; set; }
+    [ObservableProperty] public partial string ReviewStatusText { get; set; } = string.Empty;
 
     partial void OnSelectedTabChanged(string value)
     {
@@ -290,6 +299,7 @@ public partial class GameDetailsViewModel : ObservableObject
             UpdateActionState(game);
             HasContent = true;
             StatusText = string.Empty;
+            _ = LoadReviewsAsync();
         }
         catch (Exception ex)
         {
@@ -308,14 +318,13 @@ public partial class GameDetailsViewModel : ObservableObject
     [RelayCommand]
     private void SelectTab(string? tab)
     {
-        if (string.Equals(tab, "Reviews", StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
         if (!string.IsNullOrWhiteSpace(tab))
         {
             SelectedTab = tab;
+            if (string.Equals(tab, "Reviews", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = LoadReviewsAsync();
+            }
         }
     }
 
@@ -965,6 +974,94 @@ public partial class GameDetailsViewModel : ObservableObject
         }
     }
 
+    private async Task LoadReviewsAsync()
+    {
+        if (_api is null || GameId <= 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var summary = await _api.GetGameReviewsAsync(GameId);
+            Reviews.Clear();
+            if (summary is null)
+            {
+                ReviewsSummaryText = "Brak recenzji.";
+                CanWriteReview = false;
+                HasMyReview = false;
+                return;
+            }
+
+            CanWriteReview = summary.CanReview;
+            HasMyReview = summary.MyReview is not null;
+            ReviewsSummaryText = summary.TotalCount == 0
+                ? "Brak recenzji — bądź pierwszy."
+                : $"{summary.RecommendedPercent:0.#}% z {summary.TotalCount} recenzji poleca tę grę";
+
+            if (summary.MyReview is not null)
+            {
+                ReviewRecommended = summary.MyReview.Recommended;
+                ReviewDraftText = summary.MyReview.Text;
+            }
+
+            foreach (var r in summary.Reviews)
+            {
+                Reviews.Add(GameReviewItem.FromDto(r));
+            }
+        }
+        catch (Exception ex)
+        {
+            ReviewStatusText = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task SubmitReviewAsync()
+    {
+        if (_api is null || GameId <= 0)
+        {
+            return;
+        }
+
+        ReviewStatusText = "Zapisywanie…";
+        var (review, error) = await _api.UpsertGameReviewAsync(
+            GameId,
+            new UpsertGameReviewRequest
+            {
+                Recommended = ReviewRecommended,
+                Text = ReviewDraftText
+            });
+        if (error is not null || review is null)
+        {
+            ReviewStatusText = error ?? "Nie udało się zapisać recenzji.";
+            return;
+        }
+
+        ReviewStatusText = "Zapisano recenzję.";
+        await LoadReviewsAsync();
+    }
+
+    [RelayCommand]
+    private async Task DeleteReviewAsync()
+    {
+        if (_api is null || GameId <= 0)
+        {
+            return;
+        }
+
+        if (!await _api.DeleteGameReviewAsync(GameId))
+        {
+            ReviewStatusText = "Nie udało się usunąć recenzji.";
+            return;
+        }
+
+        ReviewDraftText = string.Empty;
+        ReviewRecommended = true;
+        ReviewStatusText = "Usunięto recenzję.";
+        await LoadReviewsAsync();
+    }
+
     private void ApplyLibraryActions(GameLibraryItem item)
     {
         ShowLibraryActions = true;
@@ -1052,4 +1149,34 @@ public sealed class VersionOptionItem
         IsCurrent = dto.IsCurrent,
         PublishedAtUtc = dto.PublishedAtUtc
     };
+}
+
+public sealed class GameReviewItem
+{
+    public long Id { get; init; }
+    public required string AuthorDisplayName { get; init; }
+    public string? AuthorPlayerTag { get; init; }
+    public bool Recommended { get; init; }
+    public required string Text { get; init; }
+    public string VerdictLabel => Recommended ? "Poleca" : "Nie poleca";
+    public string MetaText { get; init; } = string.Empty;
+    public bool IsMine { get; init; }
+
+    public static GameReviewItem FromDto(GameReviewDto dto)
+    {
+        var play = dto.PlaytimeSecondsAtReview is > 0
+            ? $" · {PlaytimeFormat.ToPolishTotal(dto.PlaytimeSecondsAtReview.Value)}"
+            : string.Empty;
+        var tag = string.IsNullOrWhiteSpace(dto.AuthorPlayerTag) ? "" : $" @{dto.AuthorPlayerTag}";
+        return new GameReviewItem
+        {
+            Id = dto.Id,
+            AuthorDisplayName = dto.AuthorDisplayName,
+            AuthorPlayerTag = dto.AuthorPlayerTag,
+            Recommended = dto.Recommended,
+            Text = dto.Text,
+            IsMine = dto.IsMine,
+            MetaText = $"{dto.AuthorDisplayName}{tag} · {dto.UpdatedAtUtc.LocalDateTime:g}{play}"
+        };
+    }
 }

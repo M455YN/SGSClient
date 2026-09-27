@@ -42,6 +42,41 @@ public interface IUserApiClient
         int userId,
         CancellationToken cancellationToken = default);
 
+    Task<PublicUserProfileDto?> GetPublicProfileAsync(int userId, CancellationToken cancellationToken = default);
+
+    Task<PublicUserProfileDto?> GetPublicProfileByTagAsync(string tag, CancellationToken cancellationToken = default);
+
+    Task<(ProfileCommentDto? Comment, string? Error)> AddProfileCommentAsync(
+        int userId,
+        string text,
+        CancellationToken cancellationToken = default);
+
+    Task<(bool Ok, string? Error)> DeleteProfileCommentAsync(
+        int userId,
+        long commentId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ChatThreadDto>> GetChatThreadsAsync(CancellationToken cancellationToken = default);
+
+    Task<ChatConversationDto?> GetChatConversationAsync(int peerUserId, CancellationToken cancellationToken = default);
+
+    Task<(ChatMessageDto? Message, string? Error)> SendChatMessageAsync(
+        int peerUserId,
+        string text,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync(
+        int take = 50,
+        CancellationToken cancellationToken = default);
+
+    Task<int> GetUnreadNotificationCountAsync(CancellationToken cancellationToken = default);
+
+    Task<(bool Ok, string? Error)> MarkNotificationReadAsync(
+        long notificationId,
+        CancellationToken cancellationToken = default);
+
+    Task<(bool Ok, string? Error)> MarkAllNotificationsReadAsync(CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<PlaytimeDto>> GetPlaytimeAsync(CancellationToken cancellationToken = default);
 
     Task<PlaytimeDto?> GetPlaytimeAsync(int gameId, CancellationToken cancellationToken = default);
