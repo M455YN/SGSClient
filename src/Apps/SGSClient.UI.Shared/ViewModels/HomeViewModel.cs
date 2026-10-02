@@ -21,6 +21,7 @@ public partial class HomeViewModel : ObservableObject
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
     private readonly IAuthSession? _auth;
+    private readonly ICatalogCacheStore? _catalogCache;
     private readonly string _apiBaseUrl;
     private Action<string>? _navigate;
 
@@ -33,11 +34,13 @@ public partial class HomeViewModel : ObservableObject
         ISgsApiService? api,
         IServiceScopeFactory? scopes = null,
         IAuthSession? auth = null,
-        IConfiguration? configuration = null)
+        IConfiguration? configuration = null,
+        ICatalogCacheStore? catalogCache = null)
     {
         _api = api;
         _scopes = scopes;
         _auth = auth;
+        _catalogCache = catalogCache;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         RefreshGreeting();
@@ -174,8 +177,25 @@ public partial class HomeViewModel : ObservableObject
                 }
                 catch (Exception ex)
                 {
-                    HasError = true;
-                    StatusText = $"Nie udało się pobrać katalogu: {ex.Message}";
+                    if (_catalogCache is not null)
+                    {
+                        var cached = await _catalogCache.LoadCatalogAsync();
+                        if (cached.SavedAtUtc is not null)
+                        {
+                            games = cached.Games;
+                            StatusText = $"Offline — cache katalogu z {cached.SavedAtUtc:g}";
+                        }
+                        else
+                        {
+                            HasError = true;
+                            StatusText = $"Nie udało się pobrać katalogu: {ex.Message}";
+                        }
+                    }
+                    else
+                    {
+                        HasError = true;
+                        StatusText = $"Nie udało się pobrać katalogu: {ex.Message}";
+                    }
                 }
             }
             else

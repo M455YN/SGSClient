@@ -15,6 +15,7 @@ public partial class WishlistViewModel : ObservableObject
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
     private readonly IAuthSession? _auth;
+    private readonly ICatalogCacheStore? _catalogCache;
     private readonly string _apiBaseUrl;
     private Action<int>? _openDetails;
     private Action? _openAccount;
@@ -28,11 +29,13 @@ public partial class WishlistViewModel : ObservableObject
         ISgsApiService? api,
         IServiceScopeFactory? scopes = null,
         IConfiguration? configuration = null,
-        IAuthSession? auth = null)
+        IAuthSession? auth = null,
+        ICatalogCacheStore? catalogCache = null)
     {
         _api = api;
         _scopes = scopes;
         _auth = auth;
+        _catalogCache = catalogCache;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = "Ładowanie listy życzeń…";
@@ -93,7 +96,30 @@ public partial class WishlistViewModel : ObservableObject
         {
             StatusText = "Ładowanie listy życzeń…";
             var owned = await GetOwnedGameIdsAsync();
-            var wish = await _api.GetWishlistAsync();
+            IReadOnlyList<SGSClient.Core.DTOs.GameDto> wish;
+            var fromCache = false;
+            DateTimeOffset? cacheAt = null;
+            try
+            {
+                wish = await _api.GetWishlistAsync();
+            }
+            catch (Exception)
+            {
+                if (_catalogCache is null)
+                {
+                    throw;
+                }
+
+                var cached = await _catalogCache.LoadWishlistAsync();
+                wish = cached.Games;
+                cacheAt = cached.SavedAtUtc;
+                fromCache = cacheAt is not null;
+                if (!fromCache)
+                {
+                    throw;
+                }
+            }
+
             Games.Clear();
             foreach (var game in wish)
             {
@@ -102,9 +128,13 @@ public partial class WishlistViewModel : ObservableObject
 
             HasGames = Games.Count > 0;
             ShowEmpty = !HasGames;
-            StatusText = HasGames
-                ? $"{Games.Count} gier na liście życzeń"
-                : "Lista życzeń jest pusta. Dodawaj gry ze Sklepu.";
+            StatusText = fromCache
+                ? HasGames
+                    ? $"Offline — cache listy życzeń z {cacheAt:g} ({Games.Count})"
+                    : "Offline — brak cache listy życzeń."
+                : HasGames
+                    ? $"{Games.Count} gier na liście życzeń"
+                    : "Lista życzeń jest pusta. Dodawaj gry ze Sklepu.";
         }
         catch (Exception ex)
         {

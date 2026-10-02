@@ -21,6 +21,10 @@ public sealed partial class GameDetailsPage : Page
         ViewModel = App.Services.GetRequiredService<GameDetailsViewModel>();
         InitializeComponent();
         ViewModel.SetOpenPropertiesHandler(OpenProperties);
+        ReviewSortBox.ItemsSource = ViewModel.ReviewSortOptions;
+        ReviewFilterBox.ItemsSource = ViewModel.ReviewFilterOptions;
+        ReviewSortBox.SelectedItem = ViewModel.SelectedReviewSort;
+        ReviewFilterBox.SelectedItem = ViewModel.SelectedReviewFilter;
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(GameDetailsViewModel.IsMediaPreviewOpen)
@@ -458,6 +462,55 @@ public sealed partial class GameDetailsPage : Page
     {
         await ViewModel.DeleteReviewCommand.ExecuteAsync(null);
         RefreshUi();
+    }
+
+    private void ReviewFilter_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (ReviewSortBox.SelectedItem is string sort)
+        {
+            ViewModel.SelectedReviewSort = sort;
+        }
+
+        if (ReviewFilterBox.SelectedItem is string filter)
+        {
+            ViewModel.SelectedReviewFilter = filter;
+        }
+    }
+
+    private async void VoteHelpful_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: GameReviewItem item })
+        {
+            await ViewModel.VoteHelpfulCommand.ExecuteAsync(item);
+            RefreshUi();
+        }
+    }
+
+    private async void ToggleComments_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: GameReviewItem item })
+        {
+            await ViewModel.ToggleCommentsCommand.ExecuteAsync(item);
+            RefreshUi();
+        }
+    }
+
+    private async void AddComment_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: GameReviewItem item })
+        {
+            await ViewModel.AddCommentCommand.ExecuteAsync(item);
+            RefreshUi();
+        }
+    }
+
+    private async void DeleteComment_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: GameReviewCommentItem comment })
+        {
+            await ViewModel.DeleteCommentCommand.ExecuteAsync(comment);
+            RefreshUi();
+        }
     }
 
     private async void OpenProperties(GameLibraryItem item)

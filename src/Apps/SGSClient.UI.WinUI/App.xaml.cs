@@ -61,12 +61,14 @@ public partial class App : Application
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IAuthSession>(),
-            configuration));
+            configuration,
+            sp.GetService<ICatalogCacheStore>()));
         services.AddSingleton(sp => new GamesViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration: configuration,
-            auth: sp.GetService<IAuthSession>()));
+            auth: sp.GetService<IAuthSession>(),
+            catalogCache: sp.GetService<ICatalogCacheStore>()));
         services.AddSingleton(sp => new GameDetailsViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -84,12 +86,14 @@ public partial class App : Application
             sp.GetService<IInstallQueueService>(),
             sp.GetService<IAuthSession>()));
         services.AddSingleton(sp => new DownloadsViewModel(
-            sp.GetService<IInstallQueueService>()));
+            sp.GetService<IInstallQueueService>(),
+            sp.GetService<IClientUserSettingsStore>()));
         services.AddSingleton(sp => new WishlistViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration,
-            sp.GetService<IAuthSession>()));
+            sp.GetService<IAuthSession>(),
+            sp.GetService<ICatalogCacheStore>()));
         services.AddTransient(sp => new GamePropertiesViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -143,6 +147,7 @@ public partial class App : Application
         Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
         Services.GetService<IInstallQueueService>()?.RestorePersistedAsync().GetAwaiter().GetResult();
         Services.GetService<PresenceHeartbeatService>()?.Start();
+        Services.GetService<INetworkStatusService>()?.StartAsync().GetAwaiter().GetResult();
 
         using (var scope = Services.CreateScope())
         {

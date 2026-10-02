@@ -3,7 +3,7 @@
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.DownloadsView"
              x:DataType="vm:DownloadsViewModel">
-  <Grid Margin="28,24" RowDefinitions="Auto,*" RowSpacing="14">
+  <Grid Margin="28,24" RowDefinitions="Auto,Auto,*" RowSpacing="14">
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="6">
         <TextBlock Text="Pobrania" FontSize="28" FontWeight="SemiBold"/>
@@ -13,7 +13,16 @@
               Command="{Binding RefreshListCommand}" VerticalAlignment="Top"/>
     </Grid>
 
-    <Panel Grid.Row="1">
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
+      <TextBlock Text="Limit pasma (KB/s):" VerticalAlignment="Center" Opacity="0.75" FontSize="13"/>
+      <NumericUpDown Width="120" Minimum="0" Maximum="100000"
+                     Value="{Binding DownloadMaxKbps}"
+                     FormatString="0"
+                     ToolTip.Tip="0 = bez limitu"/>
+      <TextBlock Text="0 = bez limitu" VerticalAlignment="Center" Opacity="0.5" FontSize="12"/>
+    </StackPanel>
+
+    <Panel Grid.Row="2">
       <TextBlock Text="Brak aktywnych pobierań." Opacity="0.6"
                  HorizontalAlignment="Center" VerticalAlignment="Center"
                  IsVisible="{Binding IsEmpty}"/>
@@ -36,10 +45,28 @@
                 <TextBlock Text="{Binding ProgressText}" FontSize="11" Opacity="0.65"
                            HorizontalAlignment="Right"/>
               </StackPanel>
-              <Button Grid.Column="2" Content="Anuluj" Padding="12,6"
-                      VerticalAlignment="Center" IsVisible="{Binding CanCancel}"
-                      Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).CancelCommand}"
-                      CommandParameter="{Binding}"/>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <Button Content="↑" Padding="8,6" ToolTip.Tip="Wyżej w kolejce"
+                        IsVisible="{Binding CanMoveUp}"
+                        Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).MoveUpCommand}"
+                        CommandParameter="{Binding}"/>
+                <Button Content="↓" Padding="8,6" ToolTip.Tip="Niżej w kolejce"
+                        IsVisible="{Binding CanMoveDown}"
+                        Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).MoveDownCommand}"
+                        CommandParameter="{Binding}"/>
+                <Button Content="Pauza" Padding="12,6"
+                        IsVisible="{Binding CanPause}"
+                        Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).PauseCommand}"
+                        CommandParameter="{Binding}"/>
+                <Button Content="Wznów" Padding="12,6"
+                        IsVisible="{Binding CanResume}"
+                        Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).ResumeCommand}"
+                        CommandParameter="{Binding}"/>
+                <Button Content="Anuluj" Padding="12,6"
+                        IsVisible="{Binding CanCancel}"
+                        Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).CancelCommand}"
+                        CommandParameter="{Binding}"/>
+              </StackPanel>
             </Grid>
           </DataTemplate>
         </ListBox.ItemTemplate>

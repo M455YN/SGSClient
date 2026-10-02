@@ -32,6 +32,7 @@ public static class SgsClientDbInitializer
         if (!await TableExistsAsync(db, "local_installs", cancellationToken))
         {
             await EnsureInstallQueueTableAsync(db, cancellationToken);
+            await EnsureCachedPayloadsTableAsync(db, cancellationToken);
             return;
         }
 
@@ -88,6 +89,28 @@ public static class SgsClientDbInitializer
 
         await MigrateLocalInstallsPrimaryKeyAsync(db, cancellationToken);
         await EnsureInstallQueueTableAsync(db, cancellationToken);
+        await EnsureCachedPayloadsTableAsync(db, cancellationToken);
+    }
+
+    private static async Task EnsureCachedPayloadsTableAsync(
+        SgsClientDbContext db,
+        CancellationToken cancellationToken)
+    {
+        if (await TableExistsAsync(db, "cached_payloads", cancellationToken))
+        {
+            return;
+        }
+
+        await ExecuteNonQueryAsync(
+            db,
+            """
+            CREATE TABLE cached_payloads (
+                Key TEXT NOT NULL CONSTRAINT PK_cached_payloads PRIMARY KEY,
+                PayloadJson TEXT NOT NULL,
+                SavedAtUtc TEXT NOT NULL
+            );
+            """,
+            cancellationToken);
     }
 
     private static async Task MigrateLocalInstallsPrimaryKeyAsync(
@@ -149,23 +172,40 @@ public static class SgsClientDbInitializer
         SgsClientDbContext db,
         CancellationToken cancellationToken)
     {
-        if (await TableExistsAsync(db, "local_install_queue", cancellationToken))
+        if (!await TableExistsAsync(db, "local_install_queue", cancellationToken))
         {
+            await ExecuteNonQueryAsync(
+                db,
+                """
+                CREATE TABLE local_install_queue (
+                    GameId INTEGER NOT NULL CONSTRAINT PK_local_install_queue PRIMARY KEY,
+                    Version TEXT NULL,
+                    IsUpdate INTEGER NOT NULL,
+                    Title TEXT NULL,
+                    EnqueuedAtUtc TEXT NOT NULL,
+                    SortOrder INTEGER NOT NULL DEFAULT 0,
+                    IsPaused INTEGER NOT NULL DEFAULT 0
+                );
+                """,
+                cancellationToken);
             return;
         }
 
-        await ExecuteNonQueryAsync(
-            db,
-            """
-            CREATE TABLE local_install_queue (
-                GameId INTEGER NOT NULL CONSTRAINT PK_local_install_queue PRIMARY KEY,
-                Version TEXT NULL,
-                IsUpdate INTEGER NOT NULL,
-                Title TEXT NULL,
-                EnqueuedAtUtc TEXT NOT NULL
-            );
-            """,
-            cancellationToken);
+        if (!await ColumnExistsAsync(db, "local_install_queue", "SortOrder", cancellationToken))
+        {
+            await ExecuteNonQueryAsync(
+                db,
+                "ALTER TABLE local_install_queue ADD COLUMN SortOrder INTEGER NOT NULL DEFAULT 0;",
+                cancellationToken);
+        }
+
+        if (!await ColumnExistsAsync(db, "local_install_queue", "IsPaused", cancellationToken))
+        {
+            await ExecuteNonQueryAsync(
+                db,
+                "ALTER TABLE local_install_queue ADD COLUMN IsPaused INTEGER NOT NULL DEFAULT 0;",
+                cancellationToken);
+        }
     }
 
     private static async Task<bool> HasRequiredSchemaAsync(

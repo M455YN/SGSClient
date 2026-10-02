@@ -5,7 +5,7 @@
       "commandName": "Project",
       "environmentVariables": {
         "DOTNET_ENVIRONMENT": "Production",
-        "SGS_Api__BaseUrl": "https://api.m455yn.dev/"
+        "SGS_Api__BaseUrl": "https://api.m455yn.io/"
       }
     },
     "Local API": {

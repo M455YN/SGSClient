@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SGSClient.Core.Interfaces;
 
 namespace SGSClient.UI.ViewModels;
 
@@ -18,6 +19,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly AccountViewModel _account;
     private readonly FriendsViewModel _friends;
     private readonly LoginGateViewModel _loginGate;
+    private readonly INetworkStatusService? _network;
     private string _friendsTab = "Friends";
 
     public MainWindowViewModel()
@@ -53,7 +55,8 @@ public partial class MainWindowViewModel : ViewModelBase
         AccountViewModel account,
         FriendsViewModel friends,
         ShellSidebarViewModel sidebar,
-        LoginGateViewModel loginGate)
+        LoginGateViewModel loginGate,
+        INetworkStatusService? network = null)
     {
         _home = home;
         _games = games;
@@ -68,9 +71,16 @@ public partial class MainWindowViewModel : ViewModelBase
         _account = account;
         _friends = friends;
         _loginGate = loginGate;
+        _network = network;
         Sidebar = sidebar;
         CurrentPage = _home;
         SelectedNavTag = "Home";
+
+        if (_network is not null)
+        {
+            IsOffline = !_network.IsOnline;
+            _network.Changed += (_, _) => IsOffline = !_network.IsOnline;
+        }
 
         _games.SetOpenDetailsHandler(id => OpenGameDetails(id, "Games"));
         _library.SetOpenDetailsHandler(id => OpenGameDetails(id, "Library"));
@@ -119,6 +129,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _showLoginGate;
+
+    [ObservableProperty]
+    private bool _isOffline;
 
     private string _detailsReturnTag = "Games";
     private string _contentNavTag = "Home";

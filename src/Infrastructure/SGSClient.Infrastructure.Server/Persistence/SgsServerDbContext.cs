@@ -19,6 +19,8 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
     public DbSet<UserGameEntitlementEntity> UserGameEntitlements => Set<UserGameEntitlementEntity>();
     public DbSet<UserGameWishlistEntity> UserGameWishlists => Set<UserGameWishlistEntity>();
     public DbSet<GameReviewEntity> GameReviews => Set<GameReviewEntity>();
+    public DbSet<GameReviewVoteEntity> GameReviewVotes => Set<GameReviewVoteEntity>();
+    public DbSet<GameReviewCommentEntity> GameReviewComments => Set<GameReviewCommentEntity>();
     public DbSet<UserProfileCommentEntity> UserProfileComments => Set<UserProfileCommentEntity>();
     public DbSet<DirectMessageEntity> DirectMessages => Set<DirectMessageEntity>();
     public DbSet<UserNotificationEntity> UserNotifications => Set<UserNotificationEntity>();
@@ -98,6 +100,37 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
                 .HasForeignKey(x => x.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasOne(x => x.Author)
+                .WithMany()
+                .HasForeignKey(x => x.AuthorUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameReviewVoteEntity>(entity =>
+        {
+            entity.ToTable("game_review_votes");
+            entity.HasKey(x => new { x.ReviewId, x.UserId });
+            entity.HasOne(x => x.Review)
+                .WithMany()
+                .HasForeignKey(x => x.ReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameReviewCommentEntity>(entity =>
+        {
+            entity.ToTable("game_review_comments");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Text).HasMaxLength(1000).IsRequired();
+            entity.HasIndex(x => new { x.ReviewId, x.CreatedAtUtc });
+            entity.HasOne(x => x.Review)
+                .WithMany()
+                .HasForeignKey(x => x.ReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(x => x.Author)
                 .WithMany()
                 .HasForeignKey(x => x.AuthorUserId)

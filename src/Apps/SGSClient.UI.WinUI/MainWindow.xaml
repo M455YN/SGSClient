@@ -8,11 +8,23 @@
   <Grid>
     <Grid x:Name="ShellRoot" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
       <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
-      <Grid Grid.Row="0">
+      <Border x:Name="OfflineBanner"
+              Grid.Row="0"
+              Visibility="Collapsed"
+              Background="#CC8B0000"
+              Padding="12,8">
+        <TextBlock Text="Tryb offline — wyświetlane dane z cache"
+                   Foreground="White"
+                   FontSize="13"
+                   HorizontalAlignment="Center" />
+      </Border>
+
+      <Grid Grid.Row="1">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="*" />
@@ -44,7 +56,7 @@
       </Grid>
 
       <!-- Fluent bottom status strip -->
-      <Border Grid.Row="1"
+      <Border Grid.Row="2"
               Background="{ThemeResource LayerFillColorDefaultBrush}"
               BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
               BorderThickness="0,1,0,0"

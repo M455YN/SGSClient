@@ -16,8 +16,14 @@
   </Design.DataContext>
 
   <Panel>
-    <Grid RowDefinitions="*,Auto" IsVisible="{Binding !ShowLoginGate}">
-      <Grid ColumnDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding !ShowLoginGate}">
+      <Border IsVisible="{Binding IsOffline}"
+              Background="#CC8B0000"
+              Padding="12,8">
+        <TextBlock Text="Tryb offline — wyświetlane dane z cache"
+                   Foreground="White" FontSize="13" HorizontalAlignment="Center"/>
+      </Border>
+      <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
         <views:ShellSidebar x:Name="Sidebar" Grid.Column="0"
                             DataContext="{Binding Sidebar}" />
         <Grid Grid.Column="1">
@@ -37,7 +43,7 @@
         </Grid>
       </Grid>
 
-      <Border Grid.Row="1"
+      <Border Grid.Row="2"
               Background="{DynamicResource LayerFillColorDefaultBrush}"
               BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
               BorderThickness="0,1,0,0"

@@ -19,7 +19,8 @@ public sealed class GameInstallService(
     IAuthSession? auth,
     IOptions<ApiClientSettings> apiOptions,
     ILibraryPathProvider libraryPaths,
-    ILocalLibraryStore library) : IGameInstallService
+    ILocalLibraryStore library,
+    IClientUserSettingsStore? userSettings = null) : IGameInstallService
 {
     private readonly string _apiBaseUrl = apiOptions.Value.BaseUrl;
 
@@ -404,10 +405,43 @@ public sealed class GameInstallService(
         var buffer = new byte[81920];
         long readTotal = 0;
         int read;
+        var maxKbps = 0;
+        try
+        {
+            maxKbps = Math.Max(0, userSettings?.Load().DownloadMaxKbps ?? 0);
+        }
+        catch
+        {
+            maxKbps = 0;
+        }
+
+        var windowStart = Stopwatch.GetTimestamp();
+        long windowBytes = 0;
         while ((read = await network.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
         {
             await file.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
             readTotal += read;
+            windowBytes += read;
+
+            if (maxKbps > 0)
+            {
+                var elapsed = Stopwatch.GetElapsedTime(windowStart);
+                var allowedBytes = maxKbps * 1024.0 * Math.Max(elapsed.TotalSeconds, 0.001);
+                if (windowBytes > allowedBytes)
+                {
+                    var delayMs = (int)Math.Ceiling((windowBytes - allowedBytes) / (maxKbps * 1024.0) * 1000.0);
+                    if (delayMs > 0)
+                    {
+                        await Task.Delay(Math.Min(delayMs, 2000), cancellationToken).ConfigureAwait(false);
+                    }
+                }
+
+                if (elapsed.TotalSeconds >= 1.0)
+                {
+                    windowStart = Stopwatch.GetTimestamp();
+                    windowBytes = 0;
+                }
+            }
 
             if (total is > 0)
             {

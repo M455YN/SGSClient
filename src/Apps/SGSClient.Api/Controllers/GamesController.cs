@@ -63,12 +63,16 @@ public sealed class GamesController(
     [AllowAnonymous]
     [ProducesResponseType(typeof(GameReviewsSummaryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<GameReviewsSummaryDto>> GetReviews(int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<GameReviewsSummaryDto>> GetReviews(
+        int id,
+        [FromQuery] string? sort,
+        [FromQuery] bool? recommended,
+        CancellationToken cancellationToken)
     {
         var viewerId = await ResolveOwnerUserIdAsync(cancellationToken);
         try
         {
-            return Ok(await reviews.GetForGameAsync(id, viewerId, cancellationToken));
+            return Ok(await reviews.GetForGameAsync(id, viewerId, sort, recommended, cancellationToken));
         }
         catch (KeyNotFoundException)
         {
@@ -127,6 +131,111 @@ public sealed class GamesController(
         await reviews.DeleteAsync(id, viewerId.Value, cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("reviews/{reviewId:long}/vote")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> VoteReview(
+        long reviewId,
+        [FromBody] SetReviewVoteRequest request,
+        CancellationToken cancellationToken)
+    {
+        var viewerId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (viewerId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            await reviews.VoteAsync(reviewId, viewerId.Value, request.Helpful, cancellationToken);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    [HttpGet("reviews/{reviewId:long}/comments")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<GameReviewCommentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<GameReviewCommentDto>>> GetReviewComments(
+        long reviewId,
+        CancellationToken cancellationToken)
+    {
+        var viewerId = await ResolveOwnerUserIdAsync(cancellationToken);
+        try
+        {
+            return Ok(await reviews.GetCommentsAsync(reviewId, viewerId, cancellationToken));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
+    [HttpPost("reviews/{reviewId:long}/comments")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(GameReviewCommentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GameReviewCommentDto>> AddReviewComment(
+        long reviewId,
+        [FromBody] CreateGameReviewCommentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var viewerId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (viewerId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            return Ok(await reviews.AddCommentAsync(reviewId, viewerId.Value, request, cancellationToken));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { errors = new[] { ex.Message } });
+        }
+    }
+
+    [HttpDelete("reviews/comments/{commentId:long}")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteReviewComment(long commentId, CancellationToken cancellationToken)
+    {
+        var viewerId = await ResolveOwnerUserIdAsync(cancellationToken);
+        if (viewerId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            await reviews.DeleteCommentAsync(commentId, viewerId.Value, cancellationToken);
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { errors = new[] { ex.Message } });
+        }
+    }
+
     [HttpGet("{id:int}/dlcs")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<GameDlcDto>), StatusCodes.Status200OK)]

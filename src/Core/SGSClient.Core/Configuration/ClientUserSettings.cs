@@ -11,4 +11,7 @@ public sealed class ClientUserSettings
 
     /// <summary>When true, startup library sync enqueues updates for installed games.</summary>
     public bool AutoUpdateEnabled { get; set; } = true;
+
+    /// <summary>Max download speed in KB/s. 0 = unlimited.</summary>
+    public int DownloadMaxKbps { get; set; }
 }

@@ -28,6 +28,27 @@ public sealed partial class MainWindow : Window
         _ = Sidebar.InitializeAsync();
         WireDownloadStatusBar();
         WireNotificationsStatusBar();
+        WireOfflineBanner();
+    }
+
+    private void WireOfflineBanner()
+    {
+        var network = App.Services.GetService<INetworkStatusService>();
+        if (network is null)
+        {
+            return;
+        }
+
+        void Refresh()
+        {
+            OfflineBanner.Visibility = network.IsOnline ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        network.Changed += (_, _) =>
+        {
+            DispatcherQueue.TryEnqueue(Refresh);
+        };
+        Refresh();
     }
 
     private void WireNotificationsStatusBar()

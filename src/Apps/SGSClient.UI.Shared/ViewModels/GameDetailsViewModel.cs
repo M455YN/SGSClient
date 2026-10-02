@@ -238,12 +238,20 @@ public partial class GameDetailsViewModel : ObservableObject
 
     public ObservableCollection<GameReviewItem> Reviews { get; } = [];
 
+    public IReadOnlyList<string> ReviewSortOptions { get; } = ["Najnowsze", "Najbardziej pomocne"];
+    public IReadOnlyList<string> ReviewFilterOptions { get; } = ["Wszystkie", "Pozytywne", "Negatywne"];
+
     [ObservableProperty] public partial string ReviewsSummaryText { get; set; } = string.Empty;
     [ObservableProperty] public partial bool CanWriteReview { get; set; }
     [ObservableProperty] public partial bool ReviewRecommended { get; set; } = true;
     [ObservableProperty] public partial string ReviewDraftText { get; set; } = string.Empty;
     [ObservableProperty] public partial bool HasMyReview { get; set; }
     [ObservableProperty] public partial string ReviewStatusText { get; set; } = string.Empty;
+    [ObservableProperty] public partial string SelectedReviewSort { get; set; } = "Najnowsze";
+    [ObservableProperty] public partial string SelectedReviewFilter { get; set; } = "Wszystkie";
+
+    partial void OnSelectedReviewSortChanged(string value) => _ = LoadReviewsAsync();
+    partial void OnSelectedReviewFilterChanged(string value) => _ = LoadReviewsAsync();
 
     partial void OnSelectedTabChanged(string value)
     {
@@ -983,7 +991,17 @@ public partial class GameDetailsViewModel : ObservableObject
 
         try
         {
-            var summary = await _api.GetGameReviewsAsync(GameId);
+            var sort = SelectedReviewSort.Contains("pomocne", StringComparison.OrdinalIgnoreCase)
+                ? "helpful"
+                : "recent";
+            bool? recommended = SelectedReviewFilter switch
+            {
+                "Pozytywne" => true,
+                "Negatywne" => false,
+                _ => null
+            };
+
+            var summary = await _api.GetGameReviewsAsync(GameId, sort, recommended);
             Reviews.Clear();
             if (summary is null)
             {
@@ -1013,6 +1031,89 @@ public partial class GameDetailsViewModel : ObservableObject
         catch (Exception ex)
         {
             ReviewStatusText = ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task VoteHelpfulAsync(GameReviewItem? item)
+    {
+        if (item is null || _api is null || item.IsMine)
+        {
+            return;
+        }
+
+        if (!await _api.VoteGameReviewAsync(item.Id, helpful: true))
+        {
+            ReviewStatusText = "Nie udało się zagłosować.";
+            return;
+        }
+
+        await LoadReviewsAsync();
+    }
+
+    [RelayCommand]
+    private async Task ToggleCommentsAsync(GameReviewItem? item)
+    {
+        if (item is null || _api is null)
+        {
+            return;
+        }
+
+        if (item.CommentsExpanded)
+        {
+            item.CommentsExpanded = false;
+            return;
+        }
+
+        item.CommentsExpanded = true;
+        var comments = await _api.GetGameReviewCommentsAsync(item.Id);
+        item.Comments.Clear();
+        foreach (var c in comments)
+        {
+            item.Comments.Add(GameReviewCommentItem.FromDto(c));
+        }
+    }
+
+    [RelayCommand]
+    private async Task AddCommentAsync(GameReviewItem? item)
+    {
+        if (item is null || _api is null || string.IsNullOrWhiteSpace(item.CommentDraft))
+        {
+            return;
+        }
+
+        var (comment, error) = await _api.AddGameReviewCommentAsync(item.Id, item.CommentDraft);
+        if (error is not null || comment is null)
+        {
+            ReviewStatusText = error ?? "Nie udało się dodać komentarza.";
+            return;
+        }
+
+        item.CommentDraft = string.Empty;
+        item.CommentCount++;
+        item.Comments.Add(GameReviewCommentItem.FromDto(comment));
+        item.CommentsExpanded = true;
+    }
+
+    [RelayCommand]
+    private async Task DeleteCommentAsync(GameReviewCommentItem? comment)
+    {
+        if (comment is null || _api is null)
+        {
+            return;
+        }
+
+        if (!await _api.DeleteGameReviewCommentAsync(comment.Id))
+        {
+            ReviewStatusText = "Nie udało się usunąć komentarza.";
+            return;
+        }
+
+        var parent = Reviews.FirstOrDefault(r => r.Id == comment.ReviewId);
+        if (parent is not null)
+        {
+            parent.Comments.Remove(comment);
+            parent.CommentCount = Math.Max(0, parent.CommentCount - 1);
         }
     }
 
@@ -1151,7 +1252,7 @@ public sealed class VersionOptionItem
     };
 }
 
-public sealed class GameReviewItem
+public partial class GameReviewItem : ObservableObject
 {
     public long Id { get; init; }
     public required string AuthorDisplayName { get; init; }
@@ -1161,6 +1262,23 @@ public sealed class GameReviewItem
     public string VerdictLabel => Recommended ? "Poleca" : "Nie poleca";
     public string MetaText { get; init; } = string.Empty;
     public bool IsMine { get; init; }
+    public int HelpfulCount { get; set; }
+    public bool? MyHelpfulVote { get; set; }
+    public int CommentCount { get; set; }
+    public bool CanVote => !IsMine;
+    public string HelpfulButtonText => MyHelpfulVote == true
+        ? $"Pomocne ✓ ({HelpfulCount})"
+        : $"Pomocne ({HelpfulCount})";
+    public string CommentsToggleText => CommentsExpanded
+        ? "Ukryj komentarze"
+        : $"Komentarze ({CommentCount})";
+
+    public ObservableCollection<GameReviewCommentItem> Comments { get; } = [];
+
+    [ObservableProperty] public partial bool CommentsExpanded { get; set; }
+    [ObservableProperty] public partial string CommentDraft { get; set; } = string.Empty;
+
+    partial void OnCommentsExpandedChanged(bool value) => OnPropertyChanged(nameof(CommentsToggleText));
 
     public static GameReviewItem FromDto(GameReviewDto dto)
     {
@@ -1176,7 +1294,34 @@ public sealed class GameReviewItem
             Recommended = dto.Recommended,
             Text = dto.Text,
             IsMine = dto.IsMine,
+            HelpfulCount = dto.HelpfulCount,
+            MyHelpfulVote = dto.MyHelpfulVote,
+            CommentCount = dto.CommentCount,
             MetaText = $"{dto.AuthorDisplayName}{tag} · {dto.UpdatedAtUtc.LocalDateTime:g}{play}"
+        };
+    }
+}
+
+public sealed class GameReviewCommentItem
+{
+    public long Id { get; init; }
+    public long ReviewId { get; init; }
+    public required string AuthorDisplayName { get; init; }
+    public required string Text { get; init; }
+    public string MetaText { get; init; } = string.Empty;
+    public bool IsMine { get; init; }
+
+    public static GameReviewCommentItem FromDto(GameReviewCommentDto dto)
+    {
+        var tag = string.IsNullOrWhiteSpace(dto.AuthorPlayerTag) ? "" : $" @{dto.AuthorPlayerTag}";
+        return new GameReviewCommentItem
+        {
+            Id = dto.Id,
+            ReviewId = dto.ReviewId,
+            AuthorDisplayName = dto.AuthorDisplayName,
+            Text = dto.Text,
+            IsMine = dto.IsMine,
+            MetaText = $"{dto.AuthorDisplayName}{tag} · {dto.CreatedAtUtc.LocalDateTime:g}"
         };
     }
 }

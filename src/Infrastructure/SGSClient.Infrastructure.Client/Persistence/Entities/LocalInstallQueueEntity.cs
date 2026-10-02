@@ -7,4 +7,6 @@ public sealed class LocalInstallQueueEntity
     public bool IsUpdate { get; set; }
     public string? Title { get; set; }
     public DateTimeOffset EnqueuedAtUtc { get; set; }
+    public int SortOrder { get; set; }
+    public bool IsPaused { get; set; }
 }

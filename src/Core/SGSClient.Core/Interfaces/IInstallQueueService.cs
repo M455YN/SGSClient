@@ -17,6 +17,14 @@ public interface IInstallQueueService
 
     void Cancel(int gameId);
 
+    void Pause(int gameId);
+
+    void Resume(int gameId);
+
+    void MoveUp(int gameId);
+
+    void MoveDown(int gameId);
+
     bool IsQueuedOrActive(int gameId);
 
     /// <summary>
@@ -36,6 +44,7 @@ public sealed class InstallQueueEntry
     public InstallState State { get; set; } = InstallState.Queued;
     public string? Title { get; set; }
     public string? Error { get; set; }
+    public int SortOrder { get; set; }
 }
 
 public sealed class InstallQueueProgressEventArgs : EventArgs

@@ -34,6 +34,8 @@ public static class DependencyInjection
             sp.GetService<IUserApiClient>()));
         services.AddSingleton<IGamePackagePacker, GamePackagePacker>();
         services.AddSingleton<IClientUserSettingsStore, ClientUserSettingsStore>();
+        services.AddSingleton<ICatalogCacheStore, CatalogCacheStore>();
+        services.AddSingleton<INetworkStatusService, NetworkStatusService>();
         services.AddSingleton<ILibraryFoldersStore, LibraryFoldersStore>();
         services.AddSingleton<ILibraryFolderService, LibraryFolderService>();
         services.AddSingleton<ILibraryPathProvider, LibraryPathProvider>();

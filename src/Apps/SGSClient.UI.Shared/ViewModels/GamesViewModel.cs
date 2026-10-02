@@ -17,6 +17,7 @@ public partial class GamesViewModel : ObservableObject
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
     private readonly IAuthSession? _auth;
+    private readonly ICatalogCacheStore? _catalogCache;
     private readonly string _apiBaseUrl;
     private Action<int>? _openDetails;
     private Action? _openAccount;
@@ -32,11 +33,13 @@ public partial class GamesViewModel : ObservableObject
         ISgsApiService? api,
         IServiceScopeFactory? scopes = null,
         IConfiguration? configuration = null,
-        IAuthSession? auth = null)
+        IAuthSession? auth = null,
+        ICatalogCacheStore? catalogCache = null)
     {
         _api = api;
         _scopes = scopes;
         _auth = auth;
+        _catalogCache = catalogCache;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = api is null ? "API not registered" : "Ładowanie sklepu…";
@@ -111,9 +114,40 @@ public partial class GamesViewModel : ObservableObject
         {
             StatusText = "Ładowanie sklepu…";
             var query = BuildQuery();
-            var games = await _api.GetGamesAsync(query);
+            IReadOnlyList<GameDto> games;
+            var fromCache = false;
+            DateTimeOffset? cacheAt = null;
+            try
+            {
+                games = await _api.GetGamesAsync(query);
+            }
+            catch (Exception)
+            {
+                if (_catalogCache is null)
+                {
+                    throw;
+                }
+
+                var cached = await _catalogCache.LoadCatalogAsync();
+                games = FilterCachedGames(cached.Games, query);
+                cacheAt = cached.SavedAtUtc;
+                fromCache = cacheAt is not null;
+                if (!fromCache)
+                {
+                    throw;
+                }
+            }
+
             var owned = await GetOwnedGameIdsAsync();
-            var wishIds = await GetWishlistIdsAsync();
+            HashSet<int> wishIds;
+            try
+            {
+                wishIds = await GetWishlistIdsAsync();
+            }
+            catch
+            {
+                wishIds = [];
+            }
 
             Games.Clear();
             foreach (var game in games)
@@ -126,9 +160,13 @@ public partial class GamesViewModel : ObservableObject
             _loaded = true;
             HasGames = Games.Count > 0;
             ShowEmpty = !HasGames;
-            StatusText = HasGames
-                ? $"{Games.Count} gier w sklepie"
-                : "Brak gier. Uruchom Api i upewnij się, że baza ma seed.";
+            StatusText = fromCache
+                ? HasGames
+                    ? $"Offline — cache sklepu z {cacheAt:g} ({Games.Count})"
+                    : "Offline — brak cache sklepu."
+                : HasGames
+                    ? $"{Games.Count} gier w sklepie"
+                    : "Brak gier. Uruchom Api i upewnij się, że baza ma seed.";
         }
         catch (Exception ex)
         {
@@ -140,6 +178,33 @@ public partial class GamesViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    private static IReadOnlyList<GameDto> FilterCachedGames(IReadOnlyList<GameDto> games, GameCatalogQuery? query)
+    {
+        if (query is null)
+        {
+            return games;
+        }
+
+        IEnumerable<GameDto> q = games;
+        if (!string.IsNullOrWhiteSpace(query.Q))
+        {
+            var term = query.Q.Trim();
+            q = q.Where(g =>
+                g.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
+                || (g.Symbol?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Genre))
+        {
+            var genre = query.Genre.Trim();
+            q = q.Where(g =>
+                (g.GenreSymbol?.Equals(genre, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (g.GenreName?.Equals(genre, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        return q.ToList();
     }
 
     public Task EnsureLoadedAsync() => _loaded && Games.Count > 0 ? RefreshOwnedFlagsAsync() : LoadAsync();

@@ -10,22 +10,35 @@ namespace SGSClient.UI.ViewModels;
 public partial class DownloadsViewModel : ObservableObject
 {
     private readonly IInstallQueueService? _queue;
+    private readonly IClientUserSettingsStore? _userSettings;
     private readonly Dictionary<int, double> _progress = new();
     private readonly Dictionary<int, string?> _messages = new();
     private Action<int>? _openDetails;
+    private bool _suppressBandwidthPersist;
 
     public DownloadsViewModel()
-        : this(null)
+        : this(null, null)
     {
     }
 
-    public DownloadsViewModel(IInstallQueueService? queue)
+    public DownloadsViewModel(IInstallQueueService? queue, IClientUserSettingsStore? userSettings = null)
     {
         _queue = queue;
+        _userSettings = userSettings;
         if (_queue is not null)
         {
             _queue.Changed += (_, _) => Refresh();
             _queue.ProgressChanged += OnProgress;
+        }
+
+        _suppressBandwidthPersist = true;
+        try
+        {
+            DownloadMaxKbps = _userSettings?.Load().DownloadMaxKbps ?? 0;
+        }
+        finally
+        {
+            _suppressBandwidthPersist = false;
         }
 
         Refresh();
@@ -60,6 +73,21 @@ public partial class DownloadsViewModel : ObservableObject
     [ObservableProperty]
     private int _activeDownloadCount;
 
+    [ObservableProperty]
+    private int _downloadMaxKbps;
+
+    partial void OnDownloadMaxKbpsChanged(int value)
+    {
+        if (_suppressBandwidthPersist || _userSettings is null)
+        {
+            return;
+        }
+
+        var settings = _userSettings.Load();
+        settings.DownloadMaxKbps = Math.Max(0, value);
+        _ = _userSettings.SaveAsync(settings);
+    }
+
     public void SetOpenDetailsHandler(Action<int> openDetails) => _openDetails = openDetails;
 
     public void Refresh() => RefreshList();
@@ -77,23 +105,38 @@ public partial class DownloadsViewModel : ObservableObject
         }
 
         var active = _queue.Entries
-            .Where(e => e.State is InstallState.Queued or InstallState.Downloading
-                or InstallState.Installing or InstallState.Updating or InstallState.Failed)
+            .Where(e => e.State is InstallState.Queued or InstallState.Paused
+                or InstallState.Downloading or InstallState.Installing
+                or InstallState.Updating or InstallState.Failed)
             .OrderBy(e => e.State switch
             {
                 InstallState.Downloading or InstallState.Installing or InstallState.Updating => 0,
                 InstallState.Queued => 1,
-                _ => 2
+                InstallState.Paused => 2,
+                _ => 3
             })
-            .ThenBy(e => e.Title)
+            .ThenBy(e => e.SortOrder)
+            .ThenBy(e => e.GameId)
             .ToList();
 
         Items.Clear();
-        foreach (var entry in active)
+        for (var i = 0; i < active.Count; i++)
         {
+            var entry = active[i];
             _progress.TryGetValue(entry.GameId, out var fraction);
             _messages.TryGetValue(entry.GameId, out var message);
-            Items.Add(DownloadRowItem.From(entry, fraction, message));
+            var canReorder = entry.State is InstallState.Queued or InstallState.Paused;
+            var queuedIndex = active
+                .Where(e => e.State is InstallState.Queued or InstallState.Paused)
+                .ToList()
+                .FindIndex(e => e.GameId == entry.GameId);
+            var queuedCount = active.Count(e => e.State is InstallState.Queued or InstallState.Paused);
+            Items.Add(DownloadRowItem.From(
+                entry,
+                fraction,
+                message,
+                canMoveUp: canReorder && queuedIndex > 0,
+                canMoveDown: canReorder && queuedIndex >= 0 && queuedIndex < queuedCount - 1));
         }
 
         HasItems = Items.Count > 0;
@@ -137,6 +180,54 @@ public partial class DownloadsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void Pause(DownloadRowItem? row)
+    {
+        if (row is null || _queue is null)
+        {
+            return;
+        }
+
+        _queue.Pause(row.GameId);
+        Refresh();
+    }
+
+    [RelayCommand]
+    private void Resume(DownloadRowItem? row)
+    {
+        if (row is null || _queue is null)
+        {
+            return;
+        }
+
+        _queue.Resume(row.GameId);
+        Refresh();
+    }
+
+    [RelayCommand]
+    private void MoveUp(DownloadRowItem? row)
+    {
+        if (row is null || _queue is null)
+        {
+            return;
+        }
+
+        _queue.MoveUp(row.GameId);
+        Refresh();
+    }
+
+    [RelayCommand]
+    private void MoveDown(DownloadRowItem? row)
+    {
+        if (row is null || _queue is null)
+        {
+            return;
+        }
+
+        _queue.MoveDown(row.GameId);
+        Refresh();
+    }
+
+    [RelayCommand]
     private void OpenDetails(DownloadRowItem? row)
     {
         if (row is null)
@@ -169,15 +260,27 @@ public partial class DownloadRowItem : ObservableObject
     public required double Progress { get; init; }
     public required string ProgressText { get; init; }
     public required bool CanCancel { get; init; }
+    public required bool CanPause { get; init; }
+    public required bool CanResume { get; init; }
+    public required bool CanMoveUp { get; init; }
+    public required bool CanMoveDown { get; init; }
     public required bool ShowProgress { get; init; }
     public string? DetailText { get; init; }
 
-    public static DownloadRowItem From(InstallQueueEntry entry, double fraction, string? message)
+    public static DownloadRowItem From(
+        InstallQueueEntry entry,
+        double fraction,
+        string? message,
+        bool canMoveUp = false,
+        bool canMoveDown = false)
     {
         var showProgress = entry.State is InstallState.Downloading or InstallState.Installing
             or InstallState.Updating;
-        var canCancel = entry.State is InstallState.Queued or InstallState.Downloading
+        var canCancel = entry.State is InstallState.Queued or InstallState.Paused
+            or InstallState.Downloading or InstallState.Installing or InstallState.Updating;
+        var canPause = entry.State is InstallState.Queued or InstallState.Downloading
             or InstallState.Installing or InstallState.Updating;
+        var canResume = entry.State == InstallState.Paused;
         var pct = showProgress ? Math.Clamp(fraction, 0, 1) : 0;
         return new DownloadRowItem
         {
@@ -187,6 +290,7 @@ public partial class DownloadRowItem : ObservableObject
             StateText = entry.State switch
             {
                 InstallState.Queued => "W kolejce",
+                InstallState.Paused => "Wstrzymano",
                 InstallState.Downloading => "Pobieranie",
                 InstallState.Installing => "Instalowanie",
                 InstallState.Updating => "Aktualizowanie",
@@ -196,6 +300,10 @@ public partial class DownloadRowItem : ObservableObject
             Progress = pct,
             ProgressText = showProgress ? $"{pct * 100:0}%" : string.Empty,
             CanCancel = canCancel,
+            CanPause = canPause,
+            CanResume = canResume,
+            CanMoveUp = canMoveUp,
+            CanMoveDown = canMoveDown,
             ShowProgress = showProgress,
             DetailText = !string.IsNullOrWhiteSpace(entry.Error)
                 ? entry.Error

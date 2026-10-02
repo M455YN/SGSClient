@@ -8,6 +8,7 @@ public sealed class SgsClientDbContext(DbContextOptions<SgsClientDbContext> opti
     public DbSet<LocalInstallEntity> Installs => Set<LocalInstallEntity>();
     public DbSet<LocalPlaytimeEntity> Playtimes => Set<LocalPlaytimeEntity>();
     public DbSet<LocalInstallQueueEntity> InstallQueue => Set<LocalInstallQueueEntity>();
+    public DbSet<CachedPayloadEntity> CachedPayloads => Set<CachedPayloadEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,6 +45,16 @@ public sealed class SgsClientDbContext(DbContextOptions<SgsClientDbContext> opti
             entity.HasKey(x => x.GameId);
             entity.Property(x => x.Version).HasMaxLength(64);
             entity.Property(x => x.Title).HasMaxLength(256);
+            entity.Property(x => x.SortOrder);
+            entity.Property(x => x.IsPaused);
+        });
+
+        modelBuilder.Entity<CachedPayloadEntity>(entity =>
+        {
+            entity.ToTable("cached_payloads");
+            entity.HasKey(x => x.Key);
+            entity.Property(x => x.Key).HasMaxLength(64);
+            entity.Property(x => x.PayloadJson).IsRequired();
         });
     }
 }

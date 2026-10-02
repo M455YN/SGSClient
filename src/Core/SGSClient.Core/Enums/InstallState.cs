@@ -8,5 +8,6 @@ public enum InstallState
     Installing = 3,
     Installed = 4,
     Failed = 5,
-    Updating = 6
+    Updating = 6,
+    Paused = 7
 }

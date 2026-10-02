@@ -69,7 +69,11 @@ public interface ISgsApiService
         string? releaseNotes,
         CancellationToken cancellationToken = default);
 
-    Task<GameReviewsSummaryDto?> GetGameReviewsAsync(int gameId, CancellationToken cancellationToken = default);
+    Task<GameReviewsSummaryDto?> GetGameReviewsAsync(
+        int gameId,
+        string? sort = null,
+        bool? recommended = null,
+        CancellationToken cancellationToken = default);
 
     Task<(GameReviewDto? Review, string? Error)> UpsertGameReviewAsync(
         int gameId,
@@ -77,4 +81,17 @@ public interface ISgsApiService
         CancellationToken cancellationToken = default);
 
     Task<bool> DeleteGameReviewAsync(int gameId, CancellationToken cancellationToken = default);
+
+    Task<bool> VoteGameReviewAsync(long reviewId, bool helpful, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GameReviewCommentDto>> GetGameReviewCommentsAsync(
+        long reviewId,
+        CancellationToken cancellationToken = default);
+
+    Task<(GameReviewCommentDto? Comment, string? Error)> AddGameReviewCommentAsync(
+        long reviewId,
+        string text,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteGameReviewCommentAsync(long commentId, CancellationToken cancellationToken = default);
 }

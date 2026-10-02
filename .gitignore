@@ -80,3 +80,4 @@ sgsclient-api-linux-amd64.tar
 *.binlog
 *.log
 winui_output_pretty.json
+App_Data

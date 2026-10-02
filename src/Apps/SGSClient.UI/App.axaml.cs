@@ -43,12 +43,14 @@ public partial class App : Application
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IAuthSession>(),
-            configuration));
+            configuration,
+            sp.GetService<ICatalogCacheStore>()));
         services.AddTransient(sp => new GamesViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration: configuration,
-            auth: sp.GetService<IAuthSession>()));
+            auth: sp.GetService<IAuthSession>(),
+            catalogCache: sp.GetService<ICatalogCacheStore>()));
         services.AddTransient(sp => new GameDetailsViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -65,12 +67,14 @@ public partial class App : Application
             sp.GetService<IInstallQueueService>(),
             sp.GetService<IAuthSession>()));
         services.AddSingleton(sp => new DownloadsViewModel(
-            sp.GetService<IInstallQueueService>()));
+            sp.GetService<IInstallQueueService>(),
+            sp.GetService<IClientUserSettingsStore>()));
         services.AddTransient(sp => new WishlistViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration,
-            sp.GetService<IAuthSession>()));
+            sp.GetService<IAuthSession>(),
+            sp.GetService<ICatalogCacheStore>()));
         services.AddTransient(sp => new GamePropertiesViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -131,7 +135,8 @@ public partial class App : Application
             sp.GetRequiredService<AccountViewModel>(),
             sp.GetRequiredService<FriendsViewModel>(),
             sp.GetRequiredService<ShellSidebarViewModel>(),
-            sp.GetRequiredService<LoginGateViewModel>()));
+            sp.GetRequiredService<LoginGateViewModel>(),
+            sp.GetService<INetworkStatusService>()));
 
         Services = services.BuildServiceProvider();
 
@@ -140,6 +145,7 @@ public partial class App : Application
         Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
         Services.GetService<IInstallQueueService>()?.RestorePersistedAsync().GetAwaiter().GetResult();
         Services.GetService<PresenceHeartbeatService>()?.Start();
+        Services.GetService<INetworkStatusService>()?.StartAsync().GetAwaiter().GetResult();
 
         using (var scope = Services.CreateScope())
         {

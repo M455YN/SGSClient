@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -16,13 +15,13 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
     private readonly IServiceScopeFactory _scopes;
     private readonly IOptions<ClientInstallSettings> _installOptions;
     private readonly IClientUserSettingsStore _userSettings;
-    private readonly ConcurrentQueue<InstallQueueEntry> _pending = new();
     private readonly List<InstallQueueEntry> _entries = [];
     private readonly object _gate = new();
     private readonly SemaphoreSlim _workerLock = new(1, 1);
     private CancellationTokenSource? _activeCts;
     private int? _activeGameId;
     private bool _pumpRunning;
+    private bool _pauseRequested;
 
     public InstallQueueService(
         IServiceScopeFactory scopes,
@@ -40,7 +39,10 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         {
             lock (_gate)
             {
-                return _entries.ToList();
+                return _entries
+                    .OrderBy(e => e.SortOrder)
+                    .ThenBy(e => e.GameId)
+                    .ToList();
             }
         }
     }
@@ -55,12 +57,20 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         var rows = (await db.InstallQueue.AsNoTracking()
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false))
-            .OrderBy(x => x.EnqueuedAtUtc)
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.EnqueuedAtUtc)
             .ToList();
 
         foreach (var row in rows)
         {
-            await EnqueueCoreAsync(row.GameId, row.Version, row.IsUpdate, persist: false).ConfigureAwait(false);
+            await EnqueueCoreAsync(
+                    row.GameId,
+                    row.Version,
+                    row.IsUpdate,
+                    persist: false,
+                    paused: row.IsPaused,
+                    sortOrder: row.SortOrder)
+                .ConfigureAwait(false);
         }
     }
 
@@ -85,32 +95,125 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         {
             if (_activeGameId == gameId)
             {
+                _pauseRequested = false;
                 _activeCts?.Cancel();
             }
 
             foreach (var entry in _entries.Where(e =>
-                         e.GameId == gameId && e.State == InstallState.Queued))
+                         e.GameId == gameId
+                         && e.State is InstallState.Queued or InstallState.Paused))
             {
                 entry.State = InstallState.NotInstalled;
                 entry.Error = "Anulowano.";
             }
 
-            var remaining = new List<InstallQueueEntry>();
-            while (_pending.TryDequeue(out var item))
-            {
-                if (item.GameId != gameId || item.State != InstallState.Queued)
-                {
-                    remaining.Add(item);
-                }
-            }
-
-            foreach (var item in remaining)
-            {
-                _pending.Enqueue(item);
-            }
+            _entries.RemoveAll(e =>
+                e.GameId == gameId
+                && e.State is InstallState.NotInstalled or InstallState.Queued or InstallState.Paused);
         }
 
         _ = RemovePersistedAsync(gameId);
+        RaiseChanged();
+        _ = EnsurePumpAsync();
+    }
+
+    public void Pause(int gameId)
+    {
+        lock (_gate)
+        {
+            if (_activeGameId == gameId)
+            {
+                _pauseRequested = true;
+                _activeCts?.Cancel();
+                return;
+            }
+
+            var entry = _entries.FirstOrDefault(e =>
+                e.GameId == gameId && e.State == InstallState.Queued);
+            if (entry is null)
+            {
+                return;
+            }
+
+            entry.State = InstallState.Paused;
+            entry.Error = null;
+        }
+
+        _ = PersistPausedAsync(gameId, paused: true);
+        RaiseChanged();
+    }
+
+    public void Resume(int gameId)
+    {
+        lock (_gate)
+        {
+            var entry = _entries.FirstOrDefault(e =>
+                e.GameId == gameId && e.State == InstallState.Paused);
+            if (entry is null)
+            {
+                return;
+            }
+
+            entry.State = InstallState.Queued;
+            entry.Error = null;
+        }
+
+        _ = PersistPausedAsync(gameId, paused: false);
+        RaiseChanged();
+        _ = EnsurePumpAsync();
+    }
+
+    public void MoveUp(int gameId)
+    {
+        lock (_gate)
+        {
+            var queued = _entries
+                .Where(e => e.State is InstallState.Queued or InstallState.Paused)
+                .OrderBy(e => e.SortOrder)
+                .ThenBy(e => e.GameId)
+                .ToList();
+            var index = queued.FindIndex(e => e.GameId == gameId);
+            if (index <= 0)
+            {
+                return;
+            }
+
+            (queued[index - 1].SortOrder, queued[index].SortOrder) =
+                (queued[index].SortOrder, queued[index - 1].SortOrder);
+            if (queued[index - 1].SortOrder == queued[index].SortOrder)
+            {
+                queued[index - 1].SortOrder--;
+            }
+        }
+
+        _ = PersistSortOrdersAsync();
+        RaiseChanged();
+    }
+
+    public void MoveDown(int gameId)
+    {
+        lock (_gate)
+        {
+            var queued = _entries
+                .Where(e => e.State is InstallState.Queued or InstallState.Paused)
+                .OrderBy(e => e.SortOrder)
+                .ThenBy(e => e.GameId)
+                .ToList();
+            var index = queued.FindIndex(e => e.GameId == gameId);
+            if (index < 0 || index >= queued.Count - 1)
+            {
+                return;
+            }
+
+            (queued[index].SortOrder, queued[index + 1].SortOrder) =
+                (queued[index + 1].SortOrder, queued[index].SortOrder);
+            if (queued[index].SortOrder == queued[index + 1].SortOrder)
+            {
+                queued[index + 1].SortOrder++;
+            }
+        }
+
+        _ = PersistSortOrdersAsync();
         RaiseChanged();
     }
 
@@ -120,8 +223,8 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         {
             return _entries.Any(e =>
                 e.GameId == gameId
-                && e.State is InstallState.Queued or InstallState.Downloading
-                    or InstallState.Installing or InstallState.Updating);
+                && e.State is InstallState.Queued or InstallState.Paused
+                    or InstallState.Downloading or InstallState.Installing or InstallState.Updating);
         }
     }
 
@@ -172,28 +275,37 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         }
     }
 
-    private async Task EnqueueCoreAsync(int gameId, string? version, bool isUpdate, bool persist = true)
+    private async Task EnqueueCoreAsync(
+        int gameId,
+        string? version,
+        bool isUpdate,
+        bool persist = true,
+        bool paused = false,
+        int? sortOrder = null)
     {
         InstallQueueEntry entry;
         lock (_gate)
         {
             if (_entries.Any(e =>
                     e.GameId == gameId
-                    && e.State is InstallState.Queued or InstallState.Downloading
-                        or InstallState.Installing or InstallState.Updating))
+                    && e.State is InstallState.Queued or InstallState.Paused
+                        or InstallState.Downloading or InstallState.Installing or InstallState.Updating))
             {
                 return;
             }
+
+            var nextOrder = sortOrder
+                ?? (_entries.Count == 0 ? 0 : _entries.Max(e => e.SortOrder) + 1);
 
             entry = new InstallQueueEntry
             {
                 GameId = gameId,
                 Version = version,
                 IsUpdate = isUpdate,
-                State = InstallState.Queued
+                State = paused ? InstallState.Paused : InstallState.Queued,
+                SortOrder = nextOrder
             };
             _entries.Add(entry);
-            _pending.Enqueue(entry);
         }
 
         if (persist)
@@ -202,7 +314,10 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         }
 
         RaiseChanged();
-        await EnsurePumpAsync().ConfigureAwait(false);
+        if (!paused)
+        {
+            await EnsurePumpAsync().ConfigureAwait(false);
+        }
     }
 
     private async Task PersistAsync(InstallQueueEntry entry)
@@ -221,7 +336,9 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
                     Version = entry.Version,
                     IsUpdate = entry.IsUpdate,
                     Title = entry.Title,
-                    EnqueuedAtUtc = DateTimeOffset.UtcNow
+                    EnqueuedAtUtc = DateTimeOffset.UtcNow,
+                    SortOrder = entry.SortOrder,
+                    IsPaused = entry.State == InstallState.Paused
                 });
             }
             else
@@ -229,6 +346,8 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
                 existing.Version = entry.Version;
                 existing.IsUpdate = entry.IsUpdate;
                 existing.Title = entry.Title;
+                existing.SortOrder = entry.SortOrder;
+                existing.IsPaused = entry.State == InstallState.Paused;
             }
 
             await db.SaveChangesAsync().ConfigureAwait(false);
@@ -236,6 +355,58 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         catch
         {
             // queue persistence is best-effort
+        }
+    }
+
+    private async Task PersistPausedAsync(int gameId, bool paused)
+    {
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SgsClientDbContext>();
+            var existing = await db.InstallQueue.FirstOrDefaultAsync(x => x.GameId == gameId)
+                .ConfigureAwait(false);
+            if (existing is null)
+            {
+                return;
+            }
+
+            existing.IsPaused = paused;
+            await db.SaveChangesAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
+    private async Task PersistSortOrdersAsync()
+    {
+        List<(int GameId, int SortOrder)> snapshot;
+        lock (_gate)
+        {
+            snapshot = _entries.Select(e => (e.GameId, e.SortOrder)).ToList();
+        }
+
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<SgsClientDbContext>();
+            var rows = await db.InstallQueue.ToListAsync().ConfigureAwait(false);
+            foreach (var row in rows)
+            {
+                var match = snapshot.FirstOrDefault(x => x.GameId == row.GameId);
+                if (match.GameId == row.GameId)
+                {
+                    row.SortOrder = match.SortOrder;
+                }
+            }
+
+            await db.SaveChangesAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            // ignore
         }
     }
 
@@ -281,11 +452,35 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
     {
         try
         {
-            while (_pending.TryDequeue(out var entry))
+            while (true)
             {
+                InstallQueueEntry? entry;
+                lock (_gate)
+                {
+                    entry = _entries
+                        .Where(e => e.State == InstallState.Queued)
+                        .OrderBy(e => e.SortOrder)
+                        .ThenBy(e => e.GameId)
+                        .FirstOrDefault();
+                }
+
+                if (entry is null)
+                {
+                    break;
+                }
+
                 await _workerLock.WaitAsync().ConfigureAwait(false);
                 try
                 {
+                    // Re-check still queued (may have been paused/cancelled)
+                    lock (_gate)
+                    {
+                        if (entry.State != InstallState.Queued)
+                        {
+                            continue;
+                        }
+                    }
+
                     await ProcessEntryAsync(entry).ConfigureAwait(false);
                 }
                 finally
@@ -299,7 +494,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
             lock (_gate)
             {
                 _pumpRunning = false;
-                if (!_pending.IsEmpty)
+                if (_entries.Any(e => e.State == InstallState.Queued))
                 {
                     _pumpRunning = true;
                     _ = Task.Run(PumpAsync);
@@ -313,6 +508,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         using var cts = new CancellationTokenSource();
         lock (_gate)
         {
+            _pauseRequested = false;
             _activeCts = cts;
             _activeGameId = entry.GameId;
             entry.State = entry.IsUpdate ? InstallState.Updating : InstallState.Downloading;
@@ -320,6 +516,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
 
         RaiseChanged();
 
+        var wasPaused = false;
         try
         {
             using var scope = _scopes.CreateScope();
@@ -369,8 +566,21 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         }
         catch (OperationCanceledException)
         {
-            entry.State = InstallState.NotInstalled;
-            entry.Error = "Anulowano.";
+            lock (_gate)
+            {
+                wasPaused = _pauseRequested;
+            }
+
+            if (wasPaused)
+            {
+                entry.State = InstallState.Paused;
+                entry.Error = null;
+            }
+            else
+            {
+                entry.State = InstallState.NotInstalled;
+                entry.Error = "Anulowano.";
+            }
         }
         catch (Exception ex)
         {
@@ -379,13 +589,29 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         }
         finally
         {
-            await RemovePersistedAsync(entry.GameId).ConfigureAwait(false);
+            if (wasPaused)
+            {
+                await PersistAsync(entry).ConfigureAwait(false);
+            }
+            else
+            {
+                await RemovePersistedAsync(entry.GameId).ConfigureAwait(false);
+                lock (_gate)
+                {
+                    if (entry.State is InstallState.Installed or InstallState.Failed or InstallState.NotInstalled)
+                    {
+                        _entries.Remove(entry);
+                    }
+                }
+            }
+
             lock (_gate)
             {
                 if (_activeGameId == entry.GameId)
                 {
                     _activeGameId = null;
                     _activeCts = null;
+                    _pauseRequested = false;
                 }
             }
 

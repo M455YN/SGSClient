@@ -6,7 +6,10 @@ using SGSClient.Core.Interfaces;
 
 namespace SGSClient.Infrastructure.Client.Services;
 
-public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgsApiService
+public sealed class HttpSgsApiService(
+    HttpClient http,
+    IAuthSession auth,
+    ICatalogCacheStore? catalogCache = null) : ISgsApiService
 {
     public async Task<IReadOnlyList<GameDto>> GetGamesAsync(
         GameCatalogQuery? query = null,
@@ -16,8 +19,24 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
         {
             var url = BuildGamesUrl(query);
             var games = await http.GetFromJsonAsync<List<GameDto>>(url, cancellationToken)
-                .ConfigureAwait(false);
-            return games ?? [];
+                .ConfigureAwait(false) ?? [];
+            if (catalogCache is not null && IsDefaultCatalogQuery(query))
+            {
+                try
+                {
+                    await catalogCache.SaveCatalogAsync(games, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // cache write is best-effort
+                }
+            }
+
+            return games;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+        {
+            throw;
         }
         catch
         {
@@ -157,12 +176,33 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
             using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
+                if ((int)response.StatusCode >= 500)
+                {
+                    throw new HttpRequestException($"Wishlist HTTP {(int)response.StatusCode}");
+                }
+
                 return [];
             }
 
             var games = await response.Content.ReadFromJsonAsync<List<GameDto>>(cancellationToken)
-                .ConfigureAwait(false);
-            return games ?? [];
+                .ConfigureAwait(false) ?? [];
+            if (catalogCache is not null)
+            {
+                try
+                {
+                    await catalogCache.SaveWishlistAsync(games, cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // best-effort
+                }
+            }
+
+            return games;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException)
+        {
+            throw;
         }
         catch
         {
@@ -287,6 +327,21 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
         }
 
         return parts.Count == 0 ? "api/Games" : "api/Games?" + string.Join('&', parts);
+    }
+
+    private static bool IsDefaultCatalogQuery(GameCatalogQuery? query)
+    {
+        if (query is null)
+        {
+            return true;
+        }
+
+        return string.IsNullOrWhiteSpace(query.Q)
+            && string.IsNullOrWhiteSpace(query.Genre)
+            && string.IsNullOrWhiteSpace(query.Tag)
+            && query.ReleaseStatus is null
+            && query.Featured is null
+            && (string.IsNullOrWhiteSpace(query.Sort) || query.Sort is "featured" or "title" or "newest");
     }
 
     public async Task<bool> DeleteGameAsync(int gameId, CancellationToken cancellationToken = default)
@@ -740,11 +795,25 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
 
     public async Task<GameReviewsSummaryDto?> GetGameReviewsAsync(
         int gameId,
+        string? sort = null,
+        bool? recommended = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/{gameId}/reviews");
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(sort))
+            {
+                parts.Add($"sort={Uri.EscapeDataString(sort.Trim())}");
+            }
+
+            if (recommended is bool rec)
+            {
+                parts.Add($"recommended={rec.ToString().ToLowerInvariant()}");
+            }
+
+            var qs = parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/{gameId}/reviews{qs}");
             await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
             using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
@@ -794,6 +863,95 @@ public sealed class HttpSgsApiService(HttpClient http, IAuthSession auth) : ISgs
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/Games/{gameId}/reviews/me");
+            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> VoteGameReviewAsync(
+        long reviewId,
+        bool helpful,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var message = new HttpRequestMessage(HttpMethod.Post, $"api/Games/reviews/{reviewId}/vote")
+            {
+                Content = JsonContent.Create(new SetReviewVoteRequest { Helpful = helpful })
+            };
+            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<IReadOnlyList<GameReviewCommentDto>> GetGameReviewCommentsAsync(
+        long reviewId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/reviews/{reviewId}/comments");
+            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return [];
+            }
+
+            return await response.Content.ReadFromJsonAsync<List<GameReviewCommentDto>>(cancellationToken)
+                .ConfigureAwait(false) ?? [];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<(GameReviewCommentDto? Comment, string? Error)> AddGameReviewCommentAsync(
+        long reviewId,
+        string text,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var message = new HttpRequestMessage(HttpMethod.Post, $"api/Games/reviews/{reviewId}/comments")
+            {
+                Content = JsonContent.Create(new CreateGameReviewCommentRequest { Text = text })
+            };
+            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
+            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ReadErrorAsync(response, cancellationToken).ConfigureAwait(false));
+            }
+
+            var comment = await response.Content.ReadFromJsonAsync<GameReviewCommentDto>(cancellationToken)
+                .ConfigureAwait(false);
+            return (comment, null);
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
+    public async Task<bool> DeleteGameReviewCommentAsync(long commentId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(
+                HttpMethod.Delete,
+                $"api/Games/reviews/comments/{commentId}");
             await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
             using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
             return response.IsSuccessStatusCode;
