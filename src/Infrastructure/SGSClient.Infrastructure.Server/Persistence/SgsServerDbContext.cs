@@ -114,10 +114,11 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
                 .WithMany()
                 .HasForeignKey(x => x.ReviewId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Restrict avoids SQL Server multiple cascade paths (users → reviews → votes + users → votes).
             entity.HasOne(x => x.User)
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<GameReviewCommentEntity>(entity =>
@@ -131,10 +132,11 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
                 .WithMany()
                 .HasForeignKey(x => x.ReviewId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Restrict avoids SQL Server multiple cascade paths (users → reviews → comments + users → comments).
             entity.HasOne(x => x.Author)
                 .WithMany()
                 .HasForeignKey(x => x.AuthorUserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<UserProfileCommentEntity>(entity =>
