@@ -163,11 +163,22 @@ public abstract partial class GameStoreEditItem : ObservableObject
 
     protected void ApplyMedia(GameDto game, string apiBaseUrl)
     {
-        CoverImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.ThumbnailUrl);
-        HeaderImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.LandscapeUrl);
-        OwnCoverImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.CoverUrl);
-        OwnHeaderImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.HeaderUrl);
-        OwnLogoImageUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.LogoUrl);
+        CoverImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.ThumbnailUrl));
+        HeaderImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.LandscapeUrl));
+        OwnCoverImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.CoverUrl));
+        OwnHeaderImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.HeaderUrl));
+        OwnLogoImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.LogoUrl));
+    }
+
+    private static string? CacheBust(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return url;
+        }
+
+        var sep = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{url}{sep}v={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
     }
 
     protected void ApplyCatalogLists(GameDto game, string apiBaseUrl)

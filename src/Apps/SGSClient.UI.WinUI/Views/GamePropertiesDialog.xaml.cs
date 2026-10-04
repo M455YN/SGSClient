@@ -3,8 +3,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SGSClient.UI.WinUI.ViewModels;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace SGSClient.UI.WinUI.Views;
 
@@ -156,28 +154,21 @@ public sealed partial class GamePropertiesDialog : UserControl
 
     private async void PickCustomCover_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileOpenPicker();
-        picker.ViewMode = PickerViewMode.Thumbnail;
-        picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
-        picker.CommitButtonText = "Użyj jako kafel";
-        foreach (var ext in new[] { ".png", ".jpg", ".jpeg", ".webp", ".bmp" })
-        {
-            picker.FileTypeFilter.Add(ext);
-        }
-
-        if (App.MainWindow is not null)
-        {
-            var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
-            InitializeWithWindow.Initialize(picker, hwnd);
-        }
-
-        var file = await picker.PickSingleFileAsync();
-        if (file is null)
+        if (App.MainWindow is null)
         {
             return;
         }
 
-        await ViewModel.ApplyCustomCoverFromFileAsync(file.Path);
+        var path = await WinUiFilePicker.PickSingleFileAsync(
+            App.MainWindow,
+            [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"],
+            commitLabel: "Użyj jako kafel");
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        await ViewModel.ApplyCustomCoverFromFileAsync(path);
         RefreshUi();
     }
 

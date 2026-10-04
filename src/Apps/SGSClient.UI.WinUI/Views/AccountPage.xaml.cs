@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SGSClient.UI.WinUI.ViewModels;
-using Windows.Storage.Pickers;
 using WinRT.Interop;
 
 namespace SGSClient.UI.WinUI.Views;
@@ -196,29 +195,22 @@ public sealed partial class AccountPage : Page
 
     private async void ChangeAvatar_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileOpenPicker();
-        if (App.MainWindow is not null)
-        {
-            InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(App.MainWindow));
-        }
-
-        picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
-        picker.ViewMode = PickerViewMode.Thumbnail;
-        picker.FileTypeFilter.Add(".png");
-        picker.FileTypeFilter.Add(".jpg");
-        picker.FileTypeFilter.Add(".jpeg");
-        picker.FileTypeFilter.Add(".webp");
-        picker.FileTypeFilter.Add(".gif");
-
-        var file = await picker.PickSingleFileAsync();
-        if (file is null)
+        if (App.MainWindow is null)
         {
             return;
         }
 
-        // WinUI often returns empty Path for picked files — stream the content instead.
-        await using var stream = await file.OpenStreamForReadAsync();
-        await ViewModel.UploadAvatarFromStreamAsync(stream, file.Name);
+        var path = await WinUiFilePicker.PickSingleFileAsync(
+            App.MainWindow,
+            [".png", ".jpg", ".jpeg", ".webp", ".gif"],
+            commitLabel: "Ustaw awatar");
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        await using var stream = File.OpenRead(path);
+        await ViewModel.UploadAvatarFromStreamAsync(stream, Path.GetFileName(path));
         RefreshUi();
     }
 

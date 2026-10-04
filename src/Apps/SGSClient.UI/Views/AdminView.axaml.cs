@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
@@ -23,7 +24,7 @@ public partial class AdminView : UserControl
         MimeTypes = ["video/mp4", "video/webm"]
     };
 
-    private bool _wired;
+    private AdminViewModel? _wiredVm;
 
     public AdminView()
     {
@@ -41,17 +42,26 @@ public partial class AdminView : UserControl
 
     private void WireHandlers()
     {
-        if (DataContext is not AdminViewModel vm || _wired)
+        if (DataContext is not AdminViewModel vm)
+        {
+            Debug.WriteLine("[SGS Media] AdminView WireHandlers skipped — DataContext is not AdminViewModel");
+            return;
+        }
+
+        if (ReferenceEquals(_wiredVm, vm))
         {
             return;
         }
 
-        _wired = true;
+        _wiredVm = vm;
         vm.SetAddVersionHandler(() => GetMain()?.NavigateToPublish(selectTag: "Admin"));
         vm.SetAddDlcHandler(symbol => GetMain()?.NavigateToPublish(symbol, "Admin"));
         vm.SetConfirmDeleteHandler(ConfirmDeleteAsync);
-        vm.SetPickImageHandler(() => PickAsync(ImageFiles));
-        vm.SetPickVideoHandler(() => PickAsync(VideoFiles));
+        vm.SetPickImageHandler(() => AvaloniaStoragePicker.PickSingleFileAsync(
+            TopLevel.GetTopLevel(this), ImageFiles, "Wybierz obraz"));
+        vm.SetPickVideoHandler(() => AvaloniaStoragePicker.PickSingleFileAsync(
+            TopLevel.GetTopLevel(this), VideoFiles, "Wybierz wideo"));
+        Debug.WriteLine("[SGS Media] AdminView pick handlers wired");
     }
 
     private static MainWindowViewModel? GetMain() =>
@@ -205,22 +215,6 @@ public partial class AdminView : UserControl
         {
             await vm.DeleteCommand.ExecuteAsync(item);
         }
-    }
-
-    private async Task<string?> PickAsync(FilePickerFileType type)
-    {
-        var top = TopLevel.GetTopLevel(this);
-        if (top is null)
-        {
-            return null;
-        }
-
-        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            AllowMultiple = false,
-            FileTypeFilter = [type]
-        });
-        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
     }
 
     private async Task<bool> ConfirmDeleteAsync(AdminGameItem item)

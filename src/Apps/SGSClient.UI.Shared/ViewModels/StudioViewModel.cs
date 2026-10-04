@@ -451,17 +451,27 @@ public partial class StudioViewModel : ObservableObject
             "Usunięto zrzut ekranu.");
     }
 
-    private async Task ReloadAfterMediaAsync(GameDto? updated, string okText)
+    private Task ReloadAfterMediaAsync(GameDto? updated, string okText)
     {
         if (updated is null)
         {
-            StatusText = "Nie udało się zaktualizować mediów.";
-            return;
+            StatusText = okText.StartsWith("Błąd", StringComparison.OrdinalIgnoreCase)
+                ? okText
+                : "Nie udało się zaktualizować mediów (serwer odrzucił plik lub brak uprawnień).";
+            return Task.CompletedTask;
         }
 
+        var tab = SelectedTab;
         SelectedGame?.ApplyDto(updated, _apiBaseUrl);
+        var listed = Games.FirstOrDefault(g => g.Id == updated.Id);
+        if (listed is not null && !ReferenceEquals(listed, SelectedGame))
+        {
+            listed.ApplyDto(updated, _apiBaseUrl);
+        }
+
         StatusText = okText;
-        await LoadAsync();
+        SelectedTab = tab;
+        return Task.CompletedTask;
     }
 
     [RelayCommand]

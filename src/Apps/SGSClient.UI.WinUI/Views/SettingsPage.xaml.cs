@@ -3,8 +3,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using SGSClient.UI.WinUI.ViewModels;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace SGSClient.UI.WinUI.Views;
 
@@ -52,16 +50,19 @@ public sealed partial class SettingsPage : Page
 
     private async void AddLibraryFolder_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FolderPicker();
-        picker.FileTypeFilter.Add("*");
-        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
-        InitializeWithWindow.Initialize(picker, hwnd);
-        var folder = await picker.PickSingleFolderAsync();
-        if (folder is not null)
+        if (App.MainWindow is null)
         {
-            await ViewModel.AddLibraryFolderAsync(folder.Path);
-            RefreshUi();
+            return;
         }
+
+        var path = await WinUiFilePicker.PickFolderAsync(App.MainWindow, commitLabel: "Dodaj folder");
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        await ViewModel.AddLibraryFolderAsync(path);
+        RefreshUi();
     }
 
     private async void RemoveLibraryFolder_Click(object sender, RoutedEventArgs e)

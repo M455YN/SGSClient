@@ -180,25 +180,13 @@ public partial class PublishView : UserControl
             return;
         }
 
-        var top = TopLevel.GetTopLevel(this);
-        if (top is null)
+        var paths = await AvaloniaStoragePicker.PickMultipleFilesAsync(
+            TopLevel.GetTopLevel(this), ImageFiles, "Wybierz screeny");
+        if (paths.Count == 0)
         {
             return;
         }
 
-        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Wybierz screeny",
-            AllowMultiple = true,
-            FileTypeFilter = [ImageFiles]
-        });
-
-        if (files.Count == 0)
-        {
-            return;
-        }
-
-        var paths = files.Select(f => f.Path.LocalPath).ToArray();
         if (!vm.TryAddScreenshotsFromFiles(paths, out var error))
         {
             vm.Issues.Clear();
@@ -263,21 +251,6 @@ public partial class PublishView : UserControl
         }
     }
 
-    private async Task<string?> PickSingleFileAsync(string title, FilePickerFileType type)
-    {
-        var top = TopLevel.GetTopLevel(this);
-        if (top is null)
-        {
-            return null;
-        }
-
-        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = title,
-            AllowMultiple = false,
-            FileTypeFilter = [type]
-        });
-
-        return files.Count > 0 ? files[0].Path.LocalPath : null;
-    }
+    private Task<string?> PickSingleFileAsync(string title, FilePickerFileType type) =>
+        AvaloniaStoragePicker.PickSingleFileAsync(TopLevel.GetTopLevel(this), type, title);
 }

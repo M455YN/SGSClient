@@ -3,8 +3,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using SGSClient.UI.ViewModels;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace SGSClient.UI.WinUI.Views;
 
@@ -216,21 +214,24 @@ public sealed partial class PublishPage : Page
 
     private async void PickFolder_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FolderPicker();
-        picker.FileTypeFilter.Add("*");
-        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
-        InitializeWithWindow.Initialize(picker, hwnd);
-        var folder = await picker.PickSingleFolderAsync();
-        if (folder is not null)
+        if (App.MainWindow is null)
         {
-            await ViewModel.SetFolderAsync(folder.Path);
-            if (ViewModel.HasManifestForm)
-            {
-                PushFormFromViewModel();
-            }
-
-            RefreshUi();
+            return;
         }
+
+        var path = await WinUiFilePicker.PickFolderAsync(App.MainWindow, commitLabel: "Wybierz folder");
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        await ViewModel.SetFolderAsync(path);
+        if (ViewModel.HasManifestForm)
+        {
+            PushFormFromViewModel();
+        }
+
+        RefreshUi();
     }
 
     private async void PickCover_Click(object sender, RoutedEventArgs e)
@@ -317,23 +318,21 @@ public sealed partial class PublishPage : Page
 
     private async void PickScreenshots_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileOpenPicker();
-        picker.ViewMode = PickerViewMode.Thumbnail;
-        picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
-        foreach (var ext in new[] { ".png", ".jpg", ".jpeg", ".webp", ".gif" })
-        {
-            picker.FileTypeFilter.Add(ext);
-        }
-
-        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
-        InitializeWithWindow.Initialize(picker, hwnd);
-        var files = await picker.PickMultipleFilesAsync();
-        if (files is null || files.Count == 0)
+        if (App.MainWindow is null)
         {
             return;
         }
 
-        if (!ViewModel.TryAddScreenshotsFromFiles(files.Select(f => f.Path), out var error))
+        var paths = await WinUiFilePicker.PickMultipleFilesAsync(
+            App.MainWindow,
+            [".png", ".jpg", ".jpeg", ".webp", ".gif"],
+            commitLabel: "Dodaj");
+        if (paths.Count == 0)
+        {
+            return;
+        }
+
+        if (!ViewModel.TryAddScreenshotsFromFiles(paths, out var error))
         {
             ViewModel.Issues.Clear();
             ViewModel.Issues.Add(error ?? "Nie udało się dodać screenów.");
@@ -381,19 +380,12 @@ public sealed partial class PublishPage : Page
 
     private async Task<string?> PickSingleFileAsync(IEnumerable<string> extensions, string commitLabel)
     {
-        var picker = new FileOpenPicker();
-        picker.ViewMode = PickerViewMode.Thumbnail;
-        picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
-        picker.CommitButtonText = commitLabel;
-        foreach (var ext in extensions)
+        if (App.MainWindow is null)
         {
-            picker.FileTypeFilter.Add(ext);
+            return null;
         }
 
-        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
-        InitializeWithWindow.Initialize(picker, hwnd);
-        var file = await picker.PickSingleFileAsync();
-        return file?.Path;
+        return await WinUiFilePicker.PickSingleFileAsync(App.MainWindow, extensions, commitLabel);
     }
 
     private async void Prepare_Click(object sender, RoutedEventArgs e)

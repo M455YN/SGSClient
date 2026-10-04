@@ -3,8 +3,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using SGSClient.UI.ViewModels;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
 
 namespace SGSClient.UI.WinUI.Views;
 
@@ -22,7 +20,7 @@ public sealed partial class StudioPage : Page
         ViewModel.SetAddGameHandler(NavigateAddGame);
         ViewModel.SetAddDlcHandler(NavigateAddDlc);
         ViewModel.SetConfirmDeleteHandler(ConfirmDeleteAsync);
-        ViewModel.SetPickImageHandler(() => PickFileAsync([".png", ".jpg", ".jpeg", ".webp"]));
+        ViewModel.SetPickImageHandler(() => PickFileAsync([".png", ".jpg", ".jpeg", ".webp", ".gif"]));
         ViewModel.SetPickVideoHandler(() => PickFileAsync([".mp4", ".webm"]));
         ViewModel.PropertyChanged += (_, e) =>
         {
@@ -140,19 +138,15 @@ public sealed partial class StudioPage : Page
 
     private async Task<string?> PickFileAsync(IReadOnlyList<string> extensions)
     {
-        var picker = new FileOpenPicker();
-        foreach (var ext in extensions)
+        if (App.MainWindow is null)
         {
-            picker.FileTypeFilter.Add(ext);
+            return null;
         }
 
-        if (App.MainWindow is not null)
-        {
-            InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(App.MainWindow));
-        }
-
-        var file = await picker.PickSingleFileAsync();
-        return file?.Path;
+        return await WinUiFilePicker.PickSingleFileAsync(
+            App.MainWindow,
+            extensions,
+            commitLabel: "Wybierz");
     }
 
     private async Task<bool> ConfirmDeleteAsync(StudioContentItem item)

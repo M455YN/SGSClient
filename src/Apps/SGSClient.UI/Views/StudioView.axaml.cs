@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
@@ -21,7 +22,7 @@ public partial class StudioView : UserControl
         MimeTypes = ["video/mp4", "video/webm"]
     };
 
-    private bool _wired;
+    private StudioViewModel? _wiredVm;
     private bool _syncingToggle;
 
     public StudioView()
@@ -40,17 +41,26 @@ public partial class StudioView : UserControl
 
     private void Wire()
     {
-        if (DataContext is not StudioViewModel vm || _wired)
+        if (DataContext is not StudioViewModel vm)
+        {
+            Debug.WriteLine("[SGS Media] StudioView Wire skipped — DataContext is not StudioViewModel");
+            return;
+        }
+
+        if (ReferenceEquals(_wiredVm, vm))
         {
             return;
         }
 
-        _wired = true;
+        _wiredVm = vm;
         vm.SetAddGameHandler(() => GetMain()?.NavigateToPublish());
         vm.SetAddDlcHandler(symbol => GetMain()?.NavigateToPublish(symbol));
         vm.SetConfirmDeleteHandler(ConfirmDeleteAsync);
-        vm.SetPickImageHandler(() => PickAsync(ImageFiles));
-        vm.SetPickVideoHandler(() => PickAsync(VideoFiles));
+        vm.SetPickImageHandler(() => AvaloniaStoragePicker.PickSingleFileAsync(
+            TopLevel.GetTopLevel(this), ImageFiles, "Wybierz obraz"));
+        vm.SetPickVideoHandler(() => AvaloniaStoragePicker.PickSingleFileAsync(
+            TopLevel.GetTopLevel(this), VideoFiles, "Wybierz wideo"));
+        Debug.WriteLine("[SGS Media] StudioView pick handlers wired");
     }
 
     private static MainWindowViewModel? GetMain() =>
@@ -209,22 +219,6 @@ public partial class StudioView : UserControl
         {
             _syncingToggle = false;
         }
-    }
-
-    private async Task<string?> PickAsync(FilePickerFileType type)
-    {
-        var top = TopLevel.GetTopLevel(this);
-        if (top is null)
-        {
-            return null;
-        }
-
-        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            AllowMultiple = false,
-            FileTypeFilter = [type]
-        });
-        return files.Count > 0 ? files[0].TryGetLocalPath() : null;
     }
 
     private async Task<bool> ConfirmDeleteAsync(StudioContentItem item)

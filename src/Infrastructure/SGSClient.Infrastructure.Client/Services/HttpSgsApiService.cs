@@ -982,26 +982,62 @@ public sealed class HttpSgsApiService(
     {
         try
         {
-            await using var stream = File.OpenRead(localFilePath);
-            using var content = new MultipartFormDataContent();
-            var fileContent = new StreamContent(stream);
-            content.Add(fileContent, "file", Path.GetFileName(localFilePath));
-
-            using var message = new HttpRequestMessage(method, url) { Content = content };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
+            if (string.IsNullOrWhiteSpace(localFilePath) || !File.Exists(localFilePath))
             {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[SGS Media] UploadMediaFile missing path url={url} path={localFilePath}");
                 return null;
             }
 
+            await using var stream = File.OpenRead(localFilePath);
+            using var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(stream);
+            var fileName = Path.GetFileName(localFilePath);
+            var ext = Path.GetExtension(fileName).ToLowerInvariant();
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(ext switch
+            {
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".webp" => "image/webp",
+                ".gif" => "image/gif",
+                ".mp4" => "video/mp4",
+                ".webm" => "video/webm",
+                _ => "application/octet-stream"
+            });
+            content.Add(fileContent, "file", fileName);
+
+            using var message = new HttpRequestMessage(method, url) { Content = content };
+            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
+            System.Diagnostics.Debug.WriteLine(
+                $"[SGS Media] HTTP {(method.Method)} {url} file={fileName} bytes={new FileInfo(localFilePath).Length}");
+            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                System.Diagnostics.Debug.WriteLine(
+                    $"[SGS Media] HTTP {(int)response.StatusCode} {response.ReasonPhrase} body={Truncate(body, 500)}");
+                return null;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[SGS Media] HTTP {(int)response.StatusCode} OK");
             return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
                 .ConfigureAwait(false);
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[SGS Media] UploadMediaFile exception: {ex}");
             return null;
         }
+    }
+
+    private static string Truncate(string? value, int max)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return "(empty)";
+        }
+
+        return value.Length <= max ? value : value[..max] + "…";
     }
 
     private async Task<GameDto?> SendMediaAsync(
