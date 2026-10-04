@@ -236,9 +236,8 @@ public partial class SettingsViewModel : ViewModelBase
 
     private static string ReadVersion()
     {
-        var asm = Assembly.GetExecutingAssembly();
-        var version = asm.GetName().Version;
-        return version is null ? "dev" : $"{version.Major}.{version.Minor}.{version.Build}";
+        var asm = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+        return asm.GetName().Version?.ToString() ?? "4.0.0.0";
     }
 }
 

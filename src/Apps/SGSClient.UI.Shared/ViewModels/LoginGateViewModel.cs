@@ -32,8 +32,17 @@ public partial class LoginGateViewModel : ObservableObject
 
     public bool IsAuthConfigured { get; }
 
-    public string VersionText { get; } =
-        $"Wersja {Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "0.1.0"}";
+    public string VersionText { get; } = BuildVersionText();
+
+    private static string BuildVersionText()
+    {
+        var asm = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+        var name = asm.GetCustomAttribute<AssemblyProductAttribute>()?.Product
+            ?? asm.GetName().Name
+            ?? "SGSClient";
+        var version = asm.GetName().Version?.ToString() ?? "4.0.0.0";
+        return $"{name} {version}";
+    }
 
     public void SetParentWindowHandle(Func<nint> getHandle) => _parentWindowHandle = getHandle;
 

@@ -5,6 +5,7 @@
     <RootNamespace>SGSClient.UI.WinUI</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <AssemblyName>SGSClient</AssemblyName>
     <AssemblyTitle>SGSClient</AssemblyTitle>
     <Product>SGSClient</Product>
     <Platforms>x64;x86;arm64</Platforms>

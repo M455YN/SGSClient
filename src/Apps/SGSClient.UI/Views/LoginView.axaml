@@ -5,7 +5,7 @@
              x:DataType="vm:LoginGateViewModel">
   <Grid ColumnDefinitions="*,440">
     <Panel Grid.Column="0">
-      <Image Source="avares://SGSClient.UI/Assets/Login/login-background.jpg"
+      <Image Source="avares://SGSClient/Assets/Login/login-background.jpg"
              Stretch="UniformToFill"/>
       <Border BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
               BorderThickness="0,0,1,0"/>
@@ -14,7 +14,7 @@
     <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" Margin="56,48"
           Background="Transparent">
       <StackPanel Orientation="Horizontal" Spacing="12">
-        <Image Source="avares://SGSClient.UI/Assets/Login/sgs-logo.png"
+        <Image Source="avares://SGSClient/Assets/Login/sgs-logo.png"
                Width="32" Height="32"/>
         <TextBlock Text="SGSClient" FontSize="14" FontWeight="SemiBold"
                    VerticalAlignment="Center"/>
