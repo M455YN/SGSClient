@@ -405,7 +405,7 @@ public sealed class GamesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public Task<ActionResult<GameDto>> UploadCover(int id, IFormFile? file, CancellationToken cancellationToken) =>
+    public Task<ActionResult<GameDto>> UploadCover(int id, [FromForm] IFormFile? file, CancellationToken cancellationToken) =>
         UploadOwnedMediaAsync(id, file, OwnedMediaKind.Cover, cancellationToken);
 
     [HttpDelete("{id:int}/media/cover")]
@@ -422,7 +422,7 @@ public sealed class GamesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public Task<ActionResult<GameDto>> UploadHeader(int id, IFormFile? file, CancellationToken cancellationToken) =>
+    public Task<ActionResult<GameDto>> UploadHeader(int id, [FromForm] IFormFile? file, CancellationToken cancellationToken) =>
         UploadOwnedMediaAsync(id, file, OwnedMediaKind.Header, cancellationToken);
 
     [HttpDelete("{id:int}/media/header")]
@@ -439,7 +439,7 @@ public sealed class GamesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public Task<ActionResult<GameDto>> UploadLogo(int id, IFormFile? file, CancellationToken cancellationToken) =>
+    public Task<ActionResult<GameDto>> UploadLogo(int id, [FromForm] IFormFile? file, CancellationToken cancellationToken) =>
         UploadOwnedMediaAsync(id, file, OwnedMediaKind.Logo, cancellationToken);
 
     [HttpDelete("{id:int}/media/logo")]
@@ -456,7 +456,7 @@ public sealed class GamesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public Task<ActionResult<GameDto>> UploadIntro(int id, IFormFile? file, CancellationToken cancellationToken) =>
+    public Task<ActionResult<GameDto>> UploadIntro(int id, [FromForm] IFormFile? file, CancellationToken cancellationToken) =>
         UploadOwnedMediaAsync(id, file, OwnedMediaKind.Intro, cancellationToken);
 
     [HttpDelete("{id:int}/media/intro")]
@@ -473,7 +473,7 @@ public sealed class GamesController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public Task<ActionResult<GameDto>> AddScreenshot(int id, IFormFile? file, CancellationToken cancellationToken) =>
+    public Task<ActionResult<GameDto>> AddScreenshot(int id, [FromForm] IFormFile? file, CancellationToken cancellationToken) =>
         UploadOwnedMediaAsync(id, file, OwnedMediaKind.Screenshot, cancellationToken);
 
     [HttpDelete("{id:int}/media/screenshots/{screenshotId:int}")]
@@ -660,7 +660,7 @@ public sealed class GamesController(
         string fileName,
         CancellationToken cancellationToken)
     {
-        if (!SgsPackageRules.IsValidSymbol(symbol)
+        if (!SgsPackageRules.IsSafeStorageSegment(symbol)
             || string.IsNullOrWhiteSpace(version)
             || string.IsNullOrWhiteSpace(fileName)
             || fileName.Contains("..", StringComparison.Ordinal)
@@ -718,7 +718,7 @@ public sealed class GamesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult DownloadMedia(string symbol, string fileName)
     {
-        if (!SgsPackageRules.IsValidSymbol(symbol)
+        if (!SgsPackageRules.IsSafeStorageSegment(symbol)
             || string.IsNullOrWhiteSpace(fileName)
             || fileName.Contains("..", StringComparison.Ordinal)
             || fileName.Contains('/')

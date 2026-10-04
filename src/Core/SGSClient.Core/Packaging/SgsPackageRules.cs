@@ -57,6 +57,18 @@ public static partial class SgsPackageRules
         && symbol.Length is >= MinSymbolLength and <= MaxSymbolLength
         && SymbolRegex().IsMatch(symbol);
 
+    /// <summary>
+    /// Path-safe storage folder segment for serving packages/media.
+    /// Broader than <see cref="IsValidSymbol"/> so legacy PascalCase / spaced symbols still work.
+    /// </summary>
+    public static bool IsSafeStorageSegment(string? value) =>
+        !string.IsNullOrWhiteSpace(value)
+        && value.Length is >= MinSymbolLength and <= MaxSymbolLength
+        && !value.Contains("..", StringComparison.Ordinal)
+        && !value.Contains('/')
+        && !value.Contains('\\')
+        && SafeStorageSegmentRegex().IsMatch(value);
+
     public static bool IsValidVersion(string? version) =>
         !string.IsNullOrWhiteSpace(version)
         && version.Length <= MaxVersionLength
@@ -505,6 +517,9 @@ public static partial class SgsPackageRules
 
     [GeneratedRegex("^[a-z0-9]+(?:-[a-z0-9]+)*$")]
     private static partial Regex SymbolRegex();
+
+    [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9 ._-]*$")]
+    private static partial Regex SafeStorageSegmentRegex();
 
     [GeneratedRegex(@"^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$")]
     private static partial Regex VersionRegex();
