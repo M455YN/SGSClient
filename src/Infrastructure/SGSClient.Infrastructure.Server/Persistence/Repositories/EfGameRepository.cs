@@ -169,28 +169,7 @@ public sealed class EfGameRepository(
             .Select(ProjectGame(includeDlcs: true))
             .ToListAsync(cancellationToken);
 
-        var userIds = games.Select(g => g.UserId).Distinct().ToList();
-        if (userIds.Count == 0)
-        {
-            return games;
-        }
-
-        var owners = await db.Users
-            .AsNoTracking()
-            .Where(u => userIds.Contains(u.Id))
-            .Select(u => new { u.Id, u.DisplayName, u.Email })
-            .ToListAsync(cancellationToken);
-        var byId = owners.ToDictionary(u => u.Id);
-
-        foreach (var game in games)
-        {
-            if (byId.TryGetValue(game.UserId, out var owner))
-            {
-                game.OwnerDisplayName = owner.DisplayName;
-                game.OwnerEmail = owner.Email;
-            }
-        }
-
+        await AttachOwnersAsync(games, cancellationToken);
         return games;
     }
 
@@ -207,10 +186,12 @@ public sealed class EfGameRepository(
 
         await ApplyMetadataUpdatesAsync(game, request, cancellationToken, allowCuration: true);
         await db.SaveChangesAsync(cancellationToken);
-        return await db.Games.AsNoTracking()
+        var dto = await db.Games.AsNoTracking()
             .Where(g => g.Id == gameId)
             .Select(ProjectGame(includeDlcs: true))
             .FirstAsync(cancellationToken);
+        await AttachOwnersAsync([dto], cancellationToken);
+        return dto;
     }
 
     public async Task<bool> DeleteGameAsAdminAsync(int gameId, CancellationToken cancellationToken = default)
@@ -640,6 +621,47 @@ public sealed class EfGameRepository(
         if (request.FeaturedOrder is not null)
         {
             game.FeaturedOrder = request.FeaturedOrder.Value < 0 ? null : request.FeaturedOrder.Value;
+        }
+
+        if (request.OwnerUserId is int ownerUserId)
+        {
+            if (ownerUserId <= 0)
+            {
+                throw new ArgumentException("Nieprawidłowy identyfikator właściciela.");
+            }
+
+            var exists = await db.Users.AnyAsync(u => u.Id == ownerUserId, cancellationToken);
+            if (!exists)
+            {
+                throw new ArgumentException("Wybrany użytkownik nie istnieje.");
+            }
+
+            game.UserId = ownerUserId;
+        }
+    }
+
+    private async Task AttachOwnersAsync(IReadOnlyList<GameDto> games, CancellationToken cancellationToken)
+    {
+        var userIds = games.Select(g => g.UserId).Distinct().ToList();
+        if (userIds.Count == 0)
+        {
+            return;
+        }
+
+        var owners = await db.Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.DisplayName, u.Email })
+            .ToListAsync(cancellationToken);
+        var byId = owners.ToDictionary(u => u.Id);
+
+        foreach (var game in games)
+        {
+            if (byId.TryGetValue(game.UserId, out var owner))
+            {
+                game.OwnerDisplayName = owner.DisplayName;
+                game.OwnerEmail = owner.Email;
+            }
         }
     }
 

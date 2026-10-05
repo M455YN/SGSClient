@@ -9,17 +9,28 @@ public partial class AdminGameItem : GameStoreEditItem
 {
     public int? ParentGameId { get; init; }
     public string? ParentSymbol { get; init; }
-    public string? OwnerDisplayName { get; init; }
-    public string? OwnerEmail { get; init; }
     public ObservableCollection<AdminGameItem> Dlcs { get; } = [];
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OwnerText))]
+    public partial int OwnerUserId { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OwnerText))]
+    public partial string? OwnerDisplayName { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OwnerText))]
+    public partial string? OwnerEmail { get; set; }
+
+    [ObservableProperty] public partial int EditOwnerUserId { get; set; }
     [ObservableProperty] public partial int? FeaturedOrder { get; set; }
     [ObservableProperty] public partial string PositionLabel { get; set; } = string.Empty;
 
     public bool HasDlcs => Dlcs.Count > 0;
     public string StateLabel => DraftP ? "Szkic" : "Opublikowana";
     public string OwnerText => string.IsNullOrWhiteSpace(OwnerDisplayName)
-        ? (string.IsNullOrWhiteSpace(OwnerEmail) ? "—" : OwnerEmail!)
+        ? (string.IsNullOrWhiteSpace(OwnerEmail) ? $"#{OwnerUserId}" : OwnerEmail!)
         : OwnerDisplayName!;
     public string MetaText => $"{Symbol} · {KindLabel} · {StateLabel}";
 
@@ -32,9 +43,7 @@ public partial class AdminGameItem : GameStoreEditItem
             Symbol = game.Symbol,
             IsDlc = game.Kind == GameContentKind.Dlc,
             ParentGameId = game.ParentGameId,
-            ParentSymbol = game.ParentSymbol,
-            OwnerDisplayName = game.OwnerDisplayName,
-            OwnerEmail = game.OwnerEmail
+            ParentSymbol = game.ParentSymbol
         };
         item.ApplyDto(game, apiBaseUrl);
         return item;
@@ -43,6 +52,10 @@ public partial class AdminGameItem : GameStoreEditItem
     public void ApplyDto(GameDto game, string? apiBaseUrl = null)
     {
         ApplyStoreEdit(game);
+        OwnerUserId = game.UserId;
+        EditOwnerUserId = game.UserId;
+        OwnerDisplayName = game.OwnerDisplayName;
+        OwnerEmail = game.OwnerEmail;
         FeaturedOrder = game.FeaturedOrder;
         if (apiBaseUrl is not null)
         {
@@ -55,6 +68,35 @@ public partial class AdminGameItem : GameStoreEditItem
         OnPropertyChanged(nameof(OwnerText));
         OnPropertyChanged(nameof(StateLabel));
         OnPropertyChanged(nameof(MetaText));
+    }
+
+    public new UpdateGameRequestDto ToUpdateRequest()
+    {
+        var request = base.ToUpdateRequest();
+        return new UpdateGameRequestDto
+        {
+            Title = request.Title,
+            Description = request.Description,
+            HardwareRequirements = request.HardwareRequirements,
+            OtherInformation = request.OtherInformation,
+            Genre = request.Genre,
+            Engine = request.Engine,
+            DraftP = request.DraftP,
+            FeaturedP = request.FeaturedP,
+            FeaturedOrder = request.FeaturedOrder,
+            StudioName = request.StudioName,
+            WebsiteUrl = request.WebsiteUrl,
+            DiscordUrl = request.DiscordUrl,
+            SupportUrl = request.SupportUrl,
+            ReleaseStatus = request.ReleaseStatus,
+            ReleaseDateUtc = request.ReleaseDateUtc,
+            ClearReleaseDate = request.ClearReleaseDate,
+            AgeRating = request.AgeRating,
+            Features = request.Features,
+            Languages = request.Languages,
+            Tags = request.Tags,
+            OwnerUserId = EditOwnerUserId > 0 ? EditOwnerUserId : null
+        };
     }
 
     protected override void OnDraftOrFeatureChanged()

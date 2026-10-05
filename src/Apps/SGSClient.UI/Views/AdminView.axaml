@@ -205,6 +205,17 @@
                             SelectedItem="{Binding SelectedGame.EditGenre, Mode=TwoWay}"/>
                   <ComboBox PlaceholderText="Silnik" ItemsSource="{Binding EngineOptions}"
                             SelectedItem="{Binding SelectedGame.EditEngine, Mode=TwoWay}"/>
+                  <TextBlock Text="Właściciel (kto dodał / twórca)" Classes="caption"/>
+                  <ComboBox ItemsSource="{Binding Users}"
+                            SelectedValue="{Binding SelectedGame.EditOwnerUserId, Mode=TwoWay}"
+                            SelectedValueBinding="{Binding Id}">
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="vm:AdminUserItem">
+                        <TextBlock Text="{Binding OwnerPickerLabel}"/>
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                  <TextBlock Text="Zmiana właściciela przenosi grę do panelu twórcy wybranej osoby." Classes="caption"/>
                 </StackPanel>
               </Border>
               <Border Classes="card">

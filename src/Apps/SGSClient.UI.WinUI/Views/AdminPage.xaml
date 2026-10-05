@@ -300,6 +300,14 @@
                             ItemsSource="{Binding EngineOptions}"
                             SelectedItem="{Binding SelectedGame.EditEngine, Mode=TwoWay}" />
                 </Grid>
+                <ComboBox Header="Właściciel (kto dodał / twórca)" HorizontalAlignment="Stretch"
+                          ItemsSource="{Binding Users}"
+                          DisplayMemberPath="OwnerPickerLabel"
+                          SelectedValuePath="Id"
+                          SelectedValue="{Binding SelectedGame.EditOwnerUserId, Mode=TwoWay}" />
+                <TextBlock Text="Zmiana właściciela przenosi grę do panelu twórcy wybranej osoby."
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
               </StackPanel>
             </Border>
             <Border Style="{StaticResource SectionCard}">

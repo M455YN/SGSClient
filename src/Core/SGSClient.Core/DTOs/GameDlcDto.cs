@@ -52,4 +52,10 @@ public sealed class UpdateGameRequestDto
 
     /// <summary>Full replacement of the tag list; empty list clears it.</summary>
     public IReadOnlyList<string>? Tags { get; init; }
+
+    /// <summary>
+    /// Admin-only: transfer catalog ownership to another user.
+    /// Ignored for creator (owned) updates.
+    /// </summary>
+    public int? OwnerUserId { get; init; }
 }

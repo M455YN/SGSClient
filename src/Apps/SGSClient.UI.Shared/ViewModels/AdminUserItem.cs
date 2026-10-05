@@ -63,6 +63,11 @@ public partial class AdminUserItem : ObservableObject
         + (string.IsNullOrWhiteSpace(PlayerTag) ? "" : $" · @{PlayerTag}")
         + $" · dołączono {CreatedText} · ostatnio {LastLoginText}";
 
+    /// <summary>Combo label for owner transfer: "Name (email)".</summary>
+    public string OwnerPickerLabel => string.IsNullOrWhiteSpace(Email)
+        ? $"{DisplayName} (#{Id})"
+        : $"{DisplayName} ({Email})";
+
     public void ApplyDto(AdminUserDto user) => Role = user.Role;
 
     public void OnRoleReverted() => OnPropertyChanged(nameof(RoleIndex));
