@@ -248,15 +248,25 @@ public partial class AdminViewModel : ObservableObject
     {
         if (_api is null)
         {
+            StatusText = "Brak połączenia z API.";
+            item.OnRoleReverted();
             return;
         }
 
+        if (role == item.Role)
+        {
+            return;
+        }
+
+        var previous = item.Role;
+        item.Role = role;
         IsBusy = true;
         try
         {
             var result = await _api.UpdateAdminUserRoleAsync(item.Id, role);
             if (!result.Success || result.User is null)
             {
+                item.Role = previous;
                 StatusText = result.Error ?? "Nie udało się zmienić roli.";
                 item.OnRoleReverted();
                 return;
@@ -265,6 +275,12 @@ public partial class AdminViewModel : ObservableObject
             item.ApplyDto(result.User);
             ApplyRolePermissions(item);
             StatusText = $"{item.DisplayName}: rola {AdminRoles.Label(item.Role).ToLowerInvariant()}";
+        }
+        catch (Exception ex)
+        {
+            item.Role = previous;
+            item.OnRoleReverted();
+            StatusText = $"Błąd zmiany roli: {ex.Message}";
         }
         finally
         {

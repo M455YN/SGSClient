@@ -40,7 +40,10 @@ public sealed class AdminAuthorization(
 
     public UserRole ResolveRole(UserRole storedRole, string? email)
     {
-        if (IsBootstrapEmail(email) || !azureOptions.Value.IsConfigured)
+        // Only bootstrap owners are forced to SuperAdmin. Do not elevate everyone when
+        // Azure is off — that masked stored roles and made admin role edits look like
+        // they never saved (DB updated, response always came back as SuperAdmin).
+        if (IsBootstrapEmail(email))
         {
             return UserRole.SuperAdmin;
         }

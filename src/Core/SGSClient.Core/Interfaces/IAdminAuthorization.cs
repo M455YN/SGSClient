@@ -16,6 +16,6 @@ public interface IAdminAuthorization
     /// <summary>Owner emails from configuration; they are always super admins and cannot be demoted.</summary>
     bool IsBootstrapEmail(string? email);
 
-    /// <summary>Effective role: the stored one, raised to super admin for bootstrap owners and local dev.</summary>
+    /// <summary>Effective role: the stored one, raised to super admin only for bootstrap owners.</summary>
     UserRole ResolveRole(UserRole storedRole, string? email);
 }
