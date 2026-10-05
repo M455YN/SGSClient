@@ -145,7 +145,7 @@
                         <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"
-                               IsVisible="{Binding HasMedia}"/>
+                               IsVisible="{Binding IsImage}"/>
                       </Panel>
                     </Border>
                   </DataTemplate>
@@ -336,10 +336,15 @@
           <Button Content="‹" FontSize="36" Command="{Binding PreviewPreviousCommand}"
                   IsEnabled="{Binding CanPreviewPrevious}"
                   Padding="18,10" VerticalAlignment="Center" Margin="8,0" Classes="subtle"/>
-          <Image Grid.Column="1" Source="{Binding MediaPreviewUrl}" Stretch="Uniform"
-                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                 Cursor="Hand"
-                 PointerPressed="MediaPreviewImage_OnPointerPressed"/>
+          <Panel Grid.Column="1">
+            <Image x:Name="MediaPreviewImage"
+                   Source="{Binding MediaPreviewUrl}" Stretch="Uniform"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Cursor="Hand"
+                   IsVisible="{Binding !MediaPreviewIsVideo}"
+                   PointerPressed="MediaPreviewImage_OnPointerPressed"/>
+            <Panel x:Name="MediaPreviewVideoHost" IsVisible="{Binding MediaPreviewIsVideo}"/>
+          </Panel>
           <Button Grid.Column="2" Content="›" FontSize="36" Command="{Binding PreviewNextCommand}"
                   IsEnabled="{Binding CanPreviewNext}"
                   Padding="18,10" VerticalAlignment="Center" Margin="8,0" Classes="subtle"/>

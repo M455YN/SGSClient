@@ -190,7 +190,13 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
             .OrderBy(u => u.DisplayName)
             .ToListAsync(cancellationToken);
 
-        return users.Select(MapAdmin).ToList();
+        var counts = await db.Games
+            .AsNoTracking()
+            .GroupBy(g => g.UserId)
+            .Select(g => new { UserId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.UserId, x => x.Count, cancellationToken);
+
+        return users.Select(u => MapAdmin(u, counts.GetValueOrDefault(u.Id))).ToList();
     }
 
     public async Task<AdminUserDto?> SetUserRoleAsync(
@@ -211,7 +217,8 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
 
         user.Role = role;
         await db.SaveChangesAsync(cancellationToken);
-        return MapAdmin(user);
+        var ownedCount = await db.Games.CountAsync(g => g.UserId == userId, cancellationToken);
+        return MapAdmin(user, ownedCount);
     }
 
     public async Task TouchPresenceAsync(string azureSub, CancellationToken cancellationToken = default)
@@ -231,7 +238,7 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    private AdminUserDto MapAdmin(UserEntity user) => new()
+    private AdminUserDto MapAdmin(UserEntity user, int ownedGamesCount = 0) => new()
     {
         Id = user.Id,
         DisplayName = user.DisplayName,
@@ -240,7 +247,8 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
         Role = adminAuth.ResolveRole(user.Role, user.Email),
         IsRoleLocked = adminAuth.IsBootstrapEmail(user.Email),
         CreatedAtUtc = user.CreatedAtUtc,
-        LastLoginUtc = user.LastLoginUtc
+        LastLoginUtc = user.LastLoginUtc,
+        OwnedGamesCount = ownedGamesCount
     };
 
     private UserProfileDto Map(UserEntity user) => new()

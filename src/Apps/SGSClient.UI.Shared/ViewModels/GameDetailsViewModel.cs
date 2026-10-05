@@ -106,6 +106,10 @@ public partial class GameDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial string MediaPreviewLabel { get; set; } = string.Empty;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PreviewHintText))]
+    public partial bool MediaPreviewIsVideo { get; set; }
+
     public string PreviewCounterText
     {
         get
@@ -121,9 +125,13 @@ public partial class GameDetailsViewModel : ObservableObject
         IsMediaPreviewOpen && MediaPreviewIndex < PreviewableThumbs.Count - 1;
 
     public string PreviewHintText =>
-        PreviewableThumbs.Count > 1
-            ? "Kliknij strzałkę lub tło, żeby zobaczyć kolejne zdjęcie"
-            : "Kliknij tło lub ✕, żeby zamknąć";
+        MediaPreviewIsVideo
+            ? (PreviewableThumbs.Count > 1
+                ? "Odtwarzanie trailera · strzałki przełączają multimedia"
+                : "Odtwarzanie trailera · kliknij ✕, żeby zamknąć")
+            : PreviewableThumbs.Count > 1
+                ? "Kliknij strzałkę lub tło, żeby zobaczyć kolejne zdjęcie"
+                : "Kliknij tło lub ✕, żeby zamknąć";
 
     private IReadOnlyList<MediaThumbItem> PreviewableThumbs =>
         MediaThumbs.Where(t => t.HasMedia).ToList();
@@ -364,11 +372,30 @@ public partial class GameDetailsViewModel : ObservableObject
             return;
         }
 
-        ShowPreviewAt(0);
+        var index = items.ToList().FindIndex(t => t.IsImage);
+        ShowPreviewAt(index >= 0 ? index : 0);
     }
 
     [RelayCommand]
-    private void CloseMediaPreview() => IsMediaPreviewOpen = false;
+    private void OpenIntroPreview()
+    {
+        var items = PreviewableThumbs;
+        var index = items.ToList().FindIndex(t => t.IsVideo);
+        if (index < 0)
+        {
+            return;
+        }
+
+        ShowPreviewAt(index);
+    }
+
+    [RelayCommand]
+    private void CloseMediaPreview()
+    {
+        IsMediaPreviewOpen = false;
+        MediaPreviewIsVideo = false;
+        MediaPreviewUrl = null;
+    }
 
     [RelayCommand]
     private void PreviewPrevious()
@@ -404,6 +431,7 @@ public partial class GameDetailsViewModel : ObservableObject
         MediaPreviewIndex = index;
         MediaPreviewUrl = item.ImageUrl;
         MediaPreviewLabel = item.Label;
+        MediaPreviewIsVideo = item.IsVideo;
         IsMediaPreviewOpen = true;
         OnPropertyChanged(nameof(PreviewCounterText));
         OnPropertyChanged(nameof(CanPreviewPrevious));
@@ -728,25 +756,15 @@ public partial class GameDetailsViewModel : ObservableObject
                 .Distinct(StringComparer.OrdinalIgnoreCase));
 
         MediaThumbs.Clear();
-        var thumbUrl = ResolveMediaUrl(game.CoverUrl);
-        var headerUrl = ResolveMediaUrl(game.HeaderUrl);
-        var logoUrl = ResolveMediaUrl(game.LogoUrl);
-        if (!string.IsNullOrWhiteSpace(thumbUrl))
+        if (!string.IsNullOrWhiteSpace(IntroMediaUrl))
         {
-            MediaThumbs.Add(new MediaThumbItem { Label = "Miniaturka", ImageUrl = thumbUrl, IsImage = true });
-        }
-
-        if (!string.IsNullOrWhiteSpace(headerUrl)
-            && !string.Equals(headerUrl, thumbUrl, StringComparison.OrdinalIgnoreCase))
-        {
-            MediaThumbs.Add(new MediaThumbItem { Label = "Okładka pozioma", ImageUrl = headerUrl, IsImage = true });
-        }
-
-        if (!string.IsNullOrWhiteSpace(logoUrl)
-            && !string.Equals(logoUrl, thumbUrl, StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(logoUrl, headerUrl, StringComparison.OrdinalIgnoreCase))
-        {
-            MediaThumbs.Add(new MediaThumbItem { Label = "Logo", ImageUrl = logoUrl, IsImage = true });
+            MediaThumbs.Add(new MediaThumbItem
+            {
+                Label = "Intro ▶",
+                ImageUrl = IntroMediaUrl,
+                IsImage = false,
+                IsVideo = true
+            });
         }
 
         var shotIndex = 1;
@@ -1202,6 +1220,7 @@ public sealed class MediaThumbItem
     public required string Label { get; init; }
     public string? ImageUrl { get; init; }
     public bool IsImage { get; init; }
+    public bool IsVideo { get; init; }
     public bool HasMedia => !string.IsNullOrWhiteSpace(ImageUrl);
 }
 

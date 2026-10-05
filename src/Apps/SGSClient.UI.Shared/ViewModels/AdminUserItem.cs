@@ -11,6 +11,7 @@ public partial class AdminUserItem : ObservableObject
     public string? Email { get; init; }
     public string? PlayerTag { get; init; }
     public bool IsRoleLocked { get; init; }
+    public int OwnedGamesCount { get; init; }
     public string CreatedText { get; init; } = "—";
     public string LastLoginText { get; init; } = "—";
 
@@ -58,9 +59,12 @@ public partial class AdminUserItem : ObservableObject
         ? "?"
         : DisplayName.Trim()[..1].ToUpperInvariant();
 
+    public string GamesCountText => FormatGamesCount(OwnedGamesCount);
+
     public string MetaText =>
         (string.IsNullOrWhiteSpace(Email) ? $"#{Id}" : Email!)
         + (string.IsNullOrWhiteSpace(PlayerTag) ? "" : $" · @{PlayerTag}")
+        + $" · {GamesCountText}"
         + $" · dołączono {CreatedText} · ostatnio {LastLoginText}";
 
     /// <summary>Combo label for owner transfer: "Name (email)".</summary>
@@ -79,9 +83,18 @@ public partial class AdminUserItem : ObservableObject
         Email = user.Email,
         PlayerTag = user.PlayerTag,
         IsRoleLocked = user.IsRoleLocked,
+        OwnedGamesCount = user.OwnedGamesCount,
         Role = user.Role,
         CreatedText = user.CreatedAtUtc.LocalDateTime.ToString("d MMM yyyy"),
         LastLoginText = user.LastLoginUtc?.LocalDateTime.ToString("d MMM yyyy") ?? "—"
+    };
+
+    private static string FormatGamesCount(int count) => count switch
+    {
+        0 => "0 gier",
+        1 => "1 gra",
+        var n when n is >= 2 and <= 4 => $"{n} gry",
+        _ => $"{count} gier"
     };
 }
 

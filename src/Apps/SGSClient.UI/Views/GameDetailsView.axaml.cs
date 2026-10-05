@@ -17,19 +17,61 @@ public partial class GameDetailsView : UserControl
     public GameDetailsView()
     {
         InitializeComponent();
-        DataContextChanged += (_, _) =>
+        DetachedFromVisualTree += (_, _) =>
         {
-            if (DataContext is GameDetailsViewModel vm)
+            StopPreviewVideo();
+            if (_subscribedVm is not null)
             {
-                vm.SetOpenPropertiesHandler(OpenProperties);
+                _subscribedVm.PropertyChanged -= OnViewModelPropertyChanged;
             }
         };
-        DetachedFromVisualTree += (_, _) => StopIntro();
+        DataContextChanged += (_, _) =>
+        {
+            if (_subscribedVm is not null)
+            {
+                _subscribedVm.PropertyChanged -= OnViewModelPropertyChanged;
+            }
+
+            _subscribedVm = DataContext as GameDetailsViewModel;
+            if (_subscribedVm is not null)
+            {
+                _subscribedVm.PropertyChanged += OnViewModelPropertyChanged;
+                _subscribedVm.SetOpenPropertiesHandler(OpenProperties);
+            }
+        };
+    }
+
+    private GameDetailsViewModel? _subscribedVm;
+
+    private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(GameDetailsViewModel.IsMediaPreviewOpen)
+            or nameof(GameDetailsViewModel.MediaPreviewIsVideo)
+            or nameof(GameDetailsViewModel.MediaPreviewUrl))
+        {
+            SyncPreviewVideo();
+        }
+    }
+
+    private void SyncPreviewVideo()
+    {
+        if (DataContext is not GameDetailsViewModel vm)
+        {
+            return;
+        }
+
+        if (vm.IsMediaPreviewOpen && vm.MediaPreviewIsVideo && !string.IsNullOrWhiteSpace(vm.MediaPreviewUrl))
+        {
+            StartPreviewVideo(vm.MediaPreviewUrl);
+            return;
+        }
+
+        StopPreviewVideo();
     }
 
     private void Back_OnClick(object? sender, RoutedEventArgs e)
     {
-        StopIntro();
+        StopPreviewVideo();
         if (DataContext is GameDetailsViewModel vm)
         {
             vm.CloseMediaPreviewCommand.Execute(null);
@@ -88,7 +130,7 @@ public partial class GameDetailsView : UserControl
 
     private void MediaPreviewImage_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (DataContext is not GameDetailsViewModel vm)
+        if (DataContext is not GameDetailsViewModel vm || vm.MediaPreviewIsVideo)
         {
             return;
         }
@@ -210,30 +252,28 @@ public partial class GameDetailsView : UserControl
 
     private void PlayOverlay_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (DataContext is not GameDetailsViewModel { IntroMediaUrl: { Length: > 0 } url })
+        if (DataContext is not GameDetailsViewModel { HasIntro: true } vm)
         {
             return;
         }
 
-        StartIntro(url);
+        vm.OpenIntroPreviewCommand.Execute(null);
         e.Handled = true;
     }
 
-    private void StartIntro(string mediaUrl)
+    private void StartPreviewVideo(string mediaUrl)
     {
-        EnsurePlayer();
+        EnsurePreviewPlayer();
         if (_videoView is null || _mediaPlayer is null || _libVlc is null)
         {
             return;
         }
 
-        SetHeroPlaybackUi(playing: true);
-
         using var media = new Media(_libVlc, mediaUrl, FromType.FromLocation);
         _mediaPlayer.Play(media);
     }
 
-    private void EnsurePlayer()
+    private void EnsurePreviewPlayer()
     {
         if (_videoView is not null)
         {
@@ -245,7 +285,13 @@ public partial class GameDetailsView : UserControl
         _mediaPlayer = new MediaPlayer(_libVlc);
         _mediaPlayer.EndReached += (_, _) =>
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(StopIntro);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (DataContext is GameDetailsViewModel vm && !vm.CanPreviewNext)
+                {
+                    vm.CloseMediaPreviewCommand.Execute(null);
+                }
+            });
         };
 
         _videoView = new VideoView
@@ -254,25 +300,15 @@ public partial class GameDetailsView : UserControl
             VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch,
             MediaPlayer = _mediaPlayer
         };
-        IntroHost.Children.Add(_videoView);
+        MediaPreviewVideoHost.Children.Add(_videoView);
     }
 
-    private void StopIntro()
+    private void StopPreviewVideo()
     {
         if (_mediaPlayer is not null)
         {
             _mediaPlayer.Stop();
         }
-
-        SetHeroPlaybackUi(playing: false);
-    }
-
-    private void SetHeroPlaybackUi(bool playing)
-    {
-        IntroHost.IsVisible = playing;
-        CoverImage.IsVisible = !playing && DataContext is GameDetailsViewModel { HasCover: true };
-        TileLabelText.IsVisible = !playing && DataContext is GameDetailsViewModel { HasCover: false };
-        PlayOverlay.IsVisible = !playing && DataContext is GameDetailsViewModel { HasIntro: true };
     }
 
     private void OpenProperties(GameLibraryItem item)

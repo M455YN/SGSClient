@@ -11,6 +11,7 @@ namespace SGSClient.UI.WinUI.Views;
 public sealed partial class GameDetailsPage : Page
 {
     private MediaPlayerElement? _introPlayer;
+    private MediaPlayerElement? _previewPlayer;
     private Uri? _introUri;
     private bool _introPlaying;
 
@@ -30,6 +31,7 @@ public sealed partial class GameDetailsPage : Page
             if (e.PropertyName is nameof(GameDetailsViewModel.IsMediaPreviewOpen)
                 or nameof(GameDetailsViewModel.MediaPreviewUrl)
                 or nameof(GameDetailsViewModel.MediaPreviewLabel)
+                or nameof(GameDetailsViewModel.MediaPreviewIsVideo)
                 or nameof(GameDetailsViewModel.PreviewCounterText)
                 or nameof(GameDetailsViewModel.CanPreviewPrevious)
                 or nameof(GameDetailsViewModel.CanPreviewNext)
@@ -44,6 +46,7 @@ public sealed partial class GameDetailsPage : Page
         Unloaded += (_, _) =>
         {
             StopIntro();
+            StopPreviewVideo();
             ViewModel.CloseMediaPreviewCommand.Execute(null);
         };
     }
@@ -74,6 +77,7 @@ public sealed partial class GameDetailsPage : Page
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         StopIntro();
+        StopPreviewVideo();
         ViewModel.CloseMediaPreviewCommand.Execute(null);
         base.OnNavigatedFrom(e);
     }
@@ -158,7 +162,10 @@ public sealed partial class GameDetailsPage : Page
         MediaPreviewOverlay.Visibility = ViewModel.IsMediaPreviewOpen ? Visibility.Visible : Visibility.Collapsed;
         if (!ViewModel.IsMediaPreviewOpen)
         {
+            StopPreviewVideo();
             MediaPreviewImage.Source = null;
+            MediaPreviewImage.Visibility = Visibility.Collapsed;
+            MediaPreviewVideoHost.Visibility = Visibility.Collapsed;
             return;
         }
 
@@ -170,6 +177,20 @@ public sealed partial class GameDetailsPage : Page
         PreviewPrevButton.Opacity = ViewModel.CanPreviewPrevious ? 1 : 0.35;
         PreviewNextButton.Opacity = ViewModel.CanPreviewNext ? 1 : 0.35;
 
+        if (ViewModel.MediaPreviewIsVideo
+            && !string.IsNullOrWhiteSpace(ViewModel.MediaPreviewUrl)
+            && Uri.TryCreate(ViewModel.MediaPreviewUrl, UriKind.Absolute, out var videoUri))
+        {
+            MediaPreviewImage.Source = null;
+            MediaPreviewImage.Visibility = Visibility.Collapsed;
+            MediaPreviewVideoHost.Visibility = Visibility.Visible;
+            StartPreviewVideo(videoUri);
+            return;
+        }
+
+        StopPreviewVideo();
+        MediaPreviewVideoHost.Visibility = Visibility.Collapsed;
+        MediaPreviewImage.Visibility = Visibility.Visible;
         if (!string.IsNullOrWhiteSpace(ViewModel.MediaPreviewUrl)
             && Uri.TryCreate(ViewModel.MediaPreviewUrl, UriKind.Absolute, out var uri))
         {
@@ -178,6 +199,53 @@ public sealed partial class GameDetailsPage : Page
         else
         {
             MediaPreviewImage.Source = null;
+        }
+    }
+
+    private void StartPreviewVideo(Uri videoUri)
+    {
+        EnsurePreviewPlayer();
+        if (_previewPlayer is null)
+        {
+            return;
+        }
+
+        _previewPlayer.Source = MediaSource.CreateFromUri(videoUri);
+        _previewPlayer.MediaPlayer?.Play();
+    }
+
+    private void EnsurePreviewPlayer()
+    {
+        if (_previewPlayer is not null)
+        {
+            return;
+        }
+
+        _previewPlayer = new MediaPlayerElement
+        {
+            AreTransportControlsEnabled = true,
+            AutoPlay = true,
+            Stretch = Microsoft.UI.Xaml.Media.Stretch.Uniform,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+        _previewPlayer.SetMediaPlayer(new Windows.Media.Playback.MediaPlayer());
+        _previewPlayer.TransportControls.IsCompact = true;
+        _previewPlayer.TransportControls.IsZoomButtonVisible = false;
+        MediaPreviewVideoHost.Child = _previewPlayer;
+    }
+
+    private void StopPreviewVideo()
+    {
+        if (_previewPlayer?.MediaPlayer is { } player)
+        {
+            player.Pause();
+            player.Source = null;
+        }
+
+        if (_previewPlayer is not null)
+        {
+            _previewPlayer.Source = null;
         }
     }
 
@@ -235,6 +303,11 @@ public sealed partial class GameDetailsPage : Page
 
     private void MediaPreviewImage_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
+        if (ViewModel.MediaPreviewIsVideo)
+        {
+            return;
+        }
+
         if (ViewModel.CanPreviewNext)
         {
             ViewModel.PreviewNextCommand.Execute(null);
@@ -295,12 +368,13 @@ public sealed partial class GameDetailsPage : Page
 
     private void PlayOverlay_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
-        if (_introUri is null)
+        if (!ViewModel.HasIntro)
         {
             return;
         }
 
-        StartIntroPlayback();
+        StopIntro();
+        ViewModel.OpenIntroPreviewCommand.Execute(null);
         e.Handled = true;
     }
 

@@ -15,6 +15,9 @@ public sealed class AdminUserDto
 
     public DateTimeOffset CreatedAtUtc { get; init; }
     public DateTimeOffset? LastLoginUtc { get; init; }
+
+    /// <summary>Number of catalog games/DLC owned by this user (creator panel).</summary>
+    public int OwnedGamesCount { get; init; }
 }
 
 /// <summary>Admin-only role assignment.</summary>

@@ -1,7 +1,12 @@
 <Page
     x:Class="SGSClient.UI.WinUI.Views.GameDetailsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SGSClient.UI.WinUI.Views">
+
+  <Page.Resources>
+    <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+  </Page.Resources>
 
   <Grid>
     <TextBlock x:Name="EmptyStatus"
@@ -130,7 +135,8 @@
                       <Grid>
                         <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        <Image Source="{Binding ImageUrl}" Stretch="UniformToFill" />
+                        <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"
+                               Visibility="{Binding IsImage, Converter={StaticResource BoolToVis}}" />
                       </Grid>
                     </Border>
                   </DataTemplate>
@@ -323,9 +329,12 @@
                 Click="PreviewPrevious_Click" Padding="18,10"
                 VerticalAlignment="Center" Margin="8,0"
                 Style="{StaticResource SubtleButtonStyle}" />
-        <Image x:Name="MediaPreviewImage" Grid.Column="1"
-               Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"
-               PointerPressed="MediaPreviewImage_PointerPressed" />
+        <Grid Grid.Column="1">
+          <Image x:Name="MediaPreviewImage"
+                 Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 PointerPressed="MediaPreviewImage_PointerPressed" />
+          <Border x:Name="MediaPreviewVideoHost" Visibility="Collapsed" />
+        </Grid>
         <Button x:Name="PreviewNextButton" Grid.Column="2" Content="›" FontSize="36"
                 Click="PreviewNext_Click" Padding="18,10"
                 VerticalAlignment="Center" Margin="8,0"
