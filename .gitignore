@@ -81,3 +81,6 @@ sgsclient-api-linux-amd64.tar
 *.log
 winui_output_pretty.json
 App_Data
+
+## Generated / local package examples
+schemas/examples/

@@ -24,9 +24,45 @@ public static partial class SgsPackageRules
     public const int MaxExecutablePathLength = 260;
     public const int MaxScreenshots = 12;
     public const long MaxMediaFileBytes = 80L * 1024 * 1024; // 80 MB per media file
+    public const int MaxStudioNameLength = 128;
+    public const int MaxUrlLength = 2048;
+    public const int MaxFeatureCount = 16;
+    public const int MaxLanguageCount = 32;
+    public const int MaxTagCount = 32;
+    public const int MaxCsvFieldLength = 512;
 
     public static readonly HashSet<string> AllowedImageExtensions =
         new(StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".jpeg", ".webp", ".gif" };
+
+    public static readonly string[] FeatureSlugs =
+    [
+        "singleplayer",
+        "multiplayer",
+        "coop",
+        "controller",
+        "cloud",
+        "achievements",
+        "modding",
+        "vr"
+    ];
+
+    public static readonly string[] ReleaseStatusSlugs =
+    [
+        "announced",
+        "earlyAccess",
+        "released",
+        "demo"
+    ];
+
+    public static readonly string[] AgeRatingSlugs =
+    [
+        "unrated",
+        "pegi3",
+        "pegi7",
+        "pegi12",
+        "pegi16",
+        "pegi18"
+    ];
 
     public static readonly HashSet<string> AllowedVideoExtensions =
         new(StringComparer.OrdinalIgnoreCase) { ".mp4", ".webm" };
@@ -300,6 +336,7 @@ public static partial class SgsPackageRules
                 }
             }
 
+            ValidateStoreMetadata(game, errors);
             ValidateMedia(game.Media, errors);
         }
 
@@ -349,6 +386,196 @@ public static partial class SgsPackageRules
             : SgsPackageValidationResult.Fail(errors.ToArray());
     }
 
+    public static bool TryParseReleaseStatus(string? value, out GameReleaseStatus status)
+    {
+        status = GameReleaseStatus.Released;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        switch (value.Trim().Replace("-", "", StringComparison.Ordinal).Replace("_", "", StringComparison.Ordinal)
+                    .ToLowerInvariant())
+        {
+            case "announced":
+                status = GameReleaseStatus.Announced;
+                return true;
+            case "earlyaccess":
+                status = GameReleaseStatus.EarlyAccess;
+                return true;
+            case "released":
+                status = GameReleaseStatus.Released;
+                return true;
+            case "demo":
+                status = GameReleaseStatus.Demo;
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static string ToManifestReleaseStatus(GameReleaseStatus status) => status switch
+    {
+        GameReleaseStatus.Announced => "announced",
+        GameReleaseStatus.EarlyAccess => "earlyAccess",
+        GameReleaseStatus.Demo => "demo",
+        _ => "released"
+    };
+
+    public static bool TryParseAgeRating(string? value, out GameAgeRating rating)
+    {
+        rating = GameAgeRating.Unrated;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var raw = value.Trim().ToLowerInvariant().Replace("-", "", StringComparison.Ordinal);
+        if (raw is "unrated" or "0")
+        {
+            return true;
+        }
+
+        if (raw.StartsWith("pegi", StringComparison.Ordinal))
+        {
+            raw = raw["pegi".Length..];
+        }
+
+        if (!int.TryParse(raw, out var n) || !Enum.IsDefined(typeof(GameAgeRating), n))
+        {
+            return false;
+        }
+
+        rating = (GameAgeRating)n;
+        return true;
+    }
+
+    public static string ToManifestAgeRating(GameAgeRating rating) => rating switch
+    {
+        GameAgeRating.Pegi3 => "pegi3",
+        GameAgeRating.Pegi7 => "pegi7",
+        GameAgeRating.Pegi12 => "pegi12",
+        GameAgeRating.Pegi16 => "pegi16",
+        GameAgeRating.Pegi18 => "pegi18",
+        _ => "unrated"
+    };
+
+    public static bool TryParseReleaseDate(string? value, out DateTimeOffset date, out string? error)
+    {
+        date = default;
+        error = null;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            error = "Pusta data wydania.";
+            return false;
+        }
+
+        if (DateTimeOffset.TryParse(
+                value.Trim(),
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                out date))
+        {
+            return true;
+        }
+
+        error = "Data wydania musi być w formacie ISO (np. 2024-06-15).";
+        return false;
+    }
+
+    public static bool TryParseFeatures(IEnumerable<string>? values, out GameFeatures features, out string? error)
+    {
+        features = GameFeatures.None;
+        error = null;
+        if (values is null)
+        {
+            return true;
+        }
+
+        var list = values
+            .Select(v => v?.Trim() ?? string.Empty)
+            .Where(v => v.Length > 0)
+            .ToList();
+        if (list.Count > MaxFeatureCount)
+        {
+            error = $"Maksymalnie {MaxFeatureCount} funkcji.";
+            return false;
+        }
+
+        foreach (var raw in list)
+        {
+            var slug = NormalizeFeatureSlug(raw);
+            if (slug is null || !TryMapFeature(slug, out var flag))
+            {
+                error = $"Nieznana funkcja '{raw}'. Dozwolone: {string.Join(", ", FeatureSlugs)}.";
+                return false;
+            }
+
+            features |= flag;
+        }
+
+        return true;
+    }
+
+    public static IReadOnlyList<string> ToManifestFeatures(GameFeatures features)
+    {
+        var list = new List<string>(8);
+        if (features.HasFlag(GameFeatures.SinglePlayer)) list.Add("singleplayer");
+        if (features.HasFlag(GameFeatures.MultiPlayer)) list.Add("multiplayer");
+        if (features.HasFlag(GameFeatures.CoOp)) list.Add("coop");
+        if (features.HasFlag(GameFeatures.ControllerSupport)) list.Add("controller");
+        if (features.HasFlag(GameFeatures.CloudSaves)) list.Add("cloud");
+        if (features.HasFlag(GameFeatures.Achievements)) list.Add("achievements");
+        if (features.HasFlag(GameFeatures.Modding)) list.Add("modding");
+        if (features.HasFlag(GameFeatures.Vr)) list.Add("vr");
+        return list;
+    }
+
+    public static bool TryNormalizeHttpUrl(string? value, out string? normalized, out string? error)
+    {
+        normalized = null;
+        error = null;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.Length > MaxUrlLength)
+        {
+            error = "Adres URL jest za długi.";
+            return false;
+        }
+
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+            || uri.Scheme is not ("http" or "https"))
+        {
+            error = "Adres URL musi zaczynać się od http:// lub https://.";
+            return false;
+        }
+
+        normalized = trimmed;
+        return true;
+    }
+
+    public static IList<string>? NormalizeStringList(IEnumerable<string>? values, int maxCount, bool lowerCase)
+    {
+        if (values is null)
+        {
+            return null;
+        }
+
+        var cleaned = values
+            .Select(v => v?.Trim() ?? string.Empty)
+            .Where(v => v.Length > 0)
+            .Select(v => lowerCase ? v.ToLowerInvariant() : v)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(maxCount)
+            .ToList();
+
+        return cleaned;
+    }
+
     public static IEnumerable<string> EnumerateDeclaredMediaPaths(SgsPackageMediaInfo? media)
     {
         if (media is null)
@@ -388,6 +615,191 @@ public static partial class SgsPackageRules
                 yield return shot;
             }
         }
+    }
+
+    private static void ValidateStoreMetadata(SgsPackageGameInfo game, List<string> errors)
+    {
+        if (!string.IsNullOrWhiteSpace(game.StudioName))
+        {
+            var studio = game.StudioName.Trim();
+            if (studio.Length > MaxStudioNameLength)
+            {
+                errors.Add($"Nazwa studia może mieć maksymalnie {MaxStudioNameLength} znaków.");
+            }
+            else
+            {
+                game.StudioName = studio;
+            }
+        }
+        else
+        {
+            game.StudioName = null;
+        }
+
+        if (!TryNormalizeHttpUrl(game.WebsiteUrl, out var website, out var websiteError))
+        {
+            errors.Add($"websiteUrl: {websiteError}");
+        }
+        else
+        {
+            game.WebsiteUrl = website;
+        }
+
+        if (!TryNormalizeHttpUrl(game.DiscordUrl, out var discord, out var discordError))
+        {
+            errors.Add($"discordUrl: {discordError}");
+        }
+        else
+        {
+            game.DiscordUrl = discord;
+        }
+
+        if (!TryNormalizeHttpUrl(game.SupportUrl, out var support, out var supportError))
+        {
+            errors.Add($"supportUrl: {supportError}");
+        }
+        else
+        {
+            game.SupportUrl = support;
+        }
+
+        if (!string.IsNullOrWhiteSpace(game.ReleaseStatus))
+        {
+            if (!TryParseReleaseStatus(game.ReleaseStatus, out var status))
+            {
+                errors.Add($"Nieznany status wydania '{game.ReleaseStatus}'. Dozwolone: {string.Join(", ", ReleaseStatusSlugs)}.");
+            }
+            else
+            {
+                game.ReleaseStatus = ToManifestReleaseStatus(status);
+            }
+        }
+        else
+        {
+            game.ReleaseStatus = null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(game.ReleaseDate))
+        {
+            if (!TryParseReleaseDate(game.ReleaseDate, out var date, out var dateError))
+            {
+                errors.Add(dateError ?? "Nieprawidłowa data wydania.");
+            }
+            else
+            {
+                game.ReleaseDate = date.UtcDateTime.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            }
+        }
+        else
+        {
+            game.ReleaseDate = null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(game.AgeRating))
+        {
+            if (!TryParseAgeRating(game.AgeRating, out var rating))
+            {
+                errors.Add($"Nieznana kategoria wiekowa '{game.AgeRating}'. Dozwolone: {string.Join(", ", AgeRatingSlugs)}.");
+            }
+            else
+            {
+                game.AgeRating = ToManifestAgeRating(rating);
+            }
+        }
+        else
+        {
+            game.AgeRating = null;
+        }
+
+        if (game.Features is not null)
+        {
+            if (!TryParseFeatures(game.Features, out _, out var featureError))
+            {
+                errors.Add(featureError!);
+            }
+            else
+            {
+                game.Features = game.Features
+                    .Select(NormalizeFeatureSlug)
+                    .Where(s => s is not null)
+                    .Cast<string>()
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+        }
+
+        if (game.Languages is not null)
+        {
+            if (game.Languages.Count > MaxLanguageCount)
+            {
+                errors.Add($"Maksymalnie {MaxLanguageCount} języków.");
+            }
+
+            game.Languages = NormalizeStringList(game.Languages, MaxLanguageCount, lowerCase: false) ?? [];
+            var joined = string.Join(",", game.Languages);
+            if (joined.Length > MaxCsvFieldLength)
+            {
+                errors.Add($"Lista języków jest za długa (max {MaxCsvFieldLength} znaków po złączeniu).");
+            }
+        }
+
+        if (game.Tags is not null)
+        {
+            if (game.Tags.Count > MaxTagCount)
+            {
+                errors.Add($"Maksymalnie {MaxTagCount} tagów.");
+            }
+
+            game.Tags = NormalizeStringList(game.Tags, MaxTagCount, lowerCase: true) ?? [];
+            var joined = string.Join(",", game.Tags);
+            if (joined.Length > MaxCsvFieldLength)
+            {
+                errors.Add($"Lista tagów jest za długa (max {MaxCsvFieldLength} znaków po złączeniu).");
+            }
+        }
+    }
+
+    private static string? NormalizeFeatureSlug(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        var s = raw.Trim().ToLowerInvariant()
+            .Replace("-", "", StringComparison.Ordinal)
+            .Replace("_", "", StringComparison.Ordinal)
+            .Replace(" ", "", StringComparison.Ordinal);
+
+        return s switch
+        {
+            "singleplayer" or "single" => "singleplayer",
+            "multiplayer" or "multi" => "multiplayer",
+            "coop" or "cooperation" or "cooperative" => "coop",
+            "controller" or "controllersupport" or "pad" or "gamepad" => "controller",
+            "cloud" or "cloudsaves" => "cloud",
+            "achievements" or "achievement" => "achievements",
+            "modding" or "mods" or "mod" => "modding",
+            "vr" or "virtualreality" => "vr",
+            _ => null
+        };
+    }
+
+    private static bool TryMapFeature(string slug, out GameFeatures flag)
+    {
+        flag = slug switch
+        {
+            "singleplayer" => GameFeatures.SinglePlayer,
+            "multiplayer" => GameFeatures.MultiPlayer,
+            "coop" => GameFeatures.CoOp,
+            "controller" => GameFeatures.ControllerSupport,
+            "cloud" => GameFeatures.CloudSaves,
+            "achievements" => GameFeatures.Achievements,
+            "modding" => GameFeatures.Modding,
+            "vr" => GameFeatures.Vr,
+            _ => GameFeatures.None
+        };
+        return flag != GameFeatures.None;
     }
 
     private static void ValidateMedia(SgsPackageMediaInfo? media, List<string> errors)

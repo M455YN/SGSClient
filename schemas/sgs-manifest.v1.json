@@ -55,13 +55,76 @@
         },
         "genre": {
           "type": ["string", "null"],
-          "enum": ["action", "adventure", "rpg", "strategy", "simulation", "sports", "racing", "puzzle", "horror", "indie", "other", null],
+          "enum": [
+            "action", "adventure", "rpg", "strategy", "simulation", "sports", "racing", "puzzle", "horror", "indie",
+            "platformer", "shooter", "fps", "tps", "fighting", "stealth", "survival", "sandbox", "open-world",
+            "roguelike", "roguelite", "metroidvania", "visual-novel", "card", "turn-based", "mmo", "moba",
+            "battle-royale", "tower-defense", "idle", "casual", "party", "rhythm", "educational", "narrative",
+            "walking-sim", "vr", "other", null
+          ],
           "description": "Catalog genre slug."
         },
         "engine": {
           "type": ["string", "null"],
-          "enum": ["unity", "unreal", "godot", "cryengine", "custom", "other", null],
+          "enum": [
+            "unity", "unreal", "godot", "cryengine", "gamemaker", "construct", "rpgmaker", "renpy", "defold",
+            "monogame", "fna", "stride", "bevy", "libgdx", "love2d", "phaser", "cocos", "solar2d",
+            "clickteam-fusion", "source", "source2", "idtech", "frostbite", "creation-engine", "red-engine",
+            "anvil", "snowdrop", "o3de", "raylib", "pygame", "sdl", "html5", "roblox", "custom", "other", null
+          ],
           "description": "Game engine slug."
+        },
+        "studioName": {
+          "type": ["string", "null"],
+          "maxLength": 128,
+          "description": "Developer / studio name shown on the store page."
+        },
+        "websiteUrl": {
+          "type": ["string", "null"],
+          "maxLength": 2048,
+          "description": "http(s) studio or game website."
+        },
+        "discordUrl": {
+          "type": ["string", "null"],
+          "maxLength": 2048
+        },
+        "supportUrl": {
+          "type": ["string", "null"],
+          "maxLength": 2048
+        },
+        "releaseStatus": {
+          "type": ["string", "null"],
+          "enum": ["announced", "earlyAccess", "released", "demo", null],
+          "description": "Lifecycle badge on the store page."
+        },
+        "releaseDate": {
+          "type": ["string", "null"],
+          "description": "ISO date (YYYY-MM-DD) or DateTimeOffset."
+        },
+        "ageRating": {
+          "type": ["string", "null"],
+          "enum": ["unrated", "pegi3", "pegi7", "pegi12", "pegi16", "pegi18", null]
+        },
+        "features": {
+          "type": ["array", "null"],
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "enum": ["singleplayer", "multiplayer", "coop", "controller", "cloud", "achievements", "modding", "vr"]
+          },
+          "description": "Store feature checkboxes (Singleplayer, Multiplayer, Co-op, Pad, Cloud, Achievements, Mods, VR)."
+        },
+        "languages": {
+          "type": ["array", "null"],
+          "maxItems": 32,
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "description": "UI languages, e.g. Polski, English."
+        },
+        "tags": {
+          "type": ["array", "null"],
+          "maxItems": 32,
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "description": "Free-form tags, e.g. roguelike, pixel art."
         },
         "media": {
           "type": ["object", "null"],
@@ -136,6 +199,11 @@
           "type": "boolean",
           "default": true,
           "description": "Whether this build is the default for its platform."
+        },
+        "releaseNotes": {
+          "type": ["string", "null"],
+          "maxLength": 4000,
+          "description": "Changelog for this version."
         }
       }
     },

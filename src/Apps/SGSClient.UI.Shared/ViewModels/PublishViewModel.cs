@@ -16,6 +16,16 @@ public partial class PublishViewModel : ObservableObject
     private readonly ISgsApiService? _api;
     private string? _packedZipPath;
     private SgsPackageHints? _packageHints;
+    private string? _studioName;
+    private string? _websiteUrl;
+    private string? _discordUrl;
+    private string? _supportUrl;
+    private string? _releaseStatus;
+    private string? _releaseDate;
+    private string? _ageRating;
+    private IList<string>? _features;
+    private IList<string>? _languages;
+    private IList<string>? _tags;
 
     public PublishViewModel()
         : this(null, null, null)
@@ -527,6 +537,16 @@ public partial class PublishViewModel : ObservableObject
         OtherInformation = manifest.Game.OtherInformation ?? string.Empty;
         GameGenre = manifest.Game.Genre ?? string.Empty;
         GameEngine = manifest.Game.Engine ?? string.Empty;
+        _studioName = manifest.Game.StudioName;
+        _websiteUrl = manifest.Game.WebsiteUrl;
+        _discordUrl = manifest.Game.DiscordUrl;
+        _supportUrl = manifest.Game.SupportUrl;
+        _releaseStatus = manifest.Game.ReleaseStatus;
+        _releaseDate = manifest.Game.ReleaseDate;
+        _ageRating = manifest.Game.AgeRating;
+        _features = manifest.Game.Features?.ToList();
+        _languages = manifest.Game.Languages?.ToList();
+        _tags = manifest.Game.Tags?.ToList();
         MediaCover = manifest.Game.Media?.Cover ?? string.Empty;
         MediaHeader = manifest.Game.Media?.Header ?? string.Empty;
         MediaLogo = manifest.Game.Media?.Logo ?? string.Empty;
@@ -580,6 +600,16 @@ public partial class PublishViewModel : ObservableObject
                 OtherInformation = NullIfWhiteSpace(OtherInformation),
                 Genre = NullIfWhiteSpace(GameGenre),
                 Engine = NullIfWhiteSpace(GameEngine),
+                StudioName = NullIfWhiteSpace(_studioName),
+                WebsiteUrl = NullIfWhiteSpace(_websiteUrl),
+                DiscordUrl = NullIfWhiteSpace(_discordUrl),
+                SupportUrl = NullIfWhiteSpace(_supportUrl),
+                ReleaseStatus = NullIfWhiteSpace(_releaseStatus),
+                ReleaseDate = NullIfWhiteSpace(_releaseDate),
+                AgeRating = NullIfWhiteSpace(_ageRating),
+                Features = _features,
+                Languages = _languages,
+                Tags = _tags,
                 Media = media
             },
             Build = new SgsPackageBuildInfo
@@ -606,6 +636,16 @@ public partial class PublishViewModel : ObservableObject
         OtherInformation = string.Empty;
         GameGenre = string.Empty;
         GameEngine = string.Empty;
+        _studioName = null;
+        _websiteUrl = null;
+        _discordUrl = null;
+        _supportUrl = null;
+        _releaseStatus = null;
+        _releaseDate = null;
+        _ageRating = null;
+        _features = null;
+        _languages = null;
+        _tags = null;
         MediaCover = string.Empty;
         MediaHeader = string.Empty;
         MediaLogo = string.Empty;

@@ -133,6 +133,7 @@ public sealed class GamePackagePublisher(
                     ParentGameId = parentGameId,
                     CreatedAtUtc = DateTimeOffset.UtcNow
                 };
+                ApplyStoreMetadata(game, manifest.Game, overwriteMissing: true);
                 db.Games.Add(game);
             }
             else
@@ -162,6 +163,7 @@ public sealed class GamePackagePublisher(
                 game.OtherInformation = manifest.Game.OtherInformation;
                 game.TypeId = genreId;
                 game.EngineId = engineId;
+                ApplyStoreMetadata(game, manifest.Game, overwriteMissing: false);
                 if (mediaResult.CoverUrl is not null)
                 {
                     game.CoverUrl = mediaResult.CoverUrl;
@@ -327,6 +329,87 @@ public sealed class GamePackagePublisher(
         finally
         {
             TryDelete(tempZip);
+        }
+    }
+
+    private static void ApplyStoreMetadata(GameEntity game, SgsPackageGameInfo info, bool overwriteMissing)
+    {
+        if (!string.IsNullOrWhiteSpace(info.StudioName) || overwriteMissing)
+        {
+            game.StudioName = string.IsNullOrWhiteSpace(info.StudioName) ? null : info.StudioName.Trim();
+        }
+
+        if (info.WebsiteUrl is not null || overwriteMissing)
+        {
+            game.WebsiteUrl = info.WebsiteUrl;
+        }
+
+        if (info.DiscordUrl is not null || overwriteMissing)
+        {
+            game.DiscordUrl = info.DiscordUrl;
+        }
+
+        if (info.SupportUrl is not null || overwriteMissing)
+        {
+            game.SupportUrl = info.SupportUrl;
+        }
+
+        if (!string.IsNullOrWhiteSpace(info.ReleaseStatus)
+            && SgsPackageRules.TryParseReleaseStatus(info.ReleaseStatus, out var status))
+        {
+            game.ReleaseStatus = status;
+        }
+        else if (overwriteMissing)
+        {
+            game.ReleaseStatus = GameReleaseStatus.Released;
+        }
+
+        if (!string.IsNullOrWhiteSpace(info.ReleaseDate)
+            && SgsPackageRules.TryParseReleaseDate(info.ReleaseDate, out var date, out _))
+        {
+            game.ReleaseDateUtc = date;
+        }
+        else if (overwriteMissing)
+        {
+            game.ReleaseDateUtc = null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(info.AgeRating)
+            && SgsPackageRules.TryParseAgeRating(info.AgeRating, out var age))
+        {
+            game.AgeRating = age;
+        }
+        else if (overwriteMissing)
+        {
+            game.AgeRating = GameAgeRating.Unrated;
+        }
+
+        if (info.Features is not null
+            && SgsPackageRules.TryParseFeatures(info.Features, out var features, out _))
+        {
+            game.Features = features;
+        }
+        else if (overwriteMissing)
+        {
+            game.Features = GameFeatures.None;
+        }
+
+        if (info.Languages is not null)
+        {
+            game.LanguagesCsv = CsvList.Join(info.Languages);
+        }
+        else if (overwriteMissing)
+        {
+            game.LanguagesCsv = null;
+        }
+
+        if (info.Tags is not null)
+        {
+            game.TagsCsv = CsvList.Join(info.Tags);
+        }
+        else if (overwriteMissing)
+        {
+            game.TagsCsv = null;
         }
     }
 

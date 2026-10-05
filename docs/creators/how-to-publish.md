@@ -39,9 +39,20 @@ Wymagane: `schemaVersion` (obecnie `1`), `game.title`, `game.symbol`, `build.ver
     "description": "Short store-page description.",
     "genre": "indie",
     "engine": "unity",
+    "studioName": "My Studio",
+    "websiteUrl": "https://example.com",
+    "discordUrl": "https://discord.gg/example",
+    "supportUrl": "https://example.com/support",
+    "releaseStatus": "released",
+    "releaseDate": "2024-06-15",
+    "ageRating": "pegi12",
+    "features": ["singleplayer", "controller"],
+    "languages": ["Polski", "English"],
+    "tags": ["roguelike", "pixel art"],
     "media": {
       "cover": "media/cover.png",
       "header": "media/header.png",
+      "logo": "media/logo.png",
       "intro": "media/intro.mp4",
       "screenshots": [
         "media/screen-01.png",
@@ -67,14 +78,24 @@ Wymagane: `schemaVersion` (obecnie `1`), `game.title`, `game.symbol`, `build.ver
 | `platform` | `windows`, `linux`, `macos` |
 | `architecture` | `x64`, `x86`, `arm64` |
 | `executable` | Entry file inside the ZIP; on Windows usually `.exe` / Plik startowy w ZIP; na Windowsie zwykle `.exe` |
-| `genre` | `action`, `adventure`, `rpg`, `strategy`, `simulation`, `sports`, `racing`, `puzzle`, `horror`, `indie`, `other` |
-| `engine` | `unity`, `unreal`, `godot`, `cryengine`, `custom`, `other` |
+| `genre` | `action`, `adventure`, `rpg`, `strategy`, `simulation`, `sports`, `racing`, `puzzle`, `horror`, `indie`, `platformer`, `shooter`, `fps`, `tps`, `fighting`, `stealth`, `survival`, `sandbox`, `open-world`, `roguelike`, `roguelite`, `metroidvania`, `visual-novel`, `card`, `turn-based`, `mmo`, `moba`, `battle-royale`, `tower-defense`, `idle`, `casual`, `party`, `rhythm`, `educational`, `narrative`, `walking-sim`, `vr`, `other` |
+| `engine` | `unity`, `unreal`, `godot`, `cryengine`, `gamemaker`, `construct`, `rpgmaker`, `renpy`, `defold`, `monogame`, `fna`, `stride`, `bevy`, `libgdx`, `love2d`, `phaser`, `cocos`, `solar2d`, `clickteam-fusion`, `source`, `source2`, `idtech`, `frostbite`, `creation-engine`, `red-engine`, `anvil`, `snowdrop`, `o3de`, `raylib`, `pygame`, `sdl`, `html5`, `roblox`, `custom`, `other` |
+| `studioName` / `websiteUrl` / `discordUrl` / `supportUrl` | Optional store links (URLs must be `http://` or `https://`) |
+| `releaseStatus` | `announced`, `earlyAccess`, `released`, `demo` |
+| `releaseDate` | ISO date, e.g. `2024-06-15` |
+| `ageRating` | `unrated`, `pegi3`, `pegi7`, `pegi12`, `pegi16`, `pegi18` |
+| `features` | `singleplayer`, `multiplayer`, `coop`, `controller`, `cloud`, `achievements`, `modding`, `vr` |
+| `languages` / `tags` | Arrays of strings (same as Creator panel CSV fields) |
 
 Media are optional at upload — you can add them later in Creator panel → **Media**. Sizes: [Store art](store-art.md).
 
 Media są opcjonalne przy uploadzie — możesz je potem dodać w Panelu twórcy (zakładka **Multimedia**). Wymiary: [Grafika sklepowa](store-art.md).
 
-Full sample: [`schemas/examples/demo-runner.sgs-manifest.json`](../../schemas/examples/demo-runner.sgs-manifest.json).
+Full sample manifest: [`schemas/examples/demo-runner.sgs-manifest.json`](../../schemas/examples/demo-runner.sgs-manifest.json).
+
+Ready-made folder + ZIP template (placeholder exe + labeled store art): [`schemas/examples/sample-game/`](../../schemas/examples/sample-game/) / [`sample-game-package.zip`](../../schemas/examples/sample-game-package.zip).
+
+Gotowy folder + ZIP szablon (atrapa exe + opisane grafiki): [`schemas/examples/sample-game/`](../../schemas/examples/sample-game/) / [`sample-game-package.zip`](../../schemas/examples/sample-game-package.zip).
 
 ## 3. Upload from the client / Wyślij z klienta
 

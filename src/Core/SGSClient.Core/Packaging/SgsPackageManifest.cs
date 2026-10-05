@@ -34,6 +34,33 @@ public sealed class SgsPackageGameInfo
     /// <summary>Engine slug from <see cref="SgsGameTaxonomy.Engines"/> (e.g. unity).</summary>
     public string? Engine { get; set; }
 
+    /// <summary>Developer / studio display name on the store page.</summary>
+    public string? StudioName { get; set; }
+
+    public string? WebsiteUrl { get; set; }
+    public string? DiscordUrl { get; set; }
+    public string? SupportUrl { get; set; }
+
+    /// <summary>announced | earlyAccess | released | demo</summary>
+    public string? ReleaseStatus { get; set; }
+
+    /// <summary>ISO date or DateTimeOffset (e.g. 2024-06-15).</summary>
+    public string? ReleaseDate { get; set; }
+
+    /// <summary>unrated | pegi3 | pegi7 | pegi12 | pegi16 | pegi18</summary>
+    public string? AgeRating { get; set; }
+
+    /// <summary>
+    /// Feature slugs: singleplayer, multiplayer, coop, controller, cloud, achievements, modding, vr.
+    /// </summary>
+    public IList<string>? Features { get; set; }
+
+    /// <summary>UI languages, e.g. Polski, English.</summary>
+    public IList<string>? Languages { get; set; }
+
+    /// <summary>Free-form store tags, e.g. roguelike, pixel-art.</summary>
+    public IList<string>? Tags { get; set; }
+
     public SgsPackageMediaInfo? Media { get; set; }
 }
 

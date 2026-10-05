@@ -71,4 +71,42 @@ public sealed class SgsPackageRulesTests
         var result = SgsPackageRules.ValidateManifest(manifest);
         Assert.False(result.IsValid);
     }
+
+    [Fact]
+    public void ValidateManifest_AcceptsStoreMetadata()
+    {
+        var manifest = new SgsPackageManifest
+        {
+            SchemaVersion = 1,
+            Game = new SgsPackageGameInfo
+            {
+                Title = "Broken Kayfabe",
+                Symbol = "broken-kayfabe",
+                Genre = "simulation",
+                Engine = "cryengine",
+                StudioName = "Ring Dev",
+                WebsiteUrl = "https://example.com",
+                ReleaseStatus = "early-access",
+                ReleaseDate = "2024-06-15",
+                AgeRating = "pegi16",
+                Features = ["singleplayer", "pad"],
+                Languages = ["Polski", "English"],
+                Tags = ["wrestling", "RPG"]
+            },
+            Build = new SgsPackageBuildInfo
+            {
+                Version = "0.0.2",
+                Platform = "windows",
+                Executable = "BrokenKayfabe.exe"
+            }
+        };
+
+        var result = SgsPackageRules.ValidateManifest(manifest);
+        Assert.True(result.IsValid, string.Join("; ", result.Errors));
+        Assert.Equal("earlyAccess", manifest.Game.ReleaseStatus);
+        Assert.Equal("2024-06-15", manifest.Game.ReleaseDate);
+        Assert.Equal("pegi16", manifest.Game.AgeRating);
+        Assert.Contains("controller", manifest.Game.Features!);
+        Assert.Contains("wrestling", manifest.Game.Tags!);
+    }
 }

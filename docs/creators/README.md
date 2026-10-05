@@ -13,3 +13,5 @@ Schema and sample package / Schemat i przykład paczki:
 
 - [`schemas/sgs-manifest.v1.json`](../../schemas/sgs-manifest.v1.json)
 - [`schemas/examples/demo-runner.sgs-manifest.json`](../../schemas/examples/demo-runner.sgs-manifest.json)
+- **Ready-to-unzip template** / **Gotowy szablon:** [`schemas/examples/sample-game-package.zip`](../../schemas/examples/sample-game-package.zip) (folder: [`sample-game/`](../../schemas/examples/sample-game/))
+- **Per-game catalog templates (DB exe/version)** / **Szablony per gra (exe/wersja z bazy):** [`schemas/examples/catalog-templates/`](../../schemas/examples/catalog-templates/) · ZIP: [`catalog-template-zips/`](../../schemas/examples/catalog-template-zips/)
