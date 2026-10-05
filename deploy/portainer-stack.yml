@@ -2,9 +2,9 @@
 # Image comes from GHCR (build locally or via GitHub Actions), not from the VPS.
 #
 #   SGS_API_IMAGE=ghcr.io/m455yn/sgsclient-api:latest
-#   SGS_SQL_CONNECTION=Data Source=host.docker.internal;Initial Catalog=...;User ID=...;Password=...;Encrypt=True;TrustServerCertificate=True
-#   SGS_ROFW_SQL_CONNECTION=Data Source=host.docker.internal;Initial Catalog=SZYRROGI_AUTOBATTLER;User ID=...;Password=...;Encrypt=True;TrustServerCertificate=True
-#   SGS_REPORTINGO_SQL_CONNECTION=Data Source=host.docker.internal;Initial Catalog=REPORTINGO;User ID=...;Password=...;Encrypt=True;TrustServerCertificate=True
+#   SGS_SQL_CONNECTION=Data Source=db.m455yn.io;Initial Catalog=...;User ID=...;Password=...;Encrypt=True;TrustServerCertificate=True
+#   SGS_ROFW_SQL_CONNECTION=Data Source=db.m455yn.io;Initial Catalog=SZYRROGI_AUTOBATTLER;User ID=...;Password=...;Encrypt=True;TrustServerCertificate=True
+#   SGS_REPORTINGO_SQL_CONNECTION=Data Source=db.m455yn.io;Initial Catalog=REPORTINGO;User ID=...;Password=...;Encrypt=True;TrustServerCertificate=True
 #
 # Private package: Portainer → Registries → Add GitHub (user + PAT with read:packages).
 # Then Recreate the container with "Pull latest image".

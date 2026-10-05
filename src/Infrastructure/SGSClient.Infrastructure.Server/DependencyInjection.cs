@@ -23,7 +23,12 @@ public static class DependencyInjection
         services.Configure<GameStorageSettings>(configuration.GetSection(GameStorageSettings.SectionName));
         services.Configure<AdminSettings>(configuration.GetSection(AdminSettings.SectionName));
         services.AddDbContext<SgsServerDbContext>(options =>
-            options.UseSqlServer(connectionString));
+            options.UseSqlServer(
+                connectionString,
+                sql => sql.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null)));
 
         services.AddScoped<IGameRepository, EfGameRepository>();
         services.AddScoped<IUserService, EfUserService>();

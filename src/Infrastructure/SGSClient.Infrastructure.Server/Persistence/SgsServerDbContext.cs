@@ -280,7 +280,12 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.WebsiteUrl).HasMaxLength(2048);
             entity.Property(x => x.DiscordUrl).HasMaxLength(2048);
             entity.Property(x => x.SupportUrl).HasMaxLength(2048);
-            entity.Property(x => x.ReleaseStatus).HasConversion<int>().HasDefaultValue(GameReleaseStatus.Released);
+            // CLR default of GameReleaseStatus is Announced (0); DB default is Released (2).
+            // Without a sentinel, EF would treat Announced inserts as "unset" and overwrite with Released.
+            entity.Property(x => x.ReleaseStatus)
+                .HasConversion<int>()
+                .HasDefaultValue(GameReleaseStatus.Released)
+                .HasSentinel((GameReleaseStatus)(-1));
             entity.Property(x => x.AgeRating).HasConversion<int>().HasDefaultValue(GameAgeRating.Unrated);
             entity.Property(x => x.Features).HasConversion<int>().HasDefaultValue(GameFeatures.None);
             entity.Property(x => x.LanguagesCsv).HasMaxLength(512);
