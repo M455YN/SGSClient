@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SGSClient.Core.DTOs;
@@ -20,6 +21,12 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         Title = "SGSClient";
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico"));
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+        AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+        AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+        Activated += (_, e) =>
+            AppTitleText.Opacity = e.WindowActivationState == WindowActivationState.Deactivated ? 0.5 : 1;
 
         Sidebar.ViewModel.SetNavigateHandler(NavigateByTag);
         Sidebar.ViewModel.SetOpenDetailsHandler(OpenGameDetails);

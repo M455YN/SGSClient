@@ -163,7 +163,9 @@ public abstract partial class GameStoreEditItem : ObservableObject
 
     protected void ApplyMedia(GameDto game, string apiBaseUrl)
     {
-        CoverImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.ThumbnailUrl));
+        CoverImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(
+            apiBaseUrl,
+            string.IsNullOrWhiteSpace(game.LogoUrl) ? game.ThumbnailUrl : game.LogoUrl));
         HeaderImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.LandscapeUrl));
         OwnCoverImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.CoverUrl));
         OwnHeaderImageUrl = CacheBust(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.HeaderUrl));
