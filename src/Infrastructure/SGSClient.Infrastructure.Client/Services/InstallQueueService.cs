@@ -22,6 +22,12 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
     private int? _activeGameId;
     private bool _pumpRunning;
     private bool _pauseRequested;
+    private SynchronizationContext? _uiContext;
+    private EventHandler? _changed;
+    private EventHandler<InstallQueueProgressEventArgs>? _progressChanged;
+    private long _lastProgressUiTick;
+    private double _lastProgressFraction = -1;
+    private int _lastProgressGameId = -1;
 
     public InstallQueueService(
         IServiceScopeFactory scopes,
@@ -47,8 +53,25 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         }
     }
 
-    public event EventHandler? Changed;
-    public event EventHandler<InstallQueueProgressEventArgs>? ProgressChanged;
+    public event EventHandler? Changed
+    {
+        add
+        {
+            CaptureUiContext();
+            _changed += value;
+        }
+        remove => _changed -= value;
+    }
+
+    public event EventHandler<InstallQueueProgressEventArgs>? ProgressChanged
+    {
+        add
+        {
+            CaptureUiContext();
+            _progressChanged += value;
+        }
+        remove => _progressChanged -= value;
+    }
 
     public async Task RestorePersistedAsync(CancellationToken cancellationToken = default)
     {
@@ -545,7 +568,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
                     _ => entry.State
                 };
                 entry.State = state;
-                ProgressChanged?.Invoke(this, new InstallQueueProgressEventArgs
+                RaiseProgress(new InstallQueueProgressEventArgs
                 {
                     GameId = entry.GameId,
                     Progress = p,
@@ -619,7 +642,50 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         }
     }
 
-    private void RaiseChanged() => Changed?.Invoke(this, EventArgs.Empty);
+    private void CaptureUiContext()
+    {
+        var current = SynchronizationContext.Current;
+        if (current is not null)
+        {
+            _uiContext ??= current;
+        }
+    }
+
+    private void RaiseChanged() => PostToUi(() => _changed?.Invoke(this, EventArgs.Empty));
+
+    private void RaiseProgress(InstallQueueProgressEventArgs args)
+    {
+        var force = args.Progress.Phase is not InstallPhase.Downloading
+            || args.State is InstallState.Installing or InstallState.Failed or InstallState.Installed;
+        var now = Environment.TickCount64;
+        if (!force
+            && args.GameId == _lastProgressGameId
+            && now - _lastProgressUiTick < 100
+            && Math.Abs(args.Progress.Fraction - _lastProgressFraction) < 0.005)
+        {
+            return;
+        }
+
+        _lastProgressUiTick = now;
+        _lastProgressFraction = args.Progress.Fraction;
+        _lastProgressGameId = args.GameId;
+        PostToUi(() => _progressChanged?.Invoke(this, args));
+    }
+
+    private void PostToUi(Action action)
+    {
+        CaptureUiContext();
+        var ctx = _uiContext;
+        if (ctx is null || ReferenceEquals(SynchronizationContext.Current, ctx))
+        {
+            action();
+            return;
+        }
+
+        // Always Post — never run heavy UI work inline on a worker that happens to
+        // share affinity, and never Send (that would block the download thread).
+        ctx.Post(_ => action(), null);
+    }
 
     private bool IsAutoUpdateEnabled()
     {

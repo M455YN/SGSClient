@@ -11,8 +11,10 @@ public partial class DownloadsViewModel : ObservableObject
 {
     private readonly IInstallQueueService? _queue;
     private readonly IClientUserSettingsStore? _userSettings;
+    private readonly object _progressGate = new();
     private readonly Dictionary<int, double> _progress = new();
     private readonly Dictionary<int, string?> _messages = new();
+    private readonly SynchronizationContext? _ui;
     private Action<int>? _openDetails;
     private bool _suppressBandwidthPersist;
 
@@ -25,9 +27,10 @@ public partial class DownloadsViewModel : ObservableObject
     {
         _queue = queue;
         _userSettings = userSettings;
+        _ui = SynchronizationContext.Current;
         if (_queue is not null)
         {
-            _queue.Changed += (_, _) => Refresh();
+            _queue.Changed += (_, _) => PostToUi(Refresh);
             _queue.ProgressChanged += OnProgress;
         }
 
@@ -123,8 +126,14 @@ public partial class DownloadsViewModel : ObservableObject
         for (var i = 0; i < active.Count; i++)
         {
             var entry = active[i];
-            _progress.TryGetValue(entry.GameId, out var fraction);
-            _messages.TryGetValue(entry.GameId, out var message);
+            double fraction;
+            string? message;
+            lock (_progressGate)
+            {
+                _progress.TryGetValue(entry.GameId, out fraction);
+                _messages.TryGetValue(entry.GameId, out message);
+            }
+
             var canReorder = entry.State is InstallState.Queued or InstallState.Paused;
             var queuedIndex = active
                 .Where(e => e.State is InstallState.Queued or InstallState.Paused)
@@ -240,14 +249,67 @@ public partial class DownloadsViewModel : ObservableObject
 
     private void OnProgress(object? sender, InstallQueueProgressEventArgs e)
     {
-        _progress[e.GameId] = e.Progress.Fraction;
-        _messages[e.GameId] = e.Progress.Message;
-        if (e.Progress.Phase is InstallPhase.Completed or InstallPhase.Failed)
+        PostToUi(() => ApplyProgress(e));
+    }
+
+    private void ApplyProgress(InstallQueueProgressEventArgs e)
+    {
+        lock (_progressGate)
         {
-            _progress.Remove(e.GameId);
+            _progress[e.GameId] = e.Progress.Fraction;
+            _messages[e.GameId] = e.Progress.Message;
+            if (e.Progress.Phase is InstallPhase.Completed or InstallPhase.Failed)
+            {
+                _progress.Remove(e.GameId);
+                _messages.Remove(e.GameId);
+            }
         }
 
-        Refresh();
+        // State transitions rebuild the list; pure progress only patches the existing row
+        // so the UI thread is not flooded by Clear/Add on every download chunk.
+        if (e.Progress.Phase is InstallPhase.Completed or InstallPhase.Failed
+            || e.State is InstallState.Installing or InstallState.Failed or InstallState.Installed)
+        {
+            Refresh();
+            return;
+        }
+
+        var row = Items.FirstOrDefault(i => i.GameId == e.GameId);
+        if (row is null)
+        {
+            Refresh();
+            return;
+        }
+
+        var pct = Math.Clamp(e.Progress.Fraction, 0, 1);
+        row.Progress = pct;
+        row.ProgressText = $"{pct * 100:0}%";
+        row.ShowProgress = true;
+        if (!string.IsNullOrWhiteSpace(e.Progress.Message))
+        {
+            row.DetailText = e.Progress.Message;
+        }
+
+        if (Items.FirstOrDefault(i => i.ShowProgress)?.GameId == e.GameId || Items[0].GameId == e.GameId)
+        {
+            ActiveDownloadProgress = pct;
+            ActiveDownloadProgressText = row.ProgressText;
+            if (!string.IsNullOrWhiteSpace(row.Title))
+            {
+                ActiveDownloadTitle = row.Title;
+            }
+        }
+    }
+
+    private void PostToUi(Action action)
+    {
+        if (_ui is null || ReferenceEquals(SynchronizationContext.Current, _ui))
+        {
+            action();
+            return;
+        }
+
+        _ui.Post(_ => action(), null);
     }
 }
 
@@ -257,15 +319,16 @@ public partial class DownloadRowItem : ObservableObject
     public required string Title { get; init; }
     public required string KindText { get; init; }
     public required string StateText { get; init; }
-    public required double Progress { get; init; }
-    public required string ProgressText { get; init; }
     public required bool CanCancel { get; init; }
     public required bool CanPause { get; init; }
     public required bool CanResume { get; init; }
     public required bool CanMoveUp { get; init; }
     public required bool CanMoveDown { get; init; }
-    public required bool ShowProgress { get; init; }
-    public string? DetailText { get; init; }
+
+    [ObservableProperty] public partial double Progress { get; set; }
+    [ObservableProperty] public partial string ProgressText { get; set; } = string.Empty;
+    [ObservableProperty] public partial bool ShowProgress { get; set; }
+    [ObservableProperty] public partial string? DetailText { get; set; }
 
     public static DownloadRowItem From(
         InstallQueueEntry entry,

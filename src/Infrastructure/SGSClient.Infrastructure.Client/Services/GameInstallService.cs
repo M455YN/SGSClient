@@ -417,6 +417,8 @@ public sealed class GameInstallService(
 
         var windowStart = Stopwatch.GetTimestamp();
         long windowBytes = 0;
+        var lastProgressReport = Stopwatch.GetTimestamp();
+        double lastReportedFraction = -1;
         while ((read = await network.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
         {
             await file.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
@@ -443,10 +445,19 @@ public sealed class GameInstallService(
                 }
             }
 
-            if (total is > 0)
+            if (total is > 0 && progress is not null)
             {
                 var fraction = readTotal / (double)total.Value * 0.85;
-                progress?.Report(InstallProgress.Of(InstallPhase.Downloading, fraction, "Pobieranie paczki…"));
+                // Avoid flooding the UI thread — report ~10×/s or when progress jumps ≥0.5%.
+                var sinceLast = Stopwatch.GetElapsedTime(lastProgressReport);
+                if (sinceLast.TotalMilliseconds >= 100
+                    || fraction - lastReportedFraction >= 0.005
+                    || readTotal >= total.Value)
+                {
+                    lastProgressReport = Stopwatch.GetTimestamp();
+                    lastReportedFraction = fraction;
+                    progress.Report(InstallProgress.Of(InstallPhase.Downloading, fraction, "Pobieranie paczki…"));
+                }
             }
         }
     }
