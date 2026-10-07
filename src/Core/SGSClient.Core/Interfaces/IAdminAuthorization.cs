@@ -13,6 +13,13 @@ public interface IAdminAuthorization
     /// </summary>
     bool IsAdmin(ClaimsPrincipal? user, string? emailOverride = null, UserRole storedRole = UserRole.User);
 
+    /// <summary>
+    /// When Azure is not configured, always true (local dev fallback).
+    /// Otherwise the effective role must be at least <see cref="UserRole.SuperAdmin"/>
+    /// (stored role or bootstrap owner email from claims / override).
+    /// </summary>
+    bool IsSuperAdmin(ClaimsPrincipal? user, string? emailOverride = null, UserRole storedRole = UserRole.User);
+
     /// <summary>Owner emails from configuration; they are always super admins and cannot be demoted.</summary>
     bool IsBootstrapEmail(string? email);
 

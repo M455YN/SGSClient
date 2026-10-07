@@ -24,6 +24,19 @@ public sealed class AdminAuthorization(
         return ResolveRole(storedRole, email) >= UserRole.Admin;
     }
 
+    public bool IsSuperAdmin(ClaimsPrincipal? user, string? emailOverride = null, UserRole storedRole = UserRole.User)
+    {
+        if (!azureOptions.Value.IsConfigured)
+        {
+            return true;
+        }
+
+        var email = EmailClaimHelper.Normalize(emailOverride)
+            ?? EmailClaimHelper.FromPrincipal(user);
+
+        return ResolveRole(storedRole, email) >= UserRole.SuperAdmin;
+    }
+
     public bool IsBootstrapEmail(string? email)
     {
         var normalized = EmailClaimHelper.Normalize(email);

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using SGSClient.Core.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -526,8 +527,21 @@ public sealed class GamesController(
             return BadRequest(new { errors = new[] { "Akceptujemy tylko pliki .zip." } });
         }
 
+        var profile = await users.GetByIdAsync(ownerUserId.Value, cancellationToken);
+        // Prefer claims email when the DB profile has none — B2C often omits email on access tokens
+        // until /me syncs it, and IsSuperAdmin on the DTO alone would stay false.
+        var allowOverwriteForeignGame = adminAuth.IsSuperAdmin(
+            User,
+            profile?.Email,
+            profile?.Role ?? UserRole.User);
+
         await using var stream = package.OpenReadStream();
-        var result = await publisher.PublishZipAsync(stream, package.Length, ownerUserId.Value, cancellationToken);
+        var result = await publisher.PublishZipAsync(
+            stream,
+            package.Length,
+            ownerUserId.Value,
+            allowOverwriteForeignGame,
+            cancellationToken);
         if (!result.Success || result.Game is null)
         {
             return BadRequest(new { errors = result.Errors });
@@ -641,9 +655,7 @@ public sealed class GamesController(
         }
 
         var displayName = User.FindFirstValue("name") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Player";
-        var email = User.FindFirstValue("emails")
-            ?? User.FindFirstValue("email")
-            ?? User.FindFirstValue(ClaimTypes.Email);
+        var email = EmailClaimHelper.FromPrincipal(User);
         var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatarUrl: null, cancellationToken);
         return profile.Id;
     }

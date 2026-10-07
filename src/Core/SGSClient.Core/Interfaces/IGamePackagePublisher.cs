@@ -5,10 +5,15 @@ namespace SGSClient.Core.Interfaces;
 
 public interface IGamePackagePublisher
 {
+    /// <param name="allowOverwriteForeignGame">
+    /// When true (superadmin), an existing game owned by someone else may be republished.
+    /// Ownership of the game is not transferred.
+    /// </param>
     Task<GamePackagePublishResult> PublishZipAsync(
         Stream zipStream,
         long contentLength,
         int ownerUserId,
+        bool allowOverwriteForeignGame = false,
         CancellationToken cancellationToken = default);
 }
 

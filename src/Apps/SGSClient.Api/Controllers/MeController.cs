@@ -516,21 +516,26 @@ public sealed class MeController(
         return Ok(new { count });
     }
 
-    private UserProfileDto WithAdminFlag(UserProfileDto profile) => new()
+    private UserProfileDto WithAdminFlag(UserProfileDto profile)
     {
-        Id = profile.Id,
-        AzureSub = profile.AzureSub,
-        DisplayName = profile.DisplayName,
-        Email = EmailClaimHelper.Normalize(profile.Email) ?? profile.Email,
-        AvatarUrl = profile.AvatarUrl,
-        Bio = profile.Bio,
-        Location = profile.Location,
-        PlayerTag = profile.PlayerTag,
-        CreatedAtUtc = profile.CreatedAtUtc,
-        LastLoginUtc = profile.LastLoginUtc,
-        Role = adminAuth.ResolveRole(profile.Role, profile.Email),
-        IsAdmin = adminAuth.IsAdmin(User, profile.Email, profile.Role)
-    };
+        var email = EmailClaimHelper.Normalize(profile.Email)
+            ?? EmailClaimHelper.FromPrincipal(User);
+        return new UserProfileDto
+        {
+            Id = profile.Id,
+            AzureSub = profile.AzureSub,
+            DisplayName = profile.DisplayName,
+            Email = email ?? profile.Email,
+            AvatarUrl = profile.AvatarUrl,
+            Bio = profile.Bio,
+            Location = profile.Location,
+            PlayerTag = profile.PlayerTag,
+            CreatedAtUtc = profile.CreatedAtUtc,
+            LastLoginUtc = profile.LastLoginUtc,
+            Role = adminAuth.ResolveRole(profile.Role, email),
+            IsAdmin = adminAuth.IsAdmin(User, email, profile.Role)
+        };
+    }
 
     private async Task<ResolvedIdentity?> ResolveIdentityAsync(CancellationToken cancellationToken)
     {

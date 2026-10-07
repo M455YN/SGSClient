@@ -326,6 +326,7 @@ public sealed class MsalAuthSession : IAuthSession
         PlayerTag = source.PlayerTag,
         CreatedAtUtc = source.CreatedAtUtc,
         LastLoginUtc = source.LastLoginUtc,
+        Role = source.Role,
         IsAdmin = isAdmin
     };
 

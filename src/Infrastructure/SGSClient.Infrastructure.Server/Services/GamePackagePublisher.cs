@@ -20,6 +20,7 @@ public sealed class GamePackagePublisher(
         Stream zipStream,
         long contentLength,
         int ownerUserId,
+        bool allowOverwriteForeignGame = false,
         CancellationToken cancellationToken = default)
     {
         if (contentLength <= 0)
@@ -138,7 +139,7 @@ public sealed class GamePackagePublisher(
             }
             else
             {
-                if (game.UserId != ownerUserId && ownerUserId > 0)
+                if (!allowOverwriteForeignGame && game.UserId != ownerUserId && ownerUserId > 0)
                 {
                     return GamePackagePublishResult.Fail(
                         "Ta gra należy do innego autora. Nie możesz nadpisać cudzej paczki.");
