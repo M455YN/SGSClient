@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:SGSClient.UI.ViewModels"
     xmlns:local="using:SGSClient.UI.WinUI.Views"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="Transparent">
 
   <Page.Resources>
     <local:BoolToVisibilityConverter x:Key="BoolToVis" />
@@ -97,13 +97,18 @@
   </Page.Resources>
 
   <Grid>
+    <Grid x:Name="HeroBackdropHost"
+          Visibility="{Binding HasHero, Converter={StaticResource BoolToVis}}" />
+    <Border Background="#C0101014" IsHitTestVisible="False" />
+
     <ProgressBar VerticalAlignment="Top" Height="3"
                  IsIndeterminate="True"
                  ShowPaused="False"
                  Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
+                  HorizontalScrollBarVisibility="Disabled"
+                  Background="Transparent">
       <StackPanel Margin="32,24,32,40" Spacing="28">
 
         <Grid>
@@ -173,11 +178,12 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Button Width="28" Height="48" VerticalAlignment="Center" Padding="0"
-                    Command="{Binding PreviousSlideCommand}"
+                    Click="PreviousSlide_Click"
                     Visibility="{Binding HasMultipleSlides, Converter={StaticResource BoolToVis}}">
               <FontIcon Glyph="&#xE76B;" FontSize="12" />
             </Button>
-            <Border Grid.Column="1" CornerRadius="4" Tapped="OpenHero_Tapped"
+            <Grid x:Name="HeroClip" Grid.Column="1">
+            <Border x:Name="HeroCapsule" CornerRadius="4" Tapped="OpenHero_Tapped"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1">
@@ -218,43 +224,110 @@
                     </Grid.RowDefinitions>
                     <TextBlock Text="{Binding Hero.Title}" FontSize="20" FontWeight="SemiBold"
                                TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
-                    <Grid Grid.Row="1" ColumnSpacing="6" RowSpacing="6">
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
-                      </Grid.ColumnDefinitions>
-                      <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="*" />
-                      </Grid.RowDefinitions>
-                      <Border CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                        <Rectangle Visibility="{Binding Hero.HasShot1, Converter={StaticResource BoolToVis}}">
-                          <Rectangle.Fill>
-                            <ImageBrush ImageSource="{Binding Hero.Shot1}" Stretch="UniformToFill" />
-                          </Rectangle.Fill>
-                        </Rectangle>
-                      </Border>
-                      <Border Grid.Column="1" CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                        <Rectangle Visibility="{Binding Hero.HasShot2, Converter={StaticResource BoolToVis}}">
-                          <Rectangle.Fill>
-                            <ImageBrush ImageSource="{Binding Hero.Shot2}" Stretch="UniformToFill" />
-                          </Rectangle.Fill>
-                        </Rectangle>
-                      </Border>
-                      <Border Grid.Row="1" CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                        <Rectangle Visibility="{Binding Hero.HasShot3, Converter={StaticResource BoolToVis}}">
-                          <Rectangle.Fill>
-                            <ImageBrush ImageSource="{Binding Hero.Shot3}" Stretch="UniformToFill" />
-                          </Rectangle.Fill>
-                        </Rectangle>
-                      </Border>
-                      <Border Grid.Row="1" Grid.Column="1" CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                        <Rectangle Visibility="{Binding Hero.HasShot4, Converter={StaticResource BoolToVis}}">
-                          <Rectangle.Fill>
-                            <ImageBrush ImageSource="{Binding Hero.Shot4}" Stretch="UniformToFill" />
-                          </Rectangle.Fill>
-                        </Rectangle>
-                      </Border>
+                    <Grid Grid.Row="1"
+                          Visibility="{Binding Hero.HasShots, Converter={StaticResource BoolToVis}}">
+                      <Grid ColumnSpacing="6" RowSpacing="6"
+                            Visibility="{Binding Hero.ShotLayout1, Converter={StaticResource BoolToVis}}">
+                        <Border CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot1}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                      </Grid>
+                      <Grid ColumnSpacing="6"
+                            Visibility="{Binding Hero.ShotLayout2, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot1}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                        <Border Grid.Column="1" CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot2}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                      </Grid>
+                      <Grid ColumnSpacing="6" RowSpacing="6"
+                            Visibility="{Binding Hero.ShotLayout3, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                          <RowDefinition Height="*" />
+                          <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot1}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                        <Border Grid.Column="1" CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot2}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                        <Border Grid.Row="1" Grid.ColumnSpan="2" CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot3}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                      </Grid>
+                      <Grid ColumnSpacing="6" RowSpacing="6"
+                            Visibility="{Binding Hero.ShotLayout4, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                          <RowDefinition Height="*" />
+                          <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot1}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                        <Border Grid.Column="1" CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot2}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                        <Border Grid.Row="1" CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot3}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="1" CornerRadius="2" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                          <Rectangle>
+                            <Rectangle.Fill>
+                              <ImageBrush ImageSource="{Binding Hero.Shot4}" Stretch="UniformToFill" />
+                            </Rectangle.Fill>
+                          </Rectangle>
+                        </Border>
+                      </Grid>
                     </Grid>
                     <StackPanel Grid.Row="2" Spacing="8">
                       <TextBlock Text="{Binding Hero.ReleaseLine}" FontSize="13" Opacity="0.85"
@@ -270,8 +343,9 @@
                 </Border>
               </Grid>
             </Border>
+            </Grid>
             <Button Grid.Column="2" Width="28" Height="48" VerticalAlignment="Center" Padding="0"
-                    Command="{Binding NextSlideCommand}"
+                    Click="NextSlide_Click"
                     Visibility="{Binding HasMultipleSlides, Converter={StaticResource BoolToVis}}">
               <FontIcon Glyph="&#xE76C;" FontSize="12" />
             </Button>

@@ -461,10 +461,12 @@ public sealed class HomeGameCard
     public string? Shot2 { get; init; }
     public string? Shot3 { get; init; }
     public string? Shot4 { get; init; }
-    public bool HasShot1 => !string.IsNullOrWhiteSpace(Shot1);
-    public bool HasShot2 => !string.IsNullOrWhiteSpace(Shot2);
-    public bool HasShot3 => !string.IsNullOrWhiteSpace(Shot3);
-    public bool HasShot4 => !string.IsNullOrWhiteSpace(Shot4);
+    public int ShotCount { get; init; }
+    public bool HasShots => ShotCount > 0;
+    public bool ShotLayout1 => ShotCount == 1;
+    public bool ShotLayout2 => ShotCount == 2;
+    public bool ShotLayout3 => ShotCount == 3;
+    public bool ShotLayout4 => ShotCount >= 4;
 
     public static HomeGameCard FromDto(GameDto dto, string apiBaseUrl, int blurbLength, bool landscape = false)
     {
@@ -485,6 +487,7 @@ public sealed class HomeGameCard
             ShowFeaturedBadge = dto.FeaturedP,
             ReleaseLine = ReleaseLineFor(dto.ReleaseStatus),
             BadgeText = string.IsNullOrWhiteSpace(dto.GenreName) ? "Wyróżnione" : dto.GenreName!,
+            ShotCount = shots.Count,
             Shot1 = shots.ElementAtOrDefault(0),
             Shot2 = shots.ElementAtOrDefault(1),
             Shot3 = shots.ElementAtOrDefault(2),
