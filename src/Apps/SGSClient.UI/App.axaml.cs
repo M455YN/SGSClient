@@ -120,7 +120,9 @@ public partial class App : Application
             sp.GetService<ILibraryDiscoveryService>(),
             sp.GetService<IAuthSession>(),
             configuration,
-            sp.GetService<NotificationsViewModel>()));
+            sp.GetService<NotificationsViewModel>(),
+            sp.GetService<ISgsApiService>(),
+            sp.GetService<ICatalogCacheStore>()));
         services.AddTransient(sp => new MainWindowViewModel(
             sp.GetRequiredService<HomeViewModel>(),
             sp.GetRequiredService<GamesViewModel>(),

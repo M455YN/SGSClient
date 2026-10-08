@@ -27,8 +27,10 @@ public sealed partial class HomePage : Page
         ApplyPublishColumn();
     }
 
-    private void ApplyPublishColumn() =>
+    private void ApplyPublishColumn()
+    {
         PublishColumn.Width = ViewModel.CanPublish ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+    }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
@@ -50,6 +52,17 @@ public sealed partial class HomePage : Page
 
     private void OpenHero_Click(object sender, RoutedEventArgs e) =>
         ViewModel.OpenHeroCommand.Execute(null);
+
+    private void OpenHero_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e) =>
+        ViewModel.OpenHeroCommand.Execute(null);
+
+    private void Dot_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: int index })
+        {
+            ViewModel.SelectSlideCommand.Execute(index);
+        }
+    }
 
     private void Rail_ItemClick(object sender, ItemClickEventArgs e)
     {

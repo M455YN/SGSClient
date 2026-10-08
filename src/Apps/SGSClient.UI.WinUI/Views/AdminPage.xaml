@@ -156,9 +156,9 @@
           </SelectorBar>
 
           <StackPanel Spacing="16" Visibility="{Binding IsOverviewTab, Converter={StaticResource BoolToVis}}">
-            <Grid Height="220">
-              <Border CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                <Grid>
+            <Border CornerRadius="8" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+              <Viewbox Stretch="Uniform" Width="560" Height="262" HorizontalAlignment="Left">
+                <Grid Width="920" Height="430">
                   <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="48" FontWeight="Bold"
                              Opacity="0.25" HorizontalAlignment="Center" VerticalAlignment="Center"
                              Visibility="{Binding SelectedGame.HasHeaderArt, Converter={StaticResource BoolToVisInv}}" />
@@ -178,8 +178,8 @@
                     </StackPanel>
                   </Border>
                 </Grid>
-              </Border>
-            </Grid>
+              </Viewbox>
+            </Border>
 
             <Grid ColumnSpacing="12">
               <Grid.ColumnDefinitions>
@@ -406,12 +406,12 @@
                   <ColumnDefinition Width="280" />
                   <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Height="130" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                <Border Width="240" Height="112" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
                   <Image Source="{Binding SelectedGame.OwnHeaderImageUrl}" Stretch="UniformToFill" />
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
                   <TextBlock Text="Okładka pozioma" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                  <TextBlock Text="Szeroka, jak header na Steam — strona gry i wyróżnienia."
+                  <TextBlock Text="920 × 430 (proporcje Steam header) — wypełnia kafelek w całości."
                              Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" />
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button Content="Wybierz plik" Click="PickHeader_Click" />
@@ -648,36 +648,38 @@
 
       <StackPanel Grid.Column="1" Spacing="12" Margin="0,0,0,16">
         <TextBlock Text="Podgląd hero" Style="{StaticResource BodyStrongTextBlockStyle}" />
-        <Border Height="240" CornerRadius="8"
+        <Border CornerRadius="8"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                 BorderThickness="1"
                 Visibility="{Binding HasHeroPreview, Converter={StaticResource BoolToVis}}">
-          <Grid>
-            <TextBlock Text="{Binding HeroPreview.TileLabel}"
-                       FontSize="56" FontWeight="SemiBold" Opacity="0.16"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <Image Source="{Binding HeroPreview.HeaderImageUrl}" Stretch="UniformToFill"
-                   Visibility="{Binding HeroPreview.HasHeaderArt, Converter={StaticResource BoolToVis}}" />
-            <Border VerticalAlignment="Bottom">
-              <Border.Background>
-                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                  <GradientStop Color="#00000000" Offset="0" />
-                  <GradientStop Color="#E6000000" Offset="1" />
-                </LinearGradientBrush>
-              </Border.Background>
-              <StackPanel Margin="16,40,16,14" Spacing="6">
-                <Border Background="{ThemeResource AccentFillColorDefaultBrush}"
-                        Padding="8,3" CornerRadius="4" HorizontalAlignment="Left">
-                  <TextBlock Text="Wyróżnione" FontSize="11"
-                             Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
-                </Border>
-                <TextBlock Text="{Binding HeroPreview.Title}"
-                           FontSize="22" FontWeight="SemiBold" Foreground="White"
-                           TextTrimming="CharacterEllipsis" />
-              </StackPanel>
-            </Border>
-          </Grid>
+          <Viewbox Stretch="Uniform" Width="480" Height="224" HorizontalAlignment="Left">
+            <Grid Width="920" Height="430">
+              <TextBlock Text="{Binding HeroPreview.TileLabel}"
+                         FontSize="56" FontWeight="SemiBold" Opacity="0.16"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <Image Source="{Binding HeroPreview.HeaderImageUrl}" Stretch="UniformToFill"
+                     Visibility="{Binding HeroPreview.HasHeaderArt, Converter={StaticResource BoolToVis}}" />
+              <Border VerticalAlignment="Bottom">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                    <GradientStop Color="#00000000" Offset="0" />
+                    <GradientStop Color="#E6000000" Offset="1" />
+                  </LinearGradientBrush>
+                </Border.Background>
+                <StackPanel Margin="16,40,16,14" Spacing="6">
+                  <Border Background="{ThemeResource AccentFillColorDefaultBrush}"
+                          Padding="8,3" CornerRadius="4" HorizontalAlignment="Left">
+                    <TextBlock Text="Wyróżnione" FontSize="11"
+                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                  </Border>
+                  <TextBlock Text="{Binding HeroPreview.Title}"
+                             FontSize="22" FontWeight="SemiBold" Foreground="White"
+                             TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </Border>
+            </Grid>
+          </Viewbox>
         </Border>
         <TextBlock Text="Tak zobaczy to gracz na górze strony głównej."
                    Style="{StaticResource CaptionTextBlockStyle}"

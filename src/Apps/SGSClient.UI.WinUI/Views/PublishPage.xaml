@@ -104,7 +104,7 @@
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Okładka pozioma" Opacity="0.55" FontSize="12" />
+            <TextBlock Text="Okładka pozioma (920 × 430)" Opacity="0.55" FontSize="12" />
             <Grid ColumnSpacing="8">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />

@@ -99,7 +99,7 @@
 
             <!-- Right: media -->
             <StackPanel Grid.Column="1" Spacing="10">
-              <Border Height="220" CornerRadius="8" ClipToBounds="True"
+              <Border CornerRadius="8" ClipToBounds="True"
                       Cursor="Hand"
                       PointerPressed="Cover_OnPointerPressed">
                 <Border.Background>
@@ -108,25 +108,27 @@
                     <GradientStop Color="#FF1A242E" Offset="1"/>
                   </LinearGradientBrush>
                 </Border.Background>
-                <Panel>
-                  <TextBlock x:Name="TileLabelText"
-                             Text="{Binding TileLabel}"
-                             FontSize="56" FontWeight="Bold" Opacity="0.35"
-                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                             IsVisible="{Binding !HasCover}"/>
-                  <Image x:Name="CoverImage"
-                         Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
-                         IsVisible="{Binding HasCover}"/>
-                  <Panel x:Name="IntroHost" IsVisible="False" />
-                  <Border x:Name="PlayOverlay"
-                          Width="56" Height="56" CornerRadius="28" Background="#99000000"
-                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                          IsVisible="{Binding HasIntro}"
-                          Cursor="Hand"
-                          PointerPressed="PlayOverlay_OnPointerPressed">
-                    <TextBlock Text="▶" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                  </Border>
-                </Panel>
+                <Viewbox Stretch="Uniform" Width="560" Height="262" HorizontalAlignment="Left">
+                  <Panel Width="920" Height="430">
+                    <TextBlock x:Name="TileLabelText"
+                               Text="{Binding TileLabel}"
+                               FontSize="56" FontWeight="Bold" Opacity="0.35"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsVisible="{Binding !HasCover}"/>
+                    <Image x:Name="CoverImage"
+                           Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                           IsVisible="{Binding HasCover}"/>
+                    <Panel x:Name="IntroHost" IsVisible="False" />
+                    <Border x:Name="PlayOverlay"
+                            Width="56" Height="56" CornerRadius="28" Background="#99000000"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            IsVisible="{Binding HasIntro}"
+                            Cursor="Hand"
+                            PointerPressed="PlayOverlay_OnPointerPressed">
+                      <TextBlock Text="▶" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                  </Panel>
+                </Viewbox>
               </Border>
 
               <ItemsControl ItemsSource="{Binding MediaThumbs}">

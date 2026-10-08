@@ -36,9 +36,11 @@ public partial class HomeView : UserControl
         };
     }
 
-    private void ApplyPublishColumn(bool canPublish) =>
+    private void ApplyPublishColumn(bool canPublish)
+    {
         QuickActionsGrid.ColumnDefinitions[3].Width =
             canPublish ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+    }
 
     private void OpenStore_OnClick(object? sender, RoutedEventArgs e) =>
         (DataContext as HomeViewModel)?.OpenStoreCommand.Execute(null);
@@ -52,8 +54,16 @@ public partial class HomeView : UserControl
     private void OpenFriends_OnClick(object? sender, RoutedEventArgs e) =>
         (DataContext as HomeViewModel)?.OpenFriendsCommand.Execute(null);
 
-    private void OpenHero_OnClick(object? sender, RoutedEventArgs e) =>
+    private void OpenHero_OnPointerPressed(object? sender, PointerPressedEventArgs e) =>
         (DataContext as HomeViewModel)?.OpenHeroCommand.Execute(null);
+
+    private void Dot_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is HomeViewModel vm && sender is Control { Tag: int index })
+        {
+            vm.SelectSlideCommand.Execute(index);
+        }
+    }
 
     private void Card_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {

@@ -35,7 +35,7 @@
                     Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
                     Cursor="Hand" Tag="{Binding}" PointerPressed="GameCard_OnPointerPressed">
               <StackPanel Spacing="10">
-                <Border Height="140" CornerRadius="8" Background="#333" ClipToBounds="True">
+                <Border Height="112" CornerRadius="8" Background="#333" ClipToBounds="True">
                   <Panel>
                     <TextBlock Text="{Binding TileLabel}" FontWeight="Bold" FontSize="28" Opacity="0.35"
                                HorizontalAlignment="Center" VerticalAlignment="Center"

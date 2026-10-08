@@ -20,6 +20,7 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         Title = "SGSClient";
+        PlaceDefaultWindow();
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico"));
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -36,6 +37,22 @@ public sealed partial class MainWindow : Window
         WireDownloadStatusBar();
         WireNotificationsStatusBar();
         WireOfflineBanner();
+    }
+
+    private void PlaceDefaultWindow()
+    {
+        const int width = 1480;
+        const int height = 768;
+        var area = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(
+            AppWindow.Id,
+            Microsoft.UI.Windowing.DisplayAreaFallback.Primary);
+        var work = area.WorkArea;
+        var w = Math.Min(width, work.Width);
+        var h = Math.Min(height, work.Height);
+        AppWindow.Resize(new global::Windows.Graphics.SizeInt32(w, h));
+        AppWindow.Move(new global::Windows.Graphics.PointInt32(
+            work.X + (work.Width - w) / 2,
+            work.Y + (work.Height - h) / 2));
     }
 
     private void WireOfflineBanner()

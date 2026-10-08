@@ -77,18 +77,20 @@
           </StackPanel>
 
           <StackPanel Spacing="16" IsVisible="{Binding IsOverviewTab}">
-            <Border Height="200" CornerRadius="8" ClipToBounds="True" Background="#1AFFFFFF">
-              <Panel>
-                <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="42" FontWeight="Bold"
-                           Opacity="0.2" HorizontalAlignment="Center" VerticalAlignment="Center"
-                           IsVisible="{Binding !SelectedGame.HasHeaderArt}"/>
-                <Image Source="{Binding SelectedGame.HeaderImageUrl}" Stretch="UniformToFill"
-                       IsVisible="{Binding SelectedGame.HasHeaderArt}"/>
-                <StackPanel VerticalAlignment="Bottom" Margin="16,12" Spacing="2">
-                  <TextBlock Text="{Binding SelectedGame.Title}" FontSize="22" FontWeight="SemiBold"/>
-                  <TextBlock Text="{Binding SelectedGame.MetaText}" Classes="caption"/>
-                </StackPanel>
-              </Panel>
+            <Border CornerRadius="8" ClipToBounds="True" Background="#1AFFFFFF">
+              <Viewbox Stretch="Uniform" Width="560" Height="262" HorizontalAlignment="Left">
+                <Panel Width="920" Height="430">
+                  <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="42" FontWeight="Bold"
+                             Opacity="0.2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                             IsVisible="{Binding !SelectedGame.HasHeaderArt}"/>
+                  <Image Source="{Binding SelectedGame.HeaderImageUrl}" Stretch="UniformToFill"
+                         IsVisible="{Binding SelectedGame.HasHeaderArt}"/>
+                  <StackPanel VerticalAlignment="Bottom" Margin="16,12" Spacing="2">
+                    <TextBlock Text="{Binding SelectedGame.Title}" FontSize="22" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding SelectedGame.MetaText}" Classes="caption"/>
+                  </StackPanel>
+                </Panel>
+              </Viewbox>
             </Border>
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
               <Border Classes="card">
@@ -197,12 +199,12 @@
             </Border>
             <Border Classes="card">
               <Grid ColumnDefinitions="280,*" ColumnSpacing="16">
-                <Border Height="130" CornerRadius="6" Background="#1AFFFFFF">
+                <Border Width="240" Height="112" CornerRadius="6" Background="#1AFFFFFF" ClipToBounds="True">
                   <Image Source="{Binding SelectedGame.OwnHeaderImageUrl}" Stretch="UniformToFill"/>
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
                   <TextBlock Text="Okładka pozioma" FontWeight="SemiBold"/>
-                  <TextBlock Text="Szeroka, jak header na Steam — strona gry i wyróżnienia."
+                  <TextBlock Text="920 × 430 (proporcje Steam header) — wypełnia kafelek w całości."
                              Classes="caption" TextWrapping="Wrap"/>
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button Content="Wybierz plik" Click="PickHeader_OnClick"/>

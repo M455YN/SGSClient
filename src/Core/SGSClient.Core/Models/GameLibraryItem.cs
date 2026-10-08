@@ -33,4 +33,27 @@ public sealed class GameLibraryItem
 
     /// <summary>User-scoped total playtime. Overlay from <c>IPlaytimeStore</c>; not persisted on the install row.</summary>
     public long TotalPlayTimeSeconds { get; set; }
+
+    /// <summary>
+    /// Copies the portrait capsule and square logo from the catalog when the local row is missing them
+    /// or still points at the landscape header.
+    /// </summary>
+    public bool ApplyStoreArtwork(string? portraitUrl, string? logoUrl, string? headerUrl)
+    {
+        var changed = false;
+        if (!string.IsNullOrWhiteSpace(portraitUrl)
+            && (string.IsNullOrWhiteSpace(CoverUrl) || CoverUrl == headerUrl))
+        {
+            CoverUrl = portraitUrl;
+            changed = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(logoUrl) && LogoUrl != logoUrl)
+        {
+            LogoUrl = logoUrl;
+            changed = true;
+        }
+
+        return changed;
+    }
 }

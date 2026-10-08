@@ -139,7 +139,9 @@ public partial class App : Application
             sp.GetService<ILibraryDiscoveryService>(),
             sp.GetService<IAuthSession>(),
             configuration,
-            sp.GetService<NotificationsViewModel>()));
+            sp.GetService<NotificationsViewModel>(),
+            sp.GetService<ISgsApiService>(),
+            sp.GetService<ICatalogCacheStore>()));
 
         Services = services.BuildServiceProvider();
         SgsClientDbInitializer.InitializeAsync(Services).GetAwaiter().GetResult();

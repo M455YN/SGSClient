@@ -17,6 +17,8 @@ public partial class ShellSidebarViewModel : ObservableObject
     private readonly IGameLauncherService? _launcher;
     private readonly ILibraryDiscoveryService? _discovery;
     private readonly IAuthSession? _auth;
+    private readonly ISgsApiService? _api;
+    private readonly ICatalogCacheStore? _catalogCache;
     private readonly string _apiBaseUrl;
     private Action<string>? _navigate;
     private Action<int>? _openDetails;
@@ -33,12 +35,16 @@ public partial class ShellSidebarViewModel : ObservableObject
         ILibraryDiscoveryService? discovery = null,
         IAuthSession? auth = null,
         IConfiguration? configuration = null,
-        NotificationsViewModel? notifications = null)
+        NotificationsViewModel? notifications = null,
+        ISgsApiService? api = null,
+        ICatalogCacheStore? catalogCache = null)
     {
         _scopes = scopes;
         _launcher = launcher;
         _discovery = discovery;
         _auth = auth;
+        _api = api;
+        _catalogCache = catalogCache;
         Notifications = notifications ?? new NotificationsViewModel();
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
@@ -225,6 +231,7 @@ public partial class ShellSidebarViewModel : ObservableObject
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
             var items = await library.GetAllAsync();
+            await SyncArtworkAsync(items, library);
 
             InstalledGames.Clear();
             foreach (var item in items
@@ -240,6 +247,44 @@ public partial class ShellSidebarViewModel : ObservableObject
         catch
         {
             // keep previous list on transient failures
+        }
+    }
+
+    private async Task SyncArtworkAsync(IReadOnlyList<GameLibraryItem> items, ILocalLibraryStore store)
+    {
+        IReadOnlyList<SGSClient.Core.DTOs.GameDto> games = [];
+        try
+        {
+            if (_api is not null)
+            {
+                games = await _api.GetGamesAsync();
+            }
+        }
+        catch
+        {
+            if (_catalogCache is not null)
+            {
+                games = (await _catalogCache.LoadCatalogAsync()).Games;
+            }
+        }
+
+        if (games.Count == 0)
+        {
+            return;
+        }
+
+        var byId = games.ToDictionary(g => g.Id);
+        foreach (var item in items)
+        {
+            if (!byId.TryGetValue(item.GameId, out var game))
+            {
+                continue;
+            }
+
+            if (item.ApplyStoreArtwork(game.CoverUrl, game.LogoUrl, game.HeaderUrl))
+            {
+                await store.UpsertAsync(item);
+            }
         }
     }
 

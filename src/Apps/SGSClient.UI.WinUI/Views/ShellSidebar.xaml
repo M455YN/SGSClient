@@ -2,9 +2,11 @@
     x:Class="SGSClient.UI.WinUI.Views.ShellSidebar"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:SGSClient.UI.ViewModels">
+    xmlns:vm="using:SGSClient.UI.ViewModels"
+    xmlns:local="using:SGSClient.UI.WinUI.Views">
 
   <UserControl.Resources>
+    <local:BoolToVisibilityConverter x:Key="BoolToVis" />
     <Style x:Key="NavButtonStyle" TargetType="Button">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -186,7 +188,7 @@
                                FontSize="10" FontWeight="SemiBold" Opacity="0.7" />
                     <Image Width="36" Height="36" Stretch="UniformToFill"
                            Source="{Binding CoverImageUrl}"
-                           Visibility="{x:Bind HasCover}" />
+                           Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
                   </Grid>
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">

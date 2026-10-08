@@ -53,6 +53,10 @@ public partial class HomeViewModel : ObservableObject
     public ObservableCollection<HomeGameCard> Featured { get; } = [];
     public ObservableCollection<HomeGameCard> Catalog { get; } = [];
     public ObservableCollection<HomeCategoryItem> Categories { get; } = [];
+    public ObservableCollection<FeaturedSlideDot> FeaturedDots { get; } = [];
+
+    private List<HomeGameCard> _slides = [];
+    private int _slideIndex;
 
     [ObservableProperty]
     public partial string Greeting { get; set; } = "Dzień dobry";
@@ -71,6 +75,9 @@ public partial class HomeViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool HasReadyToInstall { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasMultipleSlides { get; set; }
 
     [ObservableProperty]
     public partial bool HasFeatured { get; set; }
@@ -154,6 +161,15 @@ public partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private void OpenHero() => OpenGame(Hero);
 
+    [RelayCommand]
+    private void NextSlide() => ShowSlide(_slideIndex + 1);
+
+    [RelayCommand]
+    private void PreviousSlide() => ShowSlide(_slideIndex - 1);
+
+    [RelayCommand]
+    private void SelectSlide(int index) => ShowSlide(index);
+
     public async Task EnsureLoadedAsync()
     {
         if (IsBusy)
@@ -205,6 +221,7 @@ public partial class HomeViewModel : ObservableObject
             }
 
             var library = await LoadLibraryAsync();
+            await SyncLibraryArtworkAsync(library, games);
             ApplyCatalog(games);
             ApplyLibrary(library);
             CatalogCountText = games.Count.ToString(CultureInfo.InvariantCulture);
@@ -247,11 +264,18 @@ public partial class HomeViewModel : ObservableObject
             .OrderBy(g => g.FeaturedOrder ?? int.MaxValue)
             .ThenBy(g => g.Title)
             .ToList();
-        var heroDto = featured.FirstOrDefault() ?? games.FirstOrDefault();
-        Hero = heroDto is null ? null : HomeGameCard.FromDto(heroDto, _apiBaseUrl, 160, landscape: true);
-        HasHero = Hero is not null;
+        var spotlight = featured.Count > 0
+            ? featured
+            : games.Take(6).ToList();
+        _slides = spotlight
+            .Take(8)
+            .Select(game => HomeGameCard.FromDto(game, _apiBaseUrl, 160, landscape: true))
+            .ToList();
+        HasHero = _slides.Count > 0;
+        ShowSlide(0);
 
-        foreach (var game in featured.Where(g => g.Id != Hero?.Id).Take(8))
+        var spotlightIds = _slides.Select(s => s.Id).ToHashSet();
+        foreach (var game in featured.Where(g => !spotlightIds.Contains(g.Id)).Take(8))
         {
             Featured.Add(HomeGameCard.FromDto(game, _apiBaseUrl, 90, landscape: true));
         }
@@ -283,6 +307,70 @@ public partial class HomeViewModel : ObservableObject
         }
 
         HasCategories = Categories.Count > 0;
+    }
+
+    private void ShowSlide(int index)
+    {
+        if (_slides.Count == 0)
+        {
+            Hero = null;
+            HasMultipleSlides = false;
+            FeaturedDots.Clear();
+            return;
+        }
+
+        _slideIndex = (index % _slides.Count + _slides.Count) % _slides.Count;
+        Hero = _slides[_slideIndex];
+        HasMultipleSlides = _slides.Count > 1;
+
+        FeaturedDots.Clear();
+        for (var i = 0; i < _slides.Count; i++)
+        {
+            FeaturedDots.Add(new FeaturedSlideDot { Index = i, IsActive = i == _slideIndex });
+        }
+    }
+
+    private async Task SyncLibraryArtworkAsync(IReadOnlyList<GameLibraryItem> library, IReadOnlyList<GameDto> games)
+    {
+        if (_scopes is null || games.Count == 0)
+        {
+            return;
+        }
+
+        var byId = games.ToDictionary(g => g.Id);
+        List<GameLibraryItem>? dirty = null;
+        foreach (var item in library)
+        {
+            if (!byId.TryGetValue(item.GameId, out var game))
+            {
+                continue;
+            }
+
+            if (item.ApplyStoreArtwork(game.CoverUrl, game.LogoUrl, game.HeaderUrl))
+            {
+                dirty ??= [];
+                dirty.Add(item);
+            }
+        }
+
+        if (dirty is null)
+        {
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var store = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            foreach (var item in dirty)
+            {
+                await store.UpsertAsync(item);
+            }
+        }
+        catch
+        {
+            // Artwork still applies in memory for this session.
+        }
     }
 
     private void ApplyLibrary(IReadOnlyList<GameLibraryItem> library)
@@ -351,6 +439,12 @@ public sealed class HomeCategoryItem
     public string Initial => Name[..1].ToUpperInvariant();
 }
 
+public sealed class FeaturedSlideDot
+{
+    public required int Index { get; init; }
+    public bool IsActive { get; init; }
+}
+
 public sealed class HomeGameCard
 {
     public required int Id { get; init; }
@@ -361,16 +455,49 @@ public sealed class HomeGameCard
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
     public string Caption { get; init; } = string.Empty;
     public bool ShowFeaturedBadge { get; init; }
+    public string ReleaseLine { get; init; } = string.Empty;
+    public string BadgeText { get; init; } = string.Empty;
+    public string? Shot1 { get; init; }
+    public string? Shot2 { get; init; }
+    public string? Shot3 { get; init; }
+    public string? Shot4 { get; init; }
+    public bool HasShot1 => !string.IsNullOrWhiteSpace(Shot1);
+    public bool HasShot2 => !string.IsNullOrWhiteSpace(Shot2);
+    public bool HasShot3 => !string.IsNullOrWhiteSpace(Shot3);
+    public bool HasShot4 => !string.IsNullOrWhiteSpace(Shot4);
 
-    public static HomeGameCard FromDto(GameDto dto, string apiBaseUrl, int blurbLength, bool landscape = false) => new()
+    public static HomeGameCard FromDto(GameDto dto, string apiBaseUrl, int blurbLength, bool landscape = false)
     {
-        Id = dto.Id,
-        Title = dto.Title,
-        TileLabel = MakeTile(dto.Title, dto.Symbol),
-        Blurb = Truncate(dto.Description, blurbLength),
-        CoverImageUrl = ResolveCover(landscape ? dto.LandscapeUrl : dto.ThumbnailUrl, apiBaseUrl),
-        Caption = string.IsNullOrWhiteSpace(dto.GenreName) ? "Sklep" : dto.GenreName!,
-        ShowFeaturedBadge = dto.FeaturedP
+        var shots = dto.ScreenshotUrls
+            .Select(url => ResolveCover(url, apiBaseUrl))
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .Take(4)
+            .ToList();
+
+        return new HomeGameCard
+        {
+            Id = dto.Id,
+            Title = dto.Title,
+            TileLabel = MakeTile(dto.Title, dto.Symbol),
+            Blurb = Truncate(dto.Description, blurbLength),
+            CoverImageUrl = ResolveCover(landscape ? dto.LandscapeUrl : dto.ThumbnailUrl, apiBaseUrl),
+            Caption = string.IsNullOrWhiteSpace(dto.GenreName) ? "Sklep" : dto.GenreName!,
+            ShowFeaturedBadge = dto.FeaturedP,
+            ReleaseLine = ReleaseLineFor(dto.ReleaseStatus),
+            BadgeText = string.IsNullOrWhiteSpace(dto.GenreName) ? "Wyróżnione" : dto.GenreName!,
+            Shot1 = shots.ElementAtOrDefault(0),
+            Shot2 = shots.ElementAtOrDefault(1),
+            Shot3 = shots.ElementAtOrDefault(2),
+            Shot4 = shots.ElementAtOrDefault(3)
+        };
+    }
+
+    private static string ReleaseLineFor(GameReleaseStatus status) => status switch
+    {
+        GameReleaseStatus.EarlyAccess => "Wczesny dostęp już dostępny",
+        GameReleaseStatus.Announced => "Zapowiedź",
+        GameReleaseStatus.Demo => "Demo już dostępne",
+        _ => "Już dostępna"
     };
 
     public static HomeGameCard FromLibrary(GameLibraryItem item, string apiBaseUrl) => new()
