@@ -1,4 +1,5 @@
 using SGSClient.Core.Enums;
+using SGSClient.Core.Packaging;
 
 namespace SGSClient.Core.DTOs;
 
@@ -16,12 +17,17 @@ public sealed class GameDto
     public string? Description { get; init; }
     public string? HardwareRequirements { get; init; }
     public string? OtherInformation { get; init; }
-    public int? EngineId { get; init; }
-    public int? TypeId { get; init; }
-    public string? GenreSymbol { get; init; }
-    public string? GenreName { get; init; }
-    public string? EngineSymbol { get; init; }
-    public string? EngineName { get; init; }
+    public IReadOnlyList<SgsGameTaxonomy.TaxonomyItem> Genres { get; init; } = [];
+    public IReadOnlyList<SgsGameTaxonomy.TaxonomyItem> Engines { get; init; } = [];
+
+    /// <summary>First (primary) genre; null when none.</summary>
+    public string? GenreSymbol => Genres.Count > 0 ? Genres[0].Symbol : null;
+    public string? GenreName => Genres.Count > 0 ? Genres[0].Name : null;
+    public string? EngineSymbol => Engines.Count > 0 ? Engines[0].Symbol : null;
+    public string? EngineName => Engines.Count > 0 ? Engines[0].Name : null;
+
+    public string GenreNamesText => string.Join(", ", Genres.Select(g => g.Name));
+    public string EngineNamesText => string.Join(", ", Engines.Select(e => e.Name));
     public string? CoverUrl { get; init; }
 
     /// <summary>Landscape store header (Steam-style). Lists use <see cref="CoverUrl"/>.</summary>

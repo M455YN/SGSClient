@@ -28,11 +28,17 @@ public sealed class SgsPackageGameInfo
     /// <summary>Parent base-game symbol when <see cref="Kind"/> is dlc.</summary>
     public string? ParentSymbol { get; set; }
 
-    /// <summary>Genre slug from <see cref="SgsGameTaxonomy.Genres"/> (e.g. action).</summary>
+    /// <summary>Single genre slug (alias kept for older packages; merged into <see cref="Genres"/>).</summary>
     public string? Genre { get; set; }
 
-    /// <summary>Engine slug from <see cref="SgsGameTaxonomy.Engines"/> (e.g. unity).</summary>
+    /// <summary>Genre slugs from <see cref="SgsGameTaxonomy.Genres"/> (e.g. action, rpg). Max 5.</summary>
+    public IList<string>? Genres { get; set; }
+
+    /// <summary>Single engine slug (alias kept for older packages; merged into <see cref="Engines"/>).</summary>
     public string? Engine { get; set; }
+
+    /// <summary>Engine slugs from <see cref="SgsGameTaxonomy.Engines"/> (e.g. unity). Max 3.</summary>
+    public IList<string>? Engines { get; set; }
 
     /// <summary>Developer / studio display name on the store page.</summary>
     public string? StudioName { get; set; }

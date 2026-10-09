@@ -25,10 +25,16 @@ public sealed class UpdateGameRequestDto
     public string? Description { get; init; }
     public string? HardwareRequirements { get; init; }
     public string? OtherInformation { get; init; }
-    /// <summary>Genre slug from taxonomy; empty string clears.</summary>
+    /// <summary>Single genre slug (legacy alias of <see cref="Genres"/>); empty string clears.</summary>
     public string? Genre { get; init; }
-    /// <summary>Engine slug from taxonomy; empty string clears.</summary>
+    /// <summary>Single engine slug (legacy alias of <see cref="Engines"/>); empty string clears.</summary>
     public string? Engine { get; init; }
+
+    /// <summary>Full replacement of genre slugs (max 5); empty list clears. Wins over <see cref="Genre"/>.</summary>
+    public IReadOnlyList<string>? Genres { get; init; }
+
+    /// <summary>Full replacement of engine slugs (max 3); empty list clears. Wins over <see cref="Engine"/>.</summary>
+    public IReadOnlyList<string>? Engines { get; init; }
     public bool? DraftP { get; init; }
     public bool? FeaturedP { get; init; }
 

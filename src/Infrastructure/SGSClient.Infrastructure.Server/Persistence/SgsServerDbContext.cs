@@ -305,15 +305,21 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
                 .HasForeignKey(x => x.ParentGameId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(x => x.Genre)
+            entity.HasMany(x => x.Genres)
                 .WithMany(x => x.Games)
-                .HasForeignKey(x => x.TypeId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .UsingEntity<Dictionary<string, object>>(
+                    "game_genre_links",
+                    r => r.HasOne<GameGenreEntity>().WithMany().HasForeignKey("GenreId").OnDelete(DeleteBehavior.Cascade),
+                    l => l.HasOne<GameEntity>().WithMany().HasForeignKey("GameId").OnDelete(DeleteBehavior.Cascade),
+                    j => j.HasKey("GameId", "GenreId"));
 
-            entity.HasOne(x => x.Engine)
+            entity.HasMany(x => x.Engines)
                 .WithMany(x => x.Games)
-                .HasForeignKey(x => x.EngineId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .UsingEntity<Dictionary<string, object>>(
+                    "game_engine_links",
+                    r => r.HasOne<GameEngineEntity>().WithMany().HasForeignKey("EngineId").OnDelete(DeleteBehavior.Cascade),
+                    l => l.HasOne<GameEntity>().WithMany().HasForeignKey("GameId").OnDelete(DeleteBehavior.Cascade),
+                    j => j.HasKey("GameId", "EngineId"));
 
             entity.HasMany(x => x.Builds)
                 .WithOne(x => x.Game)

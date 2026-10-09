@@ -16,8 +16,6 @@ public sealed partial class PublishPage : Page
         InitializeComponent();
         PlatformCombo.ItemsSource = ViewModel.PlatformOptions;
         ArchitectureCombo.ItemsSource = ViewModel.ArchitectureOptions;
-        GenreCombo.ItemsSource = ViewModel.GenreOptions;
-        EngineCombo.ItemsSource = ViewModel.EngineOptions;
         ParentSymbolCombo.ItemsSource = ViewModel.ParentGameOptions;
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
         TitleText.Text = ViewModel.Title;
@@ -164,16 +162,6 @@ public sealed partial class PublishPage : Page
             ArchitectureCombo.SelectedItem = ViewModel.BuildArchitecture;
         }
 
-        if (!Equals(GenreCombo.SelectedItem, ViewModel.GameGenre))
-        {
-            GenreCombo.SelectedItem = ViewModel.GameGenre;
-        }
-
-        if (!Equals(EngineCombo.SelectedItem, ViewModel.GameEngine))
-        {
-            EngineCombo.SelectedItem = ViewModel.GameEngine;
-        }
-
         var parentText = ParentSymbolCombo.Text ?? string.Empty;
         if (!string.Equals(parentText, ViewModel.ParentSymbol, StringComparison.Ordinal))
         {
@@ -208,8 +196,6 @@ public sealed partial class PublishPage : Page
         ViewModel.BuildExecutable = ExecutableBox.Text ?? string.Empty;
         ViewModel.BuildPlatform = PlatformCombo.SelectedItem as string ?? "windows";
         ViewModel.BuildArchitecture = ArchitectureCombo.SelectedItem as string ?? "x64";
-        ViewModel.GameGenre = GenreCombo.SelectedItem as string ?? string.Empty;
-        ViewModel.GameEngine = EngineCombo.SelectedItem as string ?? string.Empty;
     }
 
     private async void PickFolder_Click(object sender, RoutedEventArgs e)

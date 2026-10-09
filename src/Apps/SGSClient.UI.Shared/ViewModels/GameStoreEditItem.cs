@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
+using SGSClient.Core.Packaging;
 
 namespace SGSClient.UI.ViewModels;
 
@@ -12,8 +13,8 @@ public abstract partial class GameStoreEditItem : ObservableObject
     [ObservableProperty] public partial string? Description { get; set; }
     [ObservableProperty] public partial string? HardwareRequirements { get; set; }
     [ObservableProperty] public partial string? OtherInformation { get; set; }
-    [ObservableProperty] public partial string? GenreSymbol { get; set; }
-    [ObservableProperty] public partial string? EngineSymbol { get; set; }
+    [ObservableProperty] public partial string? GenreNamesText { get; set; }
+    [ObservableProperty] public partial string? EngineNamesText { get; set; }
     [ObservableProperty] public partial string? IntroUrl { get; set; }
     [ObservableProperty] public partial string? CoverImageUrl { get; set; }
     [ObservableProperty] public partial string? HeaderImageUrl { get; set; }
@@ -39,8 +40,10 @@ public abstract partial class GameStoreEditItem : ObservableObject
     [ObservableProperty] public partial string EditDescription { get; set; } = string.Empty;
     [ObservableProperty] public partial string EditHardwareRequirements { get; set; } = string.Empty;
     [ObservableProperty] public partial string EditOtherInformation { get; set; } = string.Empty;
-    [ObservableProperty] public partial string EditGenre { get; set; } = string.Empty;
-    [ObservableProperty] public partial string EditEngine { get; set; } = string.Empty;
+    public TaxonomySelection EditGenres { get; } =
+        new(SgsGameTaxonomy.Genres, SgsGameTaxonomy.MaxGenres, "Wybierz gatunki");
+    public TaxonomySelection EditEngines { get; } =
+        new(SgsGameTaxonomy.Engines, SgsGameTaxonomy.MaxEngines, "Wybierz silniki");
     [ObservableProperty] public partial string EditStudioName { get; set; } = string.Empty;
     [ObservableProperty] public partial string EditWebsiteUrl { get; set; } = string.Empty;
     [ObservableProperty] public partial string EditDiscordUrl { get; set; } = string.Empty;
@@ -100,8 +103,8 @@ public abstract partial class GameStoreEditItem : ObservableObject
         Description = EditDescription,
         HardwareRequirements = EditHardwareRequirements,
         OtherInformation = EditOtherInformation,
-        Genre = EditGenre,
-        Engine = EditEngine,
+        Genres = EditGenres.SelectedSymbols,
+        Engines = EditEngines.SelectedSymbols,
         DraftP = DraftP,
         StudioName = EditStudioName,
         WebsiteUrl = EditWebsiteUrl,
@@ -122,8 +125,8 @@ public abstract partial class GameStoreEditItem : ObservableObject
         Description = game.Description;
         HardwareRequirements = game.HardwareRequirements;
         OtherInformation = game.OtherInformation;
-        GenreSymbol = game.GenreSymbol;
-        EngineSymbol = game.EngineSymbol;
+        GenreNamesText = game.GenreNamesText;
+        EngineNamesText = game.EngineNamesText;
         IntroUrl = game.IntroUrl;
         DraftP = game.DraftP;
         FeaturedP = game.FeaturedP;
@@ -140,8 +143,8 @@ public abstract partial class GameStoreEditItem : ObservableObject
         EditDescription = game.Description ?? string.Empty;
         EditHardwareRequirements = game.HardwareRequirements ?? string.Empty;
         EditOtherInformation = game.OtherInformation ?? string.Empty;
-        EditGenre = game.GenreSymbol ?? string.Empty;
-        EditEngine = game.EngineSymbol ?? string.Empty;
+        EditGenres.Set(game.Genres.Select(g => g.Symbol));
+        EditEngines.Set(game.Engines.Select(e => e.Symbol));
         EditStudioName = game.StudioName ?? string.Empty;
         EditWebsiteUrl = game.WebsiteUrl ?? string.Empty;
         EditDiscordUrl = game.DiscordUrl ?? string.Empty;

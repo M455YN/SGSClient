@@ -76,14 +76,32 @@
 
           <Grid ColumnDefinitions="*,12,*">
             <StackPanel Grid.Column="0" Spacing="4">
-              <TextBlock Text="Gatunek" Opacity="0.55" FontSize="12"/>
-              <ComboBox ItemsSource="{Binding GenreOptions}" SelectedItem="{Binding GameGenre}"
-                        HorizontalAlignment="Stretch"/>
+              <TextBlock Text="Gatunki" Opacity="0.55" FontSize="12"/>
+              <Expander Header="{Binding GameGenres.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <ScrollViewer MaxHeight="220">
+                  <ItemsControl ItemsSource="{Binding GameGenres.Options}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TaxonomyOption">
+                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Expander>
             </StackPanel>
             <StackPanel Grid.Column="2" Spacing="4">
-              <TextBlock Text="Silnik" Opacity="0.55" FontSize="12"/>
-              <ComboBox ItemsSource="{Binding EngineOptions}" SelectedItem="{Binding GameEngine}"
-                        HorizontalAlignment="Stretch"/>
+              <TextBlock Text="Silniki" Opacity="0.55" FontSize="12"/>
+              <Expander Header="{Binding GameEngines.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <ScrollViewer MaxHeight="220">
+                  <ItemsControl ItemsSource="{Binding GameEngines.Options}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TaxonomyOption">
+                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Expander>
             </StackPanel>
           </Grid>
 

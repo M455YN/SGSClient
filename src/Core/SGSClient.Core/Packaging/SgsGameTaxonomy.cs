@@ -94,6 +94,28 @@ public static class SgsGameTaxonomy
         !string.IsNullOrWhiteSpace(symbol)
         && Engines.Any(e => string.Equals(e.Symbol, symbol.Trim(), StringComparison.OrdinalIgnoreCase));
 
+    public const int MaxGenres = 5;
+    public const int MaxEngines = 3;
+
+    /// <summary>
+    /// Merges a legacy single slug with a list, lowercases, drops blanks and duplicates (order kept).
+    /// Does not validate against the taxonomy.
+    /// </summary>
+    public static List<string> MergeSlugs(string? single, IEnumerable<string>? many)
+    {
+        var result = new List<string>();
+        foreach (var raw in (many ?? []).Prepend(single!))
+        {
+            var slug = NormalizeSlug(raw);
+            if (slug is not null && !result.Contains(slug))
+            {
+                result.Add(slug);
+            }
+        }
+
+        return result;
+    }
+
     public static string? NormalizeSlug(string? symbol) =>
         string.IsNullOrWhiteSpace(symbol) ? null : symbol.Trim().ToLowerInvariant();
 

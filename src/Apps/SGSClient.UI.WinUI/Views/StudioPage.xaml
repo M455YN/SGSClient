@@ -247,12 +247,34 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <ComboBox Header="Gatunek" HorizontalAlignment="Stretch"
-                            ItemsSource="{Binding GenreOptions}"
-                            SelectedItem="{Binding SelectedGame.EditGenre, Mode=TwoWay}" />
-                  <ComboBox Grid.Column="1" Header="Silnik" HorizontalAlignment="Stretch"
-                            ItemsSource="{Binding EngineOptions}"
-                            SelectedItem="{Binding SelectedGame.EditEngine, Mode=TwoWay}" />
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="Gatunki" Opacity="0.55" FontSize="12" />
+                    <Expander Header="{Binding SelectedGame.EditGenres.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                      <ScrollViewer MaxHeight="220">
+                        <ItemsControl ItemsSource="{Binding SelectedGame.EditGenres.Options}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </Expander>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="Silniki" Opacity="0.55" FontSize="12" />
+                    <Expander Header="{Binding SelectedGame.EditEngines.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                      <ScrollViewer MaxHeight="220">
+                        <ItemsControl ItemsSource="{Binding SelectedGame.EditEngines.Options}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </Expander>
+                  </StackPanel>
                 </Grid>
               </StackPanel>
             </Border>

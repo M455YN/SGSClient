@@ -294,8 +294,8 @@ public partial class HomeViewModel : ObservableObject
 
         Categories.Clear();
         foreach (var group in games
-                     .Where(g => !string.IsNullOrWhiteSpace(g.GenreName))
-                     .GroupBy(g => g.GenreName!, StringComparer.OrdinalIgnoreCase)
+                     .SelectMany(g => g.Genres.Select(x => (Genre: x.Name, Game: g)))
+                     .GroupBy(x => x.Genre, StringComparer.OrdinalIgnoreCase)
                      .OrderByDescending(g => g.Count())
                      .Take(8))
         {

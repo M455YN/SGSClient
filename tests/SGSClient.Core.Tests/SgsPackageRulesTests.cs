@@ -37,6 +37,67 @@ public sealed class SgsPackageRulesTests
         Assert.True(result.IsValid, string.Join("; ", result.Errors));
     }
 
+    private static SgsPackageManifest MakeManifest(Action<SgsPackageGameInfo> configure)
+    {
+        var manifest = new SgsPackageManifest
+        {
+            Game = new SgsPackageGameInfo { Title = "Demo Runner", Symbol = "demo-runner" },
+            Build = new SgsPackageBuildInfo
+            {
+                Version = "0.1.0",
+                Platform = "windows",
+                Architecture = "x64",
+                Executable = "bin/DemoRunner.exe"
+            }
+        };
+        configure(manifest.Game);
+        return manifest;
+    }
+
+    [Fact]
+    public void ValidateManifest_MergesLegacyAndListGenresAndEngines()
+    {
+        var manifest = MakeManifest(g =>
+        {
+            g.Genre = "Action";
+            g.Genres = ["rpg", "action"];
+            g.Engines = ["unity", "godot"];
+        });
+
+        var result = SgsPackageRules.ValidateManifest(manifest);
+
+        Assert.True(result.IsValid, string.Join("; ", result.Errors));
+        Assert.Equal(["action", "rpg"], manifest.Game.Genres);
+        Assert.Equal("action", manifest.Game.Genre);
+        Assert.Equal(["unity", "godot"], manifest.Game.Engines);
+    }
+
+    [Fact]
+    public void ValidateManifest_RejectsTooManyGenresAndEngines()
+    {
+        var manifest = MakeManifest(g =>
+        {
+            g.Genres = ["action", "rpg", "puzzle", "racing", "sports", "horror"];
+            g.Engines = ["unity", "godot", "unreal", "custom"];
+        });
+
+        var result = SgsPackageRules.ValidateManifest(manifest);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.Contains("gatunków"));
+        Assert.Contains(result.Errors, e => e.Contains("silniki"));
+    }
+
+    [Fact]
+    public void ValidateManifest_RejectsUnknownGenreInList()
+    {
+        var manifest = MakeManifest(g => g.Genres = ["action", "nope"]);
+
+        var result = SgsPackageRules.ValidateManifest(manifest);
+
+        Assert.Contains(result.Errors, e => e.Contains("nope"));
+    }
+
     [Theory]
     [InlineData("Demo Runner")]
     [InlineData("UPPER")]

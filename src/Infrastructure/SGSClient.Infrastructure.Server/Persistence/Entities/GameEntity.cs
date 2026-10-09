@@ -11,8 +11,6 @@ public sealed class GameEntity
     public string? Description { get; set; }
     public string? HardwareRequirements { get; set; }
     public string? OtherInformation { get; set; }
-    public int? EngineId { get; set; }
-    public int? TypeId { get; set; }
     public string? CoverUrl { get; set; }
 
     /// <summary>Landscape Steam-style store header. Distinct from <see cref="CoverUrl"/> (list thumbnail).</summary>
@@ -48,8 +46,8 @@ public sealed class GameEntity
 
     public GameEntity? ParentGame { get; set; }
     public ICollection<GameEntity> Dlcs { get; set; } = new List<GameEntity>();
-    public GameEngineEntity? Engine { get; set; }
-    public GameGenreEntity? Genre { get; set; }
+    public ICollection<GameEngineEntity> Engines { get; set; } = new List<GameEngineEntity>();
+    public ICollection<GameGenreEntity> Genres { get; set; } = new List<GameGenreEntity>();
     public ICollection<GameBuildEntity> Builds { get; set; } = new List<GameBuildEntity>();
     public ICollection<GameScreenshotEntity> Screenshots { get; set; } = new List<GameScreenshotEntity>();
 }

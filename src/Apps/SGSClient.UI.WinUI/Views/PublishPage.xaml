@@ -76,12 +76,32 @@
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0" Spacing="4">
-              <TextBlock Text="Gatunek" Opacity="0.55" FontSize="12" />
-              <ComboBox x:Name="GenreCombo" HorizontalAlignment="Stretch" />
+              <TextBlock Text="Gatunki" Opacity="0.55" FontSize="12" />
+              <Expander Header="{x:Bind ViewModel.GameGenres.Summary, Mode=OneWay}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <ScrollViewer MaxHeight="220">
+                  <ItemsControl ItemsSource="{x:Bind ViewModel.GameGenres.Options}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Expander>
             </StackPanel>
             <StackPanel Grid.Column="1" Spacing="4">
-              <TextBlock Text="Silnik" Opacity="0.55" FontSize="12" />
-              <ComboBox x:Name="EngineCombo" HorizontalAlignment="Stretch" />
+              <TextBlock Text="Silniki" Opacity="0.55" FontSize="12" />
+              <Expander Header="{x:Bind ViewModel.GameEngines.Summary, Mode=OneWay}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <ScrollViewer MaxHeight="220">
+                  <ItemsControl ItemsSource="{x:Bind ViewModel.GameEngines.Options}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Expander>
             </StackPanel>
           </Grid>
 
