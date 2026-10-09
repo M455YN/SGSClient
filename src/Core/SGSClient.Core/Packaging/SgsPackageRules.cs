@@ -310,31 +310,32 @@ public static partial class SgsPackageRules
                 }
             }
 
-            var genre = SgsGameTaxonomy.NormalizeSlug(game.Genre);
-            if (genre is not null)
+            var genres = SgsGameTaxonomy.MergeSlugs(game.Genre, game.Genres);
+            foreach (var genre in genres.Where(g => !SgsGameTaxonomy.IsValidGenre(g)))
             {
-                if (!SgsGameTaxonomy.IsValidGenre(genre))
-                {
-                    errors.Add($"Nieznany gatunek '{game.Genre}'. Dozwolone: {string.Join(", ", SgsGameTaxonomy.Genres.Select(g => g.Symbol))}.");
-                }
-                else
-                {
-                    game.Genre = genre;
-                }
+                errors.Add($"Nieznany gatunek '{genre}'. Dozwolone: {string.Join(", ", SgsGameTaxonomy.Genres.Select(g => g.Symbol))}.");
             }
 
-            var engine = SgsGameTaxonomy.NormalizeSlug(game.Engine);
-            if (engine is not null)
+            if (genres.Count > SgsGameTaxonomy.MaxGenres)
             {
-                if (!SgsGameTaxonomy.IsValidEngine(engine))
-                {
-                    errors.Add($"Nieznany silnik '{game.Engine}'. Dozwolone: {string.Join(", ", SgsGameTaxonomy.Engines.Select(e => e.Symbol))}.");
-                }
-                else
-                {
-                    game.Engine = engine;
-                }
+                errors.Add($"Maksymalnie {SgsGameTaxonomy.MaxGenres} gatunków na grę.");
             }
+
+            var engines = SgsGameTaxonomy.MergeSlugs(game.Engine, game.Engines);
+            foreach (var engine in engines.Where(e => !SgsGameTaxonomy.IsValidEngine(e)))
+            {
+                errors.Add($"Nieznany silnik '{engine}'. Dozwolone: {string.Join(", ", SgsGameTaxonomy.Engines.Select(e => e.Symbol))}.");
+            }
+
+            if (engines.Count > SgsGameTaxonomy.MaxEngines)
+            {
+                errors.Add($"Maksymalnie {SgsGameTaxonomy.MaxEngines} silniki na grę.");
+            }
+
+            game.Genres = genres;
+            game.Genre = genres.FirstOrDefault();
+            game.Engines = engines;
+            game.Engine = engines.FirstOrDefault();
 
             ValidateStoreMetadata(game, errors);
             ValidateMedia(game.Media, errors);

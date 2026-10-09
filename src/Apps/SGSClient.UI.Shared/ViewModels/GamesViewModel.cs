@@ -199,9 +199,9 @@ public partial class GamesViewModel : ObservableObject
         if (!string.IsNullOrWhiteSpace(query.Genre))
         {
             var genre = query.Genre.Trim();
-            q = q.Where(g =>
-                (g.GenreSymbol?.Equals(genre, StringComparison.OrdinalIgnoreCase) ?? false)
-                || (g.GenreName?.Equals(genre, StringComparison.OrdinalIgnoreCase) ?? false));
+            q = q.Where(g => g.Genres.Any(x =>
+                x.Symbol.Equals(genre, StringComparison.OrdinalIgnoreCase)
+                || x.Name.Equals(genre, StringComparison.OrdinalIgnoreCase)));
         }
 
         return q.ToList();

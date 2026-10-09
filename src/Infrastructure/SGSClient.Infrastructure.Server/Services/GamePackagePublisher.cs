@@ -75,8 +75,8 @@ public sealed class GamePackagePublisher(
             var zipLink = $"{publicBase}/{manifest.Game.Symbol}/{manifest.Build.Version}/{fileName}"
                 .Replace('\\', '/');
 
-            var genreId = await ResolveGenreIdAsync(manifest.Game.Genre, cancellationToken);
-            var engineId = await ResolveEngineIdAsync(manifest.Game.Engine, cancellationToken);
+            var genres = await ResolveTaxonomyAsync(db.GameGenres, manifest.Game.Genres, g => g.Symbol, cancellationToken);
+            var engines = await ResolveTaxonomyAsync(db.GameEngines, manifest.Game.Engines, e => e.Symbol, cancellationToken);
 
             var mediaResult = ExtractMedia(tempZip, manifest, storage);
             if (!mediaResult.Success)
@@ -110,6 +110,8 @@ public sealed class GamePackagePublisher(
             var game = await db.Games
                 .Include(g => g.Builds)
                 .Include(g => g.Screenshots)
+                .Include(g => g.Genres)
+                .Include(g => g.Engines)
                 .FirstOrDefaultAsync(g => g.Symbol == manifest.Game.Symbol, cancellationToken);
 
             if (game is null)
@@ -122,8 +124,8 @@ public sealed class GamePackagePublisher(
                     Description = manifest.Game.Description,
                     HardwareRequirements = manifest.Game.HardwareRequirements,
                     OtherInformation = manifest.Game.OtherInformation,
-                    TypeId = genreId,
-                    EngineId = engineId,
+                    Genres = genres,
+                    Engines = engines,
                     CoverUrl = mediaResult.CoverUrl,
                     HeaderUrl = mediaResult.HeaderUrl,
                     LogoUrl = mediaResult.LogoUrl,
@@ -162,8 +164,18 @@ public sealed class GamePackagePublisher(
                 game.Description = manifest.Game.Description;
                 game.HardwareRequirements = manifest.Game.HardwareRequirements;
                 game.OtherInformation = manifest.Game.OtherInformation;
-                game.TypeId = genreId;
-                game.EngineId = engineId;
+                game.Genres.Clear();
+                foreach (var genre in genres)
+                {
+                    game.Genres.Add(genre);
+                }
+
+                game.Engines.Clear();
+                foreach (var engine in engines)
+                {
+                    game.Engines.Add(engine);
+                }
+
                 ApplyStoreMetadata(game, manifest.Game, overwriteMissing: false);
                 if (mediaResult.CoverUrl is not null)
                 {
@@ -268,12 +280,8 @@ public sealed class GamePackagePublisher(
                     Description = g.Description,
                     HardwareRequirements = g.HardwareRequirements,
                     OtherInformation = g.OtherInformation,
-                    EngineId = g.EngineId,
-                    TypeId = g.TypeId,
-                    GenreSymbol = g.Genre != null ? g.Genre.Symbol : null,
-                    GenreName = g.Genre != null ? g.Genre.Name : null,
-                    EngineSymbol = g.Engine != null ? g.Engine.Symbol : null,
-                    EngineName = g.Engine != null ? g.Engine.Name : null,
+                    Genres = g.Genres.OrderBy(x => x.Id).Select(x => new SgsGameTaxonomy.TaxonomyItem(x.Symbol, x.Name)).ToList(),
+                    Engines = g.Engines.OrderBy(x => x.Id).Select(x => new SgsGameTaxonomy.TaxonomyItem(x.Symbol, x.Name)).ToList(),
                     CoverUrl = g.CoverUrl,
                     HeaderUrl = g.HeaderUrl,
                     LogoUrl = g.LogoUrl,
@@ -414,32 +422,20 @@ public sealed class GamePackagePublisher(
         }
     }
 
-    private async Task<int?> ResolveGenreIdAsync(string? genreSymbol, CancellationToken cancellationToken)
+    private static async Task<List<T>> ResolveTaxonomyAsync<T>(
+        IQueryable<T> source,
+        IList<string>? slugs,
+        Func<T, string> symbolOf,
+        CancellationToken cancellationToken)
     {
-        var symbol = SgsGameTaxonomy.NormalizeSlug(genreSymbol);
-        if (symbol is null)
+        var wanted = SgsGameTaxonomy.MergeSlugs(null, slugs);
+        if (wanted.Count == 0)
         {
-            return null;
+            return [];
         }
 
-        return await db.GameGenres
-            .Where(g => g.Symbol == symbol)
-            .Select(g => (int?)g.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-    }
-
-    private async Task<int?> ResolveEngineIdAsync(string? engineSymbol, CancellationToken cancellationToken)
-    {
-        var symbol = SgsGameTaxonomy.NormalizeSlug(engineSymbol);
-        if (symbol is null)
-        {
-            return null;
-        }
-
-        return await db.GameEngines
-            .Where(e => e.Symbol == symbol)
-            .Select(e => (int?)e.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+        var all = await source.ToListAsync(cancellationToken);
+        return all.Where(x => wanted.Contains(symbolOf(x))).ToList();
     }
 
     private static MediaExtractResult ExtractMedia(

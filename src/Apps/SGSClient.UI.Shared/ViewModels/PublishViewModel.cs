@@ -52,10 +52,10 @@ public partial class PublishViewModel : ObservableObject
     public ObservableCollection<string> ParentGameOptions { get; } = [];
     public IReadOnlyList<string> PlatformOptions { get; } = ["windows", "linux", "macos"];
     public IReadOnlyList<string> ArchitectureOptions { get; } = ["x64", "x86", "arm64"];
-    public IReadOnlyList<string> GenreOptions { get; } =
-        SgsGameTaxonomy.Genres.Select(g => g.Symbol).Prepend("").ToArray();
-    public IReadOnlyList<string> EngineOptions { get; } =
-        SgsGameTaxonomy.Engines.Select(e => e.Symbol).Prepend("").ToArray();
+    public TaxonomySelection GameGenres { get; } =
+        new(SgsGameTaxonomy.Genres, SgsGameTaxonomy.MaxGenres, "Wybierz gatunki");
+    public TaxonomySelection GameEngines { get; } =
+        new(SgsGameTaxonomy.Engines, SgsGameTaxonomy.MaxEngines, "Wybierz silniki");
 
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
     [ObservableProperty] public partial string SelectedFolder { get; set; } = string.Empty;
@@ -67,8 +67,6 @@ public partial class PublishViewModel : ObservableObject
     [ObservableProperty] public partial string GameDescription { get; set; } = string.Empty;
     [ObservableProperty] public partial string HardwareRequirements { get; set; } = string.Empty;
     [ObservableProperty] public partial string OtherInformation { get; set; } = string.Empty;
-    [ObservableProperty] public partial string GameGenre { get; set; } = string.Empty;
-    [ObservableProperty] public partial string GameEngine { get; set; } = string.Empty;
     [ObservableProperty] public partial string MediaCover { get; set; } = string.Empty;
     [ObservableProperty] public partial string MediaHeader { get; set; } = string.Empty;
     [ObservableProperty] public partial string MediaLogo { get; set; } = string.Empty;
@@ -535,8 +533,8 @@ public partial class PublishViewModel : ObservableObject
         GameDescription = manifest.Game.Description ?? string.Empty;
         HardwareRequirements = manifest.Game.HardwareRequirements ?? string.Empty;
         OtherInformation = manifest.Game.OtherInformation ?? string.Empty;
-        GameGenre = manifest.Game.Genre ?? string.Empty;
-        GameEngine = manifest.Game.Engine ?? string.Empty;
+        GameGenres.Set(SgsGameTaxonomy.MergeSlugs(manifest.Game.Genre, manifest.Game.Genres));
+        GameEngines.Set(SgsGameTaxonomy.MergeSlugs(manifest.Game.Engine, manifest.Game.Engines));
         _studioName = manifest.Game.StudioName;
         _websiteUrl = manifest.Game.WebsiteUrl;
         _discordUrl = manifest.Game.DiscordUrl;
@@ -598,8 +596,10 @@ public partial class PublishViewModel : ObservableObject
                 Description = NullIfWhiteSpace(GameDescription),
                 HardwareRequirements = NullIfWhiteSpace(HardwareRequirements),
                 OtherInformation = NullIfWhiteSpace(OtherInformation),
-                Genre = NullIfWhiteSpace(GameGenre),
-                Engine = NullIfWhiteSpace(GameEngine),
+                Genre = GameGenres.SelectedSymbols.FirstOrDefault(),
+                Genres = GameGenres.SelectedSymbols.ToList(),
+                Engine = GameEngines.SelectedSymbols.FirstOrDefault(),
+                Engines = GameEngines.SelectedSymbols.ToList(),
                 StudioName = NullIfWhiteSpace(_studioName),
                 WebsiteUrl = NullIfWhiteSpace(_websiteUrl),
                 DiscordUrl = NullIfWhiteSpace(_discordUrl),
@@ -634,8 +634,8 @@ public partial class PublishViewModel : ObservableObject
         GameDescription = string.Empty;
         HardwareRequirements = string.Empty;
         OtherInformation = string.Empty;
-        GameGenre = string.Empty;
-        GameEngine = string.Empty;
+        GameGenres.Set(null);
+        GameEngines.Set(null);
         _studioName = null;
         _websiteUrl = null;
         _discordUrl = null;

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SGSClient.Core.DTOs;
+using SGSClient.Core.Packaging;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
 using SGSClient.Infrastructure.Server.Persistence.Entities;
@@ -144,12 +145,8 @@ public sealed class EfEntitlementService(SgsServerDbContext db) : IEntitlementSe
             Description = g.Description,
             HardwareRequirements = g.HardwareRequirements,
             OtherInformation = g.OtherInformation,
-            EngineId = g.EngineId,
-            TypeId = g.TypeId,
-            GenreSymbol = g.Genre != null ? g.Genre.Symbol : null,
-            GenreName = g.Genre != null ? g.Genre.Name : null,
-            EngineSymbol = g.Engine != null ? g.Engine.Symbol : null,
-            EngineName = g.Engine != null ? g.Engine.Name : null,
+            Genres = g.Genres.OrderBy(x => x.Id).Select(x => new SgsGameTaxonomy.TaxonomyItem(x.Symbol, x.Name)).ToList(),
+            Engines = g.Engines.OrderBy(x => x.Id).Select(x => new SgsGameTaxonomy.TaxonomyItem(x.Symbol, x.Name)).ToList(),
             CoverUrl = g.CoverUrl,
             HeaderUrl = g.HeaderUrl,
             LogoUrl = g.LogoUrl,

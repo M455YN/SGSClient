@@ -37,12 +37,11 @@ public sealed class EfGameRepository(
             if (!string.IsNullOrWhiteSpace(query.Genre))
             {
                 var genre = query.Genre.Trim();
-                games = games.Where(g =>
-                    g.Genre != null
-                    && (g.Genre.Name == genre
-                        || g.Genre.Symbol == genre
-                        || g.Genre.Name.Contains(genre)
-                        || g.Genre.Symbol.Contains(genre)));
+                games = games.Where(g => g.Genres.Any(x =>
+                    x.Name == genre
+                    || x.Symbol == genre
+                    || x.Name.Contains(genre)
+                    || x.Symbol.Contains(genre)));
             }
 
             if (!string.IsNullOrWhiteSpace(query.Tag))
@@ -123,7 +122,7 @@ public sealed class EfGameRepository(
         UpdateGameRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == gameId && g.UserId == userId, cancellationToken);
+        var game = await db.Games.Include(g => g.Genres).Include(g => g.Engines).FirstOrDefaultAsync(g => g.Id == gameId && g.UserId == userId, cancellationToken);
         if (game is null)
         {
             return null;
@@ -178,7 +177,7 @@ public sealed class EfGameRepository(
         UpdateGameRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == gameId, cancellationToken);
+        var game = await db.Games.Include(g => g.Genres).Include(g => g.Engines).FirstOrDefaultAsync(g => g.Id == gameId, cancellationToken);
         if (game is null)
         {
             return null;
@@ -519,20 +518,20 @@ public sealed class EfGameRepository(
                 : request.OtherInformation.Trim();
         }
 
-        if (request.Genre is not null)
+        var genreRequest = request.Genres ?? (request.Genre is null ? null : SgsGameTaxonomy.MergeSlugs(request.Genre, null));
+        if (genreRequest is not null)
         {
-            game.TypeId = await ResolveTaxonomyIdAsync(
-                request.Genre,
-                isGenre: true,
-                cancellationToken);
+            var slugs = SgsGameTaxonomy.MergeSlugs(null, genreRequest);
+            await ReplaceTaxonomyAsync(game.Genres, db.GameGenres, slugs, x => x.Symbol, SgsGameTaxonomy.IsValidGenre,
+                SgsGameTaxonomy.MaxGenres, "gatunek", "gatunków", cancellationToken);
         }
 
-        if (request.Engine is not null)
+        var engineRequest = request.Engines ?? (request.Engine is null ? null : SgsGameTaxonomy.MergeSlugs(request.Engine, null));
+        if (engineRequest is not null)
         {
-            game.EngineId = await ResolveTaxonomyIdAsync(
-                request.Engine,
-                isGenre: false,
-                cancellationToken);
+            var slugs = SgsGameTaxonomy.MergeSlugs(null, engineRequest);
+            await ReplaceTaxonomyAsync(game.Engines, db.GameEngines, slugs, x => x.Symbol, SgsGameTaxonomy.IsValidEngine,
+                SgsGameTaxonomy.MaxEngines, "silnik", "silników", cancellationToken);
         }
 
         if (request.DraftP is not null)
@@ -693,40 +692,41 @@ public sealed class EfGameRepository(
         return trimmed.Length <= 2048 ? trimmed : throw new ArgumentException($"{label} jest za długi.");
     }
 
-    private async Task<int?> ResolveTaxonomyIdAsync(string raw, bool isGenre, CancellationToken cancellationToken)
+    private static async Task ReplaceTaxonomyAsync<T>(
+        ICollection<T> target,
+        IQueryable<T> source,
+        IReadOnlyList<string> slugs,
+        Func<T, string> symbolOf,
+        Func<string?, bool> isValid,
+        int max,
+        string singular,
+        string genitivePlural,
+        CancellationToken cancellationToken)
+        where T : class
     {
-        if (string.IsNullOrWhiteSpace(raw))
+        if (slugs.Count > max)
         {
-            return null;
+            throw new ArgumentException($"Maksymalnie {max} {genitivePlural} na grę.");
         }
 
-        var symbol = SgsGameTaxonomy.NormalizeSlug(raw)
-            ?? throw new ArgumentException(isGenre ? "Nieprawidłowy gatunek." : "Nieprawidłowy silnik.");
-
-        if (isGenre)
+        var bad = slugs.FirstOrDefault(s => !isValid(s));
+        if (bad is not null)
         {
-            if (!SgsGameTaxonomy.IsValidGenre(symbol))
-            {
-                throw new ArgumentException($"Nieznany gatunek '{raw}'.");
-            }
-
-            var id = await db.GameGenres
-                .Where(g => g.Symbol == symbol)
-                .Select(g => (int?)g.Id)
-                .FirstOrDefaultAsync(cancellationToken);
-            return id ?? throw new ArgumentException($"Gatunek '{symbol}' nie istnieje w bazie.");
+            throw new ArgumentException($"Nieznany {singular} '{bad}'.");
         }
 
-        if (!SgsGameTaxonomy.IsValidEngine(symbol))
+        var all = await source.ToListAsync(cancellationToken);
+        var wanted = all.Where(x => slugs.Contains(symbolOf(x))).ToList();
+        if (wanted.Count != slugs.Count)
         {
-            throw new ArgumentException($"Nieznany silnik '{raw}'.");
+            throw new ArgumentException($"Nie wszystkie wartości ({singular}) istnieją w bazie.");
         }
 
-        var engineId = await db.GameEngines
-            .Where(e => e.Symbol == symbol)
-            .Select(e => (int?)e.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-        return engineId ?? throw new ArgumentException($"Silnik '{symbol}' nie istnieje w bazie.");
+        target.Clear();
+        foreach (var item in wanted)
+        {
+            target.Add(item);
+        }
     }
 
     private static System.Linq.Expressions.Expression<Func<GameEntity, GameDto>> ProjectGame(bool includeDlcs) =>
@@ -739,12 +739,8 @@ public sealed class EfGameRepository(
             Description = g.Description,
             HardwareRequirements = g.HardwareRequirements,
             OtherInformation = g.OtherInformation,
-            EngineId = g.EngineId,
-            TypeId = g.TypeId,
-            GenreSymbol = g.Genre != null ? g.Genre.Symbol : null,
-            GenreName = g.Genre != null ? g.Genre.Name : null,
-            EngineSymbol = g.Engine != null ? g.Engine.Symbol : null,
-            EngineName = g.Engine != null ? g.Engine.Name : null,
+            Genres = g.Genres.OrderBy(x => x.Id).Select(x => new SgsGameTaxonomy.TaxonomyItem(x.Symbol, x.Name)).ToList(),
+            Engines = g.Engines.OrderBy(x => x.Id).Select(x => new SgsGameTaxonomy.TaxonomyItem(x.Symbol, x.Name)).ToList(),
             CoverUrl = g.CoverUrl,
             HeaderUrl = g.HeaderUrl,
             LogoUrl = g.LogoUrl,

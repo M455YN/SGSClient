@@ -37,10 +37,6 @@ public partial class StudioViewModel : ObservableObject
     }
 
     public string Title { get; } = "Panel twórcy";
-    public IReadOnlyList<string> GenreOptions { get; } =
-        SgsGameTaxonomy.Genres.Select(g => g.Symbol).Prepend("").ToArray();
-    public IReadOnlyList<string> EngineOptions { get; } =
-        SgsGameTaxonomy.Engines.Select(e => e.Symbol).Prepend("").ToArray();
     public IReadOnlyList<string> ReleaseStatusOptions { get; } = GameStoreLabels.ReleaseStatusOptions;
     public IReadOnlyList<string> AgeRatingOptions { get; } = GameStoreLabels.AgeRatingOptions;
 

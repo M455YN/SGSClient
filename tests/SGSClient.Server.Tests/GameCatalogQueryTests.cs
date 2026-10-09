@@ -15,11 +15,12 @@ public class GameCatalogQueryTests
     public async Task GetPublishedGamesAsync_FiltersByQueryGenreAndSort()
     {
         await using var db = CreateDb();
-        db.GameGenres.Add(new GameGenreEntity { Id = 1, Symbol = "rpg", Name = "RPG" });
-        db.GameGenres.Add(new GameGenreEntity { Id = 2, Symbol = "action", Name = "Action" });
-        db.Games.Add(MakeGame(1, "Alpha Quest", "alpha", featured: true, genreId: 1, createdOffsetDays: 3));
-        db.Games.Add(MakeGame(2, "Beta Blast", "beta", featured: false, genreId: 2, createdOffsetDays: 1));
-        db.Games.Add(MakeGame(3, "Gamma RPG", "gamma", featured: false, genreId: 1, createdOffsetDays: 2));
+        var rpg = new GameGenreEntity { Id = 1, Symbol = "rpg", Name = "RPG" };
+        var action = new GameGenreEntity { Id = 2, Symbol = "action", Name = "Action" };
+        db.GameGenres.AddRange(rpg, action);
+        db.Games.Add(MakeGame(1, "Alpha Quest", "alpha", featured: true, genres: [rpg], createdOffsetDays: 3));
+        db.Games.Add(MakeGame(2, "Beta Blast", "beta", featured: false, genres: [action], createdOffsetDays: 1));
+        db.Games.Add(MakeGame(3, "Gamma RPG", "gamma", featured: false, genres: [rpg, action], createdOffsetDays: 2));
         await db.SaveChangesAsync();
 
         var repo = new EfGameRepository(db, Options.Create(new GameStorageSettings { StoragePath = "." }));
@@ -31,6 +32,10 @@ public class GameCatalogQueryTests
         var byGenre = await repo.GetPublishedGamesAsync(new GameCatalogQuery { Genre = "RPG" });
         Assert.Equal(2, byGenre.Count);
 
+        var byAction = await repo.GetPublishedGamesAsync(new GameCatalogQuery { Genre = "action" });
+        Assert.Equal(2, byAction.Count);
+        Assert.Contains(byAction, g => g.Title == "Gamma RPG" && g.Genres.Count == 2);
+
         var newest = await repo.GetPublishedGamesAsync(new GameCatalogQuery { Sort = "newest" });
         Assert.Equal("Beta Blast", newest[0].Title);
     }
@@ -40,7 +45,7 @@ public class GameCatalogQueryTests
         string title,
         string symbol,
         bool featured,
-        int genreId,
+        GameGenreEntity[] genres,
         int createdOffsetDays) =>
         new()
         {
@@ -51,7 +56,7 @@ public class GameCatalogQueryTests
             DraftP = false,
             FeaturedP = featured,
             FeaturedOrder = featured ? 1 : null,
-            TypeId = genreId,
+            Genres = genres,
             Kind = GameContentKind.Game,
             CreatedAtUtc = DateTimeOffset.UtcNow.AddDays(-createdOffsetDays),
             Builds =

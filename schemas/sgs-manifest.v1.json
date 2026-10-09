@@ -62,7 +62,20 @@
             "battle-royale", "tower-defense", "idle", "casual", "party", "rhythm", "educational", "narrative",
             "walking-sim", "vr", "other", null
           ],
-          "description": "Catalog genre slug."
+          "description": "Single catalog genre slug (legacy alias of genres)."
+        },
+        "genres": {
+          "type": ["array", "null"],
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": { "enum": [
+            "action", "adventure", "rpg", "strategy", "simulation", "sports", "racing", "puzzle", "horror", "indie",
+            "platformer", "shooter", "fps", "tps", "fighting", "stealth", "survival", "sandbox", "open-world",
+            "roguelike", "roguelite", "metroidvania", "visual-novel", "card", "turn-based", "mmo", "moba",
+            "battle-royale", "tower-defense", "idle", "casual", "party", "rhythm", "educational", "narrative",
+            "walking-sim", "vr", "other"
+          ] },
+          "description": "Catalog genre slugs (max 5)."
         },
         "engine": {
           "type": ["string", "null"],
@@ -72,7 +85,19 @@
             "clickteam-fusion", "source", "source2", "idtech", "frostbite", "creation-engine", "red-engine",
             "anvil", "snowdrop", "o3de", "raylib", "pygame", "sdl", "html5", "roblox", "custom", "other", null
           ],
-          "description": "Game engine slug."
+          "description": "Single game engine slug (legacy alias of engines)."
+        },
+        "engines": {
+          "type": ["array", "null"],
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": [
+            "unity", "unreal", "godot", "cryengine", "gamemaker", "construct", "rpgmaker", "renpy", "defold",
+            "monogame", "fna", "stride", "bevy", "libgdx", "love2d", "phaser", "cocos", "solar2d",
+            "clickteam-fusion", "source", "source2", "idtech", "frostbite", "creation-engine", "red-engine",
+            "anvil", "snowdrop", "o3de", "raylib", "pygame", "sdl", "html5", "roblox", "custom", "other"
+          ] },
+          "description": "Game engine slugs (max 3)."
         },
         "studioName": {
           "type": ["string", "null"],

@@ -244,9 +244,6 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<bool>("DraftP")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("EngineId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("FeaturedOrder")
                         .HasColumnType("int");
 
@@ -318,9 +315,6 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<int?>("TypeId")
-                        .HasColumnType("int");
-
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
@@ -331,8 +325,6 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DraftP");
-
-                    b.HasIndex("EngineId");
 
                     b.HasIndex("FeaturedOrder");
 
@@ -346,8 +338,6 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
 
                     b.HasIndex("Symbol")
                         .IsUnique();
-
-                    b.HasIndex("TypeId");
 
                     b.HasIndex("UserId");
 
@@ -762,6 +752,36 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.ToTable("user_relationships", (string)null);
                 });
 
+            modelBuilder.Entity("game_engine_links", b =>
+                {
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EngineId")
+                        .HasColumnType("int");
+
+                    b.HasKey("GameId", "EngineId");
+
+                    b.HasIndex("EngineId");
+
+                    b.ToTable("game_engine_links");
+                });
+
+            modelBuilder.Entity("game_genre_links", b =>
+                {
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GenreId")
+                        .HasColumnType("int");
+
+                    b.HasKey("GameId", "GenreId");
+
+                    b.HasIndex("GenreId");
+
+                    b.ToTable("game_genre_links");
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.DirectMessageEntity", b =>
                 {
                     b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "Recipient")
@@ -816,24 +836,10 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", b =>
                 {
-                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", "Engine")
-                        .WithMany("Games")
-                        .HasForeignKey("EngineId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "ParentGame")
                         .WithMany("Dlcs")
                         .HasForeignKey("ParentGameId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameGenreEntity", "Genre")
-                        .WithMany("Games")
-                        .HasForeignKey("TypeId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Engine");
-
-                    b.Navigation("Genre");
 
                     b.Navigation("ParentGame");
                 });
@@ -1012,14 +1018,39 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("Requester");
                 });
 
+            modelBuilder.Entity("game_engine_links", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", null)
+                        .WithMany()
+                        .HasForeignKey("EngineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", null)
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("game_genre_links", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", null)
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameGenreEntity", null)
+                        .WithMany()
+                        .HasForeignKey("GenreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildEntity", b =>
                 {
                     b.Navigation("Versions");
-                });
-
-            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEngineEntity", b =>
-                {
-                    b.Navigation("Games");
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", b =>
@@ -1029,11 +1060,6 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("Dlcs");
 
                     b.Navigation("Screenshots");
-                });
-
-            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameGenreEntity", b =>
-                {
-                    b.Navigation("Games");
                 });
 #pragma warning restore 612, 618
         }

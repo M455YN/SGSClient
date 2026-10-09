@@ -204,10 +204,30 @@
                            Text="{Binding SelectedGame.EditDescription, Mode=TwoWay}"/>
                   <TextBox PlaceholderText="Wymagania sprzętowe" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
                            Text="{Binding SelectedGame.EditHardwareRequirements, Mode=TwoWay}"/>
-                  <ComboBox PlaceholderText="Gatunek" ItemsSource="{Binding GenreOptions}"
-                            SelectedItem="{Binding SelectedGame.EditGenre, Mode=TwoWay}"/>
-                  <ComboBox PlaceholderText="Silnik" ItemsSource="{Binding EngineOptions}"
-                            SelectedItem="{Binding SelectedGame.EditEngine, Mode=TwoWay}"/>
+                  <TextBlock Text="Gatunki" Classes="caption"/>
+                <Expander Header="{Binding SelectedGame.EditGenres.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                  <ScrollViewer MaxHeight="220">
+                    <ItemsControl ItemsSource="{Binding SelectedGame.EditGenres.Options}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TaxonomyOption">
+                          <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </Expander>
+                <TextBlock Text="Silniki" Classes="caption"/>
+                <Expander Header="{Binding SelectedGame.EditEngines.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                  <ScrollViewer MaxHeight="220">
+                    <ItemsControl ItemsSource="{Binding SelectedGame.EditEngines.Options}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TaxonomyOption">
+                          <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected, Mode=TwoWay}"/>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </Expander>
                   <TextBlock Text="Właściciel (kto dodał / twórca)" Classes="caption"/>
                   <ComboBox ItemsSource="{Binding Users}"
                             SelectedValue="{Binding SelectedGame.EditOwnerUserId, Mode=TwoWay}"

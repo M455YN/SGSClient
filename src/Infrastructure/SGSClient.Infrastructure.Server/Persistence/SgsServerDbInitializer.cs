@@ -33,17 +33,14 @@ public static class SgsServerDbInitializer
 
     private static async Task SeedCatalogAsync(SgsServerDbContext db, CancellationToken cancellationToken)
     {
-        var actionGenreId = await db.GameGenres
+        var actionGenre = await db.GameGenres
             .Where(g => g.Symbol == "action")
-            .Select(g => g.Id)
             .FirstAsync(cancellationToken);
-        var adventureGenreId = await db.GameGenres
+        var adventureGenre = await db.GameGenres
             .Where(g => g.Symbol == "adventure")
-            .Select(g => g.Id)
             .FirstAsync(cancellationToken);
-        var customEngineId = await db.GameEngines
+        var customEngine = await db.GameEngines
             .Where(e => e.Symbol == "custom")
-            .Select(e => e.Id)
             .FirstAsync(cancellationToken);
 
         // ZipLink placeholders — SeedGamePackageWriter rewrites them to real storage packages.
@@ -55,8 +52,8 @@ public static class SgsServerDbInitializer
             Description = "Sample catalog game for local development (claim → install → play).",
             HardwareRequirements = "RAM: 4 GB",
             OtherInformation = null,
-            EngineId = customEngineId,
-            TypeId = actionGenreId,
+            Engines = [customEngine],
+            Genres = [actionGenre],
             DraftP = false,
             FeaturedP = true,
             Builds =
@@ -90,8 +87,8 @@ public static class SgsServerDbInitializer
             Description = "Another sample title with a seed package for smoke tests.",
             HardwareRequirements = "RAM: 8 GB",
             OtherInformation = "Early access notes.",
-            EngineId = customEngineId,
-            TypeId = adventureGenreId,
+            Engines = [customEngine],
+            Genres = [adventureGenre, actionGenre],
             DraftP = false,
             FeaturedP = false,
             Builds =
