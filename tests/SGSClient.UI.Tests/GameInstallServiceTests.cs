@@ -195,6 +195,30 @@ public class GameInstallServiceTests
 
     private sealed class NullSgsApiService : ISgsApiService
     {
+        public Task<GameReviewsSummaryDto?> GetGameReviewsAsync(
+            int gameId,
+            string? sort = null,
+            bool? recommended = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameReviewsSummaryDto?>(null);
+
+        public Task<bool> VoteGameReviewAsync(long reviewId, bool helpful, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<IReadOnlyList<GameReviewCommentDto>> GetGameReviewCommentsAsync(
+            long reviewId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameReviewCommentDto>>([]);
+
+        public Task<(GameReviewCommentDto? Comment, string? Error)> AddGameReviewCommentAsync(
+            long reviewId,
+            string text,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(GameReviewCommentDto?, string?)>((null, null));
+
+        public Task<bool> DeleteGameReviewCommentAsync(long commentId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
         public Task<IReadOnlyList<GameDto>> GetGamesAsync(
             GameCatalogQuery? query = null,
             CancellationToken cancellationToken = default) =>
