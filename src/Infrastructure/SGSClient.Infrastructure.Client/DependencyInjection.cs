@@ -59,15 +59,17 @@ public static class DependencyInjection
             });
 
             services.AddHttpClient<ISgsApiService, HttpSgsApiService>(client =>
-            {
-                client.BaseAddress = new Uri(apiBase);
-            });
+                {
+                    client.BaseAddress = new Uri(apiBase);
+                })
+                .AddHttpMessageHandler(sp => new ApiBearerHandler(sp.GetRequiredService<IAuthSession>(), new Uri(apiBase)));
 
             services.AddHttpClient<IGameUploadClient, GameUploadClient>(client =>
-            {
-                client.BaseAddress = new Uri(apiBase);
-                client.Timeout = TimeSpan.FromMinutes(30);
-            });
+                {
+                    client.BaseAddress = new Uri(apiBase);
+                    client.Timeout = TimeSpan.FromMinutes(30);
+                })
+                .AddHttpMessageHandler(sp => new ApiBearerHandler(sp.GetRequiredService<IAuthSession>(), new Uri(apiBase)));
 
             services.AddHttpClient<IGameInstallService, GameInstallService>(client =>
             {

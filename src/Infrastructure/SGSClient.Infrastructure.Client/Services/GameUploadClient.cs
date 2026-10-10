@@ -14,7 +14,7 @@ public interface IGameUploadClient
         CancellationToken cancellationToken = default);
 }
 
-public sealed class GameUploadClient(HttpClient http, IAuthSession auth) : IGameUploadClient
+public sealed class GameUploadClient(HttpClient http) : IGameUploadClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -42,12 +42,6 @@ public sealed class GameUploadClient(HttpClient http, IAuthSession auth) : IGame
         {
             Content = content
         };
-
-        var token = await auth.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        }
 
         using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
         progress?.Report(1);

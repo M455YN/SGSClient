@@ -28,7 +28,8 @@ public class InstallQueueServiceTests
 
         var queue = new InstallQueueService(
             provider.GetRequiredService<IServiceScopeFactory>(),
-            Options.Create(new ClientInstallSettings { AutoUpdateEnabled = false }));
+            Options.Create(new ClientInstallSettings { AutoUpdateEnabled = false }),
+            new FakeUserSettings());
 
         await queue.EnqueueInstallAsync(1);
         await queue.EnqueueInstallAsync(2);
@@ -115,5 +116,13 @@ public class InstallQueueServiceTests
             Items.Remove(gameId);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class FakeUserSettings : IClientUserSettingsStore
+    {
+        public ClientUserSettings Load() => new();
+
+        public Task SaveAsync(ClientUserSettings settings, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 }

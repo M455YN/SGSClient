@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -6,11 +5,97 @@ using SGSClient.Core.Interfaces;
 
 namespace SGSClient.Infrastructure.Client.Services;
 
+/// <summary>
+/// Catalog / library / admin / review API client. The bearer token is added by
+/// <see cref="ApiBearerHandler"/>, so methods here only describe the route and payload.
+/// </summary>
 public sealed class HttpSgsApiService(
     HttpClient http,
-    IAuthSession auth,
     ICatalogCacheStore? catalogCache = null) : ISgsApiService
 {
+    // ---- request helpers -------------------------------------------------------------------
+
+    /// <summary>Sends a request and returns the JSON body; null on a non-success status or any failure.</summary>
+    private async Task<T?> SendJsonAsync<T>(
+        HttpMethod method,
+        string url,
+        object? body,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        try
+        {
+            using var request = CreateRequest(method, url, body);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<T>(cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Like <see cref="SendJsonAsync{T}"/> for list endpoints; empty list on failure.</summary>
+    private async Task<IReadOnlyList<T>> SendListAsync<T>(
+        string url,
+        CancellationToken cancellationToken) =>
+        await SendJsonAsync<List<T>>(HttpMethod.Get, url, body: null, cancellationToken).ConfigureAwait(false) ?? [];
+
+    /// <summary>Sends a request and reports only whether the server accepted it.</summary>
+    private async Task<bool> SendAsync(
+        HttpMethod method,
+        string url,
+        object? body,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var request = CreateRequest(method, url, body);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Sends a request and returns either the parsed body or the server error text.</summary>
+    private async Task<(T? Value, string? Error)> SendWithErrorAsync<T>(
+        HttpMethod method,
+        string url,
+        object? body,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        try
+        {
+            using var request = CreateRequest(method, url, body);
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ReadErrorAsync(response, cancellationToken).ConfigureAwait(false));
+            }
+
+            var value = await response.Content.ReadFromJsonAsync<T>(cancellationToken).ConfigureAwait(false);
+            return (value, null);
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
+    private static HttpRequestMessage CreateRequest(HttpMethod method, string url, object? body) =>
+        new(method, url) { Content = body is null ? null : JsonContent.Create(body) };
+
+    // ---- catalog ---------------------------------------------------------------------------
+
     public async Task<IReadOnlyList<GameDto>> GetGamesAsync(
         GameCatalogQuery? query = null,
         CancellationToken cancellationToken = default)
@@ -44,135 +129,33 @@ public sealed class HttpSgsApiService(
         }
     }
 
-    public async Task<GameDto?> GetGameAsync(int id, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var response = await http.GetAsync($"api/Games/{id}", cancellationToken)
-                .ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+    public Task<GameDto?> GetGameAsync(int id, CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameDto>(HttpMethod.Get, $"api/Games/{id}", null, cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task<IReadOnlyList<GameDlcDto>> GetGameDlcsAsync(
+    public Task<IReadOnlyList<GameDlcDto>> GetGameDlcsAsync(
         int gameId,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var response = await http.GetAsync($"api/Games/{gameId}/dlcs", cancellationToken)
-                .ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return [];
-            }
+        CancellationToken cancellationToken = default) =>
+        SendListAsync<GameDlcDto>($"api/Games/{gameId}/dlcs", cancellationToken);
 
-            var dlcs = await response.Content.ReadFromJsonAsync<List<GameDlcDto>>(cancellationToken)
-                .ConfigureAwait(false);
-            return dlcs ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
+    // ---- library / wishlist ----------------------------------------------------------------
 
-    public async Task<IReadOnlyList<GameDto>> GetMyGamesAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, "api/me/games");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return [];
-            }
+    public Task<IReadOnlyList<GameDto>> GetMyGamesAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<GameDto>("api/me/games", cancellationToken);
 
-            var games = await response.Content.ReadFromJsonAsync<List<GameDto>>(cancellationToken)
-                .ConfigureAwait(false);
-            return games ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
+    public Task<IReadOnlyList<GameDto>> GetMyLibraryAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<GameDto>("api/me/library", cancellationToken);
 
-    public async Task<IReadOnlyList<GameDto>> GetMyLibraryAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, "api/me/library");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return [];
-            }
+    public Task<GameDto?> ClaimGameAsync(int gameId, CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameDto>(HttpMethod.Post, $"api/me/library/{gameId}", null, cancellationToken);
 
-            var games = await response.Content.ReadFromJsonAsync<List<GameDto>>(cancellationToken)
-                .ConfigureAwait(false);
-            return games ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
-    public async Task<GameDto?> ClaimGameAsync(int gameId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Post, $"api/me/library/{gameId}");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-
-            return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task<bool> RemoveFromLibraryAsync(int gameId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/me/library/{gameId}");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    public Task<bool> RemoveFromLibraryAsync(int gameId, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"api/me/library/{gameId}", null, cancellationToken);
 
     public async Task<IReadOnlyList<GameDto>> GetWishlistAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, "api/me/wishlist");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
             using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
@@ -210,83 +193,22 @@ public sealed class HttpSgsApiService(
         }
     }
 
-    public async Task<GameDto?> AddToWishlistAsync(int gameId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Post, $"api/me/wishlist/{gameId}");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+    public Task<GameDto?> AddToWishlistAsync(int gameId, CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameDto>(HttpMethod.Post, $"api/me/wishlist/{gameId}", null, cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    public Task<bool> RemoveFromWishlistAsync(int gameId, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"api/me/wishlist/{gameId}", null, cancellationToken);
 
-    public async Task<bool> RemoveFromWishlistAsync(int gameId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/me/wishlist/{gameId}");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    public Task<bool> SendPresenceAsync(CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Post, "api/me/presence", null, cancellationToken);
 
-    public async Task<bool> SendPresenceAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Post, "api/me/presence");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    // ---- owner / admin game management -----------------------------------------------------
 
-    public async Task<GameDto?> UpdateGameAsync(
+    public Task<GameDto?> UpdateGameAsync(
         int gameId,
         UpdateGameRequestDto request,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var message = new HttpRequestMessage(HttpMethod.Patch, $"api/Games/{gameId}")
-            {
-                Content = JsonContent.Create(request)
-            };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-
-            return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
+        CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameDto>(HttpMethod.Patch, $"api/Games/{gameId}", request, cancellationToken);
 
     private static string BuildGamesUrl(GameCatalogQuery? query)
     {
@@ -368,106 +290,23 @@ public sealed class HttpSgsApiService(
             && (string.IsNullOrWhiteSpace(query.Sort) || query.Sort is "featured" or "title" or "newest");
     }
 
-    public async Task<bool> DeleteGameAsync(int gameId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/Games/{gameId}");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+    public Task<bool> DeleteGameAsync(int gameId, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"api/Games/{gameId}", null, cancellationToken);
 
-    public async Task<IReadOnlyList<GameDto>> GetAdminGamesAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, "api/admin/games");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return [];
-            }
+    public Task<IReadOnlyList<GameDto>> GetAdminGamesAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<GameDto>("api/admin/games", cancellationToken);
 
-            var games = await response.Content.ReadFromJsonAsync<List<GameDto>>(cancellationToken)
-                .ConfigureAwait(false);
-            return games ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
-    public async Task<GameDto?> UpdateAdminGameAsync(
+    public Task<GameDto?> UpdateAdminGameAsync(
         int gameId,
         UpdateGameRequestDto request,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var message = new HttpRequestMessage(HttpMethod.Patch, $"api/admin/games/{gameId}")
-            {
-                Content = JsonContent.Create(request)
-            };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+        CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameDto>(HttpMethod.Patch, $"api/admin/games/{gameId}", request, cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    public Task<bool> DeleteAdminGameAsync(int gameId, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"api/admin/games/{gameId}", null, cancellationToken);
 
-    public async Task<bool> DeleteAdminGameAsync(int gameId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/admin/games/{gameId}");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    public async Task<IReadOnlyList<AdminUserDto>> GetAdminUsersAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, "api/admin/users");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return [];
-            }
-
-            var users = await response.Content.ReadFromJsonAsync<List<AdminUserDto>>(cancellationToken)
-                .ConfigureAwait(false);
-            return users ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
+    public Task<IReadOnlyList<AdminUserDto>> GetAdminUsersAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<AdminUserDto>("api/admin/users", cancellationToken);
 
     public async Task<AdminRoleUpdateResult> UpdateAdminUserRoleAsync(
         int userId,
@@ -480,7 +319,6 @@ public sealed class HttpSgsApiService(
             {
                 Content = JsonContent.Create(new UpdateUserRoleRequestDto { Role = role })
             };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
             using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
@@ -531,6 +369,8 @@ public sealed class HttpSgsApiService(
     {
         public string[]? Errors { get; init; }
     }
+
+    // ---- media -----------------------------------------------------------------------------
 
     public Task<GameDto?> UploadGameCoverAsync(
         int gameId,
@@ -635,187 +475,57 @@ public sealed class HttpSgsApiService(
             HttpMethod.Delete,
             cancellationToken);
 
-    public async Task<IReadOnlyList<GameBuildVersionDto>> GetBuildVersionsAsync(
+    // ---- build versions / stats ------------------------------------------------------------
+
+    public Task<IReadOnlyList<GameBuildVersionDto>> GetBuildVersionsAsync(
         int gameId,
         int buildId,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var response = await http
-                .GetAsync($"api/Games/{gameId}/builds/{buildId}/versions", cancellationToken)
-                .ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return [];
-            }
+        CancellationToken cancellationToken = default) =>
+        SendListAsync<GameBuildVersionDto>($"api/Games/{gameId}/builds/{buildId}/versions", cancellationToken);
 
-            var versions = await response.Content
-                .ReadFromJsonAsync<List<GameBuildVersionDto>>(cancellationToken)
-                .ConfigureAwait(false);
-            return versions ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
-    public async Task<IReadOnlyList<GameBuildVersionDto>> GetOwnedVersionsAsync(
+    public Task<IReadOnlyList<GameBuildVersionDto>> GetOwnedVersionsAsync(
         int gameId,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/{gameId}/studio/versions");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return [];
-            }
+        CancellationToken cancellationToken = default) =>
+        SendListAsync<GameBuildVersionDto>($"api/Games/{gameId}/studio/versions", cancellationToken);
 
-            var versions = await response.Content
-                .ReadFromJsonAsync<List<GameBuildVersionDto>>(cancellationToken)
-                .ConfigureAwait(false);
-            return versions ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
-    public async Task<GameStatsDto?> GetOwnedGameStatsAsync(
+    public Task<GameStatsDto?> GetOwnedGameStatsAsync(
         int gameId,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/{gameId}/stats");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+        CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameStatsDto>(HttpMethod.Get, $"api/Games/{gameId}/stats", null, cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<GameStatsDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task<GameBuildVersionDto?> UpdateVersionNotesAsync(
+    public Task<GameBuildVersionDto?> UpdateVersionNotesAsync(
         int gameId,
         int versionId,
         string? releaseNotes,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var message = new HttpRequestMessage(
-                HttpMethod.Patch,
-                $"api/Games/{gameId}/versions/{versionId}/notes")
-            {
-                Content = JsonContent.Create(new UpdateVersionNotesRequestDto { ReleaseNotes = releaseNotes })
-            };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+        CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameBuildVersionDto>(
+            HttpMethod.Patch,
+            $"api/Games/{gameId}/versions/{versionId}/notes",
+            new UpdateVersionNotesRequestDto { ReleaseNotes = releaseNotes },
+            cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<GameBuildVersionDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task<IReadOnlyList<GameBuildVersionDto>> GetAdminVersionsAsync(
+    public Task<IReadOnlyList<GameBuildVersionDto>> GetAdminVersionsAsync(
         int gameId,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/admin/games/{gameId}/versions");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return [];
-            }
+        CancellationToken cancellationToken = default) =>
+        SendListAsync<GameBuildVersionDto>($"api/admin/games/{gameId}/versions", cancellationToken);
 
-            var versions = await response.Content
-                .ReadFromJsonAsync<List<GameBuildVersionDto>>(cancellationToken)
-                .ConfigureAwait(false);
-            return versions ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
-    public async Task<GameStatsDto?> GetAdminGameStatsAsync(
+    public Task<GameStatsDto?> GetAdminGameStatsAsync(
         int gameId,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/admin/games/{gameId}/stats");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+        CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameStatsDto>(HttpMethod.Get, $"api/admin/games/{gameId}/stats", null, cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<GameStatsDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public async Task<GameBuildVersionDto?> UpdateAdminVersionNotesAsync(
+    public Task<GameBuildVersionDto?> UpdateAdminVersionNotesAsync(
         int gameId,
         int versionId,
         string? releaseNotes,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var message = new HttpRequestMessage(
-                HttpMethod.Patch,
-                $"api/admin/games/{gameId}/versions/{versionId}/notes")
-            {
-                Content = JsonContent.Create(new UpdateVersionNotesRequestDto { ReleaseNotes = releaseNotes })
-            };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
+        CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameBuildVersionDto>(
+            HttpMethod.Patch,
+            $"api/admin/games/{gameId}/versions/{versionId}/notes",
+            new UpdateVersionNotesRequestDto { ReleaseNotes = releaseNotes },
+            cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<GameBuildVersionDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
+    // ---- reviews ---------------------------------------------------------------------------
 
     public async Task<GameReviewsSummaryDto?> GetGameReviewsAsync(
         int gameId,
@@ -837,16 +547,11 @@ public sealed class HttpSgsApiService(
             }
 
             var qs = parts.Count == 0 ? string.Empty : "?" + string.Join('&', parts);
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/{gameId}/reviews{qs}");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-
-            return await response.Content.ReadFromJsonAsync<GameReviewsSummaryDto>(cancellationToken)
-                .ConfigureAwait(false);
+            return await SendJsonAsync<GameReviewsSummaryDto>(
+                HttpMethod.Get,
+                $"api/Games/{gameId}/reviews{qs}",
+                body: null,
+                cancellationToken).ConfigureAwait(false);
         }
         catch
         {
@@ -854,149 +559,42 @@ public sealed class HttpSgsApiService(
         }
     }
 
-    public async Task<(GameReviewDto? Review, string? Error)> UpsertGameReviewAsync(
+    public Task<(GameReviewDto? Review, string? Error)> UpsertGameReviewAsync(
         int gameId,
         UpsertGameReviewRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var message = new HttpRequestMessage(HttpMethod.Put, $"api/Games/{gameId}/reviews/me")
-            {
-                Content = JsonContent.Create(request)
-            };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return (null, await ReadErrorAsync(response, cancellationToken).ConfigureAwait(false));
-            }
+        CancellationToken cancellationToken = default) =>
+        SendWithErrorAsync<GameReviewDto>(HttpMethod.Put, $"api/Games/{gameId}/reviews/me", request, cancellationToken);
 
-            var review = await response.Content.ReadFromJsonAsync<GameReviewDto>(cancellationToken)
-                .ConfigureAwait(false);
-            return (review, null);
-        }
-        catch (Exception ex)
-        {
-            return (null, ex.Message);
-        }
-    }
+    public Task<bool> DeleteGameReviewAsync(int gameId, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"api/Games/{gameId}/reviews/me", null, cancellationToken);
 
-    public async Task<bool> DeleteGameReviewAsync(int gameId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/Games/{gameId}/reviews/me");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    public async Task<bool> VoteGameReviewAsync(
+    public Task<bool> VoteGameReviewAsync(
         long reviewId,
         bool helpful,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var message = new HttpRequestMessage(HttpMethod.Post, $"api/Games/reviews/{reviewId}/vote")
-            {
-                Content = JsonContent.Create(new SetReviewVoteRequest { Helpful = helpful })
-            };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
-    }
+        CancellationToken cancellationToken = default) =>
+        SendAsync(
+            HttpMethod.Post,
+            $"api/Games/reviews/{reviewId}/vote",
+            new SetReviewVoteRequest { Helpful = helpful },
+            cancellationToken);
 
-    public async Task<IReadOnlyList<GameReviewCommentDto>> GetGameReviewCommentsAsync(
+    public Task<IReadOnlyList<GameReviewCommentDto>> GetGameReviewCommentsAsync(
         long reviewId,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/Games/reviews/{reviewId}/comments");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return [];
-            }
+        CancellationToken cancellationToken = default) =>
+        SendListAsync<GameReviewCommentDto>($"api/Games/reviews/{reviewId}/comments", cancellationToken);
 
-            return await response.Content.ReadFromJsonAsync<List<GameReviewCommentDto>>(cancellationToken)
-                .ConfigureAwait(false) ?? [];
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
-    public async Task<(GameReviewCommentDto? Comment, string? Error)> AddGameReviewCommentAsync(
+    public Task<(GameReviewCommentDto? Comment, string? Error)> AddGameReviewCommentAsync(
         long reviewId,
         string text,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var message = new HttpRequestMessage(HttpMethod.Post, $"api/Games/reviews/{reviewId}/comments")
-            {
-                Content = JsonContent.Create(new CreateGameReviewCommentRequest { Text = text })
-            };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return (null, await ReadErrorAsync(response, cancellationToken).ConfigureAwait(false));
-            }
+        CancellationToken cancellationToken = default) =>
+        SendWithErrorAsync<GameReviewCommentDto>(
+            HttpMethod.Post,
+            $"api/Games/reviews/{reviewId}/comments",
+            new CreateGameReviewCommentRequest { Text = text },
+            cancellationToken);
 
-            var comment = await response.Content.ReadFromJsonAsync<GameReviewCommentDto>(cancellationToken)
-                .ConfigureAwait(false);
-            return (comment, null);
-        }
-        catch (Exception ex)
-        {
-            return (null, ex.Message);
-        }
-    }
-
-    public async Task<bool> DeleteGameReviewCommentAsync(long commentId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(
-                HttpMethod.Delete,
-                $"api/Games/reviews/comments/{commentId}");
-            await AttachBearerAsync(request, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private async Task AttachBearerAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        if (auth.IsAvailable && auth.IsLoggedIn)
-        {
-            var token = await auth.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
-        }
-    }
+    public Task<bool> DeleteGameReviewCommentAsync(long commentId, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"api/Games/reviews/comments/{commentId}", null, cancellationToken);
 
     private async Task<GameDto?> UploadMediaFileAsync(
         string url,
@@ -1031,7 +629,6 @@ public sealed class HttpSgsApiService(
             content.Add(fileContent, "file", fileName);
 
             using var message = new HttpRequestMessage(method, url) { Content = content };
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
             System.Diagnostics.Debug.WriteLine(
                 $"[SGS Media] HTTP {(method.Method)} {url} file={fileName} bytes={new FileInfo(localFilePath).Length}");
             using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
@@ -1064,27 +661,9 @@ public sealed class HttpSgsApiService(
         return value.Length <= max ? value : value[..max] + "…";
     }
 
-    private async Task<GameDto?> SendMediaAsync(
+    private Task<GameDto?> SendMediaAsync(
         string url,
         HttpMethod method,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            using var message = new HttpRequestMessage(method, url);
-            await AttachBearerAsync(message, cancellationToken).ConfigureAwait(false);
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-
-            return await response.Content.ReadFromJsonAsync<GameDto>(cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
+        CancellationToken cancellationToken) =>
+        SendJsonAsync<GameDto>(method, url, null, cancellationToken);
 }
