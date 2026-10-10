@@ -95,7 +95,7 @@ public sealed class EfGameRepository(
         };
 
         return await ordered
-            .Select(ProjectGame(includeDlcs: false))
+            .Select(GameProjections.ToDto(includeDlcs: false))
             .ToListAsync(cancellationToken);
     }
 
@@ -104,7 +104,7 @@ public sealed class EfGameRepository(
         return await db.Games
             .AsNoTracking()
             .Where(g => g.Id == id && !g.DraftP)
-            .Select(ProjectGame(includeDlcs: true))
+            .Select(GameProjections.ToDto(includeDlcs: true))
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -123,7 +123,7 @@ public sealed class EfGameRepository(
             .AsNoTracking()
             .Where(g => g.ParentGameId == parentGameId && g.Kind == GameContentKind.Dlc && !g.DraftP)
             .OrderBy(g => g.Title)
-            .Select(ProjectDlc())
+            .Select(GameProjections.ToDlcDto())
             .ToListAsync(cancellationToken);
     }
 
@@ -134,7 +134,7 @@ public sealed class EfGameRepository(
             .Where(g => g.UserId == userId)
             .OrderBy(g => g.Kind)
             .ThenBy(g => g.Title)
-            .Select(ProjectGame(includeDlcs: true))
+            .Select(GameProjections.ToDto(includeDlcs: true))
             .ToListAsync(cancellationToken);
     }
 
@@ -154,7 +154,7 @@ public sealed class EfGameRepository(
         await db.SaveChangesAsync(cancellationToken);
         return await db.Games.AsNoTracking()
             .Where(g => g.Id == gameId)
-            .Select(ProjectGame(includeDlcs: true))
+            .Select(GameProjections.ToDto(includeDlcs: true))
             .FirstAsync(cancellationToken);
     }
 
@@ -187,7 +187,7 @@ public sealed class EfGameRepository(
             .AsNoTracking()
             .OrderBy(g => g.Kind)
             .ThenBy(g => g.Title)
-            .Select(ProjectGame(includeDlcs: true))
+            .Select(GameProjections.ToDto(includeDlcs: true))
             .ToListAsync(cancellationToken);
 
         await AttachOwnersAsync(games, cancellationToken);
@@ -209,7 +209,7 @@ public sealed class EfGameRepository(
         await db.SaveChangesAsync(cancellationToken);
         var dto = await db.Games.AsNoTracking()
             .Where(g => g.Id == gameId)
-            .Select(ProjectGame(includeDlcs: true))
+            .Select(GameProjections.ToDto(includeDlcs: true))
             .FirstAsync(cancellationToken);
         await AttachOwnersAsync([dto], cancellationToken);
         return dto;
@@ -750,132 +750,4 @@ public sealed class EfGameRepository(
             target.Add(item);
         }
     }
-
-    private static System.Linq.Expressions.Expression<Func<GameEntity, GameDto>> ProjectGame(bool includeDlcs) =>
-        g => new GameDto
-        {
-            Id = g.Id,
-            UserId = g.UserId,
-            Title = g.Title,
-            Symbol = g.Symbol,
-            Description = g.Description,
-            HardwareRequirements = g.HardwareRequirements,
-            OtherInformation = g.OtherInformation,
-            Genres = g.Genres.OrderBy(x => x.Id).Select(x => new SgsGameTaxonomy.TaxonomyItem(x.Symbol, x.Name)).ToList(),
-            Engines = g.Engines.OrderBy(x => x.Id).Select(x => new SgsGameTaxonomy.TaxonomyItem(x.Symbol, x.Name)).ToList(),
-            CoverUrl = g.CoverUrl,
-            HeaderUrl = g.HeaderUrl,
-            LogoUrl = g.LogoUrl,
-            IntroUrl = g.IntroUrl,
-            ScreenshotUrls = g.Screenshots
-                .OrderBy(s => s.SortOrder)
-                .Select(s => s.Url)
-                .ToList(),
-            Screenshots = g.Screenshots
-                .OrderBy(s => s.SortOrder)
-                .Select(s => new GameScreenshotDto { Id = s.Id, Url = s.Url })
-                .ToList(),
-            DraftP = g.DraftP,
-            FeaturedP = g.FeaturedP,
-            FeaturedOrder = g.FeaturedOrder,
-            Kind = g.Kind,
-            ParentGameId = g.ParentGameId,
-            ParentSymbol = g.ParentGame != null ? g.ParentGame.Symbol : null,
-            CreatedAtUtc = g.CreatedAtUtc,
-            StudioName = g.StudioName,
-            WebsiteUrl = g.WebsiteUrl,
-            DiscordUrl = g.DiscordUrl,
-            SupportUrl = g.SupportUrl,
-            ReleaseStatus = g.ReleaseStatus,
-            ReleaseDateUtc = g.ReleaseDateUtc,
-            AgeRating = g.AgeRating,
-            Features = g.Features,
-            LanguagesCsv = g.LanguagesCsv,
-            TagsCsv = g.TagsCsv,
-            PackageSizeBytes = g.Builds
-                .OrderByDescending(b => b.IsDefault)
-                .Select(b => b.PackageSizeBytes)
-                .FirstOrDefault(),
-            Builds = g.Builds
-                .OrderByDescending(b => b.IsDefault)
-                .ThenBy(b => b.Platform)
-                .Select(b => new GameBuildDto
-                {
-                    Id = b.Id,
-                    GameId = b.GameId,
-                    Platform = b.Platform,
-                    Architecture = b.Architecture,
-                    CurrentVersion = b.CurrentVersion,
-                    ExeName = b.ExeName,
-                    ZipLink = b.ZipLink,
-                    IsDefault = b.IsDefault
-                })
-                .ToList(),
-            Dlcs = includeDlcs && g.Kind == GameContentKind.Game
-                ? g.Dlcs
-                    .Where(d => d.Kind == GameContentKind.Dlc && !d.DraftP)
-                    .OrderBy(d => d.Title)
-                    .Select(d => new GameDlcDto
-                    {
-                        Id = d.Id,
-                        ParentGameId = d.ParentGameId ?? g.Id,
-                        Title = d.Title,
-                        Symbol = d.Symbol,
-                        CoverUrl = d.CoverUrl,
-                        PackageSizeBytes = d.Builds
-                            .OrderByDescending(b => b.IsDefault)
-                            .Select(b => b.PackageSizeBytes)
-                            .FirstOrDefault(),
-                        CreatedAtUtc = d.CreatedAtUtc,
-                        PreferredBuildId = d.Builds
-                            .OrderByDescending(b => b.IsDefault)
-                            .Select(b => b.Id)
-                            .FirstOrDefault(),
-                        PreferredPlatform = d.Builds
-                            .OrderByDescending(b => b.IsDefault)
-                            .Select(b => b.Platform)
-                            .FirstOrDefault(),
-                        PreferredArchitecture = d.Builds
-                            .OrderByDescending(b => b.IsDefault)
-                            .Select(b => b.Architecture)
-                            .FirstOrDefault(),
-                        PreferredVersion = d.Builds
-                            .OrderByDescending(b => b.IsDefault)
-                            .Select(b => b.CurrentVersion)
-                            .FirstOrDefault()
-                    })
-                    .ToList()
-                : new List<GameDlcDto>()
-        };
-
-    private static System.Linq.Expressions.Expression<Func<GameEntity, GameDlcDto>> ProjectDlc() =>
-        d => new GameDlcDto
-        {
-            Id = d.Id,
-            ParentGameId = d.ParentGameId ?? 0,
-            Title = d.Title,
-            Symbol = d.Symbol,
-            CoverUrl = d.CoverUrl,
-            PackageSizeBytes = d.Builds
-                .OrderByDescending(b => b.IsDefault)
-                .Select(b => b.PackageSizeBytes)
-                .FirstOrDefault(),
-            CreatedAtUtc = d.CreatedAtUtc,
-            PreferredBuildId = d.Builds
-                .OrderByDescending(b => b.IsDefault)
-                .Select(b => b.Id)
-                .FirstOrDefault(),
-            PreferredPlatform = d.Builds
-                .OrderByDescending(b => b.IsDefault)
-                .Select(b => b.Platform)
-                .FirstOrDefault(),
-            PreferredArchitecture = d.Builds
-                .OrderByDescending(b => b.IsDefault)
-                .Select(b => b.Architecture)
-                .FirstOrDefault(),
-            PreferredVersion = d.Builds
-                .OrderByDescending(b => b.IsDefault)
-                .Select(b => b.CurrentVersion)
-                .FirstOrDefault()
-        };
 }
