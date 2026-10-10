@@ -306,6 +306,26 @@ public sealed class HttpSgsApiService(
             parts.Add($"genre={Uri.EscapeDataString(query.Genre.Trim())}");
         }
 
+        foreach (var genre in query.Genres ?? [])
+        {
+            parts.Add($"genres={Uri.EscapeDataString(genre.Trim())}");
+        }
+
+        foreach (var engine in query.Engines ?? [])
+        {
+            parts.Add($"engines={Uri.EscapeDataString(engine.Trim())}");
+        }
+
+        if (query.Platform is { } platform)
+        {
+            parts.Add($"platform={(int)platform}");
+        }
+
+        if (query.Features is { } features && features != GameFeatures.None)
+        {
+            parts.Add($"features={(int)features}");
+        }
+
         if (!string.IsNullOrWhiteSpace(query.Tag))
         {
             parts.Add($"tag={Uri.EscapeDataString(query.Tag.Trim())}");
@@ -339,6 +359,10 @@ public sealed class HttpSgsApiService(
         return string.IsNullOrWhiteSpace(query.Q)
             && string.IsNullOrWhiteSpace(query.Genre)
             && string.IsNullOrWhiteSpace(query.Tag)
+            && (query.Genres is null || query.Genres.Count == 0)
+            && (query.Engines is null || query.Engines.Count == 0)
+            && query.Platform is null
+            && (query.Features is null || query.Features == GameFeatures.None)
             && query.ReleaseStatus is null
             && query.Featured is null
             && (string.IsNullOrWhiteSpace(query.Sort) || query.Sort is "featured" or "title" or "newest");

@@ -9,6 +9,7 @@ using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
+using SGSClient.Core.Packaging;
 
 namespace SGSClient.UI.ViewModels;
 
@@ -45,6 +46,60 @@ public partial class GamesViewModel : ObservableObject
         StatusText = api is null ? "API not registered" : "Ładowanie sklepu…";
         SortOptions = ["Wyróżnione", "Tytuł", "Najnowsze"];
         SelectedSort = SortOptions[0];
+
+        GenreFilters = new TaxonomySelection(SgsGameTaxonomy.Genres, int.MaxValue, "Dowolny", filterMode: true);
+        EngineFilters = new TaxonomySelection(SgsGameTaxonomy.Engines, int.MaxValue, "Dowolny", filterMode: true);
+        FeatureFilters = new TaxonomySelection(
+            GameStoreLabels.FeatureFlags.Select(f => new SgsGameTaxonomy.TaxonomyItem(f.ToString(), GameStoreLabels.Feature(f))),
+            int.MaxValue,
+            "Dowolne",
+            filterMode: true);
+        GenreFilters.SelectionChanged += OnFilterChanged;
+        EngineFilters.SelectionChanged += OnFilterChanged;
+        FeatureFilters.SelectionChanged += OnFilterChanged;
+    }
+
+    private static readonly GamePlatform[] FilterPlatforms = [GamePlatform.Windows, GamePlatform.Linux, GamePlatform.MacOS];
+
+    public TaxonomySelection GenreFilters { get; }
+    public TaxonomySelection EngineFilters { get; }
+    public TaxonomySelection FeatureFilters { get; }
+
+    public IReadOnlyList<string> PlatformOptions { get; } = ["Dowolna", "Windows", "Linux", "macOS"];
+    public IReadOnlyList<string> ReleaseStatusFilterOptions { get; } =
+        new[] { "Dowolny" }.Concat(GameStoreLabels.ReleaseStatusOptions).ToArray();
+
+    [ObservableProperty]
+    public partial int SelectedPlatformIndex { get; set; }
+
+    [ObservableProperty]
+    public partial int SelectedStatusIndex { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsFilterPanelOpen { get; set; }
+
+    [ObservableProperty]
+    public partial int ActiveFilterCount { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasActiveFilters { get; set; }
+
+    [ObservableProperty]
+    public partial string CountText { get; set; } = string.Empty;
+
+    partial void OnSelectedPlatformIndexChanged(int value) => OnFilterChanged(this, EventArgs.Empty);
+    partial void OnSelectedStatusIndexChanged(int value) => OnFilterChanged(this, EventArgs.Empty);
+
+    private void OnFilterChanged(object? sender, EventArgs e)
+    {
+        ActiveFilterCount =
+            (GenreFilters.SelectedSymbols.Count > 0 ? 1 : 0)
+            + (EngineFilters.SelectedSymbols.Count > 0 ? 1 : 0)
+            + (FeatureFilters.SelectedSymbols.Count > 0 ? 1 : 0)
+            + (SelectedPlatformIndex > 0 ? 1 : 0)
+            + (SelectedStatusIndex > 0 ? 1 : 0);
+        HasActiveFilters = ActiveFilterCount > 0;
+        _ = DebouncedReloadAsync();
     }
 
     public void SetOpenDetailsHandler(Action<int> openDetails) => _openDetails = openDetails;
@@ -71,9 +126,6 @@ public partial class GamesViewModel : ObservableObject
     public partial string SearchText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string GenreFilter { get; set; } = string.Empty;
-
-    [ObservableProperty]
     public partial string SelectedSort { get; set; } = "Wyróżnione";
 
     [ObservableProperty]
@@ -85,12 +137,22 @@ public partial class GamesViewModel : ObservableObject
     public partial bool HasWishlist { get; set; }
 
     partial void OnSearchTextChanged(string value) => _ = DebouncedReloadAsync();
-    partial void OnGenreFilterChanged(string value) => _ = DebouncedReloadAsync();
     partial void OnSelectedSortChanged(string value) => _ = DebouncedReloadAsync();
 
+    /// <summary>Replaces the genre filter with a single genre (matched by name or slug).</summary>
     public void ApplyGenreFilter(string? genre)
     {
-        GenreFilter = genre?.Trim() ?? string.Empty;
+        var term = genre?.Trim();
+        var match = string.IsNullOrEmpty(term)
+            ? default
+            : SgsGameTaxonomy.Genres.FirstOrDefault(g =>
+                g.Symbol.Equals(term, StringComparison.OrdinalIgnoreCase)
+                || g.Name.Equals(term, StringComparison.OrdinalIgnoreCase));
+        GenreFilters.Set(match.Symbol is null ? null : [match.Symbol]);
+        if (match.Symbol is not null)
+        {
+            IsFilterPanelOpen = true;
+        }
     }
 
     [RelayCommand]
@@ -166,7 +228,10 @@ public partial class GamesViewModel : ObservableObject
                     : "Offline — brak cache sklepu."
                 : HasGames
                     ? $"{Games.Count} gier w sklepie"
-                    : "Brak gier. Uruchom Api i upewnij się, że baza ma seed.";
+                    : HasActiveFilters
+                        ? "Brak gier pasujących do filtrów."
+                        : "Brak gier. Uruchom Api i upewnij się, że baza ma seed.";
+            CountText = HasGames ? $"liczba gier: {Games.Count}" : string.Empty;
         }
         catch (Exception ex)
         {
@@ -204,13 +269,48 @@ public partial class GamesViewModel : ObservableObject
                 || x.Name.Equals(genre, StringComparison.OrdinalIgnoreCase)));
         }
 
+        if (query.Genres is { Count: > 0 } genres)
+        {
+            q = q.Where(g => g.Genres.Any(x => genres.Contains(x.Symbol, StringComparer.OrdinalIgnoreCase)));
+        }
+
+        if (query.Engines is { Count: > 0 } engines)
+        {
+            q = q.Where(g => g.Engines.Any(x => engines.Contains(x.Symbol, StringComparer.OrdinalIgnoreCase)));
+        }
+
+        if (query.Platform is { } platform)
+        {
+            q = q.Where(g => g.Builds.Any(b => b.Platform == platform));
+        }
+
+        if (query.Features is { } features && features != GameFeatures.None)
+        {
+            q = q.Where(g => (g.Features & features) == features);
+        }
+
+        if (query.ReleaseStatus is { } status)
+        {
+            q = q.Where(g => g.ReleaseStatus == status);
+        }
+
         return q.ToList();
     }
 
     public Task EnsureLoadedAsync() => _loaded && Games.Count > 0 ? RefreshOwnedFlagsAsync() : LoadAsync();
 
     [RelayCommand]
-    private void ClearGenreFilter() => GenreFilter = string.Empty;
+    private void ToggleFilterPanel() => IsFilterPanelOpen = !IsFilterPanelOpen;
+
+    [RelayCommand]
+    private void ClearFilters()
+    {
+        GenreFilters.Set(null);
+        EngineFilters.Set(null);
+        FeatureFilters.Set(null);
+        SelectedPlatformIndex = 0;
+        SelectedStatusIndex = 0;
+    }
 
     [RelayCommand]
     private void OpenDetails(GameListItem? item)
@@ -358,9 +458,29 @@ public partial class GamesViewModel : ObservableObject
         return new GameCatalogQuery
         {
             Q = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim(),
-            Genre = string.IsNullOrWhiteSpace(GenreFilter) ? null : GenreFilter.Trim(),
+            Genres = GenreFilters.SelectedSymbols.Count == 0 ? null : GenreFilters.SelectedSymbols,
+            Engines = EngineFilters.SelectedSymbols.Count == 0 ? null : EngineFilters.SelectedSymbols,
+            Platform = SelectedPlatformIndex is > 0 and <= 3 ? FilterPlatforms[SelectedPlatformIndex - 1] : null,
+            Features = BuildFeatureFlags(),
+            ReleaseStatus = SelectedStatusIndex > 0
+                ? GameStoreLabels.ReleaseStatusFromIndex(SelectedStatusIndex - 1)
+                : null,
             Sort = sort
         };
+    }
+
+    private GameFeatures? BuildFeatureFlags()
+    {
+        var flags = GameFeatures.None;
+        foreach (var symbol in FeatureFilters.SelectedSymbols)
+        {
+            if (Enum.TryParse<GameFeatures>(symbol, out var flag))
+            {
+                flags |= flag;
+            }
+        }
+
+        return flags == GameFeatures.None ? null : flags;
     }
 
     private async Task LoadWishlistSectionAsync(HashSet<int> owned)
@@ -469,6 +589,19 @@ public partial class GameListItem : ObservableObject
     public string TileLabel { get; init; } = string.Empty;
     public string PlatformsText { get; init; } = string.Empty;
     public string FeaturedBadge => Featured ? "Wyróżnione" : string.Empty;
+    public string? StudioName { get; init; }
+    public bool HasStudio => !string.IsNullOrWhiteSpace(StudioName);
+
+    /// <summary>Up to three genres, e.g. "Akcja · RPG".</summary>
+    public string GenresText { get; init; } = string.Empty;
+    public bool HasGenres => GenresText.Length > 0;
+    public string EnginesText { get; init; } = string.Empty;
+    public string? PosterImageUrl { get; init; }
+    public bool HasPoster => !string.IsNullOrWhiteSpace(PosterImageUrl);
+    public string ReleaseBadge { get; init; } = string.Empty;
+    public string StatusBadge => InLibrary ? "W bibliotece" : ReleaseBadge;
+    public bool HasStatusBadge => StatusBadge.Length > 0;
+    public string WishlistSymbol => InWishlist ? "♥" : "♡";
     public bool ShowFeaturedBadge => Featured;
 
     public int BuildId { get; init; }
@@ -483,10 +616,13 @@ public partial class GameListItem : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanAdd))]
     [NotifyPropertyChangedFor(nameof(ActionLabel))]
+    [NotifyPropertyChangedFor(nameof(StatusBadge))]
+    [NotifyPropertyChangedFor(nameof(HasStatusBadge))]
     public partial bool InLibrary { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(WishlistLabel))]
+    [NotifyPropertyChangedFor(nameof(WishlistSymbol))]
     public partial bool InWishlist { get; set; }
 
     public bool CanAdd => !InLibrary && BuildId > 0;
@@ -512,6 +648,13 @@ public partial class GameListItem : ObservableObject
                 ? "Brak opisu."
                 : dto.Description!,
             Featured = dto.FeaturedP,
+            StudioName = dto.StudioName,
+            GenresText = string.Join(" · ", dto.Genres.Take(3).Select(g => g.Name)),
+            EnginesText = string.Join(" · ", dto.Engines.Select(e => e.Name)),
+            PosterImageUrl = ToImageSourceUrl(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, dto.ThumbnailUrl)),
+            ReleaseBadge = dto.ReleaseStatus == GameReleaseStatus.Released
+                ? string.Empty
+                : GameStoreLabels.ReleaseStatus(dto.ReleaseStatus),
             TileLabel = string.IsNullOrWhiteSpace(dto.Symbol)
                 ? dto.Title[..Math.Min(2, dto.Title.Length)].ToUpperInvariant()
                 : dto.Symbol[..Math.Min(3, dto.Symbol.Length)].ToUpperInvariant(),

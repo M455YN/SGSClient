@@ -30,6 +30,10 @@ public sealed class GamesController(
     public async Task<ActionResult<IReadOnlyList<GameDto>>> GetGames(
         [FromQuery] string? q,
         [FromQuery] string? genre,
+        [FromQuery] string[]? genres,
+        [FromQuery] string[]? engines,
+        [FromQuery] GamePlatform? platform,
+        [FromQuery] GameFeatures? features,
         [FromQuery] string? tag,
         [FromQuery] GameReleaseStatus? releaseStatus,
         [FromQuery] bool? featured,
@@ -40,6 +44,10 @@ public sealed class GamesController(
         {
             Q = q,
             Genre = genre,
+            Genres = genres,
+            Engines = engines,
+            Platform = platform,
+            Features = features,
             Tag = tag,
             ReleaseStatus = releaseStatus,
             Featured = featured,

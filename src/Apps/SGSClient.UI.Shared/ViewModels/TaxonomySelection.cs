@@ -19,16 +19,26 @@ public sealed partial class TaxonomyOption(TaxonomySelection owner, SgsGameTaxon
 public sealed class TaxonomySelection : ObservableObject
 {
     private readonly string _emptyText;
+    private readonly bool _filterMode;
     private bool _updating;
 
-    public TaxonomySelection(IEnumerable<SgsGameTaxonomy.TaxonomyItem> items, int max, string emptyText)
+    /// <param name="filterMode">Filter pickers have no limit and show a compact "A, B +2" summary.</param>
+    public TaxonomySelection(
+        IEnumerable<SgsGameTaxonomy.TaxonomyItem> items,
+        int max,
+        string emptyText,
+        bool filterMode = false)
     {
         Max = max;
+        _filterMode = filterMode;
         _emptyText = emptyText;
         Options = new ObservableCollection<TaxonomyOption>(items.Select(i => new TaxonomyOption(this, i)));
     }
 
     public int Max { get; }
+
+    /// <summary>Raised after the user (or <see cref="Set"/>) changed the selection.</summary>
+    public event EventHandler? SelectionChanged;
     public ObservableCollection<TaxonomyOption> Options { get; }
 
     public IReadOnlyList<string> SelectedSymbols =>
@@ -40,7 +50,19 @@ public sealed class TaxonomySelection : ObservableObject
         get
         {
             var names = Options.Where(o => o.IsSelected).Select(o => o.Name).ToList();
-            return names.Count == 0 ? _emptyText : $"{string.Join(", ", names)} ({names.Count}/{Max})";
+            if (names.Count == 0)
+            {
+                return _emptyText;
+            }
+
+            if (_filterMode)
+            {
+                return names.Count <= 2
+                    ? string.Join(", ", names)
+                    : $"{names[0]}, {names[1]} +{names.Count - 2}";
+            }
+
+            return $"{string.Join(", ", names)} ({names.Count}/{Max})";
         }
     }
 
@@ -68,6 +90,7 @@ public sealed class TaxonomySelection : ObservableObject
         }
 
         OnPropertyChanged(nameof(Summary));
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
     internal void OnOptionChanged(TaxonomyOption changed)
@@ -91,5 +114,6 @@ public sealed class TaxonomySelection : ObservableObject
         }
 
         OnPropertyChanged(nameof(Summary));
+        SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 }

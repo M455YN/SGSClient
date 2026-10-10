@@ -11,10 +11,10 @@ namespace SGSClient.UI.WinUI.Views;
 
 public sealed partial class GamesPage : Page
 {
-    private static readonly SolidColorBrush CardBrush = new(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF));
+    private static readonly SolidColorBrush CardBrush = new(Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF));
     private static readonly SolidColorBrush CardHoverBrush = new(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
-    private static readonly SolidColorBrush CardBorderBrush = new(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
-    private static readonly SolidColorBrush CardBorderHoverBrush = new(Color.FromArgb(0x55, 0xFF, 0xFF, 0xFF));
+    private static readonly SolidColorBrush CardBorderBrush = new(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF));
+    private static readonly SolidColorBrush CardBorderHoverBrush = new(Color.FromArgb(0x66, 0xFF, 0xFF, 0xFF));
 
     public GamesViewModel ViewModel { get; }
 
@@ -27,7 +27,7 @@ public sealed partial class GamesPage : Page
         SortBox.ItemsSource = ViewModel.SortOptions;
         SortBox.SelectedItem = ViewModel.SelectedSort;
         SearchBox.Text = ViewModel.SearchText;
-        GenreBox.Text = ViewModel.GenreFilter;
+        GamesGrid.ItemsSource = ViewModel.Games;
         RefreshUi();
     }
 
@@ -35,7 +35,6 @@ public sealed partial class GamesPage : Page
     {
         base.OnNavigatedTo(e);
         SearchBox.Text = ViewModel.SearchText;
-        GenreBox.Text = ViewModel.GenreFilter;
         SortBox.SelectedItem = ViewModel.SelectedSort;
         await ViewModel.EnsureLoadedAsync();
         RefreshUi();
@@ -43,11 +42,11 @@ public sealed partial class GamesPage : Page
 
     private void RefreshUi()
     {
-        StatusText.Text = ViewModel.StatusText;
+        StatusText.Text = string.IsNullOrEmpty(ViewModel.CountText) ? ViewModel.StatusText : ViewModel.CountText;
+        FilterButtonText.Text = ViewModel.ActiveFilterCount > 0 ? $"Filtry ({ViewModel.ActiveFilterCount})" : "Filtry";
         EmptyText.Text = ViewModel.StatusText;
         EmptyText.Visibility = ViewModel.ShowEmpty ? Visibility.Visible : Visibility.Collapsed;
         GamesGrid.Visibility = ViewModel.HasGames ? Visibility.Visible : Visibility.Collapsed;
-        GamesGrid.ItemsSource = ViewModel.Games;
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs e)
@@ -59,7 +58,6 @@ public sealed partial class GamesPage : Page
     private void Filter_Changed(object sender, TextChangedEventArgs e)
     {
         ViewModel.SearchText = SearchBox.Text ?? string.Empty;
-        ViewModel.GenreFilter = GenreBox.Text ?? string.Empty;
     }
 
     private void Sort_Changed(object sender, SelectionChangedEventArgs e)
@@ -70,11 +68,11 @@ public sealed partial class GamesPage : Page
         }
     }
 
-    private void ClearGenre_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.ClearGenreFilterCommand.Execute(null);
-        GenreBox.Text = string.Empty;
-    }
+    private void ToggleFilters_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.ToggleFilterPanelCommand.Execute(null);
+
+    private void ClearFilters_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.ClearFiltersCommand.Execute(null);
 
     private async void AddToLibrary_Click(object sender, RoutedEventArgs e)
     {
