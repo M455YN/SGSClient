@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +12,7 @@ using SGSClient.Core.Models;
 
 namespace SGSClient.UI.ViewModels;
 
-public partial class GamePropertiesViewModel : ViewModelBase
+public partial class GamePropertiesViewModel : ObservableObject
 {
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
@@ -24,11 +23,6 @@ public partial class GamePropertiesViewModel : ViewModelBase
     private string? _installPath;
     private string? _currentLibraryRoot;
     private string? _latestVersion;
-
-    public GamePropertiesViewModel()
-    {
-        StatusText = "Brak API";
-    }
 
     public GamePropertiesViewModel(ISgsApiService? api, IServiceScopeFactory? scopes)
         : this(api, scopes, null, null)
@@ -49,109 +43,116 @@ public partial class GamePropertiesViewModel : ViewModelBase
 
     public ObservableCollection<PropertiesNavItem> NavItems { get; } =
     [
-        new("general", "Ogólne", Implemented: true),
-        new("updates", "Aktualizacje", Implemented: true),
-        new("files", "Zainstalowane pliki", Implemented: true),
-        new("betas", "Wersje i bety gry", Implemented: true),
-        new("dlc", "DLC", Implemented: true),
-        new("personalization", "Personalizacja", Implemented: true)
+        new("general", "Ogólne"),
+        new("updates", "Aktualizacje"),
+        new("files", "Zainstalowane pliki"),
+        new("betas", "Wersje i bety gry"),
+        new("dlc", "DLC"),
+        new("personalization", "Personalizacja")
     ];
 
     public ObservableCollection<BetaVersionItem> Versions { get; } = [];
     public ObservableCollection<MoveTargetFolderItem> MoveTargets { get; } = [];
 
     [ObservableProperty]
-    private int _gameId;
+    public partial int GameId { get; set; }
 
     [ObservableProperty]
-    private int _buildId;
+    public partial int BuildId { get; set; }
 
     [ObservableProperty]
-    private string _gameTitle = string.Empty;
+    public partial string GameTitle { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _statusText = string.Empty;
+    public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _selectedSection = "general";
+    [NotifyPropertyChangedFor(nameof(ShowBetas))]
+    [NotifyPropertyChangedFor(nameof(ShowPersonalization))]
+    [NotifyPropertyChangedFor(nameof(ShowFiles))]
+    [NotifyPropertyChangedFor(nameof(ShowDlc))]
+    [NotifyPropertyChangedFor(nameof(ShowGeneral))]
+    [NotifyPropertyChangedFor(nameof(ShowUpdates))]
+    [NotifyPropertyChangedFor(nameof(ShowPlaceholder))]
+    public partial string SelectedSection { get; set; } = "general";
 
     [ObservableProperty]
-    private BetaVersionItem? _selectedVersion;
+    public partial string LatestVersionText { get; set; } = "—";
 
     [ObservableProperty]
-    private bool _isBusy;
+    public partial string UpdatesStatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _latestVersionText = "—";
+    public partial bool UpdateAvailable { get; set; }
 
     [ObservableProperty]
-    private string _updatesStatusText = string.Empty;
+    public partial bool AutoUpdateEnabled { get; set; } = true;
 
     [ObservableProperty]
-    private bool _updateAvailable;
+    public partial bool CanUpdateNow { get; set; }
 
     [ObservableProperty]
-    private bool _autoUpdateEnabled = true;
+    public partial string GeneralSummaryText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private bool _canUpdateNow;
+    public partial BetaVersionItem? SelectedVersion { get; set; }
 
     [ObservableProperty]
-    private string _generalSummaryText = string.Empty;
+    public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
-    private string? _customCoverPath;
+    public partial string? CustomCoverPath { get; set; }
 
     [ObservableProperty]
-    private Bitmap? _customCoverPreview;
+    public partial string? CustomCoverPreviewUri { get; set; }
 
     [ObservableProperty]
-    private bool _hasCustomCover;
+    public partial bool HasCustomCover { get; set; }
 
     [ObservableProperty]
-    private string _installPathText = "—";
+    public partial string InstallPathText { get; set; } = "—";
 
     [ObservableProperty]
-    private string _installSizeText = "—";
+    public partial string InstallSizeText { get; set; } = "—";
 
     [ObservableProperty]
-    private string _installFilesText = "—";
+    public partial string InstallFilesText { get; set; } = "—";
 
     [ObservableProperty]
-    private string _installStateText = "Niezainstalowana";
+    public partial string InstallStateText { get; set; } = "Niezainstalowana";
 
     [ObservableProperty]
-    private string _installedVersionText = "—";
+    public partial string InstalledVersionText { get; set; } = "—";
 
     [ObservableProperty]
-    private bool _isInstalled;
+    public partial bool IsInstalled { get; set; }
 
     [ObservableProperty]
-    private bool _canBrowseFiles;
+    public partial bool CanBrowseFiles { get; set; }
 
     [ObservableProperty]
-    private bool _canUninstallFiles;
+    public partial bool CanUninstallFiles { get; set; }
 
     [ObservableProperty]
-    private bool _isUninstalling;
+    public partial bool IsUninstalling { get; set; }
 
     [ObservableProperty]
-    private MoveTargetFolderItem? _selectedMoveTarget;
+    public partial MoveTargetFolderItem? SelectedMoveTarget { get; set; }
 
     [ObservableProperty]
-    private bool _canMoveFiles;
+    public partial bool CanMoveFiles { get; set; }
 
     [ObservableProperty]
-    private bool _isMoving;
+    public partial bool IsMoving { get; set; }
 
     [ObservableProperty]
-    private string _moveProgressText = string.Empty;
+    public partial string MoveProgressText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _dlcSearchText = string.Empty;
+    public partial string DlcSearchText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _dlcStatusText = string.Empty;
+    public partial string DlcStatusText { get; set; } = string.Empty;
 
     public ObservableCollection<DlcRowItem> DlcRows { get; } = [];
     public ObservableCollection<DlcRowItem> FilteredDlcRows { get; } = [];
@@ -169,13 +170,6 @@ public partial class GamePropertiesViewModel : ViewModelBase
 
     partial void OnSelectedSectionChanged(string value)
     {
-        OnPropertyChanged(nameof(ShowBetas));
-        OnPropertyChanged(nameof(ShowPersonalization));
-        OnPropertyChanged(nameof(ShowFiles));
-        OnPropertyChanged(nameof(ShowDlc));
-        OnPropertyChanged(nameof(ShowGeneral));
-        OnPropertyChanged(nameof(ShowUpdates));
-        OnPropertyChanged(nameof(ShowPlaceholder));
         foreach (var nav in NavItems)
         {
             nav.IsSelected = nav.Id == value;
@@ -234,7 +228,7 @@ public partial class GamePropertiesViewModel : ViewModelBase
             string? savedTarget = null;
             CustomCoverPath = null;
             HasCustomCover = false;
-            CustomCoverPreview = null;
+            CustomCoverPreviewUri = null;
             ClearInstallInfo();
             DlcRows.Clear();
             FilteredDlcRows.Clear();
@@ -334,23 +328,19 @@ public partial class GamePropertiesViewModel : ViewModelBase
     [RelayCommand]
     private void SelectSection(string? sectionId)
     {
-        if (string.IsNullOrWhiteSpace(sectionId))
+        if (!string.IsNullOrWhiteSpace(sectionId))
         {
-            return;
+            SelectedSection = sectionId;
         }
-
-        SelectedSection = sectionId;
     }
 
     [RelayCommand]
     private void SelectVersion(BetaVersionItem? item)
     {
-        if (item is null)
+        if (item is not null)
         {
-            return;
+            SelectedVersion = item;
         }
-
-        SelectedVersion = item;
     }
 
     [RelayCommand]
@@ -897,22 +887,10 @@ public partial class GamePropertiesViewModel : ViewModelBase
 
     private void RefreshCoverPreview()
     {
-        CustomCoverPreview = null;
         HasCustomCover = !string.IsNullOrWhiteSpace(CustomCoverPath) && File.Exists(CustomCoverPath);
-        if (!HasCustomCover)
-        {
-            return;
-        }
-
-        try
-        {
-            CustomCoverPreview = new Bitmap(CustomCoverPath!);
-        }
-        catch
-        {
-            CustomCoverPreview = null;
-            HasCustomCover = false;
-        }
+        CustomCoverPreviewUri = HasCustomCover
+            ? new Uri(CustomCoverPath!).AbsoluteUri
+            : null;
     }
 
     private async Task PersistTargetVersionAsync(BetaVersionItem selected)
@@ -947,19 +925,17 @@ public partial class GamePropertiesViewModel : ViewModelBase
 
 public partial class PropertiesNavItem : ObservableObject
 {
-    public PropertiesNavItem(string id, string label, bool Implemented)
+    public PropertiesNavItem(string id, string label)
     {
         Id = id;
         Label = label;
-        this.Implemented = Implemented;
     }
 
     public string Id { get; }
     public string Label { get; }
-    public bool Implemented { get; }
 
     [ObservableProperty]
-    private bool _isSelected;
+    public partial bool IsSelected { get; set; }
 }
 
 public sealed class BetaVersionItem
@@ -1016,10 +992,10 @@ public partial class DlcRowItem : ObservableObject
     public string SizeText { get; init; } = "—";
 
     [ObservableProperty]
-    private bool _isInstalled;
+    public partial bool IsInstalled { get; set; }
 
     [ObservableProperty]
-    private bool _isBusy;
+    public partial bool IsBusy { get; set; }
 
     public static DlcRowItem FromDto(GameDlcDto dto, bool installed, string? coverPreview) => new()
     {

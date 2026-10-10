@@ -106,10 +106,12 @@ public partial class App : Application
         services.AddSingleton(sp => new LoginGateViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>()));
+        services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
         services.AddSingleton(sp => new FriendsViewModel(
             sp.GetService<IUserApiClient>(),
             sp.GetService<IAuthSession>(),
-            sp.GetService<SocialRealtimeService>()));
+            sp.GetService<SocialRealtimeService>(),
+            sp.GetService<IUiDispatcher>()));
         services.AddSingleton(sp => new NotificationsViewModel(
             sp.GetService<IUserApiClient>(),
             sp.GetService<IAuthSession>(),

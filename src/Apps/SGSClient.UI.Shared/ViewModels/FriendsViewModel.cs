@@ -1,6 +1,4 @@
 using System.Collections.ObjectModel;
-using Avalonia.Media;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SGSClient.Core.DTOs;
@@ -10,24 +8,21 @@ using SGSClient.Infrastructure.Client.Services;
 
 namespace SGSClient.UI.ViewModels;
 
-public partial class FriendsViewModel : ViewModelBase
+public partial class FriendsViewModel : ObservableObject
 {
     private readonly IUserApiClient? _userApi;
     private readonly IAuthSession? _auth;
     private readonly SocialRealtimeService? _realtime;
-    private readonly DispatcherTimer _chatPollTimer;
+    private readonly IUiTimer? _chatPollTimer;
+    private readonly IUiDispatcher? _dispatcher;
     private int? _activeChatPeerId;
     private bool _realtimeWired;
 
-    public FriendsViewModel()
-        : this(null, null, null)
-    {
-    }
-
     public FriendsViewModel(
-        IUserApiClient? userApi,
-        IAuthSession? auth,
-        SocialRealtimeService? realtime = null)
+        IUserApiClient? userApi = null,
+        IAuthSession? auth = null,
+        SocialRealtimeService? realtime = null,
+        IUiDispatcher? dispatcher = null)
     {
         _userApi = userApi;
         _auth = auth;
@@ -35,8 +30,10 @@ public partial class FriendsViewModel : ViewModelBase
         StatusText = auth?.IsAvailable != true
             ? "Zaloguj się, żeby zobaczyć znajomych."
             : "Ładowanie…";
-        _chatPollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _chatPollTimer.Tick += async (_, _) => await PollChatAsync();
+
+        _dispatcher = dispatcher;
+        _chatPollTimer = dispatcher?.CreateTimer(TimeSpan.FromSeconds(5), PollChatAsync);
+
         WireRealtime();
     }
 
@@ -51,26 +48,30 @@ public partial class FriendsViewModel : ViewModelBase
         _realtime.MessageReceived += OnRealtimeMessage;
         _realtime.ConnectionChanged += connected =>
         {
-            Dispatcher.UIThread.Post(() =>
+            void Apply()
             {
-                if (ShowChatTab)
+                if (!ShowChatTab)
                 {
-                    if (connected)
-                    {
-                        _chatPollTimer.Stop();
-                    }
-                    else
-                    {
-                        _chatPollTimer.Start();
-                    }
+                    return;
                 }
-            });
+
+                if (connected)
+                {
+                    _chatPollTimer?.Stop();
+                }
+                else
+                {
+                    _chatPollTimer?.Start();
+                }
+            }
+
+            RunOnUi(Apply);
         };
     }
 
     private void OnRealtimeMessage(ChatMessageDto message)
     {
-        Dispatcher.UIThread.Post(() =>
+        void Apply()
         {
             if (_activeChatPeerId is int peer
                 && (message.SenderUserId == peer || message.RecipientUserId == peer))
@@ -82,7 +83,21 @@ public partial class FriendsViewModel : ViewModelBase
             }
 
             _ = LoadChatThreadsAsync();
-        });
+        }
+
+        RunOnUi(Apply);
+    }
+
+    private void RunOnUi(Action action)
+    {
+        if (_dispatcher is null)
+        {
+            action();
+        }
+        else
+        {
+            _dispatcher.Post(action);
+        }
     }
 
     public ObservableCollection<SocialPersonItem> Friends { get; } = [];
@@ -98,84 +113,64 @@ public partial class FriendsViewModel : ViewModelBase
     public ObservableCollection<ChatMessageItem> ChatMessages { get; } = [];
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowFriendsTab))]
-    [NotifyPropertyChangedFor(nameof(ShowRequestsTab))]
-    [NotifyPropertyChangedFor(nameof(ShowFollowingTab))]
-    [NotifyPropertyChangedFor(nameof(ShowFollowersTab))]
-    [NotifyPropertyChangedFor(nameof(ShowSearchTab))]
-    [NotifyPropertyChangedFor(nameof(ShowChatTab))]
-    [NotifyPropertyChangedFor(nameof(ShowProfileView))]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyFriends))]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyFollowing))]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyFollowers))]
-    [NotifyPropertyChangedFor(nameof(ShowEmptySearch))]
-    [NotifyPropertyChangedFor(nameof(ShowFriendsGroups))]
-    [NotifyPropertyChangedFor(nameof(ShowEmptyChat))]
-    [NotifyPropertyChangedFor(nameof(SearchPlaceholder))]
-    [NotifyPropertyChangedFor(nameof(ShowMainList))]
-    private string _selectedTab = "Friends";
+    public partial string SelectedTab { get; set; } = "Friends";
 
     [ObservableProperty]
-    private string _searchQuery = string.Empty;
+    public partial string SearchQuery { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _statusText = string.Empty;
+    public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowEmptySearch))]
-    private bool _isBusy;
+    public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(RequestsTabLabel))]
-    private int _incomingCount;
+    public partial int IncomingCount { get; set; }
 
     [ObservableProperty]
-    private bool _onlineExpanded = true;
+    public partial bool OnlineExpanded { get; set; } = true;
 
     [ObservableProperty]
-    private bool _offlineExpanded = true;
+    public partial bool OfflineExpanded { get; set; } = true;
 
     [ObservableProperty]
-    private bool _incomingExpanded = true;
+    public partial bool IncomingExpanded { get; set; } = true;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowProfileView))]
-    [NotifyPropertyChangedFor(nameof(ShowMainList))]
-    private SocialPersonItem? _viewedProfile;
+    public partial SocialPersonItem? ViewedProfile { get; set; }
 
     [ObservableProperty]
-    private string _profileHeader = string.Empty;
+    public partial string ProfileHeader { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _profileSubtitle = string.Empty;
+    public partial string ProfileSubtitle { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _profileCommentDraft = string.Empty;
+    public partial string ProfileCommentDraft { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _profileStatus = string.Empty;
+    public partial string ProfileStatus { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private int? _profileUserId;
+    public partial int? ProfileUserId { get; set; }
 
     [ObservableProperty]
-    private bool _canMessageProfile;
+    public partial bool CanMessageProfile { get; set; }
 
     [ObservableProperty]
-    private ChatThreadItem? _selectedChatThread;
+    public partial ChatThreadItem? SelectedChatThread { get; set; }
 
     [ObservableProperty]
-    private string _chatDraft = string.Empty;
+    public partial string ChatDraft { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _chatStatus = string.Empty;
+    public partial string ChatStatus { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _chatPeerTitle = "Wybierz rozmowę";
+    public partial string ChatPeerTitle { get; set; } = "Wybierz rozmowę";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowChatConversation))]
-    private bool _hasActiveChat;
+    public partial bool HasActiveChat { get; set; }
 
     public bool ShowFriendsTab => SelectedTab == "Friends" && ViewedProfile is null;
     public bool ShowRequestsTab => SelectedTab == "Requests" && ViewedProfile is null;
@@ -228,6 +223,7 @@ public partial class FriendsViewModel : ViewModelBase
 
     partial void OnSelectedTabChanged(string value)
     {
+        NotifyLists();
         RebuildPresenceLists();
         if (value == "Chat")
         {
@@ -236,7 +232,7 @@ public partial class FriendsViewModel : ViewModelBase
         }
         else
         {
-            _chatPollTimer.Stop();
+            _chatPollTimer?.Stop();
         }
     }
 
@@ -247,13 +243,23 @@ public partial class FriendsViewModel : ViewModelBase
             await _realtime.EnsureConnectedAsync();
             if (_realtime.IsConnected)
             {
-                _chatPollTimer.Stop();
+                _chatPollTimer?.Stop();
                 return;
             }
         }
 
-        _chatPollTimer.Start();
+        _chatPollTimer?.Start();
     }
+
+    partial void OnViewedProfileChanged(SocialPersonItem? value) => NotifyLists();
+
+    partial void OnHasActiveChatChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowEmptyChat));
+        OnPropertyChanged(nameof(ShowChatConversation));
+    }
+
+    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ShowEmptySearch));
 
     [RelayCommand]
     private void SelectTab(string? tab)
@@ -747,6 +753,7 @@ public partial class FriendsViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasIncoming));
         OnPropertyChanged(nameof(HasOutgoing));
         OnPropertyChanged(nameof(RequestsTabLabel));
+        OnPropertyChanged(nameof(SearchPlaceholder));
         OnPropertyChanged(nameof(OnlineCount));
         OnPropertyChanged(nameof(OfflineCount));
     }
@@ -834,7 +841,6 @@ public sealed class SocialPersonItem
     public required string Initials { get; init; }
     public required string Subtitle { get; init; }
     public required string AvatarHex { get; init; }
-    public IBrush AvatarBrush => new SolidColorBrush(Color.Parse(AvatarHex));
     public required bool IsOnline { get; init; }
     public required FriendRelation FriendRelation { get; init; }
     public required bool IsFollowing { get; init; }

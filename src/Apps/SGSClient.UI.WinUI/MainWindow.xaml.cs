@@ -6,7 +6,6 @@ using Microsoft.UI.Xaml.Controls;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
 using SGSClient.UI.ViewModels;
-using SGSClient.UI.WinUI.ViewModels;
 using SGSClient.UI.WinUI.Views;
 
 namespace SGSClient.UI.WinUI;
@@ -37,6 +36,16 @@ public sealed partial class MainWindow : Window
         WireDownloadStatusBar();
         WireNotificationsStatusBar();
         WireOfflineBanner();
+    }
+
+    /// <summary>
+    /// AccountViewModel is transient (one per page), so every instance that can change the profile
+    /// is attached here: the shell refreshes its sidebar on profile / role changes.
+    /// </summary>
+    public void AttachAccount(AccountViewModel account)
+    {
+        account.ProfileChanged += RefreshSidebar;
+        account.AdminVisibilityChanged += SetAdminNavVisible;
     }
 
     private void PlaceDefaultWindow()

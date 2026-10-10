@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
-using SGSClient.UI.WinUI.ViewModels;
+using SGSClient.UI.ViewModels;
 
 namespace SGSClient.UI.WinUI.Views;
 

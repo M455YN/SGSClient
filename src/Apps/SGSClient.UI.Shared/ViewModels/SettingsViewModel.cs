@@ -11,23 +11,24 @@ using SGSClient.Core.Library;
 
 namespace SGSClient.UI.ViewModels;
 
-public partial class SettingsViewModel : ViewModelBase
+public partial class SettingsViewModel : ObservableObject
 {
     private readonly IServiceScopeFactory? _scopes;
     private readonly ILibraryFolderService? _libraryFolders;
     private readonly IAuthSession? _auth;
     private readonly string _accountStatusFallback;
 
+    /// <summary>Design-time / fallback constructor (no services).</summary>
     public SettingsViewModel()
     {
         Title = "Ustawienia";
         StoreStatus = "Nie skonfigurowano";
         _accountStatusFallback = "Logowanie wyłączone";
         AccountStatus = _accountStatusFallback;
-        AppearanceText = "Jak w systemie Windows / macOS / Linux";
+        AppearanceText = "Jak w systemie";
         LanguageText = "Polski";
         LibrarySummary = "Dodaj foldery biblioteki jak w Steam. Każdy folder ma plik libraryfolder.json i katalog sgsapps/.";
-        AboutText = $"SGSClient · {ReadVersion()}";
+        AboutText = $"SGSClient · wersja {ReadVersion()}";
     }
 
     public SettingsViewModel(
@@ -67,7 +68,7 @@ public partial class SettingsViewModel : ViewModelBase
     public string StoreStatus { get; }
 
     [ObservableProperty]
-    private string _accountStatus = string.Empty;
+    public partial string AccountStatus { get; set; } = string.Empty;
 
     public string AppearanceText { get; }
     public string LanguageText { get; }
@@ -77,13 +78,13 @@ public partial class SettingsViewModel : ViewModelBase
     public ObservableCollection<LibraryFolderDisplayItem> LibraryFolders { get; } = [];
 
     [ObservableProperty]
-    private LibraryFolderDisplayItem? _selectedLibraryFolder;
+    public partial LibraryFolderDisplayItem? SelectedLibraryFolder { get; set; }
 
     [ObservableProperty]
-    private string _statusText = string.Empty;
+    public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private bool _isBusy;
+    public partial bool IsBusy { get; set; }
 
     public void RefreshAccountStatus()
     {
@@ -109,12 +110,7 @@ public partial class SettingsViewModel : ViewModelBase
     public void ReloadFolders()
     {
         LibraryFolders.Clear();
-        if (_libraryFolders is null)
-        {
-            return;
-        }
-
-        foreach (var folder in _libraryFolders.GetFolders())
+        foreach (var folder in _libraryFolders?.GetFolders() ?? [])
         {
             LibraryFolders.Add(LibraryFolderDisplayItem.FromEntry(folder));
         }

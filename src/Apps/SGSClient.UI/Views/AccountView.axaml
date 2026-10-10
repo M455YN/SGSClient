@@ -47,9 +47,9 @@
                   <TextBlock Text="{Binding AvatarInitials}"
                              FontSize="32" FontWeight="SemiBold"
                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                             IsVisible="{Binding !ShowAvatarImage}"/>
-                  <Image Source="{Binding AvatarBitmap}" Stretch="UniformToFill"
-                         IsVisible="{Binding ShowAvatarImage}"/>
+                             IsVisible="{Binding !HasAvatar}"/>
+                  <Image x:Name="AvatarImage" Stretch="UniformToFill"
+                         IsVisible="{Binding HasAvatar}"/>
                 </Panel>
               </Border>
 

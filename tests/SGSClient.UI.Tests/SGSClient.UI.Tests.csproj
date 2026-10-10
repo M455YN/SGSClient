@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Apps\SGSClient.UI.Shared\SGSClient.UI.Shared.csproj" />
     <ProjectReference Include="..\..\src\Core\SGSClient.Core\SGSClient.Core.csproj" />
     <ProjectReference Include="..\..\src\Infrastructure\SGSClient.Infrastructure.Client\SGSClient.Infrastructure.Client.csproj" />
   </ItemGroup>
