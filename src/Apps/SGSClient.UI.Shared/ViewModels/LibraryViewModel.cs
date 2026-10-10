@@ -643,6 +643,7 @@ public partial class LibraryViewModel : ObservableObject
 
                 model.LogoUrl = game.LogoUrl;
                 await library.UpsertAsync(model);
+                row.ApplyModel(model, _apiBaseUrl);
             }
             catch
             {
@@ -725,6 +726,13 @@ public partial class LibraryGameItem : ObservableObject
     [ObservableProperty]
     public partial bool HasCover { get; set; }
 
+    /// <summary>Portrait capsule for the library cards. The sidebar keeps <see cref="CoverImageUrl"/> (the logo).</summary>
+    [ObservableProperty]
+    public partial string? PosterImageUrl { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasPoster { get; set; }
+
     [ObservableProperty]
     public partial bool CanLaunch { get; set; }
 
@@ -785,8 +793,10 @@ public partial class LibraryGameItem : ObservableObject
         CoverUrl = item.CoverUrl;
         TargetVersion = item.TargetVersion;
         LastPlayedUtc = item.LastPlayedUtc;
-        CoverImageUrl = ResolveCoverImage(item, apiBaseUrl);
+        CoverImageUrl = ResolveLogoImage(item, apiBaseUrl);
         HasCover = !string.IsNullOrWhiteSpace(CoverImageUrl);
+        PosterImageUrl = ResolvePosterImage(item, apiBaseUrl);
+        HasPoster = !string.IsNullOrWhiteSpace(PosterImageUrl);
         LastPlayedText = item.LastPlayedUtc is null
             ? "Niegrana"
             : item.LastPlayedUtc.Value.LocalDateTime.ToString("g");
@@ -796,14 +806,38 @@ public partial class LibraryGameItem : ObservableObject
         ApplyInstallState(item.InstallState);
     }
 
-    private static string? ResolveCoverImage(GameLibraryItem item, string apiBaseUrl)
+    private static string? ResolveLogoImage(GameLibraryItem item, string apiBaseUrl)
+    {
+        if (TryCustomCover(item, out var custom))
+        {
+            return custom;
+        }
+
+        var art = !string.IsNullOrWhiteSpace(item.LogoUrl) ? item.LogoUrl : item.CoverUrl;
+        return InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, art);
+    }
+
+    private static string? ResolvePosterImage(GameLibraryItem item, string apiBaseUrl)
+    {
+        if (TryCustomCover(item, out var custom))
+        {
+            return custom;
+        }
+
+        var art = !string.IsNullOrWhiteSpace(item.CoverUrl) ? item.CoverUrl : item.LogoUrl;
+        return InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, art);
+    }
+
+    private static bool TryCustomCover(GameLibraryItem item, out string? uri)
     {
         if (!string.IsNullOrWhiteSpace(item.CustomCoverPath) && File.Exists(item.CustomCoverPath))
         {
-            return new Uri(item.CustomCoverPath).AbsoluteUri;
+            uri = new Uri(item.CustomCoverPath).AbsoluteUri;
+            return true;
         }
 
-        return InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, item.CoverUrl);
+        uri = null;
+        return false;
     }
 
     public void ApplyInstallState(InstallState state)

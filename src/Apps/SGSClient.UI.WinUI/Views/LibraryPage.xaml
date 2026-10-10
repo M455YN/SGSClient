@@ -75,7 +75,7 @@
                                FontWeight="SemiBold" FontSize="12"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill" />
+                    <Image Source="{Binding CoverImageUrl}" Stretch="Uniform" />
                   </Grid>
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
@@ -134,19 +134,25 @@
                       <TextBlock Text="{Binding TileLabel}"
                                  FontSize="32" FontWeight="SemiBold" Opacity="0.35"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
-                      <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill" />
-                      <Border VerticalAlignment="Bottom" Padding="12,10"
-                              Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}">
-                        <StackPanel Spacing="2">
-                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <Image Source="{Binding PosterImageUrl}" Stretch="UniformToFill" />
+                      <Grid VerticalAlignment="Bottom"
+                            SizeChanged="PosterCaption_SizeChanged">
+                        <Border Background="Transparent"
+                                Tag="{Binding PosterImageUrl}"
+                                Loaded="PosterCaption_Loaded"
+                                Unloaded="PosterCaption_Unloaded" />
+                        <Border Background="#A6000000" IsHitTestVisible="False" />
+                        <StackPanel Margin="12,10" Spacing="2">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                                     Foreground="White" TextTrimming="CharacterEllipsis" />
                           <TextBlock Text="{Binding LastPlayedText}"
                                      Style="{StaticResource CaptionTextBlockStyle}"
-                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                     Foreground="#CCFFFFFF" />
                           <TextBlock Text="{Binding PlaytimeText}"
                                      Style="{StaticResource CaptionTextBlockStyle}"
-                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                     Foreground="#CCFFFFFF" />
                         </StackPanel>
-                      </Border>
+                      </Grid>
                     </Grid>
                   </Border>
                 </DataTemplate>
@@ -186,12 +192,17 @@
                       <TextBlock Text="{Binding TileLabel}"
                                  FontSize="26" FontWeight="SemiBold" Opacity="0.35"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
-                      <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill" />
-                      <Border VerticalAlignment="Bottom" Padding="8,8"
-                              Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}">
+                      <Image Source="{Binding PosterImageUrl}" Stretch="UniformToFill" />
+                      <Grid VerticalAlignment="Bottom"
+                            SizeChanged="PosterCaption_SizeChanged">
+                        <Border Background="Transparent"
+                                Tag="{Binding PosterImageUrl}"
+                                Loaded="PosterCaption_Loaded"
+                                Unloaded="PosterCaption_Unloaded" />
+                        <Border Background="#A6000000" IsHitTestVisible="False" />
                         <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis" />
-                      </Border>
+                                   Margin="8,8" Foreground="White" TextTrimming="CharacterEllipsis" />
+                      </Grid>
                     </Grid>
                   </Border>
                 </DataTemplate>

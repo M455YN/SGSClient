@@ -41,7 +41,7 @@
                     <TextBlock Text="{Binding TileLabel}" FontWeight="SemiBold" FontSize="12"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsVisible="{Binding !HasCover}" Opacity="0.7"/>
-                    <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                    <Image Source="{Binding CoverImageUrl}" Stretch="Uniform"
                            IsVisible="{Binding HasCover}"/>
                   </Panel>
                 </Border>
@@ -86,22 +86,32 @@
                       <Panel>
                         <TextBlock Text="{Binding TileLabel}" FontSize="32" FontWeight="SemiBold" Opacity="0.35"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   IsVisible="{Binding !HasCover}"/>
-                        <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
-                               IsVisible="{Binding HasCover}"/>
-                        <Border VerticalAlignment="Bottom" Padding="12,10"
-                                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                                   IsVisible="{Binding !HasPoster}"/>
+                        <Image Source="{Binding PosterImageUrl}" Stretch="UniformToFill"
+                               IsVisible="{Binding HasPoster}"/>
+                        <Panel VerticalAlignment="Bottom" ClipToBounds="True">
+                          <Canvas IsHitTestVisible="False" IsVisible="{Binding HasPoster}">
+                            <Image Canvas.Bottom="0" Width="168" Height="268" Stretch="UniformToFill"
+                                   Source="{Binding PosterImageUrl}">
+                              <Image.Effect>
+                                <BlurEffect Radius="18"/>
+                              </Image.Effect>
+                            </Image>
+                          </Canvas>
+                          <Border Background="#A6000000" Padding="12,10">
                           <StackPanel Spacing="4">
-                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="{Binding LastPlayedText}" Opacity="0.65" FontSize="11"/>
-                            <TextBlock Text="{Binding PlaytimeText}" Opacity="0.65" FontSize="11"
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="White"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding LastPlayedText}" Foreground="#CCFFFFFF" FontSize="11"/>
+                            <TextBlock Text="{Binding PlaytimeText}" Foreground="#CCFFFFFF" FontSize="11"
                                        IsVisible="{Binding HasPlaytime}"/>
                             <Button Content="Graj" Tag="{Binding}" Click="Launch_OnClick"
                                     IsEnabled="{Binding CanLaunch}"
                                     Classes="accent" Padding="12,6"
                                     HorizontalAlignment="Left"/>
                           </StackPanel>
-                        </Border>
+                          </Border>
+                        </Panel>
                       </Panel>
                     </Border>
                   </DataTemplate>
@@ -132,14 +142,23 @@
                     <Panel>
                       <TextBlock Text="{Binding TileLabel}" FontSize="26" FontWeight="SemiBold" Opacity="0.35"
                                  HorizontalAlignment="Center" VerticalAlignment="Center"
-                                 IsVisible="{Binding !HasCover}"/>
-                      <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
-                             IsVisible="{Binding HasCover}"/>
-                      <Border VerticalAlignment="Bottom" Padding="8,8"
-                              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis"/>
-                      </Border>
+                                 IsVisible="{Binding !HasPoster}"/>
+                      <Image Source="{Binding PosterImageUrl}" Stretch="UniformToFill"
+                             IsVisible="{Binding HasPoster}"/>
+                      <Panel VerticalAlignment="Bottom" ClipToBounds="True">
+                        <Canvas IsHitTestVisible="False" IsVisible="{Binding HasPoster}">
+                          <Image Canvas.Bottom="0" Width="132" Height="198" Stretch="UniformToFill"
+                                 Source="{Binding PosterImageUrl}">
+                            <Image.Effect>
+                              <BlurEffect Radius="16"/>
+                            </Image.Effect>
+                          </Image>
+                        </Canvas>
+                        <Border Background="#A6000000" Padding="8,8">
+                          <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                     Foreground="White" TextTrimming="CharacterEllipsis"/>
+                        </Border>
+                      </Panel>
                     </Panel>
                   </Border>
                 </DataTemplate>
