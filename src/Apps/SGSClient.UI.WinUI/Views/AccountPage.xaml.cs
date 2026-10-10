@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
-using SGSClient.UI.WinUI.ViewModels;
+using SGSClient.UI.ViewModels;
 using WinRT.Interop;
 
 namespace SGSClient.UI.WinUI.Views;
@@ -18,6 +18,7 @@ public sealed partial class AccountPage : Page
 
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
         ViewModel.SetLogoutHandler(App.ReturnToLoginGate);
+        App.MainWindow?.AttachAccount(ViewModel);
 
         if (App.MainWindow is not null)
         {

@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:SGSClient.UI.ViewModels"
+        xmlns:conv="using:SGSClient.UI.Converters"
         x:Class="SGSClient.UI.Views.GamePropertiesWindow"
         x:DataType="vm:GamePropertiesViewModel"
         Title="Właściwości gry"
@@ -164,7 +165,7 @@
             <Panel>
               <TextBlock Text="Podgląd" Opacity="0.45" HorizontalAlignment="Center" VerticalAlignment="Center"
                          IsVisible="{Binding !HasCustomCover}"/>
-              <Image Source="{Binding CustomCoverPreview}" Stretch="UniformToFill"
+              <Image Source="{Binding CustomCoverPreviewUri, Converter={x:Static conv:FileUriToBitmapConverter.Instance}}" Stretch="UniformToFill"
                      IsVisible="{Binding HasCustomCover}"/>
             </Panel>
           </Border>

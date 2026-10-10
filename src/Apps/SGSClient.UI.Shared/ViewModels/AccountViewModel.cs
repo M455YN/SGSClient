@@ -13,25 +13,25 @@ using SGSClient.Core.Playtime;
 
 namespace SGSClient.UI.ViewModels;
 
-public partial class AccountViewModel : ViewModelBase
+public partial class AccountViewModel : ObservableObject
 {
     private readonly IAuthSession? _auth;
     private readonly IUserApiClient? _userApi;
     private readonly IServiceScopeFactory? _scopes;
     private readonly string _apiBaseUrl;
     private Func<nint>? _parentWindowHandle;
-    private Action<bool>? _adminVisibility;
     private Action<string>? _navigate;
     private Action? _onLogout;
-    private Action? _loggedOut;
+    private Action<bool>? _adminVisibility;
 
-    public AccountViewModel()
-        : this(null, null, null, null)
-    {
-    }
+    /// <summary>Raised after the profile (name, avatar, tag) changed so the shell can refresh its sidebar.</summary>
+    public event Action? ProfileChanged;
+
+    /// <summary>Raised when the signed-in user's admin rights are known (or cleared on sign-out).</summary>
+    public event Action<bool>? AdminVisibilityChanged;
 
     public AccountViewModel(
-        IAuthSession? auth,
+        IAuthSession? auth = null,
         IUserApiClient? userApi = null,
         IServiceScopeFactory? scopes = null,
         IConfiguration? configuration = null)
@@ -48,15 +48,6 @@ public partial class AccountViewModel : ViewModelBase
                 : auth.LastError ?? "Azure AD B2C is disabled in appsettings.";
     }
 
-    public void SetAdminVisibilityHandler(Action<bool> handler)
-    {
-        _adminVisibility = handler;
-        if (_auth?.IsAvailable != true)
-        {
-            _adminVisibility(true);
-        }
-    }
-
     public ObservableCollection<RecentGameItem> RecentGames { get; } = [];
     public ObservableCollection<ProfileCommentItem> WallComments { get; } = [];
 
@@ -65,7 +56,6 @@ public partial class AccountViewModel : ViewModelBase
     public bool ShowAccountContent => IsLoggedIn && !NeedsPlayerTagSetup;
     public bool ShowProfile => IsLoggedIn && !IsEditing && !NeedsPlayerTagSetup;
     public bool HasAvatar => !string.IsNullOrWhiteSpace(AvatarUrl);
-    public bool ShowAvatarImage => AvatarBitmap is not null;
     public bool HasRecentGames => RecentGames.Count > 0;
     public bool ShowEmptyRecentGames => IsLoggedIn && !NeedsPlayerTagSetup && RecentGames.Count == 0;
     public string BioDisplay => string.IsNullOrWhiteSpace(Bio) ? "Dodaj bio w Dostosuj profil" : Bio;
@@ -81,103 +71,116 @@ public partial class AccountViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(ShowTagSetup))]
     [NotifyPropertyChangedFor(nameof(ShowAccountContent))]
     [NotifyPropertyChangedFor(nameof(ShowEmptyRecentGames))]
-    private bool _isLoggedIn;
+    public partial bool IsLoggedIn { get; set; }
 
     [ObservableProperty]
-    private string _accountStatus = "Not signed in";
+    public partial string AccountStatus { get; set; } = "Not signed in";
 
     [ObservableProperty]
-    private bool _isBusy;
+    public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowProfile))]
     [NotifyPropertyChangedFor(nameof(ShowTagSetup))]
-    private bool _isEditing;
+    public partial bool IsEditing { get; set; }
 
     [ObservableProperty]
-    private string _wallCommentDraft = string.Empty;
+    public partial string DisplayName { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _wallStatus = string.Empty;
+    public partial string WallCommentDraft { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private int _profileUserId;
+    public partial string WallStatus { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _displayName = string.Empty;
+    public partial int ProfileUserId { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PlayerTagDisplay))]
-    private string _playerTag = string.Empty;
+    public partial string PlayerTag { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowTagSetup))]
     [NotifyPropertyChangedFor(nameof(ShowProfile))]
     [NotifyPropertyChangedFor(nameof(ShowAccountContent))]
     [NotifyPropertyChangedFor(nameof(ShowEmptyRecentGames))]
-    private bool _needsPlayerTagSetup;
+    public partial bool NeedsPlayerTagSetup { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TagPreview))]
-    private string _draftPlayerTag = string.Empty;
+    public partial string DraftPlayerTag { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _tagStatus = string.Empty;
+    public partial string TagStatus { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _email = string.Empty;
+    public partial string Email { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasAvatar))]
-    [NotifyPropertyChangedFor(nameof(ShowAvatarImage))]
-    private string _avatarUrl = string.Empty;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowAvatarImage))]
-    private Avalonia.Media.Imaging.Bitmap? _avatarBitmap;
+    public partial string AvatarUrl { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BioDisplay))]
-    private string _bio = string.Empty;
+    public partial string Bio { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LocationDisplay))]
-    private string _location = string.Empty;
+    public partial string Location { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _lastActivityText = string.Empty;
+    public partial string LastActivityText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _editDisplayName = string.Empty;
+    public partial string EditDisplayName { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _editBio = string.Empty;
+    public partial string EditBio { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _editLocation = string.Empty;
+    public partial string EditLocation { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _editPlayerTag = string.Empty;
+    public partial string EditPlayerTag { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private int _friendsCount;
+    public partial int FriendsCount { get; set; }
 
     [ObservableProperty]
-    private int _followingCount;
+    public partial int FollowingCount { get; set; }
 
     [ObservableProperty]
-    private int _followersCount;
+    public partial int FollowersCount { get; set; }
 
     [ObservableProperty]
-    private string _avatarInitials = "?";
+    public partial string AvatarInitials { get; set; } = "?";
 
     [ObservableProperty]
-    private string _profileActionStatus = string.Empty;
+    public partial string ProfileActionStatus { get; set; } = string.Empty;
 
     public void SetParentWindowHandleProvider(Func<nint> provider) => _parentWindowHandle = provider;
     public void SetNavigateHandler(Action<string> navigate) => _navigate = navigate;
     public void SetLogoutHandler(Action onLogout) => _onLogout = onLogout;
-    public void SetLoggedOutHandler(Action loggedOut) => _loggedOut = loggedOut;
+
+    /// <summary>
+    /// Convenience wrapper over <see cref="AdminVisibilityChanged"/>. Without a configured
+    /// identity provider every nav entry stays visible (local development).
+    /// </summary>
+    public void SetAdminVisibilityHandler(Action<bool> handler)
+    {
+        if (_adminVisibility is not null)
+        {
+            AdminVisibilityChanged -= _adminVisibility;
+        }
+
+        _adminVisibility = handler;
+        AdminVisibilityChanged += handler;
+        if (_auth?.IsAvailable != true)
+        {
+            handler(true);
+        }
+    }
 
     public async Task InitializeAsync()
     {
@@ -195,17 +198,13 @@ public partial class AccountViewModel : ViewModelBase
             {
                 await ApplyProfileAsync(_auth.CurrentUser);
             }
+            else if (await _auth.TrySilentLoginAsync() && _auth.CurrentUser is not null)
+            {
+                await ApplyProfileAsync(_auth.CurrentUser);
+            }
             else
             {
-                var ok = await _auth.TrySilentLoginAsync();
-                if (ok && _auth.CurrentUser is not null)
-                {
-                    await ApplyProfileAsync(_auth.CurrentUser);
-                }
-                else
-                {
-                    ApplySignedOut();
-                }
+                ApplySignedOut();
             }
         }
         finally
@@ -227,15 +226,10 @@ public partial class AccountViewModel : ViewModelBase
         IsBusy = true;
         try
         {
-            var hwnd = _parentWindowHandle?.Invoke() ?? 0;
-            var ok = await _auth.LoginAsync(hwnd);
+            var ok = await _auth.LoginAsync(_parentWindowHandle?.Invoke() ?? 0);
             if (ok && _auth.CurrentUser is not null)
             {
                 await ApplyProfileAsync(_auth.CurrentUser);
-                if (!string.IsNullOrWhiteSpace(_auth.LastError))
-                {
-                    AccountStatus = $"{AccountStatus} {_auth.LastError}";
-                }
             }
             else
             {
@@ -318,6 +312,7 @@ public partial class AccountViewModel : ViewModelBase
             _auth?.SetCurrentUser(updated);
             await ApplyProfileAsync(updated);
             IsEditing = false;
+            ProfileChanged?.Invoke();
         }
         finally
         {
@@ -359,6 +354,7 @@ public partial class AccountViewModel : ViewModelBase
             _auth?.SetCurrentUser(updated);
             await ApplyProfileAsync(updated);
             ProfileActionStatus = "Zdjęcie zaktualizowane.";
+            ProfileChanged?.Invoke();
         }
         finally
         {
@@ -387,6 +383,7 @@ public partial class AccountViewModel : ViewModelBase
             _auth?.SetCurrentUser(updated);
             await ApplyProfileAsync(updated);
             ProfileActionStatus = "Zdjęcie usunięte.";
+            ProfileChanged?.Invoke();
         }
         finally
         {
@@ -410,7 +407,6 @@ public partial class AccountViewModel : ViewModelBase
         AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
             ? string.Empty
             : CacheBust(InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl));
-        _ = LoadAvatarBitmapAsync(AvatarUrl);
         Bio = user.Bio ?? string.Empty;
         Location = user.Location ?? string.Empty;
         AvatarInitials = MakeInitials(user.DisplayName);
@@ -422,15 +418,13 @@ public partial class AccountViewModel : ViewModelBase
         {
             AccountStatus += " · admin";
         }
-        FriendsCount = 0;
-        FollowingCount = 0;
-        FollowersCount = 0;
+        FriendsCount = FollowingCount = FollowersCount = 0;
         await LoadSocialCountsAsync();
         await LoadRecentGamesAsync();
         await LoadWallAsync(user.Id);
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
-        _adminVisibility?.Invoke(user.IsAdmin);
+        AdminVisibilityChanged?.Invoke(user.IsAdmin);
     }
 
     private async Task LoadWallAsync(int userId)
@@ -517,31 +511,19 @@ public partial class AccountViewModel : ViewModelBase
     {
         IsLoggedIn = false;
         IsEditing = false;
-        DisplayName = string.Empty;
-        Email = string.Empty;
-        PlayerTag = string.Empty;
+        DisplayName = Email = AvatarUrl = Bio = Location = LastActivityText = PlayerTag = string.Empty;
         NeedsPlayerTagSetup = false;
-        DraftPlayerTag = string.Empty;
-        TagStatus = string.Empty;
-        AvatarUrl = string.Empty;
-        AvatarBitmap = null;
-        Bio = string.Empty;
-        Location = string.Empty;
-        LastActivityText = string.Empty;
+        DraftPlayerTag = TagStatus = string.Empty;
         AvatarInitials = "?";
-        FriendsCount = 0;
-        FollowingCount = 0;
-        FollowersCount = 0;
+        FriendsCount = FollowingCount = FollowersCount = 0;
         RecentGames.Clear();
         WallComments.Clear();
-        WallCommentDraft = string.Empty;
-        WallStatus = string.Empty;
+        WallCommentDraft = WallStatus = string.Empty;
         ProfileUserId = 0;
         AccountStatus = "Not signed in";
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
-        _adminVisibility?.Invoke(_auth?.IsAvailable != true);
-        _loggedOut?.Invoke();
+        AdminVisibilityChanged?.Invoke(_auth?.IsAvailable != true);
     }
 
     [RelayCommand]
@@ -578,6 +560,7 @@ public partial class AccountViewModel : ViewModelBase
 
             _auth?.SetCurrentUser(profile);
             await ApplyProfileAsync(profile);
+            ProfileChanged?.Invoke();
         }
         finally
         {
@@ -610,46 +593,6 @@ public partial class AccountViewModel : ViewModelBase
         }
         catch
         {
-        }
-    }
-
-    private static string CacheBust(string url)
-    {
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            return url;
-        }
-
-        var sep = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
-        return $"{url}{sep}v={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
-    }
-
-    private async Task LoadAvatarBitmapAsync(string? url)
-    {
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            AvatarBitmap = null;
-            return;
-        }
-
-        try
-        {
-            if (File.Exists(url))
-            {
-                AvatarBitmap = new Avalonia.Media.Imaging.Bitmap(url);
-                return;
-            }
-
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-            await using var stream = await http.GetStreamAsync(url);
-            await using var memory = new MemoryStream();
-            await stream.CopyToAsync(memory);
-            memory.Position = 0;
-            AvatarBitmap = new Avalonia.Media.Imaging.Bitmap(memory);
-        }
-        catch
-        {
-            AvatarBitmap = null;
         }
     }
 
@@ -687,8 +630,18 @@ public partial class AccountViewModel : ViewModelBase
         }
         catch
         {
-            // Library optional for profile chrome
         }
+    }
+
+    private static string CacheBust(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return url;
+        }
+
+        var sep = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{url}{sep}v={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
     }
 
     private static string MakeInitials(string name)
@@ -699,12 +652,9 @@ public partial class AccountViewModel : ViewModelBase
             return "?";
         }
 
-        if (parts.Length == 1)
-        {
-            return parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant();
-        }
-
-        return $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant();
+        return parts.Length == 1
+            ? parts[0][..Math.Min(2, parts[0].Length)].ToUpperInvariant()
+            : $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant();
     }
 
     private static string FormatLastActivity(DateTimeOffset? lastLoginUtc)
@@ -737,7 +687,6 @@ public partial class AccountViewModel : ViewModelBase
 public sealed class RecentGameItem(string title, string symbol, DateTimeOffset? lastPlayedUtc, long playtimeSeconds = 0)
 {
     public string Title { get; } = title;
-    public string Symbol { get; } = symbol;
     public string TileLabel { get; } = string.IsNullOrWhiteSpace(symbol)
         ? title[..Math.Min(2, title.Length)].ToUpperInvariant()
         : symbol[..Math.Min(3, symbol.Length)].ToUpperInvariant();

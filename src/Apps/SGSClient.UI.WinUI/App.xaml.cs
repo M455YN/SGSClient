@@ -7,7 +7,6 @@ using SGSClient.Infrastructure.Client;
 using SGSClient.Infrastructure.Client.Persistence;
 using SGSClient.Infrastructure.Client.Services;
 using SGSClient.UI.ViewModels;
-using SGSClient.UI.WinUI.ViewModels;
 using SGSClient.UI.WinUI.Views;
 
 namespace SGSClient.UI.WinUI;
@@ -125,10 +124,12 @@ public partial class App : Application
         services.AddSingleton(sp => new LoginGateViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>()));
+        services.AddSingleton<IUiDispatcher, WinUiDispatcher>();
         services.AddSingleton(sp => new FriendsViewModel(
             sp.GetService<IUserApiClient>(),
             sp.GetService<IAuthSession>(),
-            sp.GetService<SocialRealtimeService>()));
+            sp.GetService<SocialRealtimeService>(),
+            sp.GetService<IUiDispatcher>()));
         services.AddSingleton(sp => new NotificationsViewModel(
             sp.GetService<IUserApiClient>(),
             sp.GetService<IAuthSession>(),
@@ -211,6 +212,7 @@ public partial class App : Application
         var account = Services.GetService<AccountViewModel>();
         if (account is not null)
         {
+            MainWindow?.AttachAccount(account);
             await account.InitializeAsync();
             if (account.NeedsPlayerTagSetup)
             {

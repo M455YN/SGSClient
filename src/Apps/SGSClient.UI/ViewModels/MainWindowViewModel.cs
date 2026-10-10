@@ -96,6 +96,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Sidebar.SetRoleVisibility(visible, visible);
             Sidebar.RefreshProfile();
         });
+        _account.ProfileChanged += Sidebar.RefreshProfile;
         _account.SetLogoutHandler(() =>
         {
             ShowLoginGate = _loginGate.IsAuthConfigured;
