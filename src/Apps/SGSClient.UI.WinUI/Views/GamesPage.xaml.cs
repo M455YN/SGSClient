@@ -28,6 +28,7 @@ public sealed partial class GamesPage : Page
         SortBox.SelectedItem = ViewModel.SelectedSort;
         SearchBox.Text = ViewModel.SearchText;
         GamesGrid.ItemsSource = ViewModel.Games;
+        GamesList.ItemsSource = ViewModel.Games;
         RefreshUi();
     }
 
@@ -46,7 +47,9 @@ public sealed partial class GamesPage : Page
         FilterButtonText.Text = ViewModel.ActiveFilterCount > 0 ? $"Filtry ({ViewModel.ActiveFilterCount})" : "Filtry";
         EmptyText.Text = ViewModel.StatusText;
         EmptyText.Visibility = ViewModel.ShowEmpty ? Visibility.Visible : Visibility.Collapsed;
-        GamesGrid.Visibility = ViewModel.HasGames ? Visibility.Visible : Visibility.Collapsed;
+        GamesGrid.Visibility = ViewModel.ShowGrid ? Visibility.Visible : Visibility.Collapsed;
+        GamesList.Visibility = ViewModel.ShowList ? Visibility.Visible : Visibility.Collapsed;
+        ViewModeIcon.Glyph = ViewModel.IsListView ? "\uE80A" : "\uE8FD";
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs e)
@@ -67,6 +70,9 @@ public sealed partial class GamesPage : Page
             ViewModel.SelectedSort = sort;
         }
     }
+
+    private void ViewMode_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.ToggleViewModeCommand.Execute(null);
 
     private void ToggleFilters_Click(object sender, RoutedEventArgs e) =>
         ViewModel.ToggleFilterPanelCommand.Execute(null);
