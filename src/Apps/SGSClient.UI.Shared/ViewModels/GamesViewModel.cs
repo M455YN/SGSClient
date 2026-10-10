@@ -84,6 +84,18 @@ public partial class GamesViewModel : ObservableObject
     [ObservableProperty]
     public partial bool HasActiveFilters { get; set; }
 
+    /// <summary>Compact list instead of poster grid.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowGrid))]
+    [NotifyPropertyChangedFor(nameof(ShowList))]
+    public partial bool IsListView { get; set; }
+
+    public bool ShowGrid => HasGames && !IsListView;
+    public bool ShowList => HasGames && IsListView;
+
+    [RelayCommand]
+    private void ToggleViewMode() => IsListView = !IsListView;
+
     [ObservableProperty]
     public partial string CountText { get; set; } = string.Empty;
 
@@ -117,6 +129,8 @@ public partial class GamesViewModel : ObservableObject
     public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowGrid))]
+    [NotifyPropertyChangedFor(nameof(ShowList))]
     public partial bool HasGames { get; set; }
 
     [ObservableProperty]

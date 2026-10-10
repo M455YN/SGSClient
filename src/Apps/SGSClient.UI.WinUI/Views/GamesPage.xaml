@@ -53,6 +53,10 @@
             <TextBlock x:Name="FilterButtonText" Text="Filtry" />
           </StackPanel>
         </Button>
+        <Button Click="ViewMode_Click" Padding="10,7"
+                ToolTipService.ToolTip="Przełącz widok: siatka / lista">
+          <FontIcon x:Name="ViewModeIcon" Glyph="&#xE8FD;" FontSize="14" />
+        </Button>
         <TextBlock Text="Sortuj według" VerticalAlignment="Center" FontSize="13" />
         <ComboBox x:Name="SortBox" MinWidth="170" SelectionChanged="Sort_Changed" />
       </StackPanel>
@@ -144,6 +148,80 @@
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  Visibility="Collapsed" />
+
+      <!-- Compact list mode: one dense row per game. -->
+      <ListView x:Name="GamesList"
+                Visibility="Collapsed"
+                SelectionMode="None"
+                IsItemClickEnabled="True"
+                ItemClick="GamesGrid_ItemClick"
+                Padding="0,6,0,24">
+        <ListView.ItemContainerStyle>
+          <Style TargetType="ListViewItem">
+            <Setter Property="Margin" Value="0,0,0,6" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="Transparent" />
+          </Style>
+        </ListView.ItemContainerStyle>
+        <ListView.ItemTemplate>
+          <DataTemplate>
+            <Border CornerRadius="8" Padding="10,8"
+                    Background="#1FFFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1"
+                    PointerEntered="GameCard_PointerEntered"
+                    PointerExited="GameCard_PointerExited">
+              <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="48" />
+                  <ColumnDefinition Width="3*" MinWidth="180" />
+                  <ColumnDefinition Width="2*" />
+                  <ColumnDefinition Width="1.4*" />
+                  <ColumnDefinition Width="110" />
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Grid Width="48" Height="64" Background="#2B2B2B" CornerRadius="4">
+                  <TextBlock Text="{Binding TileLabel}" FontWeight="Bold" FontSize="14" Opacity="0.3"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <Image Source="{Binding PosterImageUrl}" Stretch="UniformToFill" />
+                </Grid>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"
+                             TextTrimming="CharacterEllipsis" MaxLines="1" />
+                  <TextBlock Text="{Binding StudioName}" Opacity="0.6" FontSize="12"
+                             TextTrimming="CharacterEllipsis" MaxLines="1" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
+                  <TextBlock Text="{Binding GenresText}" FontSize="12"
+                             Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                             TextTrimming="CharacterEllipsis" MaxLines="1" />
+                  <TextBlock Text="{Binding EnginesText}" Opacity="0.55" FontSize="11"
+                             TextTrimming="CharacterEllipsis" MaxLines="1" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="3" Text="{Binding PlatformsText}" Opacity="0.55" FontSize="11"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="2"
+                           TextWrapping="Wrap" />
+
+                <TextBlock Grid.Column="4" Text="{Binding StatusBadge}" FontSize="11" FontWeight="SemiBold"
+                           VerticalAlignment="Center" Opacity="0.85" TextTrimming="CharacterEllipsis" />
+
+                <Button Grid.Column="5" Content="{Binding WishlistSymbol}" FontSize="16" Padding="9,3"
+                        VerticalAlignment="Center" Click="Wishlist_Click" Tag="{Binding}"
+                        ToolTipService.ToolTip="{Binding WishlistLabel}" />
+
+                <Button Grid.Column="6" Content="{Binding ActionLabel}" Click="AddToLibrary_Click"
+                        Tag="{Binding}" IsEnabled="{Binding CanAdd}" VerticalAlignment="Center"
+                        Padding="10,5" FontSize="12" MinWidth="140" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ListView.ItemTemplate>
+      </ListView>
 
       <GridView x:Name="GamesGrid"
                 SelectionMode="None"
