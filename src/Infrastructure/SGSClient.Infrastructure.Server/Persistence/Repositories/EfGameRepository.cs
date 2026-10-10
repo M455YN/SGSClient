@@ -44,6 +44,28 @@ public sealed class EfGameRepository(
                     || x.Symbol.Contains(genre)));
             }
 
+            var genreSlugs = (query.Genres ?? []).Select(s => s.Trim().ToLowerInvariant()).Where(s => s.Length > 0).ToList();
+            if (genreSlugs.Count > 0)
+            {
+                games = games.Where(g => g.Genres.Any(x => genreSlugs.Contains(x.Symbol)));
+            }
+
+            var engineSlugs = (query.Engines ?? []).Select(s => s.Trim().ToLowerInvariant()).Where(s => s.Length > 0).ToList();
+            if (engineSlugs.Count > 0)
+            {
+                games = games.Where(g => g.Engines.Any(x => engineSlugs.Contains(x.Symbol)));
+            }
+
+            if (query.Platform is { } platform)
+            {
+                games = games.Where(g => g.Builds.Any(b => b.Platform == platform));
+            }
+
+            if (query.Features is { } features && features != GameFeatures.None)
+            {
+                games = games.Where(g => (g.Features & features) == features);
+            }
+
             if (!string.IsNullOrWhiteSpace(query.Tag))
             {
                 var tag = query.Tag.Trim().ToLowerInvariant();

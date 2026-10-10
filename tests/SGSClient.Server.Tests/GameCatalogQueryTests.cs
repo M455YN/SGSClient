@@ -36,6 +36,18 @@ public class GameCatalogQueryTests
         Assert.Equal(2, byAction.Count);
         Assert.Contains(byAction, g => g.Title == "Gamma RPG" && g.Genres.Count == 2);
 
+        var byAnyOf = await repo.GetPublishedGamesAsync(new GameCatalogQuery { Genres = ["rpg", "action"] });
+        Assert.Equal(3, byAnyOf.Count);
+
+        var byRpgOnly = await repo.GetPublishedGamesAsync(new GameCatalogQuery { Genres = ["rpg"] });
+        Assert.Equal(2, byRpgOnly.Count);
+
+        var byLinux = await repo.GetPublishedGamesAsync(new GameCatalogQuery { Platform = GamePlatform.Linux });
+        Assert.Empty(byLinux);
+
+        var byWindows = await repo.GetPublishedGamesAsync(new GameCatalogQuery { Platform = GamePlatform.Windows });
+        Assert.Equal(3, byWindows.Count);
+
         var newest = await repo.GetPublishedGamesAsync(new GameCatalogQuery { Sort = "newest" });
         Assert.Equal("Beta Blast", newest[0].Title);
     }
