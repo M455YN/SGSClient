@@ -139,6 +139,8 @@
                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
                         <TextBlock Text="{Binding Subtitle}" Opacity="0.55" FontSize="12"/>
                       </StackPanel>
+                      <Button Grid.Column="2" Content="{loc:Tr Key='Osiągnięcia'}" Tag="{Binding}"
+                              Click="OpenLibraryAchievements_OnClick" VerticalAlignment="Center" Padding="10,4"/>
                     </Grid>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

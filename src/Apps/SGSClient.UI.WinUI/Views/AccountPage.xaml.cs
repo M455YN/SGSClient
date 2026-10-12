@@ -18,6 +18,20 @@ public sealed partial class AccountPage : Page
         InitializeComponent();
 
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
+        ViewModel.AchievementsRequested += async (gameId, title) =>
+        {
+            var modal = await ViewModel.CreateAchievementsModalAsync(gameId, title);
+            var dialog = new ContentDialog
+            {
+                Content = new AchievementsModal { DataContext = modal },
+                CloseButtonText = Loc.T("Zamknij"),
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = XamlRoot
+            };
+            dialog.Resources["ContentDialogMaxWidth"] = 900d;
+            dialog.Resources["ContentDialogMaxHeight"] = 800d;
+            await dialog.ShowAsync();
+        };
         ViewModel.SetLogoutHandler(App.ReturnToLoginGate);
         App.MainWindow?.AttachAccount(ViewModel);
 
@@ -30,13 +44,6 @@ public sealed partial class AccountPage : Page
                 if (tag.StartsWith("Friends:", StringComparison.Ordinal))
                 {
                     App.MainWindow.OpenSocialOverlay(tag[8..]);
-                    return;
-                }
-
-                if (tag.StartsWith("GameAchievements:", StringComparison.Ordinal)
-                    && int.TryParse(tag["GameAchievements:".Length..], out var achievementsGameId))
-                {
-                    App.MainWindow.OpenGameAchievements(achievementsGameId);
                     return;
                 }
 
@@ -128,6 +135,14 @@ public sealed partial class AccountPage : Page
 
     private void WallCommentBox_TextChanged(object sender, TextChangedEventArgs e) =>
         ViewModel.WallCommentDraft = WallCommentBox.Text ?? string.Empty;
+
+    private void OpenLibraryAchievements_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: RecentGameItem item })
+        {
+            ViewModel.OpenLibraryAchievementsCommand.Execute(item);
+        }
+    }
 
     private void OpenGameAchievements_Click(object sender, RoutedEventArgs e)
     {

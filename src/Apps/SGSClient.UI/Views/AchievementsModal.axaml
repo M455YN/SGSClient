@@ -1,0 +1,57 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.AchievementsModal"
+             x:DataType="vm:AchievementsModalViewModel"
+             Width="760" Height="640">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+    <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+
+    <Border Grid.Row="1" Padding="14,10" CornerRadius="6" Background="#12FFFFFF">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding ProgressText}" FontWeight="SemiBold" FontSize="12"/>
+          <TextBlock Grid.Column="1" Text="{Binding PercentText}" FontWeight="SemiBold" FontSize="12"/>
+        </Grid>
+        <ProgressBar Minimum="0" Maximum="1" Value="{Binding Fraction}" Height="6"/>
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,220" ColumnSpacing="8">
+      <RadioButton Content="{loc:Tr Key='Moje osiągnięcia'}" GroupName="AchTab" IsChecked="{Binding IsMineTab, Mode=OneWay}"
+                   Command="{Binding SelectTabCommand}" CommandParameter="mine"/>
+      <RadioButton Grid.Column="1" Content="{loc:Tr Key='Osiągnięcia globalne'}" GroupName="AchTab"
+                   IsChecked="{Binding IsGlobalTab, Mode=OneWay}"
+                   Command="{Binding SelectTabCommand}" CommandParameter="global"/>
+      <TextBox Grid.Column="3" Text="{Binding SearchText, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='Szukaj'}"/>
+    </Grid>
+
+    <ScrollViewer Grid.Row="3">
+      <StackPanel Spacing="8">
+        <TextBlock Text="{Binding EmptyText}" Opacity="0.6" IsVisible="{Binding !Visible.Count}"/>
+        <ItemsControl ItemsSource="{Binding Visible}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:PlayerAchievementItem">
+              <Border Margin="0,0,0,8" Padding="10" CornerRadius="6" Background="#12FFFFFF">
+                <Grid ColumnDefinitions="56,*,Auto" ColumnSpacing="12">
+                  <Border Width="56" Height="56" CornerRadius="4" Background="#1AFFFFFF" ClipToBounds="True">
+                    <Image Source="{Binding IconUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="15" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding Description}" Opacity="0.8" FontSize="12" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding RarityText}" Opacity="0.55" FontSize="12"/>
+                    <ProgressBar Minimum="0" Maximum="{Binding ProgressMax}" Value="{Binding ProgressValue}"
+                                 Height="4" IsVisible="{Binding ShowProgress}"/>
+                  </StackPanel>
+                  <TextBlock Grid.Column="2" Text="{Binding UnlockedText}" Opacity="0.65" FontSize="12"
+                             VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>
