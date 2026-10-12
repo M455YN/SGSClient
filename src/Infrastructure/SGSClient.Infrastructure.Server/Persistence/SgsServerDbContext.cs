@@ -24,6 +24,8 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
     public DbSet<UserProfileCommentEntity> UserProfileComments => Set<UserProfileCommentEntity>();
     public DbSet<DirectMessageEntity> DirectMessages => Set<DirectMessageEntity>();
     public DbSet<UserNotificationEntity> UserNotifications => Set<UserNotificationEntity>();
+    public DbSet<GameAchievementEntity> GameAchievements => Set<GameAchievementEntity>();
+    public DbSet<UserGameAchievementEntity> UserGameAchievements => Set<UserGameAchievementEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -236,6 +238,41 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.HasOne(x => x.Game)
                 .WithMany()
                 .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameAchievementEntity>(entity =>
+        {
+            entity.ToTable("game_achievements");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Key).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Title).HasMaxLength(128).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(512).IsRequired();
+            entity.Property(x => x.IconUrl).HasMaxLength(2048);
+            entity.HasIndex(x => new { x.GameId, x.Key }).IsUnique();
+
+            entity.HasOne(x => x.Game)
+                .WithMany()
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserGameAchievementEntity>(entity =>
+        {
+            entity.ToTable("user_game_achievements");
+            entity.HasKey(x => new { x.UserId, x.AchievementId });
+            entity.HasIndex(x => x.AchievementId);
+            entity.HasIndex(x => new { x.UserId, x.UnlockedAtUtc });
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Achievement)
+                .WithMany()
+                .HasForeignKey(x => x.AchievementId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

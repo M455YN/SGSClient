@@ -94,4 +94,34 @@ public interface ISgsApiService
         CancellationToken cancellationToken = default);
 
     Task<bool> DeleteGameReviewCommentAsync(long commentId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AchievementDefinitionDto>> GetAchievementDefinitionsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<AchievementDefinitionDto>? Items, string? Error)> SyncAchievementDefinitionsAsync(
+        int gameId,
+        IReadOnlyList<AchievementDefinitionDto> items,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Unlocks an achievement on the signed-in account, so a creator can test the flow.</summary>
+    Task<(AchievementUpdateResultDto? Result, string? Error)> TestUnlockAchievementAsync(
+        int gameId,
+        string key,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ResetMyAchievementProgressAsync(int gameId, CancellationToken cancellationToken = default);
+
+    /// <summary>Uploads an image as the icon of a saved achievement; returns the updated definition.</summary>
+    Task<(AchievementDefinitionDto? Item, string? Error)> UploadAchievementIconAsync(
+        int gameId,
+        string key,
+        string localFilePath,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Player view with the signed-in user's progress; <paramref name="language"/> picks translations.</summary>
+    Task<GameAchievementsDto?> GetGameAchievementsAsync(
+        int gameId,
+        string? language = null,
+        CancellationToken cancellationToken = default);
 }

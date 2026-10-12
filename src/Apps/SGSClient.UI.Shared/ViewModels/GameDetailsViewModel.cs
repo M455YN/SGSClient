@@ -192,6 +192,7 @@ public partial class GameDetailsViewModel : ObservableObject
     public bool ShowDetailsTab => SelectedTab == "Details";
     public bool ShowReviewsTab => SelectedTab == "Reviews";
     public bool ShowMoreTab => SelectedTab == "More";
+    public bool ShowAchievementsTab => SelectedTab == "Achievements";
 
     [ObservableProperty] public partial string ReviewsSummaryText { get; set; } = string.Empty;
     [ObservableProperty] public partial bool CanWriteReview { get; set; }
@@ -207,6 +208,7 @@ public partial class GameDetailsViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowDetailsTab));
         OnPropertyChanged(nameof(ShowReviewsTab));
         OnPropertyChanged(nameof(ShowMoreTab));
+        OnPropertyChanged(nameof(ShowAchievementsTab));
     }
 
     public async Task LoadAsync(int gameId, bool fromLibrary = false, string? returnTag = null)
@@ -257,6 +259,7 @@ public partial class GameDetailsViewModel : ObservableObject
             HasContent = true;
             StatusText = string.Empty;
             _ = LoadReviewsAsync();
+            _ = LoadAchievementsAsync();
         }
         catch (Exception ex)
         {
@@ -281,6 +284,10 @@ public partial class GameDetailsViewModel : ObservableObject
             if (string.Equals(tab, "Reviews", StringComparison.OrdinalIgnoreCase))
             {
                 _ = LoadReviewsAsync();
+            }
+            else if (string.Equals(tab, "Achievements", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = LoadAchievementsAsync();
             }
         }
     }

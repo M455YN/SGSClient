@@ -4,6 +4,13 @@ public sealed class PublicUserProfileDto
 {
     public required SocialUserDto User { get; init; }
     public bool IsOwnProfile { get; init; }
+
+    /// <summary>The player chose to hide their achievements (the owner still sees them).</summary>
+    public bool AchievementsHidden { get; init; }
+
+    /// <summary>Per-game unlock counts; always empty for other players when hidden.</summary>
+    public IReadOnlyList<UserAchievementSummaryDto> Achievements { get; init; } = [];
+
     public IReadOnlyList<ProfileCommentDto> Comments { get; init; } = [];
 }
 

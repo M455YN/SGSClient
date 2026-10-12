@@ -22,6 +22,7 @@ public static class DependencyInjection
 
         services.Configure<GameStorageSettings>(configuration.GetSection(GameStorageSettings.SectionName));
         services.Configure<AdminSettings>(configuration.GetSection(AdminSettings.SectionName));
+        services.Configure<AchievementSettings>(configuration.GetSection(AchievementSettings.SectionName));
         services.AddDbContext<SgsServerDbContext>(options =>
             options.UseSqlServer(
                 connectionString,
@@ -35,6 +36,8 @@ public static class DependencyInjection
         services.AddScoped<IFriendsService, FriendsService>();
         services.AddScoped<IPlaytimeService, PlaytimeService>();
         services.AddScoped<IEntitlementService, EfEntitlementService>();
+        services.AddScoped<IAchievementService, EfAchievementService>();
+        services.AddSingleton<IAchievementTokenService, AchievementTokenService>();
         services.AddScoped<IWishlistService, EfWishlistService>();
         services.AddScoped<IGameReviewService, EfGameReviewService>();
         services.AddScoped<IProfileCommentService, EfProfileCommentService>();

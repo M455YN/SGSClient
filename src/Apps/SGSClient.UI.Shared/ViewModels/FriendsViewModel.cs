@@ -110,6 +110,7 @@ public partial class FriendsViewModel : ObservableObject
     public ObservableCollection<SocialPersonItem> OnlineFriends { get; } = [];
     public ObservableCollection<SocialPersonItem> OfflineFriends { get; } = [];
     public ObservableCollection<ProfileCommentItem> ProfileComments { get; } = [];
+    public ObservableCollection<AchievementSummaryItem> ProfileAchievements { get; } = [];
     public ObservableCollection<ChatThreadItem> ChatThreads { get; } = [];
     public ObservableCollection<ChatMessageItem> ChatMessages { get; } = [];
 
@@ -151,6 +152,9 @@ public partial class FriendsViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string ProfileStatus { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string ProfileAchievementsText { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial int? ProfileUserId { get; set; }
@@ -386,6 +390,8 @@ public partial class FriendsViewModel : ObservableObject
         ViewedProfile = null;
         ProfileUserId = null;
         ProfileComments.Clear();
+        ProfileAchievements.Clear();
+        ProfileAchievementsText = string.Empty;
         ProfileCommentDraft = string.Empty;
         ProfileStatus = string.Empty;
         NotifyLists();
@@ -637,6 +643,8 @@ public partial class FriendsViewModel : ObservableObject
             : Loc.F("{0} · ściana komentarzy", profile.User.DisplayName);
         CanMessageProfile = !profile.IsOwnProfile && profile.User.FriendRelation == FriendRelation.Friends;
         ProfileComments.Clear();
+        ProfileAchievements.Clear();
+        ProfileAchievementsText = string.Empty;
         foreach (var c in profile.Comments)
         {
             ProfileComments.Add(ProfileCommentItem.FromDto(c));
@@ -645,6 +653,22 @@ public partial class FriendsViewModel : ObservableObject
         ProfileStatus = ProfileComments.Count == 0
             ? Loc.T("Brak podpisów — napisz coś.")
             : Loc.F("{0} podpisów", ProfileComments.Count);
+
+        foreach (var summary in profile.Achievements)
+        {
+            ProfileAchievements.Add(AchievementSummaryItem.FromDto(summary));
+        }
+
+        ProfileAchievementsText = profile switch
+        {
+            { AchievementsHidden: true, IsOwnProfile: false } => Loc.T("Ten gracz ukrył swoje osiągnięcia."),
+            { AchievementsHidden: true } => Loc.T("Ukryłeś swoje osiągnięcia — inni gracze ich nie widzą."),
+            { Achievements.Count: 0 } => Loc.T("Nie odblokowano jeszcze żadnych osiągnięć."),
+            _ => Loc.F(
+                "Odblokowano łącznie: {0} · {1} pkt",
+                profile.Achievements.Sum(a => a.Unlocked),
+                profile.Achievements.Sum(a => a.PointsEarned))
+        };
         NotifyLists();
     }
 

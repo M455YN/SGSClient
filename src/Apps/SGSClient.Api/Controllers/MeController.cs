@@ -530,6 +530,7 @@ public sealed class MeController(
             Bio = profile.Bio,
             Location = profile.Location,
             PlayerTag = profile.PlayerTag,
+            HideAchievements = profile.HideAchievements,
             CreatedAtUtc = profile.CreatedAtUtc,
             LastLoginUtc = profile.LastLoginUtc,
             Role = adminAuth.ResolveRole(profile.Role, email),

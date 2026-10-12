@@ -158,6 +158,7 @@ public partial class App : Application
         Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
         Services.GetService<IInstallQueueService>()?.RestorePersistedAsync().GetAwaiter().GetResult();
         Services.GetService<PresenceHeartbeatService>()?.Start();
+        Services.GetService<AchievementBridge>()?.Start();
         Services.GetService<INetworkStatusService>()?.StartAsync().GetAwaiter().GetResult();
 
         using (var scope = Services.CreateScope())

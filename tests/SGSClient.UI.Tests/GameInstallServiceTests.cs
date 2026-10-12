@@ -219,6 +219,39 @@ public class GameInstallServiceTests
         public Task<bool> DeleteGameReviewCommentAsync(long commentId, CancellationToken cancellationToken = default) =>
             Task.FromResult(false);
 
+        public Task<IReadOnlyList<AchievementDefinitionDto>> GetAchievementDefinitionsAsync(
+            int gameId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AchievementDefinitionDto>>([]);
+
+        public Task<(IReadOnlyList<AchievementDefinitionDto>? Items, string? Error)> SyncAchievementDefinitionsAsync(
+            int gameId,
+            IReadOnlyList<AchievementDefinitionDto> items,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(IReadOnlyList<AchievementDefinitionDto>? Items, string? Error)>((null, null));
+
+        public Task<(AchievementUpdateResultDto? Result, string? Error)> TestUnlockAchievementAsync(
+            int gameId,
+            string key,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(AchievementUpdateResultDto? Result, string? Error)>((null, null));
+
+        public Task<bool> ResetMyAchievementProgressAsync(int gameId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<(AchievementDefinitionDto? Item, string? Error)> UploadAchievementIconAsync(
+            int gameId,
+            string key,
+            string localFilePath,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<(AchievementDefinitionDto? Item, string? Error)>((null, null));
+
+        public Task<GameAchievementsDto?> GetGameAchievementsAsync(
+            int gameId,
+            string? language = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<GameAchievementsDto?>(null);
+
         public Task<IReadOnlyList<GameDto>> GetGamesAsync(
             GameCatalogQuery? query = null,
             CancellationToken cancellationToken = default) =>

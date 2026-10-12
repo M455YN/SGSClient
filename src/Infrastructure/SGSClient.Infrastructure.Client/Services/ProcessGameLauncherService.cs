@@ -51,10 +51,12 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
 
         _byExe[Normalize(exe)] = request.GameId;
 
+        var sdkEnvironment = BuildSdkEnvironment(request.GameId);
+
         Process? process;
         try
         {
-            process = StartProcess(exe);
+            process = StartProcess(exe, sdkEnvironment);
         }
         catch
         {
@@ -74,7 +76,37 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
         return GameLaunchResult.Ok();
     }
 
-    private static Process? StartProcess(string exe)
+    /// <summary>
+    /// Gives a starting game the address of the local achievement bridge and a per-launch token.
+    /// Nothing here touches the network, so it works offline; with no bridge the game just starts without it.
+    /// </summary>
+    private IReadOnlyDictionary<string, string>? BuildSdkEnvironment(int gameId)
+    {
+        try
+        {
+            using var scope = scopes.CreateScope();
+            return scope.ServiceProvider.GetService<AchievementBridge>()?.CreateSession(gameId);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static Process? StartWith(ProcessStartInfo info, IReadOnlyDictionary<string, string>? environment)
+    {
+        if (environment is not null)
+        {
+            foreach (var (key, value) in environment)
+            {
+                info.Environment[key] = value;
+            }
+        }
+
+        return Process.Start(info);
+    }
+
+    private static Process? StartProcess(string exe, IReadOnlyDictionary<string, string>? environment)
     {
         var workingDirectory = Path.GetDirectoryName(exe);
         var ext = Path.GetExtension(exe);
@@ -86,13 +118,13 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
         {
             try
             {
-                return Process.Start(new ProcessStartInfo
+                return StartWith(new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
                     Arguments = $"/c \"{exe}\"",
                     UseShellExecute = false,
                     WorkingDirectory = workingDirectory
-                });
+                }, environment);
             }
             catch
             {
@@ -105,13 +137,13 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
         {
             try
             {
-                return Process.Start(new ProcessStartInfo
+                return StartWith(new ProcessStartInfo
                 {
                     FileName = "/bin/sh",
                     ArgumentList = { exe },
                     UseShellExecute = false,
                     WorkingDirectory = workingDirectory
-                });
+                }, environment);
             }
             catch
             {
@@ -121,15 +153,16 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
 
         try
         {
-            return Process.Start(new ProcessStartInfo
+            return StartWith(new ProcessStartInfo
             {
                 FileName = exe,
                 UseShellExecute = false,
                 WorkingDirectory = workingDirectory
-            });
+            }, environment);
         }
         catch
         {
+            // ShellExecute cannot carry environment variables; this last resort starts without them.
             return Process.Start(new ProcessStartInfo
             {
                 FileName = exe,

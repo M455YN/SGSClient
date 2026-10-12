@@ -188,6 +188,31 @@
                          Opacity="0.5" FontSize="12" Visibility="Collapsed" />
             </StackPanel>
 
+            <StackPanel Spacing="10" Margin="0,8,0,0">
+              <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" FontWeight="SemiBold" />
+              <TextBlock x:Name="AchievementsTotalText" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+              <ItemsControl x:Name="AchievementsList">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Grid Margin="0,0,0,8" ColumnSpacing="8">
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                      </Grid.RowDefinitions>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1" Text="{Binding ProgressText}" Opacity="0.75" />
+                      <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="1"
+                                   Value="{Binding Fraction}" Height="4" Margin="0,4,0,0" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
             <StackPanel Spacing="8" Margin="0,8,0,0">
               <TextBlock Text="{loc:Tr Key='Gdzie gram'}" FontWeight="SemiBold" />
               <TextBlock Text="PC" Opacity="0.75" />
@@ -218,6 +243,11 @@
               <StackPanel Spacing="6">
                 <TextBlock Text="{loc:Tr Key='Lokalizacja'}" Opacity="0.6" FontSize="12" />
                 <TextBox x:Name="EditLocationBox" MinHeight="36" />
+              </StackPanel>
+              <StackPanel Spacing="6">
+                <TextBlock Text="{loc:Tr Key='Prywatność'}" Opacity="0.6" FontSize="12" />
+                <CheckBox x:Name="EditHideAchievementsBox"
+                          Content="{loc:Tr Key='Ukryj moje osiągnięcia przed innymi graczami'}" />
               </StackPanel>
               <StackPanel Spacing="6">
                 <TextBlock Text="{loc:Tr Key='Zdjęcie profilowe'}" Opacity="0.6" FontSize="12" />

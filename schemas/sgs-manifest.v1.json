@@ -248,6 +248,57 @@
           "items": { "type": "string", "minLength": 1, "maxLength": 260 }
         }
       }
+    },
+    "achievements": {
+      "type": "array",
+      "maxItems": 500,
+      "description": "Achievement definitions. Omit to leave the game's achievements untouched; present (even empty) it replaces them on publish.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "title"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9_-]{1,64}$",
+            "maxLength": 64,
+            "description": "Stable id used by game code. Never rename it: a new key is a new achievement."
+          },
+          "title": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "description": { "type": ["string", "null"], "maxLength": 512 },
+          "icon": {
+            "type": ["string", "null"],
+            "maxLength": 260,
+            "description": "Relative path of an image inside the ZIP (png, jpg, webp, gif), or an http(s) URL."
+          },
+          "points": { "type": "integer", "minimum": 0, "maximum": 1000, "default": 0 },
+          "hidden": {
+            "type": "boolean",
+            "default": false,
+            "description": "Title, description and icon stay empty for players until unlocked."
+          },
+          "target": {
+            "type": ["integer", "null"],
+            "minimum": 2,
+            "maximum": 1000000,
+            "description": "Counter target. Omit for a one-shot achievement."
+          },
+          "translations": {
+            "type": ["object", "null"],
+            "maxProperties": 10,
+            "description": "Title/description per language code, e.g. \"en\".",
+            "propertyNames": { "pattern": "^[a-z]{2,3}(-[a-z0-9]{2,8})?$" },
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "title": { "type": "string", "maxLength": 128 },
+                "description": { "type": "string", "maxLength": 512 }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

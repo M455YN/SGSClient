@@ -146,6 +146,9 @@ public sealed partial class GameDetailsPage : Page
         DetailsPanel.Visibility = ViewModel.ShowDetailsTab ? Visibility.Visible : Visibility.Collapsed;
         ReviewsPanel.Visibility = ViewModel.ShowReviewsTab ? Visibility.Visible : Visibility.Collapsed;
         MorePanel.Visibility = ViewModel.ShowMoreTab ? Visibility.Visible : Visibility.Collapsed;
+        AchievementsPanel.Visibility = ViewModel.ShowAchievementsTab ? Visibility.Visible : Visibility.Collapsed;
+        AchievementsSummaryText.Text = ViewModel.AchievementsSummaryText;
+        AchievementsList.ItemsSource = ViewModel.Achievements;
 
         ReviewsSummaryText.Text = ViewModel.ReviewsSummaryText;
         WriteReviewBox.Visibility = ViewModel.CanWriteReview ? Visibility.Visible : Visibility.Collapsed;

@@ -335,6 +335,14 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         CancellationToken cancellationToken = default) =>
         SendAllowAnonymousAsync<PlaytimeDto>(HttpMethod.Post, "api/me/playtime/sessions", request, cancellationToken);
 
+    public async Task<IReadOnlyList<UserAchievementSummaryDto>> GetAchievementSummariesAsync(
+        CancellationToken cancellationToken = default) =>
+        await SendAllowAnonymousAsync<List<UserAchievementSummaryDto>>(
+            HttpMethod.Get,
+            "api/me/achievements",
+            body: null,
+            cancellationToken) ?? [];
+
     private sealed class UnreadCountDto
     {
         public int Count { get; set; }

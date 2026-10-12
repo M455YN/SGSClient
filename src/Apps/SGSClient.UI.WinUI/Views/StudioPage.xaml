@@ -124,6 +124,7 @@
             <SelectorBarItem Tag="media" Text="Multimedia" Icon="Pictures" />
             <SelectorBarItem Tag="builds" Text="{loc:Tr Key='Buildy'}" Icon="Setting" />
             <SelectorBarItem Tag="dlc" Text="DLC" Icon="Library" />
+            <SelectorBarItem Tag="achievements" Text="{loc:Tr Key='Osiągnięcia'}" Icon="Favorite" />
           </SelectorBar>
 
           <!-- Overview -->
@@ -539,6 +540,11 @@
                            Visibility="{Binding SelectedGame.HasDlcs, Converter={StaticResource BoolToVisInv}}" />
               </StackPanel>
             </Border>
+          </StackPanel>
+
+          <!-- Achievements -->
+          <StackPanel Visibility="{Binding IsAchievementsTab, Converter={StaticResource BoolToVis}}">
+            <local:AchievementsEditor DataContext="{Binding AchievementsEditor}" />
           </StackPanel>
         </StackPanel>
       </ScrollViewer>

@@ -20,4 +20,7 @@ public sealed class UserEntity
     public DateTimeOffset? LastSeenUtc { get; set; }
 
     public string SettingsJson { get; set; } = "{}";
+
+    /// <summary>When true, other players see no achievements on this user's public profile.</summary>
+    public bool HideAchievements { get; set; }
 }

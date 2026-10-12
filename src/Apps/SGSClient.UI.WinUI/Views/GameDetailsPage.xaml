@@ -151,6 +151,7 @@
             <StackPanel Orientation="Horizontal" Spacing="4">
               <Button Content="{loc:Tr Key='Szczegóły'}" Tag="Details" Click="Tab_Click" Padding="14,8" FontWeight="SemiBold" />
               <Button Content="{loc:Tr Key='Recenzje'}" Tag="Reviews" Click="Tab_Click" Padding="14,8" />
+              <Button Content="{loc:Tr Key='Osiągnięcia'}" Tag="Achievements" Click="Tab_Click" Padding="14,8" />
               <Button Content="{loc:Tr Key='Więcej'}" Tag="More" Click="Tab_Click" Padding="14,8" />
             </StackPanel>
             <Border Height="1" Background="#33FFFFFF" />
@@ -279,6 +280,42 @@
                           </Grid>
                         </StackPanel>
                       </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
+            <StackPanel x:Name="AchievementsPanel" Spacing="12" Visibility="Collapsed">
+              <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" FontSize="18" FontWeight="SemiBold" />
+              <TextBlock x:Name="AchievementsSummaryText" Opacity="0.75" FontWeight="SemiBold" />
+              <ItemsControl x:Name="AchievementsList">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Margin="0,0,0,8" Padding="12" CornerRadius="8"
+                            Background="#12FFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1">
+                      <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="56" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="56" Height="56" CornerRadius="8" Background="#1AFFFFFF">
+                          <Image Source="{Binding IconUrl}" Stretch="UniformToFill"
+                                 Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Description}" Opacity="0.7" TextWrapping="Wrap" />
+                          <ProgressBar Minimum="0" Maximum="{Binding ProgressMax}" Value="{Binding ProgressValue}"
+                                       Height="4"
+                                       Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                          <TextBlock Text="{Binding StateText}" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                          <TextBlock Text="{Binding MetaText}" FontSize="12" Opacity="0.6" HorizontalAlignment="Right" />
+                        </StackPanel>
+                      </Grid>
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

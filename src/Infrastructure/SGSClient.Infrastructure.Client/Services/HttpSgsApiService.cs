@@ -505,6 +505,87 @@ public sealed class HttpSgsApiService(
             new UpdateVersionNotesRequestDto { ReleaseNotes = releaseNotes },
             cancellationToken);
 
+    // ---- achievements ----------------------------------------------------------------------
+
+    public Task<IReadOnlyList<AchievementDefinitionDto>> GetAchievementDefinitionsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default) =>
+        SendListAsync<AchievementDefinitionDto>($"api/games/{gameId}/studio/achievements", cancellationToken);
+
+    public async Task<(IReadOnlyList<AchievementDefinitionDto>? Items, string? Error)> SyncAchievementDefinitionsAsync(
+        int gameId,
+        IReadOnlyList<AchievementDefinitionDto> items,
+        CancellationToken cancellationToken = default)
+    {
+        var (list, error) = await SendWithErrorAsync<List<AchievementDefinitionDto>>(
+            HttpMethod.Put,
+            $"api/games/{gameId}/studio/achievements",
+            new SyncGameAchievementsRequest { Items = items },
+            cancellationToken).ConfigureAwait(false);
+        return (list, error);
+    }
+
+    public Task<(AchievementUpdateResultDto? Result, string? Error)> TestUnlockAchievementAsync(
+        int gameId,
+        string key,
+        CancellationToken cancellationToken = default) =>
+        SendWithErrorAsync<AchievementUpdateResultDto>(
+            HttpMethod.Post,
+            $"api/me/games/{gameId}/achievements/{Uri.EscapeDataString(key)}/unlock",
+            body: null,
+            cancellationToken);
+
+    public Task<bool> ResetMyAchievementProgressAsync(int gameId, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"api/games/{gameId}/studio/achievements/progress", body: null, cancellationToken);
+
+    public async Task<(AchievementDefinitionDto? Item, string? Error)> UploadAchievementIconAsync(
+        int gameId,
+        string key,
+        string localFilePath,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(localFilePath) || !File.Exists(localFilePath))
+        {
+            return (null, Loc.T("Nie można odczytać wybranego pliku."));
+        }
+
+        try
+        {
+            await using var stream = File.OpenRead(localFilePath);
+            using var content = new MultipartFormDataContent
+            {
+                { new StreamContent(stream), "file", Path.GetFileName(localFilePath) }
+            };
+            using var request = new HttpRequestMessage(
+                HttpMethod.Put,
+                $"api/games/{gameId}/studio/achievements/{Uri.EscapeDataString(key)}/icon")
+            { Content = content };
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ReadErrorAsync(response, cancellationToken).ConfigureAwait(false));
+            }
+
+            return (await response.Content.ReadFromJsonAsync<AchievementDefinitionDto>(cancellationToken)
+                .ConfigureAwait(false), null);
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
+    public Task<GameAchievementsDto?> GetGameAchievementsAsync(
+        int gameId,
+        string? language = null,
+        CancellationToken cancellationToken = default) =>
+        SendJsonAsync<GameAchievementsDto>(
+            HttpMethod.Get,
+            $"api/games/{gameId}/achievements"
+            + (string.IsNullOrWhiteSpace(language) ? string.Empty : $"?lang={Uri.EscapeDataString(language)}"),
+            body: null,
+            cancellationToken);
+
     public Task<IReadOnlyList<GameBuildVersionDto>> GetAdminVersionsAsync(
         int gameId,
         CancellationToken cancellationToken = default) =>

@@ -84,7 +84,7 @@ Wymagane: `schemaVersion` (obecnie `1`), `game.title`, `game.symbol`, `build.ver
 | `releaseStatus` | `announced`, `earlyAccess`, `released`, `demo` |
 | `releaseDate` | ISO date, e.g. `2024-06-15` |
 | `ageRating` | `unrated`, `pegi3`, `pegi7`, `pegi12`, `pegi16`, `pegi18` |
-| `features` | `singleplayer`, `multiplayer`, `coop`, `controller`, `cloud`, `achievements`, `modding`, `vr` |
+| `features` | `singleplayer`, `multiplayer`, `coop`, `controller`, `cloud`, `achievements`, `modding`, `vr` (`achievements` is also set automatically once you define achievements: see [Achievements](achievements.md)) |
 | `languages` / `tags` | Arrays of strings (same as Creator panel CSV fields) |
 
 Media are optional at upload — you can add them later in Creator panel → **Media**. Sizes: [Store art](store-art.md).

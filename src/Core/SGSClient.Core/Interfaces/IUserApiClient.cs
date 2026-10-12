@@ -84,4 +84,8 @@ public interface IUserApiClient
     Task<PlaytimeDto?> RecordPlaytimeSessionAsync(
         RecordPlaytimeSessionRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Per game: how many achievements the signed-in player has unlocked.</summary>
+    Task<IReadOnlyList<UserAchievementSummaryDto>> GetAchievementSummariesAsync(
+        CancellationToken cancellationToken = default);
 }
