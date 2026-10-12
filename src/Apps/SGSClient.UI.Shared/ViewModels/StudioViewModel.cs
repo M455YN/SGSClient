@@ -35,9 +35,18 @@ public partial class StudioViewModel : ObservableObject
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = Loc.T("Ładowanie Twoich gier…");
+        AchievementsEditor = new AchievementsEditorViewModel(api, _apiBaseUrl, text => StatusText = text, busy => IsBusy = busy);
+        AchievementsEditor.Saved += hasAny =>
+        {
+            if (SelectedGame is not null)
+            {
+                SelectedGame.HasAchievements = hasAny;
+            }
+        };
     }
 
     public string Title { get; } = Loc.T("Panel twórcy");
+    public AchievementsEditorViewModel AchievementsEditor { get; }
     public IReadOnlyList<string> ReleaseStatusOptions { get; } = GameStoreLabels.ReleaseStatusOptions;
     public IReadOnlyList<string> AgeRatingOptions { get; } = GameStoreLabels.AgeRatingOptions;
 
@@ -72,11 +81,16 @@ public partial class StudioViewModel : ObservableObject
     public bool IsMediaTab => SelectedTab == "media";
     public bool IsBuildsTab => SelectedTab == "builds";
     public bool IsDlcTab => SelectedTab == "dlc";
+    public bool IsAchievementsTab => SelectedTab == "achievements";
 
     public void SetAddGameHandler(Action add) => _addGame = add;
     public void SetAddDlcHandler(Action<string> add) => _addDlc = add;
     public void SetConfirmDeleteHandler(Func<StudioContentItem, Task<bool>> confirm) => _confirmDelete = confirm;
-    public void SetPickImageHandler(Func<Task<string?>> pick) => _pickImage = pick;
+    public void SetPickImageHandler(Func<Task<string?>> pick)
+    {
+        _pickImage = pick;
+        AchievementsEditor.SetPickImageHandler(pick);
+    }
     public void SetPickVideoHandler(Func<Task<string?>> pick) => _pickVideo = pick;
 
     partial void OnSelectedTabChanged(string value)
@@ -86,6 +100,11 @@ public partial class StudioViewModel : ObservableObject
         OnPropertyChanged(nameof(IsMediaTab));
         OnPropertyChanged(nameof(IsBuildsTab));
         OnPropertyChanged(nameof(IsDlcTab));
+        OnPropertyChanged(nameof(IsAchievementsTab));
+        if (value == "achievements" && SelectedGame is not null && AchievementsEditor.Items.Count == 0)
+        {
+            _ = AchievementsEditor.LoadAsync(SelectedGame.Id);
+        }
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
@@ -94,6 +113,12 @@ public partial class StudioViewModel : ObservableObject
     {
         _selectedId = value?.Id ?? 0;
         OnPropertyChanged(nameof(HasSelection));
+        AchievementsEditor.Clear();
+        if (value is not null && IsAchievementsTab)
+        {
+            _ = AchievementsEditor.LoadAsync(value.Id);
+        }
+
         _ = LoadSelectionExtrasAsync();
     }
 

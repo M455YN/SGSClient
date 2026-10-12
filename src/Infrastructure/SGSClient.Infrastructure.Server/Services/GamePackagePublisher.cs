@@ -14,6 +14,7 @@ namespace SGSClient.Infrastructure.Server.Services;
 public sealed class GamePackagePublisher(
     SgsServerDbContext db,
     GameBuildVersionService versionService,
+    IAchievementService achievements,
     IOptions<GameStorageSettings> storageOptions) : IGamePackagePublisher
 {
     public async Task<GamePackagePublishResult> PublishZipAsync(
@@ -82,6 +83,12 @@ public sealed class GamePackagePublisher(
             if (!mediaResult.Success)
             {
                 return GamePackagePublishResult.Fail(mediaResult.Errors);
+            }
+
+            var (iconUrls, iconError) = ExtractAchievementIcons(tempZip, manifest, storage);
+            if (iconUrls is null)
+            {
+                return GamePackagePublishResult.Fail(iconError!);
             }
 
             var isDlc = string.Equals(
@@ -268,6 +275,23 @@ public sealed class GamePackagePublisher(
                 fileName,
                 manifest.Build.ReleaseNotes,
                 cancellationToken);
+
+            if (manifest.Achievements is not null)
+            {
+                // The manifest was validated up front, so this cannot fail on content.
+                await achievements.SyncDefinitionsAsync(
+                    game.Id,
+                    ownerUserId,
+                    new SyncGameAchievementsRequest
+                    {
+                        Items = manifest.Achievements
+                            .Select(a => a.ToDefinition(
+                                a.IconIsUrl ? a.Icon : a.Icon is null ? null : iconUrls.GetValueOrDefault(a.Icon)))
+                            .ToList()
+                    },
+                    isAdmin: allowOverwriteForeignGame,
+                    cancellationToken);
+            }
 
             var dto = await db.Games.AsNoTracking()
                 .Where(g => g.Id == game.Id)
@@ -475,6 +499,47 @@ public sealed class GamePackagePublisher(
         }
     }
 
+    /// <summary>Extracts the package-relative achievement icons; maps each declared path to its public URL.</summary>
+    private static (Dictionary<string, string>? Urls, string? Error) ExtractAchievementIcons(
+        string zipPath,
+        SgsPackageManifest manifest,
+        GameStorageSettings storage)
+    {
+        var paths = SgsPackageRules.EnumerateAchievementIconPaths(manifest)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var urls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (paths.Count == 0)
+        {
+            return (urls, null);
+        }
+
+        var mediaRoot = Path.Combine(storage.StoragePath, manifest.Game.Symbol, "media");
+        Directory.CreateDirectory(mediaRoot);
+        var mediaBase = storage.MediaPublicBaseUrl.TrimEnd('/');
+
+        try
+        {
+            using var archive = ZipFile.OpenRead(zipPath);
+            foreach (var path in paths)
+            {
+                var extracted = ExtractOne(archive, path, mediaRoot, mediaBase, manifest.Game.Symbol);
+                if (!extracted.Success)
+                {
+                    return (null, extracted.Error);
+                }
+
+                urls[path] = extracted.Url!;
+            }
+        }
+        catch (Exception ex)
+        {
+            return (null, $"Nie udało się wyodrębnić ikon osiągnięć: {ex.Message}");
+        }
+
+        return (urls, null);
+    }
+
     private static (bool Success, string? Url, string? Error) ExtractOne(
         ZipArchive archive,
         string relativePath,
@@ -599,7 +664,8 @@ public sealed class GamePackagePublisher(
 
             manifest.Build.Executable = exe;
 
-            foreach (var mediaPath in SgsPackageRules.EnumerateDeclaredMediaPaths(manifest.Game.Media))
+            foreach (var mediaPath in SgsPackageRules.EnumerateDeclaredMediaPaths(manifest.Game.Media)
+                         .Concat(SgsPackageRules.EnumerateAchievementIconPaths(manifest)))
             {
                 if (!SgsPackageRules.TryNormalizeEntryPath(mediaPath, out var mediaNorm, out var mediaError))
                 {

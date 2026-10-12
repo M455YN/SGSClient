@@ -56,6 +56,68 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.ToTable("direct_messages", (string)null);
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameAchievementEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Hidden")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Target")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("TranslationsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("game_achievements", (string)null);
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -528,6 +590,9 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("nvarchar(320)");
 
+                    b.Property<bool>("HideAchievements")
+                        .HasColumnType("bit");
+
                     b.Property<DateTimeOffset?>("LastLoginUtc")
                         .HasColumnType("datetimeoffset");
 
@@ -566,6 +631,32 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasFilter("[PlayerTag] IS NOT NULL");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameAchievementEntity", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AchievementId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Progress")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("UnlockedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("UserId", "AchievementId");
+
+                    b.HasIndex("AchievementId");
+
+                    b.HasIndex("UserId", "UnlockedAtUtc");
+
+                    b.ToTable("user_game_achievements", (string)null);
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameEntitlementEntity", b =>
@@ -801,6 +892,17 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("Sender");
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameAchievementEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameBuildEntity", b =>
                 {
                     b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
@@ -910,6 +1012,25 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Game");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameAchievementEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameAchievementEntity", "Achievement")
+                        .WithMany()
+                        .HasForeignKey("AchievementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Achievement");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameEntitlementEntity", b =>

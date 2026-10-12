@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SGSClient.Core.Achievements;
 using SGSClient.Core.Packaging;
 
 namespace SGSClient.Core.Tests;
@@ -57,6 +58,22 @@ public sealed class SchemaDriftTests
         Assert.Equal(SgsPackageRules.MaxVersionLength, build.GetProperty("version").GetProperty("maxLength").GetInt32());
         Assert.Equal(SgsPackageRules.MaxExecutablePathLength, build.GetProperty("executable").GetProperty("maxLength").GetInt32());
         Assert.Equal(SgsPackageRules.MaxReleaseNotesLength, build.GetProperty("releaseNotes").GetProperty("maxLength").GetInt32());
+    }
+
+    [Fact]
+    public void AchievementLimits_MatchRules()
+    {
+        var root = LoadSchema().GetProperty("properties").GetProperty("achievements");
+        var item = root.GetProperty("items").GetProperty("properties");
+
+        Assert.Equal(AchievementRules.MaxPerGame, root.GetProperty("maxItems").GetInt32());
+        Assert.Equal(AchievementRules.MaxKeyLength, item.GetProperty("key").GetProperty("maxLength").GetInt32());
+        Assert.Equal(AchievementRules.MaxTitleLength, item.GetProperty("title").GetProperty("maxLength").GetInt32());
+        Assert.Equal(AchievementRules.MaxDescriptionLength, item.GetProperty("description").GetProperty("maxLength").GetInt32());
+        Assert.Equal(AchievementRules.MaxPoints, item.GetProperty("points").GetProperty("maximum").GetInt32());
+        Assert.Equal(AchievementRules.MinTarget, item.GetProperty("target").GetProperty("minimum").GetInt32());
+        Assert.Equal(AchievementRules.MaxTarget, item.GetProperty("target").GetProperty("maximum").GetInt32());
+        Assert.Equal(AchievementRules.MaxTranslations, item.GetProperty("translations").GetProperty("maxProperties").GetInt32());
     }
 
     [Fact]

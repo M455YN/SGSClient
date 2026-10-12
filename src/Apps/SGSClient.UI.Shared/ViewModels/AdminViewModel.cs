@@ -34,9 +34,18 @@ public partial class AdminViewModel : ObservableObject
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = Loc.T("Ładowanie panelu admina…");
+        AchievementsEditor = new AchievementsEditorViewModel(api, _apiBaseUrl, text => StatusText = text, busy => IsBusy = busy);
+        AchievementsEditor.Saved += hasAny =>
+        {
+            if (SelectedGame is not null)
+            {
+                SelectedGame.HasAchievements = hasAny;
+            }
+        };
     }
 
     public string Title { get; } = "Admin";
+    public AchievementsEditorViewModel AchievementsEditor { get; }
     public IReadOnlyList<string> ReleaseStatusOptions { get; } = GameStoreLabels.ReleaseStatusOptions;
     public IReadOnlyList<string> AgeRatingOptions { get; } = GameStoreLabels.AgeRatingOptions;
 
@@ -84,6 +93,7 @@ public partial class AdminViewModel : ObservableObject
     public bool IsMediaTab => EditorTab == "media";
     public bool IsBuildsTab => EditorTab == "builds";
     public bool IsDlcTab => EditorTab == "dlc";
+    public bool IsAchievementsTab => EditorTab == "achievements";
     public bool ShowGames => IsGamesTab && !ShowEmpty;
     public bool ShowFeatured => IsFeaturedTab && !ShowEmpty;
     public bool ShowUsers => IsUsersTab && !ShowEmpty;
@@ -103,7 +113,12 @@ public partial class AdminViewModel : ObservableObject
     public void SetAddVersionHandler(Action add) => _addVersion = add;
     public void SetAddDlcHandler(Action<string> add) => _addDlc = add;
     public void SetConfirmDeleteHandler(Func<AdminGameItem, Task<bool>> confirm) => _confirmDelete = confirm;
-    public void SetPickImageHandler(Func<Task<string?>> pick) => _pickImage = pick;
+    public void SetPickImageHandler(Func<Task<string?>> pick)
+    {
+        _pickImage = pick;
+        AchievementsEditor.SetPickImageHandler(pick);
+    }
+
     public void SetPickVideoHandler(Func<Task<string?>> pick) => _pickVideo = pick;
 
     partial void OnSelectedTabChanged(string value)
@@ -129,6 +144,11 @@ public partial class AdminViewModel : ObservableObject
         OnPropertyChanged(nameof(IsMediaTab));
         OnPropertyChanged(nameof(IsBuildsTab));
         OnPropertyChanged(nameof(IsDlcTab));
+        OnPropertyChanged(nameof(IsAchievementsTab));
+        if (value == "achievements" && SelectedGame is not null && AchievementsEditor.Items.Count == 0)
+        {
+            _ = AchievementsEditor.LoadAsync(SelectedGame.Id);
+        }
     }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
@@ -139,6 +159,11 @@ public partial class AdminViewModel : ObservableObject
         OnPropertyChanged(nameof(HasSelection));
         OnPropertyChanged(nameof(SelectedPublished));
         OnPropertyChanged(nameof(SelectedFeatured));
+        AchievementsEditor.Clear();
+        if (value is not null && IsAchievementsTab)
+        {
+            _ = AchievementsEditor.LoadAsync(value.Id);
+        }
         _ = LoadSelectionExtrasAsync();
     }
 

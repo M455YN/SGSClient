@@ -1,4 +1,5 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:views="using:SGSClient.UI.Views"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.AdminView"
@@ -122,6 +123,8 @@
                            Command="{Binding SelectEditorTabCommand}" CommandParameter="builds"/>
               <RadioButton Content="DLC" GroupName="AdminEditorTab" IsChecked="{Binding IsDlcTab, Mode=OneWay}"
                            Command="{Binding SelectEditorTabCommand}" CommandParameter="dlc"/>
+              <RadioButton Content="{loc:Tr Key='Osiągnięcia'}" GroupName="AdminEditorTab" IsChecked="{Binding IsAchievementsTab, Mode=OneWay}"
+                           Command="{Binding SelectEditorTabCommand}" CommandParameter="achievements"/>
             </StackPanel>
 
             <StackPanel Spacing="16" IsVisible="{Binding IsOverviewTab}">
@@ -424,6 +427,10 @@
                   </ItemsControl>
                 </StackPanel>
               </Border>
+            </StackPanel>
+
+            <StackPanel IsVisible="{Binding IsAchievementsTab}">
+              <views:AchievementsEditor DataContext="{Binding AchievementsEditor}"/>
             </StackPanel>
           </StackPanel>
         </ScrollViewer>

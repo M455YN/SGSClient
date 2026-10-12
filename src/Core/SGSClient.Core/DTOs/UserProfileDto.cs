@@ -12,6 +12,10 @@ public sealed class UserProfileDto
     public string? Bio { get; init; }
     public string? Location { get; init; }
     public string? PlayerTag { get; init; }
+
+    /// <summary>Privacy: other players do not see this user's achievements on the public profile.</summary>
+    public bool HideAchievements { get; init; }
+
     public DateTimeOffset CreatedAtUtc { get; init; }
     public DateTimeOffset? LastLoginUtc { get; init; }
     public UserRole Role { get; init; }

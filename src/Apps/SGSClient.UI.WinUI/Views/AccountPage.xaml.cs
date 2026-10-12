@@ -85,6 +85,7 @@ public sealed partial class AccountPage : Page
             EditDisplayNameBox.Text = ViewModel.EditDisplayName;
             EditBioBox.Text = ViewModel.EditBio;
             EditLocationBox.Text = ViewModel.EditLocation;
+            EditHideAchievementsBox.IsChecked = ViewModel.EditHideAchievements;
             EditPlayerTagBox.Text = ViewModel.EditPlayerTag;
         }
 
@@ -107,6 +108,8 @@ public sealed partial class AccountPage : Page
         LibraryList.ItemsSource = ViewModel.RecentGames;
         RecentGrid.ItemsSource = ViewModel.RecentGames;
         EmptyRecentText.Visibility = ViewModel.ShowEmptyRecentGames ? Visibility.Visible : Visibility.Collapsed;
+        AchievementsList.ItemsSource = ViewModel.Achievements;
+        AchievementsTotalText.Text = ViewModel.AchievementsTotalText;
 
         WallStatusText.Text = ViewModel.WallStatus;
         WallCommentsList.ItemsSource = ViewModel.WallComments;
@@ -190,6 +193,7 @@ public sealed partial class AccountPage : Page
         ViewModel.EditDisplayName = EditDisplayNameBox.Text ?? string.Empty;
         ViewModel.EditBio = EditBioBox.Text ?? string.Empty;
         ViewModel.EditLocation = EditLocationBox.Text ?? string.Empty;
+        ViewModel.EditHideAchievements = EditHideAchievementsBox.IsChecked == true;
         ViewModel.EditPlayerTag = EditPlayerTagBox.Text ?? string.Empty;
         await ViewModel.SaveProfileCommand.ExecuteAsync(null);
         RefreshUi();

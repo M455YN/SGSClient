@@ -1,3 +1,5 @@
+using SGSClient.Core.DTOs;
+
 namespace SGSClient.Core.Packaging;
 
 /// <summary>
@@ -12,6 +14,52 @@ public sealed class SgsPackageManifest
     public required SgsPackageGameInfo Game { get; set; }
     public required SgsPackageBuildInfo Build { get; set; }
     public SgsPackageHints? Package { get; set; }
+
+    /// <summary>
+    /// Achievement definitions. Absent = the game's achievements are left as they are; present
+    /// (even empty) = this list replaces them on publish.
+    /// </summary>
+    public IList<SgsPackageAchievement>? Achievements { get; set; }
+}
+
+public sealed class SgsPackageAchievement
+{
+    /// <summary>Stable id used by game code, lowercase letters, digits, _ and -.</summary>
+    public required string Key { get; set; }
+
+    public required string Title { get; set; }
+    public string? Description { get; set; }
+
+    /// <summary>Relative path of an image in the ZIP, or an http(s) URL.</summary>
+    public string? Icon { get; set; }
+
+    public int Points { get; set; }
+    public bool Hidden { get; set; }
+
+    /// <summary>Counter target (2 or more); absent = one-shot achievement.</summary>
+    public int? Target { get; set; }
+
+    /// <summary>Title/description per language code, e.g. "en".</summary>
+    public IDictionary<string, AchievementTextDto>? Translations { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IconIsUrl =>
+        Icon is not null
+        && (Icon.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || Icon.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The definition the server stores; <paramref name="iconUrl"/> is the resolved icon.</summary>
+    public AchievementDefinitionDto ToDefinition(string? iconUrl) => new()
+    {
+        Key = Key,
+        Title = Title,
+        Description = Description ?? string.Empty,
+        IconUrl = iconUrl,
+        Translations = Translations is null ? null : new Dictionary<string, AchievementTextDto>(Translations),
+        Points = Points,
+        Hidden = Hidden,
+        Target = Target
+    };
 }
 
 public sealed class SgsPackageGameInfo

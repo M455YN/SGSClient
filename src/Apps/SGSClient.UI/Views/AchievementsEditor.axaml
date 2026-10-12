@@ -1,0 +1,96 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.AchievementsEditor"
+             x:DataType="vm:AchievementsEditorViewModel">
+  <UserControl.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="16"/>
+      <Setter Property="Background" Value="#12FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#22FFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.6"/>
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="12">
+    <Border Classes="card">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <StackPanel Spacing="2" VerticalAlignment="Center">
+          <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding Summary}" Classes="caption"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+          <Button Content="{loc:Tr Key='Dodaj osiągnięcie'}" Command="{Binding AddCommand}"/>
+          <Button Content="{loc:Tr Key='Odśwież'}" Command="{Binding ReloadCommand}"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <ItemsControl ItemsSource="{Binding Items}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:StudioAchievementItem">
+          <Border Classes="card" Margin="0,0,0,8" Padding="12">
+            <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <TextBox PlaceholderText="{loc:Tr Key='Klucz (stały identyfikator)'}" Text="{Binding EditKey, Mode=TwoWay}"
+                         IsEnabled="{Binding IsKeyEditable}"/>
+                <TextBox Grid.Column="1" PlaceholderText="{loc:Tr Key='Tytuł'}" Text="{Binding EditTitle, Mode=TwoWay}"/>
+              </Grid>
+              <TextBox PlaceholderText="{loc:Tr Key='Opis'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
+                       Text="{Binding EditDescription, Mode=TwoWay}"/>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <TextBox PlaceholderText="{loc:Tr Key='Tytuł (angielski)'}" Text="{Binding EditTitleEn, Mode=TwoWay}"/>
+                <TextBox Grid.Column="1" PlaceholderText="{loc:Tr Key='Opis (angielski)'}" Text="{Binding EditDescriptionEn, Mode=TwoWay}"/>
+              </Grid>
+              <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="8">
+                <Border Width="48" Height="48" CornerRadius="6" Background="#1AFFFFFF" ClipToBounds="True">
+                  <Image Source="{Binding IconPreviewUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+                </Border>
+                <TextBox Grid.Column="1" VerticalAlignment="Center" PlaceholderText="{loc:Tr Key='Adres ikony (URL)'}"
+                         Text="{Binding EditIconUrl, Mode=TwoWay}"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <Button Content="{loc:Tr Key='Wgraj ikonę'}" Tag="{Binding}" Click="PickIcon_OnClick"/>
+                  <Button Content="{loc:Tr Key='Usuń ikonę'}" Tag="{Binding}" Click="ClearIcon_OnClick"/>
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="110,*" ColumnSpacing="8">
+                <TextBox PlaceholderText="{loc:Tr Key='Punkty'}" Text="{Binding EditPoints, Mode=TwoWay}"/>
+                <TextBox Grid.Column="1" PlaceholderText="{loc:Tr Key='Cel licznika (puste = jednorazowe)'}"
+                         Text="{Binding EditTarget, Mode=TwoWay}"/>
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                  <CheckBox Content="{loc:Tr Key='Ukryte do odblokowania'}" IsChecked="{Binding EditHidden, Mode=TwoWay}"/>
+                  <TextBlock Text="{Binding StatsText}" Classes="caption" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                  <Button Content="▲" Tag="{Binding}" Click="MoveUp_OnClick"/>
+                  <Button Content="▼" Tag="{Binding}" Click="MoveDown_OnClick"/>
+                  <Button Content="{loc:Tr Key='Testowo odblokuj'}" Tag="{Binding}" Click="TestUnlock_OnClick"/>
+                  <Button Content="{loc:Tr Key='Usuń'}" Tag="{Binding}" Click="Remove_OnClick"/>
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Button Content="{loc:Tr Key='Zapisz osiągnięcia'}" Classes="accent" Command="{Binding SaveCommand}" Padding="16,8"/>
+      <Button Content="{loc:Tr Key='Wyzeruj mój postęp'}" Command="{Binding ResetProgressCommand}" Padding="14,8"/>
+    </StackPanel>
+
+    <Border Classes="card">
+      <StackPanel Spacing="6">
+        <TextBlock Text="{loc:Tr Key='Integracja z grą'}" FontWeight="SemiBold"/>
+        <TextBlock Text="{Binding Help}" Classes="caption" TextWrapping="Wrap"/>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -8,6 +8,7 @@ Jak publikować gry w SGS.
 |------|--------|
 | [How to publish a game](how-to-publish.md) / [Jak opublikować grę](how-to-publish.md) | Account, folder, `sgs-manifest.json`, Creator panel / Konto, folder, manifest, Panel twórcy |
 | [Store art](store-art.md) / [Grafika sklepowa](store-art.md) | Thumbnail, landscape header, logo, screenshots / Miniaturka, okładka pozioma, logo, screeny |
+| [Achievements](achievements.md) / [Osiągnięcia](achievements.md) | Define achievements in Creator panel, unlock them from any engine over HTTP / Definiowanie osiągnięć w Panelu twórcy, odblokowywanie z dowolnego silnika przez HTTP |
 
 Schema and sample package / Schemat i przykład paczki:
 

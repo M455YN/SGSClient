@@ -1,3 +1,4 @@
+using SGSClient.Core.Achievements;
 using SGSClient.Core.Localization;
 using System.Text.RegularExpressions;
 using SGSClient.Core.Enums;
@@ -382,6 +383,8 @@ public static partial class SgsPackageRules
                 errors.Add(Loc.T("Architektura musi być: x64, x86 lub arm64."));
             }
         }
+
+        ValidateAchievements(manifest.Achievements, errors);
 
         return errors.Count == 0
             ? SgsPackageValidationResult.Ok()
@@ -802,6 +805,45 @@ public static partial class SgsPackageRules
             _ => GameFeatures.None
         };
         return flag != GameFeatures.None;
+    }
+
+    /// <summary>Package-relative icon paths of manifest achievements (http(s) icons are not in the ZIP).</summary>
+    public static IEnumerable<string> EnumerateAchievementIconPaths(SgsPackageManifest manifest) =>
+        (manifest.Achievements ?? [])
+            .Where(a => a is not null && !a.IconIsUrl && !string.IsNullOrWhiteSpace(a.Icon))
+            .Select(a => a.Icon!);
+
+    private static void ValidateAchievements(IList<SgsPackageAchievement>? achievements, List<string> errors)
+    {
+        if (achievements is null)
+        {
+            return;
+        }
+
+        if (achievements.Any(a => a is null))
+        {
+            errors.Add(Loc.T("Lista 'achievements' zawiera pusty wpis."));
+            return;
+        }
+
+        foreach (var achievement in achievements.Where(a => !a.IconIsUrl && !string.IsNullOrWhiteSpace(a.Icon)))
+        {
+            if (TryNormalizeMediaPath(achievement.Icon!, AllowedImageExtensions, $"achievements.{achievement.Key}.icon", out var icon, out var iconError))
+            {
+                achievement.Icon = icon;
+            }
+            else
+            {
+                errors.Add(iconError!);
+            }
+        }
+
+        // Paths were checked above; the definitions only need the icon to be a well-formed URL or absent.
+        var definitions = achievements.Select(a => a.ToDefinition(a.IconIsUrl ? a.Icon : null)).ToList();
+        if (AchievementRules.Validate(definitions) is { } error)
+        {
+            errors.Add(error);
+        }
     }
 
     private static void ValidateMedia(SgsPackageMediaInfo? media, List<string> errors)

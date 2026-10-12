@@ -60,6 +60,8 @@ public sealed partial class FriendsPage : Page
         ProfileHeaderText.Text = ViewModel.ProfileHeader;
         ProfileSubtitleText.Text = ViewModel.ProfileSubtitle;
         ProfileStatusText.Text = ViewModel.ProfileStatus;
+        ProfileAchievementsText.Text = ViewModel.ProfileAchievementsText;
+        ProfileAchievementsList.ItemsSource = ViewModel.ProfileAchievements;
         MessageFromProfileButton.Visibility = ViewModel.CanMessageProfile ? Visibility.Visible : Visibility.Collapsed;
         if (ProfileCommentBox.FocusState == FocusState.Unfocused)
         {

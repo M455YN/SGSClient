@@ -79,6 +79,7 @@ public static class DependencyInjection
 
             services.AddSingleton<IInstallQueueService, InstallQueueService>();
             services.AddSingleton<PresenceHeartbeatService>();
+            services.AddSingleton<AchievementBridge>();
             services.AddSingleton<SocialRealtimeService>();
 
             services.AddSingleton<IAuthSession>(sp =>

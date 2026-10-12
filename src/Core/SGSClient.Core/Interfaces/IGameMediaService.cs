@@ -65,4 +65,16 @@ public interface IGameMediaService
         int screenshotId,
         int? requireOwnerUserId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves an achievement icon next to the game's media and returns its public URL (null when the
+    /// game is missing). The caller has already authorized the write; the previous file is removed.
+    /// </summary>
+    Task<string?> SaveAchievementIconAsync(
+        int gameId,
+        string key,
+        string? previousUrl,
+        Stream content,
+        string fileName,
+        CancellationToken cancellationToken = default);
 }

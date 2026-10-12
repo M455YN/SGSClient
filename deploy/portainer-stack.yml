@@ -36,6 +36,8 @@ services:
       AzureAd__ApiAudience: ${SGS_AZUREAD_API_AUDIENCE:-}
       # Must match the email shown in client Settings (case-insensitive).
       Admin__Emails__0: ${SGS_ADMIN_EMAIL:-m455yn@outlook.com}
+      # 32+ random chars. Signs achievement tokens handed to running games; empty = random per start.
+      Achievements__SigningKey: ${SGS_ACHIEVEMENTS_SIGNING_KEY:-}
     volumes:
       - ${SGS_GAMES_VOLUME:-sgs_games}:/data/sgs/games
     extra_hosts:

@@ -50,6 +50,10 @@ public partial class AccountViewModel : ObservableObject
     }
 
     public ObservableCollection<RecentGameItem> RecentGames { get; } = [];
+    public ObservableCollection<AchievementSummaryItem> Achievements { get; } = [];
+    public bool HasAchievements => Achievements.Count > 0;
+
+    [ObservableProperty] public partial string AchievementsTotalText { get; set; } = string.Empty;
     public ObservableCollection<ProfileCommentItem> WallComments { get; } = [];
 
     public bool ShowSignedOut => !IsLoggedIn;
@@ -144,6 +148,12 @@ public partial class AccountViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string EditPlayerTag { get; set; } = string.Empty;
+
+    /// <summary>Privacy switch in the profile editor: hide achievements from other players.</summary>
+    [ObservableProperty]
+    public partial bool EditHideAchievements { get; set; }
+
+    private bool _hideAchievements;
 
     [ObservableProperty]
     public partial int FriendsCount { get; set; }
@@ -277,6 +287,7 @@ public partial class AccountViewModel : ObservableObject
         EditBio = Bio;
         EditLocation = Location;
         EditPlayerTag = PlayerTag;
+        EditHideAchievements = _hideAchievements;
         ProfileActionStatus = string.Empty;
         IsEditing = true;
     }
@@ -301,7 +312,8 @@ public partial class AccountViewModel : ObservableObject
                 DisplayName = EditDisplayName,
                 Bio = EditBio,
                 Location = EditLocation,
-                PlayerTag = string.IsNullOrWhiteSpace(EditPlayerTag) ? null : EditPlayerTag
+                PlayerTag = string.IsNullOrWhiteSpace(EditPlayerTag) ? null : EditPlayerTag,
+                HideAchievements = EditHideAchievements
             });
 
             if (updated is null)
@@ -410,6 +422,7 @@ public partial class AccountViewModel : ObservableObject
             : CacheBust(InstallPathHelper.ResolveDownloadUrl(_apiBaseUrl, user.AvatarUrl));
         Bio = user.Bio ?? string.Empty;
         Location = user.Location ?? string.Empty;
+        _hideAchievements = user.HideAchievements;
         AvatarInitials = MakeInitials(user.DisplayName);
         LastActivityText = FormatLastActivity(user.LastLoginUtc);
         AccountStatus = string.IsNullOrWhiteSpace(user.Email)
@@ -422,6 +435,7 @@ public partial class AccountViewModel : ObservableObject
         FriendsCount = FollowingCount = FollowersCount = 0;
         await LoadSocialCountsAsync();
         await LoadRecentGamesAsync();
+        await LoadAchievementsAsync();
         await LoadWallAsync(user.Id);
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
@@ -518,6 +532,9 @@ public partial class AccountViewModel : ObservableObject
         AvatarInitials = "?";
         FriendsCount = FollowingCount = FollowersCount = 0;
         RecentGames.Clear();
+        Achievements.Clear();
+        AchievementsTotalText = string.Empty;
+        OnPropertyChanged(nameof(HasAchievements));
         WallComments.Clear();
         WallCommentDraft = WallStatus = string.Empty;
         ProfileUserId = 0;
@@ -594,6 +611,37 @@ public partial class AccountViewModel : ObservableObject
         }
         catch
         {
+        }
+    }
+
+    private async Task LoadAchievementsAsync()
+    {
+        Achievements.Clear();
+        AchievementsTotalText = string.Empty;
+        if (_userApi is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var summaries = await _userApi.GetAchievementSummariesAsync();
+            foreach (var summary in summaries)
+            {
+                Achievements.Add(AchievementSummaryItem.FromDto(summary));
+            }
+
+            AchievementsTotalText = summaries.Count == 0
+                ? Loc.T("Nie odblokowano jeszcze żadnych osiągnięć.")
+                : Loc.F("Odblokowano łącznie: {0} · {1} pkt", summaries.Sum(s => s.Unlocked), summaries.Sum(s => s.PointsEarned));
+        }
+        catch
+        {
+            // the profile still works without achievements
+        }
+        finally
+        {
+            OnPropertyChanged(nameof(HasAchievements));
         }
     }
 

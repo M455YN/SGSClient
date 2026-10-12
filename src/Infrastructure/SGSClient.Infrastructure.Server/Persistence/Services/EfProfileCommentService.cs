@@ -6,7 +6,8 @@ using SGSClient.Infrastructure.Server.Persistence.Entities;
 
 namespace SGSClient.Infrastructure.Server.Persistence.Services;
 
-public sealed class EfProfileCommentService(SgsServerDbContext db) : IProfileCommentService
+public sealed class EfProfileCommentService(SgsServerDbContext db, IAchievementService achievements)
+    : IProfileCommentService
 {
     private const int MaxCommentLength = 1000;
 
@@ -104,6 +105,8 @@ public sealed class EfProfileCommentService(SgsServerDbContext db) : IProfileCom
             : [];
 
         var social = MapSocial(user, viewerUserId ?? 0, relations);
+        // Privacy: the owner always sees their own list, everyone else only when it is not hidden.
+        var showAchievements = !user.HideAchievements || viewerUserId == user.Id;
 
         var comments = await db.UserProfileComments.AsNoTracking()
             .Include(c => c.Author)
@@ -116,6 +119,10 @@ public sealed class EfProfileCommentService(SgsServerDbContext db) : IProfileCom
         {
             User = social,
             IsOwnProfile = viewerUserId == user.Id,
+            AchievementsHidden = user.HideAchievements,
+            Achievements = showAchievements
+                ? await achievements.GetSummariesAsync(user.Id, cancellationToken)
+                : [],
             Comments = comments
                 .Select(c => MapComment(c, c.Author, viewerUserId, user.Id))
                 .ToList()

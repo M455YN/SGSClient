@@ -136,6 +136,42 @@ public sealed class GameMediaService(
         return await ProjectAsync(game.Id, cancellationToken);
     }
 
+    public async Task<string?> SaveAchievementIconAsync(
+        int gameId,
+        string key,
+        string? previousUrl,
+        Stream content,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        var symbol = await db.Games.AsNoTracking()
+            .Where(g => g.Id == gameId)
+            .Select(g => g.Symbol)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (symbol is null)
+        {
+            return null;
+        }
+
+        var saved = await SaveFileAsync(
+            symbol,
+            content,
+            fileName,
+            SgsPackageRules.AllowedImageExtensions,
+            preferredStem: $"achievement_{key}",
+            cancellationToken);
+        // Only files this method wrote: an external icon URL must never map onto cover.png and friends.
+        if (previousUrl is not null
+            && !string.Equals(previousUrl, saved.Url, StringComparison.OrdinalIgnoreCase)
+            && previousUrl.StartsWith(storageOptions.Value.MediaPublicBaseUrl.TrimEnd('/') + "/", StringComparison.OrdinalIgnoreCase)
+            && Path.GetFileName(previousUrl).StartsWith("achievement_", StringComparison.Ordinal))
+        {
+            TryDeleteMediaFile(symbol, previousUrl, sourcePath: null);
+        }
+
+        return saved.Url;
+    }
+
     private async Task<GameDto?> SetSlotAsync(
         int gameId,
         Stream content,
