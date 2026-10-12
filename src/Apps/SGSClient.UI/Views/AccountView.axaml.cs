@@ -11,6 +11,14 @@ namespace SGSClient.UI.Views;
 
 public partial class AccountView : UserControl
 {
+    private void OpenGameAchievements_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is AccountViewModel vm && sender is Control { Tag: AchievementSummaryItem item })
+        {
+            vm.OpenGameAchievementsCommand.Execute(item);
+        }
+    }
+
     public AccountView()
     {
         InitializeComponent();

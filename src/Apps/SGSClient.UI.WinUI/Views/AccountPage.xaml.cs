@@ -33,6 +33,13 @@ public sealed partial class AccountPage : Page
                     return;
                 }
 
+                if (tag.StartsWith("GameAchievements:", StringComparison.Ordinal)
+                    && int.TryParse(tag["GameAchievements:".Length..], out var achievementsGameId))
+                {
+                    App.MainWindow.OpenGameAchievements(achievementsGameId);
+                    return;
+                }
+
                 if (tag == "Friends")
                 {
                     App.MainWindow.OpenSocialOverlay("Friends");
@@ -121,6 +128,14 @@ public sealed partial class AccountPage : Page
 
     private void WallCommentBox_TextChanged(object sender, TextChangedEventArgs e) =>
         ViewModel.WallCommentDraft = WallCommentBox.Text ?? string.Empty;
+
+    private void OpenGameAchievements_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: AchievementSummaryItem item })
+        {
+            ViewModel.OpenGameAchievementsCommand.Execute(item);
+        }
+    }
 
     private async void PostWall_Click(object sender, RoutedEventArgs e)
     {

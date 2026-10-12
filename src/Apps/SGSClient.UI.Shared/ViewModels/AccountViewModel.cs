@@ -614,6 +614,15 @@ public partial class AccountViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void OpenGameAchievements(AchievementSummaryItem? item)
+    {
+        if (item is not null)
+        {
+            _navigate?.Invoke($"GameAchievements:{item.GameId}");
+        }
+    }
+
     private async Task LoadAchievementsAsync()
     {
         Achievements.Clear();

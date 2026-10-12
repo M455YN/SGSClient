@@ -157,7 +157,7 @@ public sealed class AchievementsController(
             return Unauthorized();
         }
 
-        return Ok(await achievements.GetSummariesAsync(userId.Value, cancellationToken));
+        return Ok(await achievements.GetSummariesAsync(userId.Value, includeLocked: true, cancellationToken: cancellationToken));
     }
 
     [HttpPost("me/games/{gameId:int}/achievements/session")]

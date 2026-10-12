@@ -50,6 +50,7 @@ public sealed class PlayerAchievementItem
 /// <summary>One game's line on the signed-in player's profile.</summary>
 public sealed class AchievementSummaryItem
 {
+    public int GameId { get; init; }
     public required string Title { get; init; }
     public required string ProgressText { get; init; }
     public required string PointsText { get; init; }
@@ -57,6 +58,7 @@ public sealed class AchievementSummaryItem
 
     public static AchievementSummaryItem FromDto(UserAchievementSummaryDto dto) => new()
     {
+        GameId = dto.GameId,
         Title = string.IsNullOrWhiteSpace(dto.GameTitle) ? $"#{dto.GameId}" : dto.GameTitle,
         ProgressText = $"{dto.Unlocked} / {dto.Total}",
         PointsText = Loc.F("{0} pkt", dto.PointsEarned),

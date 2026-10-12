@@ -64,6 +64,22 @@ public class AchievementPrivacyTests
         Assert.False(afterOff!.HideAchievements);
     }
 
+    [Fact]
+    public async Task OwnProfile_ListsLibraryGamesWithNoUnlocksOthersDoNot()
+    {
+        await using var db = await SeedAsync();
+        db.UserGameEntitlements.Add(new UserGameEntitlementEntity { UserId = Stranger, GameId = 1, GrantedAtUtc = DateTimeOffset.UtcNow });
+        await db.SaveChangesAsync();
+        var sut = CreateProfiles(db);
+
+        var own = await sut.GetPublicProfileAsync(Stranger, Stranger);
+        var other = await sut.GetPublicProfileAsync(Stranger, Player);
+
+        var line = Assert.Single(own.Achievements);
+        Assert.Equal((0, 2), (line.Unlocked, line.Total));
+        Assert.Empty(other.Achievements);
+    }
+
     private static EfProfileCommentService CreateProfiles(SgsServerDbContext db) =>
         new(db, new EfAchievementService(
             db,

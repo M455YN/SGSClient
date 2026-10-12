@@ -201,6 +201,7 @@ public sealed class EfAchievementService(
 
     public async Task<IReadOnlyList<UserAchievementSummaryDto>> GetSummariesAsync(
         int userId,
+        bool includeLocked = false,
         CancellationToken cancellationToken = default)
     {
         var unlocked = await db.UserGameAchievements.AsNoTracking()
@@ -208,12 +209,26 @@ public sealed class EfAchievementService(
             .GroupBy(u => u.Achievement!.GameId)
             .Select(g => new { GameId = g.Key, Count = g.Count(), Points = g.Sum(x => x.Achievement!.Points) })
             .ToListAsync(cancellationToken);
-        if (unlocked.Count == 0)
+        var gameIds = unlocked.Select(x => x.GameId).ToList();
+        if (includeLocked)
+        {
+            // The owner also sees games they have not started: every library game that defines achievements.
+            var owned = await db.UserGameEntitlements.AsNoTracking()
+                .Where(e => e.UserId == userId)
+                .Select(e => e.GameId)
+                .ToListAsync(cancellationToken);
+            var withAchievements = await db.GameAchievements.AsNoTracking()
+                .Where(a => a.IsActive && owned.Contains(a.GameId))
+                .Select(a => a.GameId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+            gameIds = gameIds.Union(withAchievements).ToList();
+        }
+
+        if (gameIds.Count == 0)
         {
             return [];
         }
-
-        var gameIds = unlocked.Select(x => x.GameId).ToList();
         var totals = await db.GameAchievements.AsNoTracking()
             .Where(a => a.IsActive && gameIds.Contains(a.GameId))
             .GroupBy(a => a.GameId)
@@ -223,16 +238,21 @@ public sealed class EfAchievementService(
             .Where(g => gameIds.Contains(g.Id))
             .ToDictionaryAsync(g => g.Id, g => g.Title, cancellationToken);
 
-        return unlocked
-            .OrderByDescending(x => x.Count)
-            .Select(x => new UserAchievementSummaryDto
+        return gameIds
+            .Select(id =>
             {
-                GameId = x.GameId,
-                GameTitle = titles.GetValueOrDefault(x.GameId, string.Empty),
-                Unlocked = x.Count,
-                Total = totals.GetValueOrDefault(x.GameId),
-                PointsEarned = x.Points
+                var row = unlocked.FirstOrDefault(u => u.GameId == id);
+                return new UserAchievementSummaryDto
+                {
+                    GameId = id,
+                    GameTitle = titles.GetValueOrDefault(id, string.Empty),
+                    Unlocked = row?.Count ?? 0,
+                    Total = totals.GetValueOrDefault(id),
+                    PointsEarned = row?.Points ?? 0
+                };
             })
+            .OrderByDescending(x => x.Unlocked)
+            .ThenBy(x => x.GameTitle, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
     }
 
