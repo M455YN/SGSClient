@@ -13,6 +13,10 @@ public sealed class PlayerAchievementItem
     public string? IconUrl { get; init; }
     public bool HasIcon => IconUrl is not null;
     public bool IsUnlocked { get; init; }
+    public DateTimeOffset? UnlockedAtUtc { get; init; }
+    public double RarityPercent { get; init; }
+    public string RarityText { get; init; } = string.Empty;
+    public string UnlockedText { get; init; } = string.Empty;
     public bool ShowProgress { get; init; }
     public double ProgressValue { get; init; }
     public double ProgressMax { get; init; } = 1;
@@ -31,6 +35,12 @@ public sealed class PlayerAchievementItem
             Description = masked ? Loc.T("Odblokuj, aby poznać szczegóły.") : dto.Description,
             IconUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, dto.IconUrl),
             IsUnlocked = unlocked,
+            UnlockedAtUtc = dto.UnlockedAtUtc,
+            RarityPercent = dto.RarityPercent,
+            RarityText = Loc.F("{0}% graczy odblokowało to osiągnięcie", dto.RarityPercent.ToString("0.0", CultureInfo.InvariantCulture)),
+            UnlockedText = unlocked
+                ? Loc.F("Odblokowano: {0}", dto.UnlockedAtUtc!.Value.LocalDateTime.ToString("d MMM yyyy, HH:mm", Loc.Culture))
+                : progress && !masked ? $"{dto.Progress} / {dto.Target}" : Loc.T("Zablokowane"),
             ShowProgress = progress && !masked,
             ProgressValue = dto.Progress,
             ProgressMax = dto.Target ?? 1,

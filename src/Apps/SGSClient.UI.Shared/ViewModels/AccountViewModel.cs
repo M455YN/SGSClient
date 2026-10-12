@@ -614,12 +614,38 @@ public partial class AccountViewModel : ObservableObject
         }
     }
 
+    /// <summary>Raised when the player asks for one game's achievements window (game id, title).</summary>
+    public event Action<int, string>? AchievementsRequested;
+
+    /// <summary>Builds and loads the Steam-style achievements window for a game.</summary>
+    public async Task<AchievementsModalViewModel> CreateAchievementsModalAsync(int gameId, string title)
+    {
+        // Not disposed on purpose: disposing the scope would dispose the typed HttpClient the window still uses.
+        var scope = _scopes?.CreateScope();
+        var modal = new AchievementsModalViewModel(
+            scope?.ServiceProvider.GetService<ISgsApiService>(),
+            _apiBaseUrl,
+            gameId,
+            title);
+        await modal.LoadAsync();
+        return modal;
+    }
+
+    [RelayCommand]
+    private void OpenLibraryAchievements(RecentGameItem? item)
+    {
+        if (item is { GameId: > 0 })
+        {
+            AchievementsRequested?.Invoke(item.GameId, item.Title);
+        }
+    }
+
     [RelayCommand]
     private void OpenGameAchievements(AchievementSummaryItem? item)
     {
         if (item is not null)
         {
-            _navigate?.Invoke($"GameAchievements:{item.GameId}");
+            AchievementsRequested?.Invoke(item.GameId, item.Title);
         }
     }
 
@@ -683,7 +709,7 @@ public partial class AccountViewModel : ObservableObject
                          .OrderByDescending(x => x.LastPlayedUtc ?? DateTimeOffset.MinValue)
                          .Take(9))
             {
-                RecentGames.Add(new RecentGameItem(item.Title, item.Symbol, item.LastPlayedUtc, item.TotalPlayTimeSeconds));
+                RecentGames.Add(new RecentGameItem(item.Title, item.Symbol, item.LastPlayedUtc, item.TotalPlayTimeSeconds, item.GameId));
             }
         }
         catch
@@ -742,8 +768,14 @@ public partial class AccountViewModel : ObservableObject
     }
 }
 
-public sealed class RecentGameItem(string title, string symbol, DateTimeOffset? lastPlayedUtc, long playtimeSeconds = 0)
+public sealed class RecentGameItem(
+    string title,
+    string symbol,
+    DateTimeOffset? lastPlayedUtc,
+    long playtimeSeconds = 0,
+    int gameId = 0)
 {
+    public int GameId { get; } = gameId;
     public string Title { get; } = title;
     public string TileLabel { get; } = string.IsNullOrWhiteSpace(symbol)
         ? title[..Math.Min(2, title.Length)].ToUpperInvariant()

@@ -149,6 +149,7 @@
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="48" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                       </Grid.ColumnDefinitions>
                       <Border Width="48" Height="48" CornerRadius="4" Background="#333">
                         <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -158,6 +159,8 @@
                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
                         <TextBlock Text="{Binding Subtitle}" Opacity="0.55" FontSize="12" />
                       </StackPanel>
+                      <Button Grid.Column="2" Content="{loc:Tr Key='Osiągnięcia'}" Tag="{Binding}"
+                              Click="OpenLibraryAchievements_Click" VerticalAlignment="Center" Padding="10,4" />
                     </Grid>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

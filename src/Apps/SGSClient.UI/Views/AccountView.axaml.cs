@@ -11,6 +11,14 @@ namespace SGSClient.UI.Views;
 
 public partial class AccountView : UserControl
 {
+    private void OpenLibraryAchievements_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (DataContext is AccountViewModel vm && sender is Control { Tag: RecentGameItem item })
+        {
+            vm.OpenLibraryAchievementsCommand.Execute(item);
+        }
+    }
+
     private void OpenGameAchievements_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         if (DataContext is AccountViewModel vm && sender is Control { Tag: AchievementSummaryItem item })
@@ -26,8 +34,32 @@ public partial class AccountView : UserControl
         {
             BindWindowHandle();
             WatchAvatar();
+            WatchAchievements();
         };
         AttachedToVisualTree += (_, _) => BindWindowHandle();
+    }
+
+    private AccountViewModel? _achievementsHost;
+
+    private void WatchAchievements()
+    {
+        if (DataContext is not AccountViewModel vm || ReferenceEquals(vm, _achievementsHost))
+        {
+            return;
+        }
+
+        _achievementsHost = vm;
+        vm.AchievementsRequested += async (gameId, title) =>
+        {
+            var modal = await vm.CreateAchievementsModalAsync(gameId, title);
+            var dialog = new FluentAvalonia.UI.Controls.FAContentDialog
+            {
+                Content = new AchievementsModal { DataContext = modal },
+                CloseButtonText = Loc.T("Zamknij"),
+                DefaultButton = FluentAvalonia.UI.Controls.FAContentDialogButton.Close
+            };
+            await dialog.ShowAsync(TopLevel.GetTopLevel(this));
+        };
     }
 
     private AccountViewModel? _watched;
