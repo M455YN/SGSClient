@@ -57,8 +57,13 @@ public interface IAchievementService
         int value,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Per game: unlocked of total. <paramref name="includeLocked"/> adds the library games with no unlock
+    /// yet (the player's own view only).
+    /// </summary>
     Task<IReadOnlyList<UserAchievementSummaryDto>> GetSummariesAsync(
         int userId,
+        bool includeLocked = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>Clears the caller's own progress for the game, so a creator can retest.</summary>

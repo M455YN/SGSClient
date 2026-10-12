@@ -57,11 +57,11 @@ public sealed partial class GameDetailsPage : Page
         base.OnNavigatedTo(e);
         StopIntro();
 
-        var (gameId, fromLibrary, returnTag) = e.Parameter switch
+        var (gameId, fromLibrary, returnTag, tab) = e.Parameter switch
         {
-            GameDetailsNavArgs args => (args.GameId, args.ReturnTag == "Library", args.ReturnTag),
-            int id => (id, false, "Games"),
-            _ => (0, false, "Games")
+            GameDetailsNavArgs args => (args.GameId, args.ReturnTag == "Library", args.ReturnTag, args.Tab),
+            int id => (id, false, "Games", (string?)null),
+            _ => (0, false, "Games", (string?)null)
         };
 
         if (gameId <= 0)
@@ -72,6 +72,11 @@ public sealed partial class GameDetailsPage : Page
         }
 
         await ViewModel.LoadAsync(gameId, fromLibrary, returnTag);
+        if (tab is not null)
+        {
+            ViewModel.SelectTabCommand.Execute(tab);
+        }
+
         RefreshUi();
     }
 

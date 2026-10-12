@@ -327,6 +327,14 @@ public sealed partial class MainWindow : Window
         Sidebar.ViewModel.SelectNav(_contentNavTag);
     }
 
+    public void OpenGameAchievements(int gameId)
+    {
+        NavigateTo(
+            typeof(GameDetailsPage),
+            parameter: new GameDetailsNavArgs(gameId, "Library", "Achievements"),
+            selectTag: "Library");
+    }
+
     private void OpenGameDetails(int gameId)
     {
         NavigateTo(

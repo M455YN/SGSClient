@@ -89,7 +89,17 @@ public partial class MainWindowViewModel : ViewModelBase
         _wishlist.SetOpenAccountHandler(() => Navigate("Account"));
         _gameDetails.SetCloseHandler(CloseGameDetails);
         _home.SetNavigateHandler(NavigateFromHome);
-        _account.SetNavigateHandler(OpenSocial);
+        _account.SetNavigateHandler(tag =>
+        {
+            if (tag.StartsWith("GameAchievements:", StringComparison.Ordinal)
+                && int.TryParse(tag["GameAchievements:".Length..], out var gameId))
+            {
+                OpenGameDetails(gameId, "Library", "Achievements");
+                return;
+            }
+
+            OpenSocial(tag);
+        });
         _account.SetAdminVisibilityHandler(visible =>
         {
             IsAdminVisible = visible;
@@ -296,7 +306,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void NavigateFromHome(string tag) => Navigate(tag);
 
-    public void OpenGameDetails(int gameId, string returnTag = "Games")
+    public void OpenGameDetails(int gameId, string returnTag = "Games", string? tab = null)
     {
         _detailsReturnTag = string.IsNullOrWhiteSpace(returnTag) ? "Games" : returnTag;
         SelectedNavTag = _detailsReturnTag switch
@@ -308,10 +318,19 @@ public partial class MainWindowViewModel : ViewModelBase
         };
         Sidebar.SelectNav(SelectedNavTag);
         CurrentPage = _gameDetails;
-        _ = _gameDetails.LoadAsync(
+        _ = LoadDetailsAsync(gameId, tab);
+    }
+
+    private async Task LoadDetailsAsync(int gameId, string? tab)
+    {
+        await _gameDetails.LoadAsync(
             gameId,
             fromLibrary: _detailsReturnTag is "Library" or "Downloads",
             returnTag: _detailsReturnTag);
+        if (tab is not null)
+        {
+            _gameDetails.SelectTabCommand.Execute(tab);
+        }
     }
 
     public void CloseGameDetails()

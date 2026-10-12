@@ -121,7 +121,10 @@ public sealed class EfProfileCommentService(SgsServerDbContext db, IAchievementS
             IsOwnProfile = viewerUserId == user.Id,
             AchievementsHidden = user.HideAchievements,
             Achievements = showAchievements
-                ? await achievements.GetSummariesAsync(user.Id, cancellationToken)
+                ? await achievements.GetSummariesAsync(
+                    user.Id,
+                    includeLocked: viewerUserId == user.Id,
+                    cancellationToken: cancellationToken)
                 : [],
             Comments = comments
                 .Select(c => MapComment(c, c.Author, viewerUserId, user.Id))
