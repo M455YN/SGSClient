@@ -27,6 +27,8 @@ public partial class SettingsView : UserControl
         };
     }
 
+    private void ExitClient_OnClick(object? sender, RoutedEventArgs e) => App.ExitApplication();
+
     private async void AddLibraryFolder_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not SettingsViewModel vm)

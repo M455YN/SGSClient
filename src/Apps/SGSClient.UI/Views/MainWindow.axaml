@@ -8,7 +8,7 @@
         x:Class="SGSClient.UI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/app.ico"
-        Width="1480" Height="768"
+        Width="1680" Height="940"
         WindowStartupLocation="CenterScreen"
         Title="SGSClient">
 

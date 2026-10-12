@@ -7,6 +7,7 @@ using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
 using SGSClient.UI.ViewModels;
 using SGSClient.UI.WinUI.Views;
+using SGSClient.Core.Localization;
 
 namespace SGSClient.UI.WinUI;
 
@@ -14,6 +15,8 @@ public sealed partial class MainWindow : Window
 {
     private string _contentNavTag = "Home";
     private bool _socialOpen;
+    private bool _exiting;
+    private H.NotifyIcon.TaskbarIcon? _tray;
 
     public MainWindow()
     {
@@ -36,6 +39,81 @@ public sealed partial class MainWindow : Window
         WireDownloadStatusBar();
         WireNotificationsStatusBar();
         WireOfflineBanner();
+        WireTray();
+    }
+
+    /// <summary>Closing the window hides it to the notification area; "Exit" in the tray menu really quits.</summary>
+    private void WireTray()
+    {
+        _tray = new H.NotifyIcon.TaskbarIcon
+        {
+            ToolTipText = "SGSClient",
+            Icon = new System.Drawing.Icon(Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico")),
+            ContextMenuMode = H.NotifyIcon.ContextMenuMode.ActiveWindow,
+            NoLeftClickDelay = true,
+            LeftClickCommand = new CommunityToolkit.Mvvm.Input.RelayCommand(ShowFromTray),
+            RightClickCommand = new CommunityToolkit.Mvvm.Input.RelayCommand(
+                () => TrayMenuWindow.ShowAtCursor(BuildTrayMenu()))
+        };
+        _tray.ForceCreate();
+        AppWindow.Closing += (_, e) =>
+        {
+            if (_exiting)
+            {
+                return;
+            }
+
+            e.Cancel = true;
+            AppWindow.Hide();
+        };
+    }
+
+    private IReadOnlyList<TrayMenuItem> BuildTrayMenu()
+    {
+        var items = new List<TrayMenuItem>();
+        var separator = new TrayMenuItem(string.Empty, null);
+        var games = Sidebar.ViewModel.InstalledGames.Where(g => g.CanLaunch)
+            .OrderByDescending(g => g.LastPlayedUtc ?? DateTimeOffset.MinValue).Take(5).ToList();
+        foreach (var game in games)
+        {
+            var captured = game;
+            items.Add(new TrayMenuItem(captured.Title, () => Sidebar.ViewModel.LaunchCommand.Execute(captured)));
+        }
+
+        if (games.Count > 0)
+        {
+            items.Add(separator);
+        }
+
+        items.Add(new TrayMenuItem(Loc.T("Sklep"), () => ShowAndNavigate("Games")));
+        items.Add(new TrayMenuItem(Loc.T("Biblioteka"), () => ShowAndNavigate("Library")));
+        items.Add(separator);
+        items.Add(new TrayMenuItem(Loc.T("Znajomi"), () => ShowAndNavigate("Friends")));
+        items.Add(new TrayMenuItem(Loc.T("Ustawienia"), () => ShowAndNavigate("Settings")));
+        items.Add(separator);
+        items.Add(new TrayMenuItem(Loc.T("Wyjdź z SGSClient"), ExitApplication));
+        return items;
+    }
+
+    private void ShowFromTray()
+    {
+        AppWindow.Show();
+        (AppWindow.Presenter as Microsoft.UI.Windowing.OverlappedPresenter)?.Restore();
+        Activate();
+    }
+
+    private void ShowAndNavigate(string tag)
+    {
+        ShowFromTray();
+        NavigateByTagPublic(tag);
+    }
+
+    /// <summary>Really quits: closing the window only hides it to the tray.</summary>
+    public void ExitApplication()
+    {
+        _exiting = true;
+        _tray?.Dispose();
+        Application.Current.Exit();
     }
 
     /// <summary>
@@ -50,8 +128,8 @@ public sealed partial class MainWindow : Window
 
     private void PlaceDefaultWindow()
     {
-        const int width = 1480;
-        const int height = 768;
+        const int width = 1680;
+        const int height = 940;
         var area = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(
             AppWindow.Id,
             Microsoft.UI.Windowing.DisplayAreaFallback.Primary);

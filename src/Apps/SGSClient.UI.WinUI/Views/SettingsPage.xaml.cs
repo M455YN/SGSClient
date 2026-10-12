@@ -69,6 +69,8 @@ public sealed partial class SettingsPage : Page
         }
     }
 
+    private void ExitClient_Click(object sender, RoutedEventArgs e) => App.MainWindow?.ExitApplication();
+
     private async void AddLibraryFolder_Click(object sender, RoutedEventArgs e)
     {
         if (App.MainWindow is null)

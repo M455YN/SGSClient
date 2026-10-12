@@ -355,6 +355,7 @@ public sealed class SidebarInstalledGame
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
     public string StateText { get; init; } = string.Empty;
     public bool CanLaunch { get; init; }
+    public DateTimeOffset? LastPlayedUtc { get; init; }
     public string TileLabel { get; init; } = string.Empty;
 
     public static SidebarInstalledGame FromModel(GameLibraryItem item, string apiBaseUrl)
@@ -381,6 +382,7 @@ public sealed class SidebarInstalledGame
             ExecutablePath = item.ExecutablePath,
             CoverImageUrl = cover,
             CanLaunch = canLaunch,
+            LastPlayedUtc = item.LastPlayedUtc,
             StateText = canLaunch ? Loc.T("Gotowa do uruchomienia") : Loc.T("Brak pliku wykonywalnego"),
             TileLabel = string.IsNullOrWhiteSpace(item.Symbol)
                 ? item.Title[..Math.Min(2, item.Title.Length)].ToUpperInvariant()

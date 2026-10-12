@@ -1,3 +1,4 @@
+using WinUIEx;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -17,8 +18,13 @@ public partial class App : Application
     public static IServiceProvider Services { get; private set; } = null!;
     public static MainWindow? MainWindow { get; private set; }
 
+    private SimpleSplashScreen? _splash;
+
     public App()
     {
+        // The logo goes up before anything else loads and is hidden once the shell window is active.
+        _splash = SimpleSplashScreen.ShowSplashScreenImage(
+            Path.Combine(AppContext.BaseDirectory, "Assets", "Splash.png"));
         UnhandledException += (_, e) =>
         {
             LogStartupFailure("UnhandledException", e.Exception);
@@ -37,6 +43,11 @@ public partial class App : Application
         {
             LogStartupFailure("OnLaunched", ex);
             throw;
+        }
+        finally
+        {
+            _splash?.Hide();
+            _splash = null;
         }
     }
 
