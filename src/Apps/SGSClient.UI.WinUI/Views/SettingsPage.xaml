@@ -76,6 +76,8 @@
             <TextBlock x:Name="AboutText" Grid.Column="1" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" />
           </Grid>
           <TextBlock Text="Szyr Game Studio" Opacity="0.55" FontSize="12" />
+          <Button Content="{loc:Tr Key='Wyłącz klient'}" HorizontalAlignment="Left" Padding="14,8"
+                  Click="ExitClient_Click" />
         </StackPanel>
       </Border>
 

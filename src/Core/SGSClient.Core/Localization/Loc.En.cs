@@ -960,6 +960,8 @@ public static partial class Loc
         ["Osiągnięcie „{0}”: tłumaczenie „{1}” jest za długie."] = "Achievement \"{0}\": the \"{1}\" translation is too long.",
         ["Osiągnięcie „{0}”: za dużo tłumaczeń (maksymalnie {1})."] = "Achievement \"{0}\": too many translations (at most {1}).",
         ["Pokaż wszystkie osiągnięcia"] = "Show all achievements",
+        ["Wyłącz klient"] = "Quit the client",
+        ["Wyjdź z SGSClient"] = "Exit SGSClient",
         ["Moje osiągnięcia"] = "My achievements",
         ["Osiągnięcia globalne"] = "Global achievements",
         ["Szukaj"] = "Search",

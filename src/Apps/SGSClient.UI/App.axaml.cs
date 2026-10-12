@@ -1,4 +1,6 @@
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Platform;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.Configuration;
@@ -17,12 +19,47 @@ public partial class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
 
+    private static Action? _exit;
+
+    /// <summary>Really quits: closing the window only hides it to the tray.</summary>
+    public static void ExitApplication() => _exit?.Invoke();
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
     }
 
     public override void OnFrameworkInitializationCompleted()
+    {
+        // Show the logo first and load the client on a later dispatcher turn so the splash can paint.
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime startup)
+        {
+            var splash = new SplashWindow();
+            startup.MainWindow = splash;
+            splash.Show();
+            Avalonia.Threading.Dispatcher.UIThread.Post(
+                () =>
+                {
+                    try
+                    {
+                        StartClient();
+                    }
+                    finally
+                    {
+                        splash.Close();
+                    }
+                },
+                Avalonia.Threading.DispatcherPriority.Background);
+        }
+        else
+        {
+            StartClient();
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    private void StartClient()
     {
         var userSettings = new ClientUserSettingsStore().Load();
         Loc.Initialize(userSettings.Language);
@@ -174,13 +211,93 @@ public partial class App : Application
             vm.GameDetails.SetOpenAccountHandler(() => vm.NavigateCommand.Execute("Account"));
             vm.LoginGate.SetParentWindowHandle(() =>
                 desktop.MainWindow?.TryGetPlatformHandle()?.Handle ?? 0);
-            desktop.MainWindow = new MainWindow
+            var window = new MainWindow
             {
                 DataContext = vm,
             };
+            desktop.MainWindow = window;
+            window.Show();
+            SetUpTray(desktop, window, vm);
             // InitializeAsync runs from MainWindow.Opened (needs window handle for MSAL).
         }
 
-        base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>Closing the window hides it to the tray; "Exit" in the tray menu really quits.</summary>
+    private void SetUpTray(IClassicDesktopStyleApplicationLifetime desktop, Window window, MainWindowViewModel vm)
+    {
+        var exiting = false;
+        _exit = () =>
+        {
+            exiting = true;
+            desktop.Shutdown();
+        };
+        window.Closing += (_, e) =>
+        {
+            if (!exiting)
+            {
+                e.Cancel = true;
+                window.Hide();
+            }
+        };
+
+        void Show()
+        {
+            window.Show();
+            if (window.WindowState == WindowState.Minimized)
+            {
+                window.WindowState = WindowState.Normal;
+            }
+
+            window.Activate();
+        }
+
+        void ShowAndNavigate(string tag)
+        {
+            Show();
+            vm.NavigateCommand.Execute(tag);
+        }
+
+        NativeMenuItem Item(string text, Action click)
+        {
+            var item = new NativeMenuItem(text);
+            item.Click += (_, _) => click();
+            return item;
+        }
+
+        var menu = new NativeMenu();
+        menu.Opening += (_, _) =>
+        {
+            menu.Items.Clear();
+            var games = vm.Sidebar.InstalledGames.Where(g => g.CanLaunch)
+                .OrderByDescending(g => g.LastPlayedUtc ?? DateTimeOffset.MinValue).Take(5).ToList();
+            foreach (var game in games)
+            {
+                var captured = game;
+                menu.Items.Add(Item(captured.Title, () => vm.Sidebar.LaunchCommand.Execute(captured)));
+            }
+
+            if (games.Count > 0)
+            {
+                menu.Items.Add(new NativeMenuItemSeparator());
+            }
+
+            menu.Items.Add(Item(Loc.T("Sklep"), () => ShowAndNavigate("Games")));
+            menu.Items.Add(Item(Loc.T("Biblioteka"), () => ShowAndNavigate("Library")));
+            menu.Items.Add(new NativeMenuItemSeparator());
+            menu.Items.Add(Item(Loc.T("Znajomi"), () => ShowAndNavigate("Friends")));
+            menu.Items.Add(Item(Loc.T("Ustawienia"), () => ShowAndNavigate("Settings")));
+            menu.Items.Add(new NativeMenuItemSeparator());
+            menu.Items.Add(Item(Loc.T("Wyjdź z SGSClient"), ExitApplication));
+        };
+
+        var tray = new TrayIcon
+        {
+            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://SGSClient/Assets/app.ico"))),
+            ToolTipText = "SGSClient",
+            Menu = menu
+        };
+        tray.Clicked += (_, _) => Show();
+        TrayIcon.SetIcons(this, new TrayIcons { tray });
     }
 }
