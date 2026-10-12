@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -33,10 +34,10 @@ public partial class StudioViewModel : ObservableObject
         _auth = auth;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
-        StatusText = "Ładowanie Twoich gier…";
+        StatusText = Loc.T("Ładowanie Twoich gier…");
     }
 
-    public string Title { get; } = "Panel twórcy";
+    public string Title { get; } = Loc.T("Panel twórcy");
     public IReadOnlyList<string> ReleaseStatusOptions { get; } = GameStoreLabels.ReleaseStatusOptions;
     public IReadOnlyList<string> AgeRatingOptions { get; } = GameStoreLabels.AgeRatingOptions;
 
@@ -101,7 +102,7 @@ public partial class StudioViewModel : ObservableObject
     {
         if (_api is null)
         {
-            StatusText = "API niedostępne.";
+            StatusText = Loc.T("API niedostępne.");
             ShowEmpty = true;
             HasGames = false;
             return;
@@ -114,7 +115,7 @@ public partial class StudioViewModel : ObservableObject
             SelectedGame = null;
             HasGames = false;
             ShowEmpty = true;
-            StatusText = "Zaloguj się w Profilu, aby zobaczyć swoje gry.";
+            StatusText = Loc.T("Zaloguj się w Profilu, aby zobaczyć swoje gry.");
             return;
         }
 
@@ -156,14 +157,14 @@ public partial class StudioViewModel : ObservableObject
             HasGames = Games.Count > 0;
             ShowEmpty = !HasGames;
             StatusText = HasGames
-                ? $"{Games.Count} gier · {Games.Sum(g => g.Dlcs.Count)} DLC"
-                : "Nie masz jeszcze opublikowanych gier. Dodaj pierwszą.";
+                ? Loc.F("{0} gier · {1} DLC", Games.Count, Games.Sum(g => g.Dlcs.Count))
+                : Loc.T("Nie masz jeszcze opublikowanych gier. Dodaj pierwszą.");
         }
         catch (Exception ex)
         {
             HasGames = false;
             ShowEmpty = true;
-            StatusText = $"Błąd ładowania: {ex.Message}";
+            StatusText = Loc.F("Błąd ładowania: {0}", ex.Message);
         }
         finally
         {
@@ -303,16 +304,16 @@ public partial class StudioViewModel : ObservableObject
             var updated = await _api.UpdateGameAsync(item.Id, item.ToUpdateRequest());
             if (updated is null)
             {
-                StatusText = "Nie udało się zapisać strony sklepu.";
+                StatusText = Loc.T("Nie udało się zapisać strony sklepu.");
                 return;
             }
 
             item.ApplyDto(updated, _apiBaseUrl);
-            StatusText = $"Zapisano stronę sklepu: {updated.Title}";
+            StatusText = Loc.F("Zapisano stronę sklepu: {0}", updated.Title);
         }
         catch (Exception ex)
         {
-            StatusText = $"Błąd zapisu: {ex.Message}";
+            StatusText = Loc.F("Błąd zapisu: {0}", ex.Message);
         }
         finally
         {
@@ -331,12 +332,12 @@ public partial class StudioViewModel : ObservableObject
         var updated = await _api.UpdateGameAsync(SelectedGame.Id, new UpdateGameRequestDto { DraftP = !published });
         if (updated is null)
         {
-            StatusText = "Nie udało się zmienić widoczności.";
+            StatusText = Loc.T("Nie udało się zmienić widoczności.");
             return;
         }
 
         SelectedGame.ApplyDto(updated, _apiBaseUrl);
-        StatusText = published ? "Gra jest widoczna w sklepie." : "Gra jest szkicem — ukryta w sklepie.";
+        StatusText = published ? Loc.T("Gra jest widoczna w sklepie.") : Loc.T("Gra jest szkicem — ukryta w sklepie.");
     }
 
     [RelayCommand]
@@ -348,7 +349,7 @@ public partial class StudioViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.UploadGameCoverAsync(id, path, asAdmin: false),
                 ReloadAfterMediaAsync,
-                "Zaktualizowano miniaturkę.");
+                Loc.T("Zaktualizowano miniaturkę."));
 
     [RelayCommand]
     private Task ClearCoverAsync() =>
@@ -358,7 +359,7 @@ public partial class StudioViewModel : ObservableObject
                 SelectedGame?.Id,
                 id => _api.ClearGameCoverAsync(id, asAdmin: false),
                 ReloadAfterMediaAsync,
-                "Usunięto miniaturkę.");
+                Loc.T("Usunięto miniaturkę."));
 
     [RelayCommand]
     private Task PickHeaderAsync() =>
@@ -369,7 +370,7 @@ public partial class StudioViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.UploadGameHeaderAsync(id, path, asAdmin: false),
                 ReloadAfterMediaAsync,
-                "Zaktualizowano okładkę poziomą.");
+                Loc.T("Zaktualizowano okładkę poziomą."));
 
     [RelayCommand]
     private Task ClearHeaderAsync() =>
@@ -379,7 +380,7 @@ public partial class StudioViewModel : ObservableObject
                 SelectedGame?.Id,
                 id => _api.ClearGameHeaderAsync(id, asAdmin: false),
                 ReloadAfterMediaAsync,
-                "Usunięto okładkę poziomą.");
+                Loc.T("Usunięto okładkę poziomą."));
 
     [RelayCommand]
     private Task PickLogoAsync() =>
@@ -390,7 +391,7 @@ public partial class StudioViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.UploadGameLogoAsync(id, path, asAdmin: false),
                 ReloadAfterMediaAsync,
-                "Zaktualizowano logo.");
+                Loc.T("Zaktualizowano logo."));
 
     [RelayCommand]
     private Task ClearLogoAsync() =>
@@ -400,7 +401,7 @@ public partial class StudioViewModel : ObservableObject
                 SelectedGame?.Id,
                 id => _api.ClearGameLogoAsync(id, asAdmin: false),
                 ReloadAfterMediaAsync,
-                "Usunięto logo.");
+                Loc.T("Usunięto logo."));
 
     [RelayCommand]
     private Task PickIntroAsync() =>
@@ -411,7 +412,7 @@ public partial class StudioViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.UploadGameIntroAsync(id, path, asAdmin: false),
                 ReloadAfterMediaAsync,
-                "Zaktualizowano intro.");
+                Loc.T("Zaktualizowano intro."));
 
     [RelayCommand]
     private Task ClearIntroAsync() =>
@@ -421,7 +422,7 @@ public partial class StudioViewModel : ObservableObject
                 SelectedGame?.Id,
                 id => _api.ClearGameIntroAsync(id, asAdmin: false),
                 ReloadAfterMediaAsync,
-                "Usunięto intro.");
+                Loc.T("Usunięto intro."));
 
     [RelayCommand]
     private Task AddScreenshotAsync() =>
@@ -432,7 +433,7 @@ public partial class StudioViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.AddGameScreenshotAsync(id, path, asAdmin: false),
                 ReloadAfterMediaAsync,
-                "Dodano zrzut ekranu.");
+                Loc.T("Dodano zrzut ekranu."));
 
     [RelayCommand]
     private async Task RemoveScreenshotAsync(StudioScreenshotItem? shot)
@@ -444,16 +445,16 @@ public partial class StudioViewModel : ObservableObject
 
         await ReloadAfterMediaAsync(
             await _api.RemoveGameScreenshotAsync(SelectedGame.Id, shot.Id, asAdmin: false),
-            "Usunięto zrzut ekranu.");
+            Loc.T("Usunięto zrzut ekranu."));
     }
 
     private Task ReloadAfterMediaAsync(GameDto? updated, string okText)
     {
         if (updated is null)
         {
-            StatusText = okText.StartsWith("Błąd", StringComparison.OrdinalIgnoreCase)
+            StatusText = okText.StartsWith(Loc.T("Błąd"), StringComparison.OrdinalIgnoreCase)
                 ? okText
-                : "Nie udało się zaktualizować mediów (serwer odrzucił plik lub brak uprawnień).";
+                : Loc.T("Nie udało się zaktualizować mediów (serwer odrzucił plik lub brak uprawnień).");
             return Task.CompletedTask;
         }
 
@@ -481,12 +482,12 @@ public partial class StudioViewModel : ObservableObject
         var updated = await _api.UpdateVersionNotesAsync(SelectedGame.Id, version.Id, version.EditNotes);
         if (updated is null)
         {
-            StatusText = "Nie udało się zapisać opisu zmian.";
+            StatusText = Loc.T("Nie udało się zapisać opisu zmian.");
             return;
         }
 
         version.ApplyDto(updated);
-        StatusText = $"Zapisano opis zmian dla {updated.Version}.";
+        StatusText = Loc.F("Zapisano opis zmian dla {0}.", updated.Version);
     }
 
     [RelayCommand]
@@ -508,8 +509,8 @@ public partial class StudioViewModel : ObservableObject
         {
             var deleted = await _api.DeleteGameAsync(target.Id);
             StatusText = deleted
-                ? $"Usunięto: {target.Title}"
-                : "Nie udało się usunąć (sprawdź uprawnienia lub powiązane DLC).";
+                ? Loc.F("Usunięto: {0}", target.Title)
+                : Loc.T("Nie udało się usunąć (sprawdź uprawnienia lub powiązane DLC).");
             if (deleted)
             {
                 if (SelectedGame?.Id == target.Id)
@@ -522,7 +523,7 @@ public partial class StudioViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"Błąd usuwania: {ex.Message}";
+            StatusText = Loc.F("Błąd usuwania: {0}", ex.Message);
         }
         finally
         {

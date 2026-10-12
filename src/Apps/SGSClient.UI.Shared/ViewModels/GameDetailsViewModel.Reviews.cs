@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -19,8 +20,8 @@ public partial class GameDetailsViewModel
 
     public ObservableCollection<GameReviewItem> Reviews { get; } = [];
 
-    public IReadOnlyList<string> ReviewSortOptions { get; } = ["Najnowsze", "Najbardziej pomocne"];
-    public IReadOnlyList<string> ReviewFilterOptions { get; } = ["Wszystkie", "Pozytywne", "Negatywne"];
+    public IReadOnlyList<string> ReviewSortOptions { get; } = [Loc.T("Najnowsze"), Loc.T("Najbardziej pomocne")];
+    public IReadOnlyList<string> ReviewFilterOptions { get; } = [Loc.T("Wszystkie"), Loc.T("Pozytywne"), Loc.T("Negatywne")];
 
     partial void OnSelectedReviewSortChanged(string value) => _ = LoadReviewsAsync();
     partial void OnSelectedReviewFilterChanged(string value) => _ = LoadReviewsAsync();
@@ -34,13 +35,12 @@ public partial class GameDetailsViewModel
 
         try
         {
-            var sort = SelectedReviewSort.Contains("pomocne", StringComparison.OrdinalIgnoreCase)
-                ? "helpful"
-                : "recent";
-            bool? recommended = SelectedReviewFilter switch
+            // Option order: sort = newest, helpful; filter = all, positive, negative.
+            var sort = ReviewSortOptions.ToList().IndexOf(SelectedReviewSort) == 1 ? "helpful" : "recent";
+            bool? recommended = ReviewFilterOptions.ToList().IndexOf(SelectedReviewFilter) switch
             {
-                "Pozytywne" => true,
-                "Negatywne" => false,
+                1 => true,
+                2 => false,
                 _ => null
             };
 
@@ -48,7 +48,7 @@ public partial class GameDetailsViewModel
             Reviews.Clear();
             if (summary is null)
             {
-                ReviewsSummaryText = "Brak recenzji.";
+                ReviewsSummaryText = Loc.T("Brak recenzji.");
                 CanWriteReview = false;
                 HasMyReview = false;
                 return;
@@ -57,8 +57,8 @@ public partial class GameDetailsViewModel
             CanWriteReview = summary.CanReview;
             HasMyReview = summary.MyReview is not null;
             ReviewsSummaryText = summary.TotalCount == 0
-                ? "Brak recenzji — bądź pierwszy."
-                : $"{summary.RecommendedPercent:0.#}% z {summary.TotalCount} recenzji poleca tę grę";
+                ? Loc.T("Brak recenzji — bądź pierwszy.")
+                : Loc.F("{0:0.#}% z {1} recenzji poleca tę grę", summary.RecommendedPercent, summary.TotalCount);
 
             if (summary.MyReview is not null)
             {
@@ -87,7 +87,7 @@ public partial class GameDetailsViewModel
 
         if (!await _api.VoteGameReviewAsync(item.Id, helpful: true))
         {
-            ReviewStatusText = "Nie udało się zagłosować.";
+            ReviewStatusText = Loc.T("Nie udało się zagłosować.");
             return;
         }
 
@@ -128,7 +128,7 @@ public partial class GameDetailsViewModel
         var (comment, error) = await _api.AddGameReviewCommentAsync(item.Id, item.CommentDraft);
         if (error is not null || comment is null)
         {
-            ReviewStatusText = error ?? "Nie udało się dodać komentarza.";
+            ReviewStatusText = error ?? Loc.T("Nie udało się dodać komentarza.");
             return;
         }
 
@@ -148,7 +148,7 @@ public partial class GameDetailsViewModel
 
         if (!await _api.DeleteGameReviewCommentAsync(comment.Id))
         {
-            ReviewStatusText = "Nie udało się usunąć komentarza.";
+            ReviewStatusText = Loc.T("Nie udało się usunąć komentarza.");
             return;
         }
 
@@ -168,7 +168,7 @@ public partial class GameDetailsViewModel
             return;
         }
 
-        ReviewStatusText = "Zapisywanie…";
+        ReviewStatusText = Loc.T("Zapisywanie…");
         var (review, error) = await _api.UpsertGameReviewAsync(
             GameId,
             new UpsertGameReviewRequest
@@ -178,11 +178,11 @@ public partial class GameDetailsViewModel
             });
         if (error is not null || review is null)
         {
-            ReviewStatusText = error ?? "Nie udało się zapisać recenzji.";
+            ReviewStatusText = error ?? Loc.T("Nie udało się zapisać recenzji.");
             return;
         }
 
-        ReviewStatusText = "Zapisano recenzję.";
+        ReviewStatusText = Loc.T("Zapisano recenzję.");
         await LoadReviewsAsync();
     }
 
@@ -196,13 +196,13 @@ public partial class GameDetailsViewModel
 
         if (!await _api.DeleteGameReviewAsync(GameId))
         {
-            ReviewStatusText = "Nie udało się usunąć recenzji.";
+            ReviewStatusText = Loc.T("Nie udało się usunąć recenzji.");
             return;
         }
 
         ReviewDraftText = string.Empty;
         ReviewRecommended = true;
-        ReviewStatusText = "Usunięto recenzję.";
+        ReviewStatusText = Loc.T("Usunięto recenzję.");
         await LoadReviewsAsync();
     }
 }

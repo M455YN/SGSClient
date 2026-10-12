@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -7,6 +8,7 @@ using SGSClient.Core.Configuration;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Library;
 using SGSClient.Core.Models;
 
 namespace SGSClient.UI.ViewModels;
@@ -19,6 +21,7 @@ public partial class ShellSidebarViewModel : ObservableObject
     private readonly IAuthSession? _auth;
     private readonly ISgsApiService? _api;
     private readonly ICatalogCacheStore? _catalogCache;
+    private readonly IUiDispatcher? _ui;
     private readonly string _apiBaseUrl;
     private Action<string>? _navigate;
     private Action<int>? _openDetails;
@@ -37,7 +40,8 @@ public partial class ShellSidebarViewModel : ObservableObject
         IConfiguration? configuration = null,
         NotificationsViewModel? notifications = null,
         ISgsApiService? api = null,
-        ICatalogCacheStore? catalogCache = null)
+        ICatalogCacheStore? catalogCache = null,
+        IUiDispatcher? ui = null)
     {
         _scopes = scopes;
         _launcher = launcher;
@@ -45,6 +49,18 @@ public partial class ShellSidebarViewModel : ObservableObject
         _auth = auth;
         _api = api;
         _catalogCache = catalogCache;
+        _ui = ui;
+        InstalledGamesNotifier.Changed += () =>
+        {
+            if (_ui is null)
+            {
+                _ = LoadInstalledAsync();
+            }
+            else
+            {
+                _ui.Post(() => _ = LoadInstalledAsync());
+            }
+        };
         Notifications = notifications ?? new NotificationsViewModel();
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
@@ -70,10 +86,10 @@ public partial class ShellSidebarViewModel : ObservableObject
     public partial bool IsCreatorVisible { get; set; } = true;
 
     [ObservableProperty]
-    public partial string ProfileDisplayName { get; set; } = "Gość";
+    public partial string ProfileDisplayName { get; set; } = Loc.T("Gość");
 
     [ObservableProperty]
-    public partial string ProfileStatus { get; set; } = "Niezalogowany";
+    public partial string ProfileStatus { get; set; } = Loc.T("Niezalogowany");
 
     [ObservableProperty]
     public partial string? ProfileAvatarUrl { get; set; }
@@ -119,8 +135,8 @@ public partial class ShellSidebarViewModel : ObservableObject
     {
         if (_auth?.IsAvailable != true)
         {
-            ProfileDisplayName = "Lokalnie";
-            ProfileStatus = "Logowanie wyłączone";
+            ProfileDisplayName = Loc.T("Lokalnie");
+            ProfileStatus = Loc.T("Logowanie wyłączone");
             ProfileAvatarUrl = null;
             HasAvatar = false;
             IsCreatorVisible = true;
@@ -130,12 +146,12 @@ public partial class ShellSidebarViewModel : ObservableObject
         if (_auth.IsLoggedIn && _auth.CurrentUser is not null)
         {
             var user = _auth.CurrentUser;
-            ProfileDisplayName = string.IsNullOrWhiteSpace(user.DisplayName) ? "Gracz" : user.DisplayName;
+            ProfileDisplayName = string.IsNullOrWhiteSpace(user.DisplayName) ? Loc.T("Gracz") : user.DisplayName;
             var roleSuffix = user.Role switch
             {
                 UserRole.SuperAdmin => " · superadmin",
                 UserRole.Admin => " · admin",
-                UserRole.Creator => " · twórca",
+                UserRole.Creator => Loc.T(" · twórca"),
                 _ => string.Empty
             };
             ProfileStatus = !string.IsNullOrWhiteSpace(user.PlayerTag)
@@ -151,8 +167,8 @@ public partial class ShellSidebarViewModel : ObservableObject
             return;
         }
 
-        ProfileDisplayName = "Gość";
-        ProfileStatus = "Zaloguj się w Profilu";
+        ProfileDisplayName = Loc.T("Gość");
+        ProfileStatus = Loc.T("Zaloguj się w Profilu");
         ProfileAvatarUrl = null;
         HasAvatar = false;
         IsAdminVisible = false;
@@ -196,10 +212,7 @@ public partial class ShellSidebarViewModel : ObservableObject
 
         SelectedNavTag = tag;
         _navigate?.Invoke(tag);
-        if (tag is "Library" or "Home")
-        {
-            _ = LoadInstalledAsync();
-        }
+        _ = LoadInstalledAsync();
     }
 
     [RelayCommand]
@@ -368,7 +381,7 @@ public sealed class SidebarInstalledGame
             ExecutablePath = item.ExecutablePath,
             CoverImageUrl = cover,
             CanLaunch = canLaunch,
-            StateText = canLaunch ? "Gotowa do uruchomienia" : "Brak pliku wykonywalnego",
+            StateText = canLaunch ? Loc.T("Gotowa do uruchomienia") : Loc.T("Brak pliku wykonywalnego"),
             TileLabel = string.IsNullOrWhiteSpace(item.Symbol)
                 ? item.Title[..Math.Min(2, item.Title.Length)].ToUpperInvariant()
                 : item.Symbol[..Math.Min(3, item.Symbol.Length)].ToUpperInvariant()

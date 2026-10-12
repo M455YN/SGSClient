@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Library;
 using SGSClient.Core.Models;
 using SGSClient.Infrastructure.Client.Persistence;
 using SGSClient.Infrastructure.Client.Persistence.Entities;
@@ -39,6 +41,9 @@ public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibrarySt
     public async Task UpsertAsync(GameLibraryItem item, CancellationToken cancellationToken = default)
     {
         var entity = await db.Installs.FirstOrDefaultAsync(x => x.GameId == item.GameId, cancellationToken);
+        var stateChanged = entity is null
+            ? item.InstallState == InstallState.Installed
+            : entity.InstallState != item.InstallState;
         if (entity is null)
         {
             db.Installs.Add(new LocalInstallEntity
@@ -79,6 +84,10 @@ public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibrarySt
         }
 
         await db.SaveChangesAsync(cancellationToken);
+        if (stateChanged)
+        {
+            InstalledGamesNotifier.Raise();
+        }
     }
 
     public async Task RemoveAsync(int gameId, CancellationToken cancellationToken = default)
@@ -91,6 +100,7 @@ public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibrarySt
 
         db.Installs.RemoveRange(entities);
         await db.SaveChangesAsync(cancellationToken);
+        InstalledGamesNotifier.Raise();
     }
 
     private static GameLibraryItem ToModel(LocalInstallEntity entity) => new()

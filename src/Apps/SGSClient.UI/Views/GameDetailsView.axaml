@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.GameDetailsView"
@@ -62,24 +62,24 @@
                         Command="{Binding ToggleWishlistCommand}"
                         IsVisible="{Binding CanToggleWishlist}"
                         Padding="14,12"/>
-                <Button Content="Graj"
+                <Button Content="{loc:Tr Key='Graj'}"
                         Click="Launch_OnClick"
                         IsVisible="{Binding ShowLibraryActions}"
                         IsEnabled="{Binding CanLaunch}"
                         Padding="18,12"
                         MinWidth="120"
                         Classes="accent"/>
-                <Button Content="Zainstaluj"
+                <Button Content="{loc:Tr Key='Zainstaluj'}"
                         Click="Install_OnClick"
                         IsVisible="{Binding ShowLibraryActions}"
                         IsEnabled="{Binding CanInstall}"
                         Padding="14,12"/>
-                <Button Content="Odinstaluj"
+                <Button Content="{loc:Tr Key='Odinstaluj'}"
                         Click="Uninstall_OnClick"
                         IsVisible="{Binding ShowLibraryActions}"
                         IsEnabled="{Binding CanUninstall}"
                         Padding="14,12"/>
-                <Button Content="Właściwości"
+                <Button Content="{loc:Tr Key='Właściwości'}"
                         Click="Properties_OnClick"
                         IsVisible="{Binding ShowLibraryActions}"
                         Classes="subtle"
@@ -89,7 +89,7 @@
               <StackPanel Spacing="4" IsVisible="{Binding IsInstalling}">
                 <TextBlock Text="{Binding InstallProgressText}" Opacity="0.7" FontSize="12"/>
                 <ProgressBar Minimum="0" Maximum="1" Value="{Binding InstallProgressFraction}" Height="4"/>
-                <Button Content="Anuluj" Click="CancelInstall_OnClick" Padding="12,6" HorizontalAlignment="Left"/>
+                <Button Content="{loc:Tr Key='Anuluj'}" Click="CancelInstall_OnClick" Padding="12,6" HorizontalAlignment="Left"/>
               </StackPanel>
 
               <TextBlock Text="{Binding StatusText}" Opacity="0.65" FontSize="12"/>
@@ -108,7 +108,7 @@
                     <GradientStop Color="#FF1A242E" Offset="1"/>
                   </LinearGradientBrush>
                 </Border.Background>
-                <Viewbox Stretch="Uniform" Width="560" Height="262" HorizontalAlignment="Left">
+                <Viewbox Stretch="Uniform">
                   <Panel Width="920" Height="430">
                     <TextBlock x:Name="TileLabelText"
                                Text="{Binding TileLabel}"
@@ -159,27 +159,27 @@
           <!-- Tabs -->
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <Button Content="Szczegóły" Tag="Details" Click="Tab_OnClick" Padding="14,8"
+              <Button Content="{loc:Tr Key='Szczegóły'}" Tag="Details" Click="Tab_OnClick" Padding="14,8"
                       FontWeight="SemiBold"/>
-              <Button Content="Recenzje" Tag="Reviews" Click="Tab_OnClick" Padding="14,8"/>
-              <Button Content="Więcej" Tag="More" Click="Tab_OnClick" Padding="14,8"/>
+              <Button Content="{loc:Tr Key='Recenzje'}" Tag="Reviews" Click="Tab_OnClick" Padding="14,8"/>
+              <Button Content="{loc:Tr Key='Więcej'}" Tag="More" Click="Tab_OnClick" Padding="14,8"/>
             </StackPanel>
             <Border Height="1" Background="#33FFFFFF"/>
 
             <StackPanel Spacing="18" IsVisible="{Binding ShowDetailsTab}">
               <StackPanel Spacing="6">
-                <TextBlock Text="Opis" FontSize="18" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Opis'}" FontSize="18" FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding Description}" Opacity="0.85" TextWrapping="Wrap" LineHeight="22"/>
               </StackPanel>
 
               <StackPanel Spacing="6" IsVisible="{Binding ShowHardware}">
-                <TextBlock Text="Wymagania sprzętowe" FontSize="18" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Wymagania sprzętowe'}" FontSize="18" FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding HardwareRequirements}" Opacity="0.85" TextWrapping="Wrap"/>
               </StackPanel>
 
               <StackPanel Spacing="10" IsVisible="{Binding ShowBuilds}">
-                <TextBlock Text="Właściwości wersji" FontSize="18" FontWeight="SemiBold"/>
-                <TextBlock Text="Wybierz wersję do pobrania (jak Betas w Steam). Domyślnie zaznaczona jest najnowsza."
+                <TextBlock Text="{loc:Tr Key='Właściwości wersji'}" FontSize="18" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Wybierz wersję do pobrania. Domyślnie zaznaczona jest najnowsza.'}"
                            Opacity="0.6" FontSize="12" TextWrapping="Wrap"/>
                 <ItemsControl ItemsSource="{Binding Builds}">
                   <ItemsControl.ItemTemplate>
@@ -194,11 +194,11 @@
                             </StackPanel>
                             <Border Grid.Column="1" Padding="8,4" CornerRadius="4" Background="#332E7D32"
                                     IsVisible="{Binding IsPreferred}" VerticalAlignment="Center">
-                              <TextBlock Text="Twoja platforma" FontSize="11" Foreground="#A5D6A7"/>
+                              <TextBlock Text="{loc:Tr Key='Twoja platforma'}" FontSize="11" Foreground="#A5D6A7"/>
                             </Border>
                           </Grid>
                           <StackPanel Spacing="4" IsVisible="{Binding HasVersionPicker}">
-                            <TextBlock Text="Wersja" Opacity="0.7" FontSize="11"/>
+                            <TextBlock Text="{loc:Tr Key='Wersja'}" Opacity="0.7" FontSize="11"/>
                             <ComboBox ItemsSource="{Binding Versions}"
                                       SelectedItem="{Binding SelectedVersion}"
                                       MinWidth="260"
@@ -218,13 +218,13 @@
               </StackPanel>
 
               <StackPanel Spacing="6" IsVisible="{Binding ShowOther}">
-                <TextBlock Text="Dodatkowe informacje" FontSize="18" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Dodatkowe informacje'}" FontSize="18" FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding OtherInformation}" Opacity="0.85" TextWrapping="Wrap"/>
               </StackPanel>
             </StackPanel>
 
             <StackPanel Spacing="12" IsVisible="{Binding ShowReviewsTab}">
-              <TextBlock Text="Recenzje" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Recenzje'}" FontSize="18" FontWeight="SemiBold"/>
               <TextBlock Text="{Binding ReviewsSummaryText}" Opacity="0.75" FontWeight="SemiBold"/>
               <StackPanel Orientation="Horizontal" Spacing="12">
                 <ComboBox Width="200" ItemsSource="{Binding ReviewSortOptions}"
@@ -236,24 +236,24 @@
               <Border IsVisible="{Binding CanWriteReview}" Padding="14" CornerRadius="8"
                       Background="#22FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
                 <StackPanel Spacing="8">
-                  <TextBlock Text="Twoja recenzja" FontWeight="SemiBold"/>
+                  <TextBlock Text="{loc:Tr Key='Twoja recenzja'}" FontWeight="SemiBold"/>
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="Polecam" Click="RecommendYes_OnClick" Padding="12,6"
+                    <Button Content="{loc:Tr Key='Polecam'}" Click="RecommendYes_OnClick" Padding="12,6"
                             Classes.accent="{Binding ReviewRecommended}"/>
-                    <Button Content="Nie polecam" Click="RecommendNo_OnClick" Padding="12,6"
+                    <Button Content="{loc:Tr Key='Nie polecam'}" Click="RecommendNo_OnClick" Padding="12,6"
                             Classes.accent="{Binding !ReviewRecommended}"/>
                   </StackPanel>
                   <TextBox Text="{Binding ReviewDraftText}" AcceptsReturn="True" TextWrapping="Wrap"
-                           MinHeight="88" PlaceholderText="Napisz recenzję (min. 10 znaków)…"/>
+                           MinHeight="88" PlaceholderText="{loc:Tr Key='Napisz recenzję (min. 10 znaków)…'}"/>
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="Zapisz" Classes="accent" Click="SubmitReview_OnClick" Padding="14,8"/>
-                    <Button Content="Usuń" Click="DeleteReview_OnClick" IsVisible="{Binding HasMyReview}" Padding="14,8"/>
+                    <Button Content="{loc:Tr Key='Zapisz'}" Classes="accent" Click="SubmitReview_OnClick" Padding="14,8"/>
+                    <Button Content="{loc:Tr Key='Usuń'}" Click="DeleteReview_OnClick" IsVisible="{Binding HasMyReview}" Padding="14,8"/>
                   </StackPanel>
                   <TextBlock Text="{Binding ReviewStatusText}" Opacity="0.65" FontSize="12"/>
                 </StackPanel>
               </Border>
 
-              <TextBlock Text="Żeby napisać recenzję, dodaj grę do biblioteki ( entitlement )."
+              <TextBlock Text="{loc:Tr Key='Żeby napisać recenzję, dodaj grę do biblioteki.'}"
                          Opacity="0.55" FontSize="12" TextWrapping="Wrap"
                          IsVisible="{Binding !CanWriteReview}"/>
 
@@ -286,7 +286,7 @@
                                       <TextBlock Text="{Binding MetaText}" Opacity="0.55" FontSize="11"/>
                                       <TextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="13"/>
                                     </StackPanel>
-                                    <Button Grid.Column="1" Content="Usuń" Padding="8,4" FontSize="11"
+                                    <Button Grid.Column="1" Content="{loc:Tr Key='Usuń'}" Padding="8,4" FontSize="11"
                                             IsVisible="{Binding IsMine}"
                                             Command="{Binding $parent[UserControl].((vm:GameDetailsViewModel)DataContext).DeleteCommentCommand}"
                                             CommandParameter="{Binding}"/>
@@ -296,8 +296,8 @@
                             </ItemsControl.ItemTemplate>
                           </ItemsControl>
                           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                            <TextBox Text="{Binding CommentDraft}" PlaceholderText="Dodaj komentarz…"/>
-                            <Button Grid.Column="1" Content="Wyślij" Padding="12,6"
+                            <TextBox Text="{Binding CommentDraft}" PlaceholderText="{loc:Tr Key='Dodaj komentarz…'}"/>
+                            <Button Grid.Column="1" Content="{loc:Tr Key='Wyślij'}" Padding="12,6"
                                     Command="{Binding $parent[UserControl].((vm:GameDetailsViewModel)DataContext).AddCommentCommand}"
                                     CommandParameter="{Binding}"/>
                           </Grid>
@@ -310,7 +310,7 @@
             </StackPanel>
 
             <StackPanel Spacing="8" IsVisible="{Binding ShowMoreTab}">
-              <TextBlock Text="Więcej" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Więcej'}" FontSize="18" FontWeight="SemiBold"/>
               <TextBlock Text="{Binding PlatformsText}" Opacity="0.75"/>
               <TextBlock Text="{Binding Symbol}" Opacity="0.55" FontSize="12"/>
             </StackPanel>

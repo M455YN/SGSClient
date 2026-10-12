@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -215,9 +216,9 @@ public partial class ShellSidebar : UserControl
         }
 
         var flyout = new MenuFlyout();
-        var details = new MenuItem { Header = "Szczegóły" };
+        var details = new MenuItem { Header = Loc.T("Szczegóły") };
         details.Click += (_, _) => ViewModel.OpenDetailsCommand.Execute(game);
-        var props = new MenuItem { Header = "Właściwości" };
+        var props = new MenuItem { Header = Loc.T("Właściwości") };
         props.Click += (_, _) => ViewModel.OpenPropertiesCommand.Execute(game);
         flyout.Items.Add(details);
         flyout.Items.Add(props);

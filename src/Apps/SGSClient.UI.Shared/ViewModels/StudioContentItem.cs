@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -60,7 +61,7 @@ public partial class StudioContentItem : GameStoreEditItem
         LanguagesText = string.Join(", ", game.Languages);
         TagsText = string.Join(", ", game.Tags);
         PackageSizeText = FormatSize(game.PackageSizeBytes);
-        CreatedText = game.CreatedAtUtc.LocalDateTime.ToString("d MMM yyyy", CultureInfo.GetCultureInfo("pl-PL"));
+        CreatedText = game.CreatedAtUtc.LocalDateTime.ToString("d MMM yyyy", Loc.Culture);
         NotifyStorePresentation();
         OnPropertyChanged(nameof(HasDlcs));
         OnPropertyChanged(nameof(ReleaseLabel));

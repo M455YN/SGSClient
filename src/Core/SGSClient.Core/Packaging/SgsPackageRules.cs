@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Text.RegularExpressions;
 using SGSClient.Core.Enums;
 
@@ -173,27 +174,27 @@ public static partial class SgsPackageRules
 
         if (string.IsNullOrWhiteSpace(path))
         {
-            error = "Ścieżka jest pusta.";
+            error = Loc.T("Ścieżka jest pusta.");
             return false;
         }
 
         var raw = path.Trim().Replace('\\', '/');
         if (raw.StartsWith('/') || raw.Contains(':') || raw.Contains('\0'))
         {
-            error = "Ścieżka nie może być absolutna ani zawierać niedozwolonych znaków.";
+            error = Loc.T("Ścieżka nie może być absolutna ani zawierać niedozwolonych znaków.");
             return false;
         }
 
         var parts = raw.Split('/', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 0)
         {
-            error = "Ścieżka jest pusta.";
+            error = Loc.T("Ścieżka jest pusta.");
             return false;
         }
 
         if (parts.Length > MaxPathDepth)
         {
-            error = $"Zbyt głęboka ścieżka (max {MaxPathDepth} poziomów).";
+            error = Loc.F("Zbyt głęboka ścieżka (max {0} poziomów).", MaxPathDepth);
             return false;
         }
 
@@ -201,7 +202,7 @@ public static partial class SgsPackageRules
         {
             if (part is "." or "..")
             {
-                error = "Ścieżka nie może zawierać '.' ani '..'.";
+                error = Loc.T("Ścieżka nie może zawierać '.' ani '..'.");
                 return false;
             }
         }
@@ -209,7 +210,7 @@ public static partial class SgsPackageRules
         normalized = string.Join('/', parts);
         if (normalized.Length > MaxEntryNameLength)
         {
-            error = $"Ścieżka jest zbyt długa (max {MaxEntryNameLength}).";
+            error = Loc.F("Ścieżka jest zbyt długa (max {0}).", MaxEntryNameLength);
             return false;
         }
 
@@ -239,18 +240,18 @@ public static partial class SgsPackageRules
         var errors = new List<string>();
         if (manifest is null)
         {
-            return SgsPackageValidationResult.Fail($"Brak pliku {SgsPackageManifest.FileName}.");
+            return SgsPackageValidationResult.Fail(Loc.F("Brak pliku {0}.", SgsPackageManifest.FileName));
         }
 
         if (manifest.SchemaVersion != SgsPackageManifest.CurrentSchemaVersion)
         {
-            errors.Add($"Nieobsługiwana wersja schematu: {manifest.SchemaVersion} (oczekiwano {SgsPackageManifest.CurrentSchemaVersion}).");
+            errors.Add(Loc.F("Nieobsługiwana wersja schematu: {0} (oczekiwano {1}).", manifest.SchemaVersion, SgsPackageManifest.CurrentSchemaVersion));
         }
 
         var game = manifest.Game;
         if (game is null)
         {
-            errors.Add("Sekcja 'game' jest wymagana.");
+            errors.Add(Loc.T("Sekcja 'game' jest wymagana."));
         }
         else
         {
@@ -258,33 +259,33 @@ public static partial class SgsPackageRules
                 || game.Title.Length < MinTitleLength
                 || game.Title.Length > MaxTitleLength)
             {
-                errors.Add($"Tytuł musi mieć {MinTitleLength}-{MaxTitleLength} znaków.");
+                errors.Add(Loc.F("Tytuł musi mieć {0}-{1} znaków.", MinTitleLength, MaxTitleLength));
             }
 
             if (!IsValidSymbol(game.Symbol))
             {
-                errors.Add("Symbol musi być kebab-case (np. demo-runner), 2-64 znaki, małe litery.");
+                errors.Add(Loc.T("Symbol musi być kebab-case (np. demo-runner), 2-64 znaki, małe litery."));
             }
 
             if (game.Description?.Length > MaxDescriptionLength)
             {
-                errors.Add("Opis jest za długi.");
+                errors.Add(Loc.T("Opis jest za długi."));
             }
 
             if (game.HardwareRequirements?.Length > 2000)
             {
-                errors.Add("Wymagania sprzętowe są za długie.");
+                errors.Add(Loc.T("Wymagania sprzętowe są za długie."));
             }
 
             if (game.OtherInformation?.Length > 2000)
             {
-                errors.Add("Pole 'otherInformation' jest za długie.");
+                errors.Add(Loc.T("Pole 'otherInformation' jest za długie."));
             }
 
             var kind = NormalizeContentKind(game.Kind);
             if (kind is null)
             {
-                errors.Add("Pole 'kind' musi być: game lub dlc.");
+                errors.Add(Loc.T("Pole 'kind' musi być: game lub dlc."));
             }
             else
             {
@@ -297,7 +298,7 @@ public static partial class SgsPackageRules
                     }
                     else if (string.Equals(game.ParentSymbol, game.Symbol, StringComparison.OrdinalIgnoreCase))
                     {
-                        errors.Add("parentSymbol nie może być taki sam jak symbol DLC.");
+                        errors.Add(Loc.T("parentSymbol nie może być taki sam jak symbol DLC."));
                     }
                     else
                     {
@@ -313,23 +314,23 @@ public static partial class SgsPackageRules
             var genres = SgsGameTaxonomy.MergeSlugs(game.Genre, game.Genres);
             foreach (var genre in genres.Where(g => !SgsGameTaxonomy.IsValidGenre(g)))
             {
-                errors.Add($"Nieznany gatunek '{genre}'. Dozwolone: {string.Join(", ", SgsGameTaxonomy.Genres.Select(g => g.Symbol))}.");
+                errors.Add(Loc.F("Nieznany gatunek '{0}'. Dozwolone: {1}.", genre, string.Join(", ", SgsGameTaxonomy.Genres.Select(g => g.Symbol))));
             }
 
             if (genres.Count > SgsGameTaxonomy.MaxGenres)
             {
-                errors.Add($"Maksymalnie {SgsGameTaxonomy.MaxGenres} gatunków na grę.");
+                errors.Add(Loc.F("Maksymalnie {0} gatunków na grę.", SgsGameTaxonomy.MaxGenres));
             }
 
             var engines = SgsGameTaxonomy.MergeSlugs(game.Engine, game.Engines);
             foreach (var engine in engines.Where(e => !SgsGameTaxonomy.IsValidEngine(e)))
             {
-                errors.Add($"Nieznany silnik '{engine}'. Dozwolone: {string.Join(", ", SgsGameTaxonomy.Engines.Select(e => e.Symbol))}.");
+                errors.Add(Loc.F("Nieznany silnik '{0}'. Dozwolone: {1}.", engine, string.Join(", ", SgsGameTaxonomy.Engines.Select(e => e.Symbol))));
             }
 
             if (engines.Count > SgsGameTaxonomy.MaxEngines)
             {
-                errors.Add($"Maksymalnie {SgsGameTaxonomy.MaxEngines} silniki na grę.");
+                errors.Add(Loc.F("Maksymalnie {0} silniki na grę.", SgsGameTaxonomy.MaxEngines));
             }
 
             game.Genres = genres;
@@ -344,18 +345,18 @@ public static partial class SgsPackageRules
         var build = manifest.Build;
         if (build is null)
         {
-            errors.Add("Sekcja 'build' jest wymagana.");
+            errors.Add(Loc.T("Sekcja 'build' jest wymagana."));
         }
         else
         {
             if (!IsValidVersion(build.Version))
             {
-                errors.Add("Wersja musi być w formacie SemVer (np. 1.0.0).");
+                errors.Add(Loc.T("Wersja musi być w formacie SemVer (np. 1.0.0)."));
             }
 
             if (!TryParsePlatform(build.Platform, out var platform))
             {
-                errors.Add("Platforma musi być: windows, linux lub macos.");
+                errors.Add(Loc.T("Platforma musi być: windows, linux lub macos."));
             }
             else if (!TryNormalizeEntryPath(build.Executable, out var exePath, out var pathError))
             {
@@ -363,7 +364,7 @@ public static partial class SgsPackageRules
             }
             else if (!ExecutableMatchesPlatform(exePath, platform))
             {
-                errors.Add($"Plik uruchomieniowy nie pasuje do platformy {build.Platform}: {exePath}");
+                errors.Add(Loc.F("Plik uruchomieniowy nie pasuje do platformy {0}: {1}", build.Platform, exePath));
             }
             else
             {
@@ -372,13 +373,13 @@ public static partial class SgsPackageRules
 
             if (build.ReleaseNotes?.Length > MaxReleaseNotesLength)
             {
-                errors.Add($"Opis zmian może mieć maksymalnie {MaxReleaseNotesLength} znaków.");
+                errors.Add(Loc.F("Opis zmian może mieć maksymalnie {0} znaków.", MaxReleaseNotesLength));
             }
 
             if (build.Architecture is { Length: > 0 }
                 && build.Architecture is not ("x64" or "x86" or "arm64"))
             {
-                errors.Add("Architektura musi być: x64, x86 lub arm64.");
+                errors.Add(Loc.T("Architektura musi być: x64, x86 lub arm64."));
             }
         }
 
@@ -467,7 +468,7 @@ public static partial class SgsPackageRules
         error = null;
         if (string.IsNullOrWhiteSpace(value))
         {
-            error = "Pusta data wydania.";
+            error = Loc.T("Pusta data wydania.");
             return false;
         }
 
@@ -480,7 +481,7 @@ public static partial class SgsPackageRules
             return true;
         }
 
-        error = "Data wydania musi być w formacie ISO (np. 2024-06-15).";
+        error = Loc.T("Data wydania musi być w formacie ISO (np. 2024-06-15).");
         return false;
     }
 
@@ -508,7 +509,7 @@ public static partial class SgsPackageRules
             var slug = NormalizeFeatureSlug(raw);
             if (slug is null || !TryMapFeature(slug, out var flag))
             {
-                error = $"Nieznana funkcja '{raw}'. Dozwolone: {string.Join(", ", FeatureSlugs)}.";
+                error = Loc.F("Nieznana funkcja '{0}'. Dozwolone: {1}.", raw, string.Join(", ", FeatureSlugs));
                 return false;
             }
 
@@ -544,14 +545,14 @@ public static partial class SgsPackageRules
         var trimmed = value.Trim();
         if (trimmed.Length > MaxUrlLength)
         {
-            error = "Adres URL jest za długi.";
+            error = Loc.T("Adres URL jest za długi.");
             return false;
         }
 
         if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
             || uri.Scheme is not ("http" or "https"))
         {
-            error = "Adres URL musi zaczynać się od http:// lub https://.";
+            error = Loc.T("Adres URL musi zaczynać się od http:// lub https://.");
             return false;
         }
 
@@ -625,7 +626,7 @@ public static partial class SgsPackageRules
             var studio = game.StudioName.Trim();
             if (studio.Length > MaxStudioNameLength)
             {
-                errors.Add($"Nazwa studia może mieć maksymalnie {MaxStudioNameLength} znaków.");
+                errors.Add(Loc.F("Nazwa studia może mieć maksymalnie {0} znaków.", MaxStudioNameLength));
             }
             else
             {
@@ -668,7 +669,7 @@ public static partial class SgsPackageRules
         {
             if (!TryParseReleaseStatus(game.ReleaseStatus, out var status))
             {
-                errors.Add($"Nieznany status wydania '{game.ReleaseStatus}'. Dozwolone: {string.Join(", ", ReleaseStatusSlugs)}.");
+                errors.Add(Loc.F("Nieznany status wydania '{0}'. Dozwolone: {1}.", game.ReleaseStatus, string.Join(", ", ReleaseStatusSlugs)));
             }
             else
             {
@@ -684,7 +685,7 @@ public static partial class SgsPackageRules
         {
             if (!TryParseReleaseDate(game.ReleaseDate, out var date, out var dateError))
             {
-                errors.Add(dateError ?? "Nieprawidłowa data wydania.");
+                errors.Add(dateError ?? Loc.T("Nieprawidłowa data wydania."));
             }
             else
             {
@@ -700,7 +701,7 @@ public static partial class SgsPackageRules
         {
             if (!TryParseAgeRating(game.AgeRating, out var rating))
             {
-                errors.Add($"Nieznana kategoria wiekowa '{game.AgeRating}'. Dozwolone: {string.Join(", ", AgeRatingSlugs)}.");
+                errors.Add(Loc.F("Nieznana kategoria wiekowa '{0}'. Dozwolone: {1}.", game.AgeRating, string.Join(", ", AgeRatingSlugs)));
             }
             else
             {
@@ -733,14 +734,14 @@ public static partial class SgsPackageRules
         {
             if (game.Languages.Count > MaxLanguageCount)
             {
-                errors.Add($"Maksymalnie {MaxLanguageCount} języków.");
+                errors.Add(Loc.F("Maksymalnie {0} języków.", MaxLanguageCount));
             }
 
             game.Languages = NormalizeStringList(game.Languages, MaxLanguageCount, lowerCase: false) ?? [];
             var joined = string.Join(",", game.Languages);
             if (joined.Length > MaxCsvFieldLength)
             {
-                errors.Add($"Lista języków jest za długa (max {MaxCsvFieldLength} znaków po złączeniu).");
+                errors.Add(Loc.F("Lista języków jest za długa (max {0} znaków po złączeniu).", MaxCsvFieldLength));
             }
         }
 
@@ -748,14 +749,14 @@ public static partial class SgsPackageRules
         {
             if (game.Tags.Count > MaxTagCount)
             {
-                errors.Add($"Maksymalnie {MaxTagCount} tagów.");
+                errors.Add(Loc.F("Maksymalnie {0} tagów.", MaxTagCount));
             }
 
             game.Tags = NormalizeStringList(game.Tags, MaxTagCount, lowerCase: true) ?? [];
             var joined = string.Join(",", game.Tags);
             if (joined.Length > MaxCsvFieldLength)
             {
-                errors.Add($"Lista tagów jest za długa (max {MaxCsvFieldLength} znaków po złączeniu).");
+                errors.Add(Loc.F("Lista tagów jest za długa (max {0} znaków po złączeniu).", MaxCsvFieldLength));
             }
         }
     }
@@ -877,7 +878,7 @@ public static partial class SgsPackageRules
         media.Screenshots ??= [];
         if (media.Screenshots.Count > MaxScreenshots)
         {
-            errors.Add($"Maksymalnie {MaxScreenshots} screenów.");
+            errors.Add(Loc.F("Maksymalnie {0} screenów.", MaxScreenshots));
         }
 
         var normalizedShots = new List<string>();
@@ -921,7 +922,7 @@ public static partial class SgsPackageRules
         var ext = Path.GetExtension(normalized);
         if (!allowedExtensions.Contains(ext))
         {
-            error = $"{field}: niedozwolone rozszerzenie '{ext}'. Dozwolone: {string.Join(", ", allowedExtensions)}.";
+            error = Loc.F("{0}: niedozwolone rozszerzenie '{1}'. Dozwolone: {2}.", field, ext, string.Join(", ", allowedExtensions));
             return false;
         }
 

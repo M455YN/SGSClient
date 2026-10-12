@@ -14,4 +14,10 @@ public sealed class ClientUserSettings
 
     /// <summary>Max download speed in KB/s. 0 = unlimited.</summary>
     public int DownloadMaxKbps { get; set; }
+
+    /// <summary>"system", "light" or "dark".</summary>
+    public string Theme { get; set; } = "system";
+
+    /// <summary>"system", "pl" or "en". Takes effect after restart.</summary>
+    public string Language { get; set; } = "system";
 }

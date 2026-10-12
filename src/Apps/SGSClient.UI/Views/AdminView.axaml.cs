@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -10,14 +11,14 @@ namespace SGSClient.UI.Views;
 
 public partial class AdminView : UserControl
 {
-    private static readonly FilePickerFileType ImageFiles = new("Obrazy")
+    private static readonly FilePickerFileType ImageFiles = new(Loc.T("Obrazy"))
     {
         Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif"],
         AppleUniformTypeIdentifiers = ["public.image"],
         MimeTypes = ["image/*"]
     };
 
-    private static readonly FilePickerFileType VideoFiles = new("Wideo")
+    private static readonly FilePickerFileType VideoFiles = new(Loc.T("Wideo"))
     {
         Patterns = ["*.mp4", "*.webm"],
         AppleUniformTypeIdentifiers = ["public.movie"],
@@ -58,9 +59,9 @@ public partial class AdminView : UserControl
         vm.SetAddDlcHandler(symbol => GetMain()?.NavigateToPublish(symbol, "Admin"));
         vm.SetConfirmDeleteHandler(ConfirmDeleteAsync);
         vm.SetPickImageHandler(() => AvaloniaStoragePicker.PickSingleFileAsync(
-            TopLevel.GetTopLevel(this), ImageFiles, "Wybierz obraz"));
+            TopLevel.GetTopLevel(this), ImageFiles, Loc.T("Wybierz obraz")));
         vm.SetPickVideoHandler(() => AvaloniaStoragePicker.PickSingleFileAsync(
-            TopLevel.GetTopLevel(this), VideoFiles, "Wybierz wideo"));
+            TopLevel.GetTopLevel(this), VideoFiles, Loc.T("Wybierz wideo")));
         Debug.WriteLine("[SGS Media] AdminView pick handlers wired");
     }
 
@@ -221,10 +222,10 @@ public partial class AdminView : UserControl
     {
         var dialog = new FAContentDialog
         {
-            Title = item.IsDlc ? "Usuń DLC (admin)" : "Usuń (admin)",
-            Content = $"Na pewno usunąć „{item.Title}”? Operacji nie można cofnąć.",
-            PrimaryButtonText = "Usuń",
-            CloseButtonText = "Anuluj",
+            Title = item.IsDlc ? Loc.T("Usuń DLC (admin)") : Loc.T("Usuń (admin)"),
+            Content = Loc.F("Na pewno usunąć „{0}”? Operacji nie można cofnąć.", item.Title),
+            PrimaryButtonText = Loc.T("Usuń"),
+            CloseButtonText = Loc.T("Anuluj"),
             DefaultButton = FAContentDialogButton.Close
         };
         return await dialog.ShowAsync(TopLevel.GetTopLevel(this)) == FAContentDialogResult.Primary;

@@ -1,80 +1,87 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
   <ScrollViewer HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="28,24,28,32" Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
-      <StackPanel Spacing="6">
-        <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
-        <TextBlock Text="Dostosuj klienta do siebie." Opacity="0.65" FontSize="13"/>
-      </StackPanel>
+      <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
 
       <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
         <StackPanel Spacing="14">
-          <TextBlock Text="Wygląd i język" FontSize="18" FontWeight="SemiBold"/>
-          <StackPanel Spacing="4">
-            <TextBlock Text="Motyw" Opacity="0.55" FontSize="12"/>
-            <TextBlock Text="{Binding AppearanceText}"/>
-          </StackPanel>
-          <StackPanel Spacing="4">
-            <TextBlock Text="Język" Opacity="0.55" FontSize="12"/>
-            <TextBlock Text="{Binding LanguageText}"/>
-          </StackPanel>
+          <TextBlock Text="{loc:Tr Key='Wygląd i język'}" FontSize="18" FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{loc:Tr Key='Motyw'}"/>
+              <TextBlock Text="{loc:Tr Key='Kolory interfejsu aplikacji.'}" Opacity="0.55" FontSize="12" TextWrapping="Wrap"/>
+            </StackPanel>
+            <ComboBox Grid.Column="1" ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding SelectedThemeIndex}" MinWidth="180"/>
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{loc:Tr Key='Język'}"/>
+              <TextBlock Text="{loc:Tr Key='Język interfejsu.'}" Opacity="0.55" FontSize="12" TextWrapping="Wrap"/>
+            </StackPanel>
+            <ComboBox Grid.Column="1" ItemsSource="{Binding LanguageOptions}" SelectedIndex="{Binding SelectedLanguageIndex}" MinWidth="180"/>
+          </Grid>
+          <TextBlock Text="{Binding LanguageHint}" Opacity="0.55" FontSize="12" TextWrapping="Wrap"
+                     IsVisible="{Binding LanguageHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         </StackPanel>
       </Border>
 
       <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
         <StackPanel Spacing="14">
-          <TextBlock Text="Konto i sklep" FontSize="18" FontWeight="SemiBold"/>
-          <StackPanel Spacing="4">
-            <TextBlock Text="Konto" Opacity="0.55" FontSize="12"/>
-            <TextBlock Text="{Binding AccountStatus}" TextWrapping="Wrap"/>
-            <TextBlock Text="E-mail z logowania musi być na liście Admin:Emails w API (np. m455yn@outlook.com), żeby pojawił się panel Admin."
-                       Opacity="0.45" FontSize="11" TextWrapping="Wrap"/>
-          </StackPanel>
-          <StackPanel Spacing="4">
-            <TextBlock Text="Sklep" Opacity="0.55" FontSize="12"/>
-            <TextBlock Text="{Binding StoreStatus}" TextWrapping="Wrap"/>
-          </StackPanel>
-        </StackPanel>
-      </Border>
-
-      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="14">
-          <TextBlock Text="Foldery biblioteki" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Biblioteka'}" FontSize="18" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding LibrarySummary}" Opacity="0.8" TextWrapping="Wrap"/>
           <ListBox ItemsSource="{Binding LibraryFolders}"
                    SelectedItem="{Binding SelectedLibraryFolder}"
                    MinHeight="80">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:LibraryFolderDisplayItem">
-                <StackPanel Spacing="2">
-                  <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap"/>
-                  <TextBlock Text="{Binding ContentId, StringFormat=ID: {0}}" Opacity="0.5" FontSize="11"/>
-                </StackPanel>
+                <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap"/>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Content="Dodaj folder…" Click="AddLibraryFolder_OnClick"
+            <Button Content="{loc:Tr Key='Dodaj folder…'}" Click="AddLibraryFolder_OnClick"
                     IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
-            <Button Content="Usuń z listy" Click="RemoveLibraryFolder_OnClick"
+            <Button Content="{loc:Tr Key='Usuń z listy'}" Click="RemoveLibraryFolder_OnClick"
                     IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
-            <Button Content="Otwórz folder" Click="OpenLibraryFolder_OnClick" Padding="14,8"/>
-            <Button Content="Skanuj ponownie" Click="RescanLibrary_OnClick"
+            <Button Content="{loc:Tr Key='Otwórz folder'}" Click="OpenLibraryFolder_OnClick" Padding="14,8"/>
+            <Button Content="{loc:Tr Key='Skanuj ponownie'}" Click="RescanLibrary_OnClick"
                     IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
           </StackPanel>
-          <TextBlock Text="Struktura: libraryfolder.json + sgsapps/common/{symbol}/{version}/ + sgsapps/manifests/ (jak Steam libraryfolder.vdf + steamapps)."
-                     Opacity="0.5" FontSize="12" TextWrapping="Wrap"/>
         </StackPanel>
       </Border>
 
       <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="8">
-          <TextBlock Text="O SGSClient" FontSize="18" FontWeight="SemiBold"/>
-          <TextBlock Text="{Binding AboutText}" Opacity="0.85"/>
-          <TextBlock Text="Klient gier Szyr Game Studio." Opacity="0.55" FontSize="12"/>
+        <StackPanel Spacing="14">
+          <TextBlock Text="{loc:Tr Key='Konto i sklep'}" FontSize="18" FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{loc:Tr Key='Konto'}"/>
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text="{Binding AccountStatus}" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"/>
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{loc:Tr Key='Serwer sklepu'}"/>
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text="{Binding StoreStatus}" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"/>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+        <StackPanel Spacing="14">
+          <TextBlock Text="{loc:Tr Key='O aplikacji'}" FontSize="18" FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="{loc:Tr Key='Wersja'}"/>
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text="{Binding AboutText}" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"/>
+          </Grid>
+          <TextBlock Text="Szyr Game Studio" Opacity="0.55" FontSize="12"/>
         </StackPanel>
       </Border>
 

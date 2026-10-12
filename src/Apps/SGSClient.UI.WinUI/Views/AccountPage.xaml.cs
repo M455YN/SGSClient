@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -68,9 +69,9 @@ public sealed partial class AccountPage : Page
 
         TagPreviewText.Text = ViewModel.TagPreview;
         TagStatusText.Text = ViewModel.TagStatus;
-        FriendsText.Content = $"{ViewModel.FriendsCount} Znajomi";
+        FriendsText.Content = Loc.F("{0} Znajomi", ViewModel.FriendsCount);
         FollowingText.Content = $"{ViewModel.FollowingCount} Obserwowane";
-        FollowersText.Content = $"{ViewModel.FollowersCount} Obserwujący";
+        FollowersText.Content = Loc.F("{0} Obserwujący", ViewModel.FollowersCount);
         BioText.Text = ViewModel.BioDisplay;
         LocationText.Text = ViewModel.LocationDisplay;
         EmailText.Text = ViewModel.Email;
@@ -204,7 +205,7 @@ public sealed partial class AccountPage : Page
         var path = await WinUiFilePicker.PickSingleFileAsync(
             App.MainWindow,
             [".png", ".jpg", ".jpeg", ".webp", ".gif"],
-            commitLabel: "Ustaw awatar");
+            commitLabel: Loc.T("Ustaw awatar"));
         if (string.IsNullOrWhiteSpace(path))
         {
             return;

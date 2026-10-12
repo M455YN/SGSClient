@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -50,7 +51,7 @@ public partial class LibraryViewModel : ObservableObject
         _auth = auth;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
-        StatusText = "Ładowanie biblioteki…";
+        StatusText = Loc.T("Ładowanie biblioteki…");
 
         if (_queue is not null)
         {
@@ -62,7 +63,7 @@ public partial class LibraryViewModel : ObservableObject
     public void SetOpenPropertiesHandler(Action<LibraryGameItem> open) => _openProperties = open;
     public void SetOpenDetailsHandler(Action<int> open) => _openDetails = open;
 
-    public string Title { get; } = "Biblioteka";
+    public string Title { get; } = Loc.T("Biblioteka");
 
     public ObservableCollection<LibraryGameItem> Games { get; } = [];
     public ObservableCollection<LibraryGameItem> FilteredGames { get; } = [];
@@ -91,7 +92,7 @@ public partial class LibraryViewModel : ObservableObject
     public partial bool IsHomeSelected { get; set; } = true;
 
     public bool ShowHome => HasGames;
-    public string AllGamesHeader => $"Wszystkie gry ({AllGames.Count})";
+    public string AllGamesHeader => Loc.F("Wszystkie gry ({0})", AllGames.Count);
     public bool ShowRecent => RecentGames.Count > 0;
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
@@ -102,7 +103,7 @@ public partial class LibraryViewModel : ObservableObject
     {
         if (_scopes is null)
         {
-            StatusText = "Brak magazynu lokalnego.";
+            StatusText = Loc.T("Brak magazynu lokalnego.");
             ShowEmpty = true;
             HasGames = false;
             return;
@@ -144,7 +145,7 @@ public partial class LibraryViewModel : ObservableObject
             ShowEmpty = !HasGames;
             StatusText = HasGames
                 ? $"{Games.Count} gier w bibliotece"
-                : "Biblioteka jest pusta. Dodaj gry ze Sklepu.";
+                : Loc.T("Biblioteka jest pusta. Dodaj gry ze Sklepu.");
 
             if (SelectedGame is not null)
             {
@@ -159,7 +160,7 @@ public partial class LibraryViewModel : ObservableObject
         {
             HasGames = false;
             ShowEmpty = true;
-            StatusText = $"Błąd biblioteki: {ex.Message}";
+            StatusText = Loc.F("Błąd biblioteki: {0}", ex.Message);
         }
         finally
         {
@@ -292,7 +293,7 @@ public partial class LibraryViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"Sync biblioteki: {ex.Message}";
+            StatusText = Loc.F("Sync biblioteki: {0}", ex.Message);
         }
     }
 
@@ -442,7 +443,7 @@ public partial class LibraryViewModel : ObservableObject
             var model = await library.GetByGameIdAsync(item.GameId);
             if (model is null)
             {
-                StatusText = "Nie znaleziono gry w bibliotece.";
+                StatusText = Loc.T("Nie znaleziono gry w bibliotece.");
                 return;
             }
 
@@ -472,13 +473,13 @@ public partial class LibraryViewModel : ObservableObject
 
             StatusText = result.Success
                 ? string.IsNullOrWhiteSpace(targetVersion)
-                    ? $"Zainstalowano: {model.Title} (najnowsza)."
-                    : $"Zainstalowano: {model.Title} (v{targetVersion})."
-                : result.Errors.FirstOrDefault() ?? "Instalacja nie powiodła się.";
+                    ? Loc.F("Zainstalowano: {0} (najnowsza).", model.Title)
+                    : Loc.F("Zainstalowano: {0} (v{1}).", model.Title, targetVersion)
+                : result.Errors.FirstOrDefault() ?? Loc.T("Instalacja nie powiodła się.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Instalacja nie powiodła się: {ex.Message}";
+            StatusText = Loc.F("Instalacja nie powiodła się: {0}", ex.Message);
         }
         finally
         {
@@ -497,7 +498,7 @@ public partial class LibraryViewModel : ObservableObject
             return;
         }
 
-        StatusText = $"Aktualizacja w kolejce: {item.Title}";
+        StatusText = Loc.F("Aktualizacja w kolejce: {0}", item.Title);
         await _queue.EnqueueUpdateAsync(item.GameId);
     }
 
@@ -519,7 +520,7 @@ public partial class LibraryViewModel : ObservableObject
             var model = await library.GetByGameIdAsync(item.GameId);
             if (model is null)
             {
-                StatusText = "Nie znaleziono gry w bibliotece.";
+                StatusText = Loc.T("Nie znaleziono gry w bibliotece.");
                 return;
             }
 
@@ -529,12 +530,12 @@ public partial class LibraryViewModel : ObservableObject
             RebuildShelves();
 
             StatusText = result.Success
-                ? $"Odinstalowano: {model.Title} (gra zostaje w bibliotece)."
-                : result.Errors.FirstOrDefault() ?? "Odinstalowanie nie powiodło się.";
+                ? Loc.F("Odinstalowano: {0} (gra zostaje w bibliotece).", model.Title)
+                : result.Errors.FirstOrDefault() ?? Loc.T("Odinstalowanie nie powiodło się.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Odinstalowanie nie powiodło się: {ex.Message}";
+            StatusText = Loc.F("Odinstalowanie nie powiodło się: {0}", ex.Message);
         }
         finally
         {
@@ -549,8 +550,8 @@ public partial class LibraryViewModel : ObservableObject
         if (item is null || _launcher is null || string.IsNullOrWhiteSpace(item.ExecutablePath))
         {
             StatusText = item is null
-                ? "Brak gry."
-                : "Gra nie jest zainstalowana. Kliknij Zainstaluj.";
+                ? Loc.T("Brak gry.")
+                : Loc.T("Gra nie jest zainstalowana. Kliknij Zainstaluj.");
             return;
         }
 
@@ -583,7 +584,7 @@ public partial class LibraryViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się uruchomić: {ex.Message}";
+            StatusText = Loc.F("Nie udało się uruchomić: {0}", ex.Message);
         }
     }
 
@@ -715,9 +716,6 @@ public partial class LibraryGameItem : ObservableObject
     public partial string StateText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string IdText { get; set; } = string.Empty;
-
-    [ObservableProperty]
     public partial string? ExecutablePath { get; set; }
 
     [ObservableProperty]
@@ -757,7 +755,7 @@ public partial class LibraryGameItem : ObservableObject
     public partial string InstallProgressText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string LastPlayedText { get; set; } = "Niegrana";
+    public partial string LastPlayedText { get; set; } = Loc.T("Niegrana");
 
     [ObservableProperty]
     public partial string PlaytimeText { get; set; } = string.Empty;
@@ -786,9 +784,8 @@ public partial class LibraryGameItem : ObservableObject
             : item.Symbol[..Math.Min(3, item.Symbol.Length)].ToUpperInvariant();
         PlatformText = item.Platform + (string.IsNullOrWhiteSpace(item.Architecture) ? "" : $" ({item.Architecture})");
         VersionText = string.IsNullOrWhiteSpace(item.InstalledVersion)
-            ? (string.IsNullOrWhiteSpace(item.TargetVersion) ? "—" : $"Cel: {item.TargetVersion}")
+            ? (string.IsNullOrWhiteSpace(item.TargetVersion) ? "—" : Loc.F("Cel: {0}", item.TargetVersion))
             : item.InstalledVersion!;
-        IdText = $"ID: {item.GameId}";
         ExecutablePath = item.ExecutablePath;
         CoverUrl = item.CoverUrl;
         TargetVersion = item.TargetVersion;
@@ -798,7 +795,7 @@ public partial class LibraryGameItem : ObservableObject
         PosterImageUrl = ResolvePosterImage(item, apiBaseUrl);
         HasPoster = !string.IsNullOrWhiteSpace(PosterImageUrl);
         LastPlayedText = item.LastPlayedUtc is null
-            ? "Niegrana"
+            ? Loc.T("Niegrana")
             : item.LastPlayedUtc.Value.LocalDateTime.ToString("g");
         PlaytimeText = item.TotalPlayTimeSeconds > 0
             ? PlaytimeFormat.ToPolishTotal(item.TotalPlayTimeSeconds)
@@ -844,13 +841,13 @@ public partial class LibraryGameItem : ObservableObject
     {
         StateText = state switch
         {
-            InstallState.Installed => "Zainstalowana",
+            InstallState.Installed => Loc.T("Zainstalowana"),
             InstallState.NotInstalled => "W bibliotece (niezainstalowana)",
-            InstallState.Downloading => "Pobieranie…",
-            InstallState.Installing => "Instalacja…",
-            InstallState.Failed => "Błąd instalacji",
-            InstallState.Updating => "Aktualizacja…",
-            InstallState.Queued => "W kolejce",
+            InstallState.Downloading => Loc.T("Pobieranie…"),
+            InstallState.Installing => Loc.T("Instalacja…"),
+            InstallState.Failed => Loc.T("Błąd instalacji"),
+            InstallState.Updating => Loc.T("Aktualizacja…"),
+            InstallState.Queued => Loc.T("W kolejce"),
             _ => state.ToString()
         };
 

@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Client;
@@ -44,7 +45,7 @@ public sealed class MsalAuthSession : IAuthSession
         LastError = null;
         if (_msal is null)
         {
-            LastError = "Azure AD B2C is disabled. Set AzureAd:Enabled, ClientId and TenantName in appsettings.";
+            LastError = Loc.T("Logowanie nie jest skonfigurowane.");
             return false;
         }
 
@@ -88,7 +89,7 @@ public sealed class MsalAuthSession : IAuthSession
         LastError = null;
         if (_msal is null)
         {
-            LastError = "Azure AD B2C is disabled. Set AzureAd:Enabled, ClientId and TenantName in appsettings.";
+            LastError = Loc.T("Logowanie nie jest skonfigurowane.");
             return false;
         }
 
@@ -196,7 +197,7 @@ public sealed class MsalAuthSession : IAuthSession
     {
         if (_msal is null || string.IsNullOrWhiteSpace(_settings.PasswordResetPolicy))
         {
-            LastError = "Password reset requested, but PasswordResetPolicy is not configured.";
+            LastError = Loc.T("Reset hasła jest niedostępny — brak skonfigurowanej polityki.");
             return false;
         }
 
@@ -247,11 +248,11 @@ public sealed class MsalAuthSession : IAuthSession
             CurrentUser = fromIdToken;
             if (CurrentUser is not null)
             {
-                LastError = "Signed in locally, but API /api/me failed. Start Api with the same AzureAd settings.";
+                LastError = Loc.T("Zalogowano, ale serwer nie odpowiada. Spróbuj ponownie za chwilę.");
                 return true;
             }
 
-            LastError = "Token acquired, but profile could not be loaded.";
+            LastError = Loc.T("Zalogowano, ale nie udało się wczytać profilu.");
             return false;
         }
         catch (Exception ex)

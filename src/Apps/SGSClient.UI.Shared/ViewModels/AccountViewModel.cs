@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -42,10 +43,10 @@ public partial class AccountViewModel : ObservableObject
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         AccountStatus = auth is null
-            ? "Auth not registered"
+            ? Loc.T("Logowanie niedostępne")
             : auth.IsAvailable
-                ? "Not signed in"
-                : auth.LastError ?? "Azure AD B2C is disabled in appsettings.";
+                ? Loc.T("Nie zalogowano")
+                : auth.LastError ?? Loc.T("Logowanie nie jest skonfigurowane.");
     }
 
     public ObservableCollection<RecentGameItem> RecentGames { get; } = [];
@@ -58,7 +59,7 @@ public partial class AccountViewModel : ObservableObject
     public bool HasAvatar => !string.IsNullOrWhiteSpace(AvatarUrl);
     public bool HasRecentGames => RecentGames.Count > 0;
     public bool ShowEmptyRecentGames => IsLoggedIn && !NeedsPlayerTagSetup && RecentGames.Count == 0;
-    public string BioDisplay => string.IsNullOrWhiteSpace(Bio) ? "Dodaj bio w Dostosuj profil" : Bio;
+    public string BioDisplay => string.IsNullOrWhiteSpace(Bio) ? Loc.T("Dodaj bio w Dostosuj profil") : Bio;
     public string LocationDisplay => string.IsNullOrWhiteSpace(Location) ? "—" : Location;
     public string PlayerTagDisplay => string.IsNullOrWhiteSpace(PlayerTag) ? string.Empty : $"@{PlayerTag}";
     public string TagPreview => string.IsNullOrWhiteSpace(DraftPlayerTag)
@@ -74,7 +75,7 @@ public partial class AccountViewModel : ObservableObject
     public partial bool IsLoggedIn { get; set; }
 
     [ObservableProperty]
-    public partial string AccountStatus { get; set; } = "Not signed in";
+    public partial string AccountStatus { get; set; } = Loc.T("Nie zalogowano");
 
     [ObservableProperty]
     public partial bool IsBusy { get; set; }
@@ -187,7 +188,7 @@ public partial class AccountViewModel : ObservableObject
         if (_auth is null || !_auth.IsAvailable)
         {
             AccountStatus = _auth?.LastError
-                ?? "Azure AD B2C is disabled. Set AzureAd:Enabled, ClientId and TenantName in appsettings.json (UI + Api).";
+                ?? Loc.T("Logowanie nie jest skonfigurowane.");
             return;
         }
 
@@ -219,7 +220,7 @@ public partial class AccountViewModel : ObservableObject
         if (_auth is null || !_auth.IsAvailable)
         {
             AccountStatus = _auth?.LastError
-                ?? "Azure AD B2C is disabled. Set AzureAd:Enabled, ClientId and TenantName in appsettings.json (UI + Api).";
+                ?? Loc.T("Logowanie nie jest skonfigurowane.");
             return;
         }
 
@@ -234,7 +235,7 @@ public partial class AccountViewModel : ObservableObject
             else
             {
                 ApplySignedOut();
-                AccountStatus = _auth.LastError ?? "Sign-in failed or cancelled";
+                AccountStatus = _auth.LastError ?? Loc.T("Nie udało się zalogować albo logowanie anulowano.");
             }
         }
         finally
@@ -305,7 +306,7 @@ public partial class AccountViewModel : ObservableObject
 
             if (updated is null)
             {
-                AccountStatus = "Could not save profile. Is the API running?";
+                AccountStatus = Loc.T("Nie udało się zapisać profilu. Sprawdź połączenie z serwerem.");
                 return;
             }
 
@@ -324,7 +325,7 @@ public partial class AccountViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(localFilePath) || !File.Exists(localFilePath))
         {
-            ProfileActionStatus = "Nie można odczytać wybranego pliku.";
+            ProfileActionStatus = Loc.T("Nie można odczytać wybranego pliku.");
             return;
         }
 
@@ -336,24 +337,24 @@ public partial class AccountViewModel : ObservableObject
     {
         if (_userApi is null || !IsLoggedIn)
         {
-            ProfileActionStatus = "Zaloguj się, aby wgrać zdjęcie.";
+            ProfileActionStatus = Loc.T("Zaloguj się, aby wgrać zdjęcie.");
             return;
         }
 
         IsBusy = true;
-        ProfileActionStatus = "Wgrywanie zdjęcia…";
+        ProfileActionStatus = Loc.T("Wgrywanie zdjęcia…");
         try
         {
             var (updated, error) = await _userApi.UploadAvatarAsync(content, fileName);
             if (updated is null)
             {
-                ProfileActionStatus = error ?? "Upload nieudany.";
+                ProfileActionStatus = error ?? Loc.T("Upload nieudany.");
                 return;
             }
 
             _auth?.SetCurrentUser(updated);
             await ApplyProfileAsync(updated);
-            ProfileActionStatus = "Zdjęcie zaktualizowane.";
+            ProfileActionStatus = Loc.T("Zdjęcie zaktualizowane.");
             ProfileChanged?.Invoke();
         }
         finally
@@ -376,13 +377,13 @@ public partial class AccountViewModel : ObservableObject
             var updated = await _userApi.ClearAvatarAsync();
             if (updated is null)
             {
-                ProfileActionStatus = "Nie udało się usunąć zdjęcia.";
+                ProfileActionStatus = Loc.T("Nie udało się usunąć zdjęcia.");
                 return;
             }
 
             _auth?.SetCurrentUser(updated);
             await ApplyProfileAsync(updated);
-            ProfileActionStatus = "Zdjęcie usunięte.";
+            ProfileActionStatus = Loc.T("Zdjęcie usunięte.");
             ProfileChanged?.Invoke();
         }
         finally
@@ -401,7 +402,7 @@ public partial class AccountViewModel : ObservableObject
             ? (PlayerTagRules.SuggestFrom(user.DisplayName, user.Email) ?? string.Empty)
             : PlayerTag;
         TagStatus = NeedsPlayerTagSetup
-            ? "Tag jest unikalny — jak nazwa użytkownika na Discordzie."
+            ? Loc.T("Tag jest unikalny w całym SGS.")
             : string.Empty;
         Email = user.Email ?? string.Empty;
         AvatarUrl = string.IsNullOrWhiteSpace(user.AvatarUrl)
@@ -412,8 +413,8 @@ public partial class AccountViewModel : ObservableObject
         AvatarInitials = MakeInitials(user.DisplayName);
         LastActivityText = FormatLastActivity(user.LastLoginUtc);
         AccountStatus = string.IsNullOrWhiteSpace(user.Email)
-            ? $"Signed in as {user.DisplayName}"
-            : $"Signed in as {user.DisplayName} · {user.Email}";
+            ? Loc.F("Zalogowano jako {0}", user.DisplayName)
+            : Loc.F("Zalogowano jako {0} · {1}", user.DisplayName, user.Email);
         if (user.IsAdmin)
         {
             AccountStatus += " · admin";
@@ -442,7 +443,7 @@ public partial class AccountViewModel : ObservableObject
             var profile = await _userApi.GetPublicProfileAsync(userId);
             if (profile is null)
             {
-                WallStatus = "Nie udało się wczytać ściany.";
+                WallStatus = Loc.T("Nie udało się wczytać ściany.");
                 return;
             }
 
@@ -452,8 +453,8 @@ public partial class AccountViewModel : ObservableObject
             }
 
             WallStatus = WallComments.Count == 0
-                ? "Brak podpisów — znajomi mogą coś tu napisać."
-                : $"{WallComments.Count} podpisów na ścianie";
+                ? Loc.T("Brak podpisów — znajomi mogą coś tu napisać.")
+                : Loc.F("{0} podpisów na ścianie", WallComments.Count);
         }
         catch (Exception ex)
         {
@@ -472,20 +473,20 @@ public partial class AccountViewModel : ObservableObject
         var text = WallCommentDraft.Trim();
         if (text.Length < 2)
         {
-            WallStatus = "Wpisz dłuższy komentarz.";
+            WallStatus = Loc.T("Wpisz dłuższy komentarz.");
             return;
         }
 
         var (comment, error) = await _userApi.AddProfileCommentAsync(ProfileUserId, text);
         if (comment is null)
         {
-            WallStatus = error ?? "Nie udało się dodać podpisu.";
+            WallStatus = error ?? Loc.T("Nie udało się dodać podpisu.");
             return;
         }
 
         WallCommentDraft = string.Empty;
         WallComments.Insert(0, ProfileCommentItem.FromDto(comment));
-        WallStatus = "Dodano podpis.";
+        WallStatus = Loc.T("Dodano podpis.");
     }
 
     [RelayCommand]
@@ -499,12 +500,12 @@ public partial class AccountViewModel : ObservableObject
         var (ok, error) = await _userApi.DeleteProfileCommentAsync(ProfileUserId, comment.Id);
         if (!ok)
         {
-            WallStatus = error ?? "Nie udało się usunąć.";
+            WallStatus = error ?? Loc.T("Nie udało się usunąć.");
             return;
         }
 
         WallComments.Remove(comment);
-        WallStatus = "Usunięto.";
+        WallStatus = Loc.T("Usunięto.");
     }
 
     private void ApplySignedOut()
@@ -520,7 +521,7 @@ public partial class AccountViewModel : ObservableObject
         WallComments.Clear();
         WallCommentDraft = WallStatus = string.Empty;
         ProfileUserId = 0;
-        AccountStatus = "Not signed in";
+        AccountStatus = Loc.T("Nie zalogowano");
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
         AdminVisibilityChanged?.Invoke(_auth?.IsAvailable != true);
@@ -531,7 +532,7 @@ public partial class AccountViewModel : ObservableObject
     {
         if (_userApi is null)
         {
-            TagStatus = "API niedostępne.";
+            TagStatus = Loc.T("API niedostępne.");
             return;
         }
 
@@ -547,14 +548,14 @@ public partial class AccountViewModel : ObservableObject
             var check = await _userApi.CheckPlayerTagAsync(tag);
             if (check is { Available: false })
             {
-                TagStatus = check.Error ?? "Ten tag jest zajęty.";
+                TagStatus = check.Error ?? Loc.T("Ten tag jest zajęty.");
                 return;
             }
 
             var (profile, claimError) = await _userApi.ClaimPlayerTagAsync(tag);
             if (profile is null)
             {
-                TagStatus = claimError ?? "Nie udało się zapisać tagu.";
+                TagStatus = claimError ?? Loc.T("Nie udało się zapisać tagu.");
                 return;
             }
 
@@ -661,26 +662,26 @@ public partial class AccountViewModel : ObservableObject
     {
         if (lastLoginUtc is null)
         {
-            return "Brak aktywności";
+            return Loc.T("Brak aktywności");
         }
 
         var age = DateTimeOffset.UtcNow - lastLoginUtc.Value;
         if (age.TotalMinutes < 5)
         {
-            return "Ostatnia aktywność: Online";
+            return Loc.T("Ostatnia aktywność: Online");
         }
 
         if (age.TotalHours < 24)
         {
-            return $"Ostatnia aktywność {(int)age.TotalHours} godz. temu";
+            return Loc.F("Ostatnia aktywność {0} godz. temu", (int)age.TotalHours);
         }
 
         if (age.TotalDays < 60)
         {
-            return $"Ostatnia aktywność {(int)age.TotalDays} dn. temu";
+            return Loc.F("Ostatnia aktywność {0} dn. temu", (int)age.TotalDays);
         }
 
-        return $"Ostatnia aktywność {lastLoginUtc.Value.LocalDateTime:d}";
+        return Loc.F("Ostatnia aktywność {0:d}", lastLoginUtc.Value.LocalDateTime);
     }
 }
 
@@ -695,7 +696,7 @@ public sealed class RecentGameItem(string title, string symbol, DateTimeOffset? 
     private static string FormatSubtitle(DateTimeOffset? lastPlayedUtc, long playtimeSeconds)
     {
         var when = lastPlayedUtc is null
-            ? "Niegrana"
+            ? Loc.T("Niegrana")
             : lastPlayedUtc.Value.LocalDateTime.ToString("g");
         return playtimeSeconds > 0
             ? $"{PlaytimeFormat.ToPolishTotal(playtimeSeconds)} · {when}"

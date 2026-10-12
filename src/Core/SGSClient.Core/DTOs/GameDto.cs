@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Packaging;
 
@@ -22,12 +23,12 @@ public sealed class GameDto
 
     /// <summary>First (primary) genre; null when none.</summary>
     public string? GenreSymbol => Genres.Count > 0 ? Genres[0].Symbol : null;
-    public string? GenreName => Genres.Count > 0 ? Genres[0].Name : null;
+    public string? GenreName => Genres.Count > 0 ? Loc.T(Genres[0].Name) : null;
     public string? EngineSymbol => Engines.Count > 0 ? Engines[0].Symbol : null;
-    public string? EngineName => Engines.Count > 0 ? Engines[0].Name : null;
+    public string? EngineName => Engines.Count > 0 ? Loc.T(Engines[0].Name) : null;
 
-    public string GenreNamesText => string.Join(", ", Genres.Select(g => g.Name));
-    public string EngineNamesText => string.Join(", ", Engines.Select(e => e.Name));
+    public string GenreNamesText => string.Join(", ", Genres.Select(g => Loc.T(g.Name)));
+    public string EngineNamesText => string.Join(", ", Engines.Select(e => Loc.T(e.Name)));
     public string? CoverUrl { get; init; }
 
     /// <summary>Landscape store header (Steam-style). Lists use <see cref="CoverUrl"/>.</summary>

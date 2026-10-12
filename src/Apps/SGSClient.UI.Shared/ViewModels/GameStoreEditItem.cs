@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SGSClient.Core.DTOs;
@@ -41,9 +42,9 @@ public abstract partial class GameStoreEditItem : ObservableObject
     [ObservableProperty] public partial string EditHardwareRequirements { get; set; } = string.Empty;
     [ObservableProperty] public partial string EditOtherInformation { get; set; } = string.Empty;
     public TaxonomySelection EditGenres { get; } =
-        new(SgsGameTaxonomy.Genres, SgsGameTaxonomy.MaxGenres, "Wybierz gatunki");
+        new(SgsGameTaxonomy.Genres, SgsGameTaxonomy.MaxGenres, Loc.T("Wybierz gatunki"));
     public TaxonomySelection EditEngines { get; } =
-        new(SgsGameTaxonomy.Engines, SgsGameTaxonomy.MaxEngines, "Wybierz silniki");
+        new(SgsGameTaxonomy.Engines, SgsGameTaxonomy.MaxEngines, Loc.T("Wybierz silniki"));
     [ObservableProperty] public partial string EditStudioName { get; set; } = string.Empty;
     [ObservableProperty] public partial string EditWebsiteUrl { get; set; } = string.Empty;
     [ObservableProperty] public partial string EditDiscordUrl { get; set; } = string.Empty;
@@ -74,8 +75,8 @@ public abstract partial class GameStoreEditItem : ObservableObject
     public bool HasLogoArt => !string.IsNullOrWhiteSpace(OwnLogoImageUrl);
     public bool HasIntro => !string.IsNullOrWhiteSpace(IntroUrl);
     public bool IsPublished => !DraftP;
-    public string DraftLabel => DraftP ? "Szkic" : "W sklepie";
-    public string KindLabel => IsDlc ? "DLC" : "Gra";
+    public string DraftLabel => DraftP ? Loc.T("Szkic") : Loc.T("W sklepie");
+    public string KindLabel => IsDlc ? "DLC" : Loc.T("Gra");
     public string TileLabel => string.IsNullOrWhiteSpace(Symbol)
         ? Title[..Math.Min(2, Title.Length)].ToUpperInvariant()
         : Symbol[..Math.Min(3, Symbol.Length)].ToUpperInvariant();

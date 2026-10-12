@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Localization;
 using SGSClient.Infrastructure.Client;
 using SGSClient.Infrastructure.Client.Persistence;
 using SGSClient.Infrastructure.Client.Services;
@@ -41,6 +42,9 @@ public partial class App : Application
 
     private void LaunchCore()
     {
+        var userSettings = new ClientUserSettingsStore().Load();
+        Loc.Initialize(userSettings.Language);
+
         var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
             ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
             ?? "Production";
@@ -55,6 +59,7 @@ public partial class App : Application
 
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
+        services.AddSingleton<IThemeApplier, WinUiThemeApplier>();
         services.AddClientInfrastructure(configuration);
         services.AddTransient(sp => new HomeViewModel(
             sp.GetService<ISgsApiService>(),
@@ -115,7 +120,9 @@ public partial class App : Application
             sp.GetRequiredService<IConfiguration>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetRequiredService<ILibraryFolderService>(),
-            sp.GetService<IAuthSession>()));
+            sp.GetService<IAuthSession>(),
+            sp.GetService<IClientUserSettingsStore>(),
+            sp.GetService<IThemeApplier>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
@@ -142,7 +149,8 @@ public partial class App : Application
             configuration,
             sp.GetService<NotificationsViewModel>(),
             sp.GetService<ISgsApiService>(),
-            sp.GetService<ICatalogCacheStore>()));
+            sp.GetService<ICatalogCacheStore>(),
+            sp.GetService<IUiDispatcher>()));
 
         Services = services.BuildServiceProvider();
         SgsClientDbInitializer.InitializeAsync(Services).GetAwaiter().GetResult();
@@ -161,6 +169,7 @@ public partial class App : Application
         MainWindow = new MainWindow();
         MainWindow.SystemBackdrop = new MicaBackdrop();
         MainWindow.Activate();
+        new WinUiThemeApplier().Apply(userSettings.Theme);
 
         var gamesVm = Services.GetRequiredService<GamesViewModel>();
         var detailsVm = Services.GetRequiredService<GameDetailsViewModel>();

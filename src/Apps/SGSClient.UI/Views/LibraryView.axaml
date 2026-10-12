@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.LibraryView"
@@ -11,16 +11,16 @@
       <DockPanel>
         <StackPanel DockPanel.Dock="Top" Margin="16,16,16,8" Spacing="10">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="Biblioteka" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <TextBlock Text="{loc:Tr Key='Biblioteka'}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
             <Button Grid.Column="1" ToolTip.Tip="Odśwież" Click="Refresh_OnClick"
                     Classes="subtle" Padding="8">
               <TextBlock Text="↻"/>
             </Button>
           </Grid>
-          <TextBox PlaceholderText="Szukaj w bibliotece" Text="{Binding SearchText}"/>
+          <TextBox PlaceholderText="{loc:Tr Key='Szukaj w bibliotece'}" Text="{Binding SearchText}"/>
           <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                   Padding="12,8" Click="Home_OnClick" Classes="subtle">
-            <TextBlock Text="Strona główna"/>
+            <TextBlock Text="{loc:Tr Key='Strona główna'}"/>
           </Button>
         </StackPanel>
 
@@ -68,7 +68,7 @@
       <ScrollViewer IsVisible="{Binding ShowHome}" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="28,24,28,32" Spacing="28" IsVisible="{Binding HasGames}">
           <StackPanel Spacing="12" IsVisible="{Binding ShowRecent}">
-            <TextBlock Text="Niedawne gry" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock Text="{loc:Tr Key='Niedawne gry'}" FontSize="20" FontWeight="SemiBold"/>
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
               <ItemsControl ItemsSource="{Binding RecentGames}">
                 <ItemsControl.ItemsPanel>
@@ -105,7 +105,7 @@
                             <TextBlock Text="{Binding LastPlayedText}" Foreground="#CCFFFFFF" FontSize="11"/>
                             <TextBlock Text="{Binding PlaytimeText}" Foreground="#CCFFFFFF" FontSize="11"
                                        IsVisible="{Binding HasPlaytime}"/>
-                            <Button Content="Graj" Tag="{Binding}" Click="Launch_OnClick"
+                            <Button Content="{loc:Tr Key='Graj'}" Tag="{Binding}" Click="Launch_OnClick"
                                     IsEnabled="{Binding CanLaunch}"
                                     Classes="accent" Padding="12,6"
                                     HorizontalAlignment="Left"/>
@@ -123,7 +123,7 @@
           <StackPanel Spacing="12">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Text="{Binding AllGamesHeader}" FontSize="20" FontWeight="SemiBold"/>
-              <TextBlock Grid.Column="1" Text="Sortuj: alfabetycznie" Opacity="0.55"
+              <TextBlock Grid.Column="1" Text="{loc:Tr Key='Sortuj: alfabetycznie'}" Opacity="0.55"
                          VerticalAlignment="Center" FontSize="12"/>
             </Grid>
             <ItemsControl ItemsSource="{Binding AllGames}">

@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -72,14 +73,14 @@ public partial class LoginGateViewModel : ObservableObject
 
     private string CancelledStatus => _cancelledByUser
         ? string.Empty
-        : "Upłynął czas na zalogowanie. Spróbuj ponownie.";
+        : Loc.T("Upłynął czas na zalogowanie. Spróbuj ponownie.");
 
     private async Task RunInteractiveAsync(bool signUp)
     {
         if (_auth is null || !_auth.IsAvailable)
         {
             StatusText = _auth?.LastError
-                ?? "Azure AD B2C jest wyłączone. Ustaw AzureAd w appsettings.";
+                ?? Loc.T("Logowanie nie jest skonfigurowane.");
             return;
         }
 
@@ -87,7 +88,7 @@ public partial class LoginGateViewModel : ObservableObject
         _interactiveCts = cts;
         _cancelledByUser = false;
         IsBusy = true;
-        StatusText = "Kontynuuj w przeglądarce…";
+        StatusText = Loc.T("Kontynuuj w przeglądarce…");
         try
         {
             var hwnd = _parentWindowHandle?.Invoke() ?? 0;
@@ -102,7 +103,7 @@ public partial class LoginGateViewModel : ObservableObject
 
             if (!ok || _auth.CurrentUser is null)
             {
-                StatusText = _auth.LastError ?? "Nie udało się zalogować. Spróbuj ponownie.";
+                StatusText = _auth.LastError ?? Loc.T("Nie udało się zalogować. Spróbuj ponownie.");
                 return;
             }
 

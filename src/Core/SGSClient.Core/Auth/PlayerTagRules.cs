@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Text.RegularExpressions;
 
 namespace SGSClient.Core.Auth;
@@ -19,25 +20,25 @@ public static partial class PlayerTagRules
         var value = (raw ?? string.Empty).Trim().TrimStart('@').ToLowerInvariant();
         if (value.Length < MinLength || value.Length > MaxLength)
         {
-            error = $"Tag musi mieć {MinLength}–{MaxLength} znaków.";
+            error = Loc.F("Tag musi mieć {0}–{1} znaków.", MinLength, MaxLength);
             return false;
         }
 
         if (!TagPattern().IsMatch(value))
         {
-            error = "Dozwolone: litery, cyfry, podkreślenie i kropka. Zaczyna się literą lub cyfrą.";
+            error = Loc.T("Dozwolone: litery, cyfry, podkreślenie i kropka. Zaczyna się literą lub cyfrą.");
             return false;
         }
 
         if (value.Contains("..", StringComparison.Ordinal) || value.StartsWith('.') || value.EndsWith('.'))
         {
-            error = "Kropka nie może być na początku, na końcu ani podwójna.";
+            error = Loc.T("Kropka nie może być na początku, na końcu ani podwójna.");
             return false;
         }
 
         if (Reserved.Contains(value))
         {
-            error = "Ten tag jest zarezerwowany.";
+            error = Loc.T("Ten tag jest zarezerwowany.");
             return false;
         }
 

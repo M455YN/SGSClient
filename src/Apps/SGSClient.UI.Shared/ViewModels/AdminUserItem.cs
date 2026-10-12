@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -48,12 +49,12 @@ public partial class AdminUserItem : ObservableObject
     public string RoleLabel => AdminRoles.Label(Role);
 
     public string RoleHint => IsRoleLocked
-        ? "Konto właściciela — rola na stałe"
+        ? Loc.T("Konto właściciela — rola na stałe")
         : IsSelf
-            ? "Nie możesz zmienić własnej roli"
+            ? Loc.T("Nie możesz zmienić własnej roli")
             : CanEditRole
                 ? string.Empty
-                : "Tylko superadmin zmienia role adminów";
+                : Loc.T("Tylko superadmin zmienia role adminów");
 
     public string Initials => string.IsNullOrWhiteSpace(DisplayName)
         ? "?"
@@ -62,14 +63,15 @@ public partial class AdminUserItem : ObservableObject
     public string GamesCountText => FormatGamesCount(OwnedGamesCount);
 
     public string MetaText =>
-        (string.IsNullOrWhiteSpace(Email) ? $"#{Id}" : Email!)
+        (string.IsNullOrWhiteSpace(Email) ? "brak e-maila" : Email!)
         + (string.IsNullOrWhiteSpace(PlayerTag) ? "" : $" · @{PlayerTag}")
         + $" · {GamesCountText}"
-        + $" · dołączono {CreatedText} · ostatnio {LastLoginText}";
+        + Loc.F(" · dołączono {0} · ostatnio {1}", CreatedText, LastLoginText);
 
     /// <summary>Combo label for owner transfer: "Name (email)".</summary>
-    public string OwnerPickerLabel => string.IsNullOrWhiteSpace(Email)
-        ? $"{DisplayName} (#{Id})"
+    public string OwnerPickerLabel =>
+        string.IsNullOrWhiteSpace(DisplayName) ? (string.IsNullOrWhiteSpace(Email) ? Loc.T("Użytkownik bez nazwy") : Email!)
+        : string.IsNullOrWhiteSpace(Email) ? DisplayName
         : $"{DisplayName} ({Email})";
 
     public void ApplyDto(AdminUserDto user) => Role = user.Role;
@@ -100,7 +102,7 @@ public partial class AdminUserItem : ObservableObject
 
 public static class AdminRoles
 {
-    public static IReadOnlyList<string> All { get; } = ["Użytkownik", "Twórca", "Admin", "Superadmin"];
+    public static IReadOnlyList<string> All { get; } = [Loc.T("Użytkownik"), Loc.T("Twórca"), "Admin", "Superadmin"];
 
     public static IReadOnlyList<string> AssignableByAdmin { get; } = [All[0], All[1]];
 

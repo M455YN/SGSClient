@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Diagnostics;
 using SGSClient.Core.DTOs;
 
@@ -17,14 +18,14 @@ public static class GameMediaActions
         if (pick is null)
         {
             Debug.WriteLine("[SGS Media] pick handler is not wired");
-            await reload(null, "Błąd: picker nie jest podpięty (handler null).");
+            await reload(null, Loc.T("Błąd: picker nie jest podpięty (handler null)."));
             return;
         }
 
         if (gameId is null)
         {
             Debug.WriteLine("[SGS Media] no selected game");
-            await reload(null, "Błąd: nie wybrano gry.");
+            await reload(null, Loc.T("Błąd: nie wybrano gry."));
             return;
         }
 
@@ -36,7 +37,7 @@ public static class GameMediaActions
         catch (Exception ex)
         {
             Debug.WriteLine($"[SGS Media] picker exception: {ex}");
-            await reload(null, $"Błąd pickera: {ex.Message}");
+            await reload(null, Loc.F("Błąd pickera: {0}", ex.Message));
             return;
         }
 
@@ -57,7 +58,7 @@ public static class GameMediaActions
         catch (Exception ex)
         {
             Debug.WriteLine($"[SGS Media] upload exception: {ex}");
-            await reload(null, $"Błąd uploadu: {ex.Message}");
+            await reload(null, Loc.F("Błąd uploadu: {0}", ex.Message));
         }
     }
 

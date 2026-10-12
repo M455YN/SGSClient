@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -38,13 +39,13 @@ public partial class WishlistViewModel : ObservableObject
         _catalogCache = catalogCache;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
-        StatusText = "Ładowanie listy życzeń…";
+        StatusText = Loc.T("Ładowanie listy życzeń…");
     }
 
     public void SetOpenDetailsHandler(Action<int> openDetails) => _openDetails = openDetails;
     public void SetOpenAccountHandler(Action openAccount) => _openAccount = openAccount;
 
-    public string Title { get; } = "Lista życzeń";
+    public string Title { get; } = Loc.T("Lista życzeń");
 
     public ObservableCollection<GameListItem> Games { get; } = [];
 
@@ -68,7 +69,7 @@ public partial class WishlistViewModel : ObservableObject
     {
         if (_api is null)
         {
-            StatusText = "Brak klienta API.";
+            StatusText = Loc.T("Brak klienta API.");
             ShowEmpty = true;
             HasGames = false;
             NeedsLogin = false;
@@ -81,7 +82,7 @@ public partial class WishlistViewModel : ObservableObject
             HasGames = false;
             ShowEmpty = true;
             NeedsLogin = true;
-            StatusText = "Zaloguj się, żeby zobaczyć listę życzeń.";
+            StatusText = Loc.T("Zaloguj się, żeby zobaczyć listę życzeń.");
             return;
         }
 
@@ -94,7 +95,7 @@ public partial class WishlistViewModel : ObservableObject
         NeedsLogin = false;
         try
         {
-            StatusText = "Ładowanie listy życzeń…";
+            StatusText = Loc.T("Ładowanie listy życzeń…");
             var owned = await GetOwnedGameIdsAsync();
             IReadOnlyList<SGSClient.Core.DTOs.GameDto> wish;
             var fromCache = false;
@@ -130,17 +131,17 @@ public partial class WishlistViewModel : ObservableObject
             ShowEmpty = !HasGames;
             StatusText = fromCache
                 ? HasGames
-                    ? $"Offline — cache listy życzeń z {cacheAt:g} ({Games.Count})"
-                    : "Offline — brak cache listy życzeń."
+                    ? Loc.F("Offline — zapisana lista życzeń z {0:g} ({1})", cacheAt, Games.Count)
+                    : Loc.T("Offline — brak zapisanej listy życzeń.")
                 : HasGames
-                    ? $"{Games.Count} gier na liście życzeń"
-                    : "Lista życzeń jest pusta. Dodawaj gry ze Sklepu.";
+                    ? Loc.F("{0} gier na liście życzeń", Games.Count)
+                    : Loc.T("Lista życzeń jest pusta. Dodawaj gry ze Sklepu.");
         }
         catch (Exception ex)
         {
             HasGames = false;
             ShowEmpty = true;
-            StatusText = $"Lista życzeń: {ex.Message}";
+            StatusText = Loc.F("Lista życzeń: {0}", ex.Message);
         }
         finally
         {
@@ -170,7 +171,7 @@ public partial class WishlistViewModel : ObservableObject
 
         if (_auth is { IsAvailable: true, IsLoggedIn: false })
         {
-            StatusText = "Zaloguj się, żeby dodać grę do biblioteki.";
+            StatusText = Loc.T("Zaloguj się, żeby dodać grę do biblioteki.");
             _openAccount?.Invoke();
             return;
         }
@@ -180,7 +181,7 @@ public partial class WishlistViewModel : ObservableObject
             var claimed = await _api.ClaimGameAsync(item.Id);
             if (claimed is null)
             {
-                StatusText = "Nie udało się dodać gry do biblioteki.";
+                StatusText = Loc.T("Nie udało się dodać gry do biblioteki.");
                 return;
             }
 
@@ -201,12 +202,12 @@ public partial class WishlistViewModel : ObservableObject
             });
 
             item.InLibrary = true;
-            StatusText = $"Dodano do biblioteki: {item.Title}";
+            StatusText = Loc.F("Dodano do biblioteki: {0}", item.Title);
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            StatusText = $"Biblioteka: {ex.Message}";
+            StatusText = Loc.F("Biblioteka: {0}", ex.Message);
         }
     }
 
@@ -222,13 +223,13 @@ public partial class WishlistViewModel : ObservableObject
         {
             if (await _api.RemoveFromWishlistAsync(item.Id))
             {
-                StatusText = $"Usunięto z listy życzeń: {item.Title}";
+                StatusText = Loc.F("Usunięto z listy życzeń: {0}", item.Title);
                 await LoadAsync();
             }
         }
         catch (Exception ex)
         {
-            StatusText = $"Lista życzeń: {ex.Message}";
+            StatusText = Loc.F("Lista życzeń: {0}", ex.Message);
         }
     }
 

@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.GamesView"
@@ -6,23 +6,23 @@
   <DockPanel Margin="36,20,36,0">
     <StackPanel DockPanel.Dock="Top" Spacing="14" Margin="0,0,0,14">
       <Grid ColumnDefinitions="*,2*,*">
-        <TextBox Grid.Column="1" PlaceholderText="Wyszukaj gry, studia i tagi"
+        <TextBox Grid.Column="1" PlaceholderText="{loc:Tr Key='Wyszukaj gry, studia i tagi'}"
                  Text="{Binding SearchText}" Padding="12,8" CornerRadius="18" MaxWidth="560"/>
-        <Button Grid.Column="2" Content="Odśwież" Click="Refresh_OnClick" Padding="12,6"
+        <Button Grid.Column="2" Content="{loc:Tr Key='Odśwież'}" Click="Refresh_OnClick" Padding="12,6"
                 HorizontalAlignment="Right"/>
       </Grid>
 
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Spacing="4">
           <TextBlock Text="{Binding Title}" FontSize="34" FontWeight="SemiBold"/>
-          <TextBlock Text="Odkrywaj gry niezależnych twórców" FontSize="14" Opacity="0.8"/>
+          <TextBlock Text="{loc:Tr Key='Odkrywaj gry niezależnych twórców'}" FontSize="14" Opacity="0.8"/>
           <TextBlock Text="{Binding CountText}" Margin="0,14,0,0" Opacity="0.6" FontSize="12"
                      IsVisible="{Binding HasGames}"/>
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Bottom">
           <Button Command="{Binding ToggleFilterPanelCommand}" Padding="14,7">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <TextBlock Text="Filtry"/>
+              <TextBlock Text="{loc:Tr Key='Filtry'}"/>
               <TextBlock Text="{Binding ActiveFilterCount, StringFormat='({0})'}"
                          IsVisible="{Binding HasActiveFilters}"/>
             </StackPanel>
@@ -31,7 +31,7 @@
                   ToolTip.Tip="Przełącz widok: siatka / lista">
             <TextBlock Text="☰"/>
           </Button>
-          <TextBlock Text="Sortuj według" VerticalAlignment="Center" FontSize="13"/>
+          <TextBlock Text="{loc:Tr Key='Sortuj według'}" VerticalAlignment="Center" FontSize="13"/>
           <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SelectedSort}"
                     MinWidth="170" Padding="8,6"/>
         </StackPanel>
@@ -42,7 +42,7 @@
               Background="#14FFFFFF" BorderBrush="#22FFFFFF" BorderThickness="1">
         <Grid ColumnDefinitions="*,*,*,*,*,Auto" ColumnSpacing="16">
           <StackPanel Spacing="6">
-            <TextBlock Text="Gatunek" FontWeight="SemiBold" FontSize="13"/>
+            <TextBlock Text="{loc:Tr Key='Gatunek'}" FontWeight="SemiBold" FontSize="13"/>
             <DropDownButton Content="{Binding GenreFilters.Summary}" HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Left">
               <DropDownButton.Flyout>
@@ -62,7 +62,7 @@
           </StackPanel>
 
           <StackPanel Grid.Column="1" Spacing="6">
-            <TextBlock Text="Silnik" FontWeight="SemiBold" FontSize="13"/>
+            <TextBlock Text="{loc:Tr Key='Silnik'}" FontWeight="SemiBold" FontSize="13"/>
             <DropDownButton Content="{Binding EngineFilters.Summary}" HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Left">
               <DropDownButton.Flyout>
@@ -82,7 +82,7 @@
           </StackPanel>
 
           <StackPanel Grid.Column="2" Spacing="6">
-            <TextBlock Text="Funkcje" FontWeight="SemiBold" FontSize="13"/>
+            <TextBlock Text="{loc:Tr Key='Funkcje'}" FontWeight="SemiBold" FontSize="13"/>
             <DropDownButton Content="{Binding FeatureFilters.Summary}" HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Left">
               <DropDownButton.Flyout>
@@ -102,21 +102,21 @@
           </StackPanel>
 
           <StackPanel Grid.Column="3" Spacing="6">
-            <TextBlock Text="Platforma" FontWeight="SemiBold" FontSize="13"/>
+            <TextBlock Text="{loc:Tr Key='Platforma'}" FontWeight="SemiBold" FontSize="13"/>
             <ComboBox ItemsSource="{Binding PlatformOptions}"
                       SelectedIndex="{Binding SelectedPlatformIndex, Mode=TwoWay}"
                       HorizontalAlignment="Stretch"/>
           </StackPanel>
 
           <StackPanel Grid.Column="4" Spacing="6">
-            <TextBlock Text="Etap premiery" FontWeight="SemiBold" FontSize="13"/>
+            <TextBlock Text="{loc:Tr Key='Etap premiery'}" FontWeight="SemiBold" FontSize="13"/>
             <ComboBox ItemsSource="{Binding ReleaseStatusFilterOptions}"
                       SelectedIndex="{Binding SelectedStatusIndex, Mode=TwoWay}"
                       HorizontalAlignment="Stretch"/>
           </StackPanel>
 
           <StackPanel Grid.Column="5" VerticalAlignment="Bottom" Orientation="Horizontal" Spacing="8">
-            <Button Content="Wyczyść" Command="{Binding ClearFiltersCommand}" Padding="12,6"/>
+            <Button Content="{loc:Tr Key='Wyczyść'}" Command="{Binding ClearFiltersCommand}" Padding="12,6"/>
             <Button Content="✕" Command="{Binding ToggleFilterPanelCommand}" Padding="10,6"/>
           </StackPanel>
         </Grid>

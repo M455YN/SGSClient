@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -43,16 +44,16 @@ public partial class GamesViewModel : ObservableObject
         _catalogCache = catalogCache;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
-        StatusText = api is null ? "API not registered" : "Ładowanie sklepu…";
-        SortOptions = ["Wyróżnione", "Tytuł", "Najnowsze"];
+        StatusText = api is null ? Loc.T("Sklep niedostępny.") : Loc.T("Ładowanie sklepu…");
+        SortOptions = [Loc.T("Wyróżnione"), Loc.T("Tytuł"), Loc.T("Najnowsze")];
         SelectedSort = SortOptions[0];
 
-        GenreFilters = new TaxonomySelection(SgsGameTaxonomy.Genres, int.MaxValue, "Dowolny", filterMode: true);
-        EngineFilters = new TaxonomySelection(SgsGameTaxonomy.Engines, int.MaxValue, "Dowolny", filterMode: true);
+        GenreFilters = new TaxonomySelection(SgsGameTaxonomy.Genres, int.MaxValue, Loc.T("Dowolny"), filterMode: true);
+        EngineFilters = new TaxonomySelection(SgsGameTaxonomy.Engines, int.MaxValue, Loc.T("Dowolny"), filterMode: true);
         FeatureFilters = new TaxonomySelection(
             GameStoreLabels.FeatureFlags.Select(f => new SgsGameTaxonomy.TaxonomyItem(f.ToString(), GameStoreLabels.Feature(f))),
             int.MaxValue,
-            "Dowolne",
+            Loc.T("Dowolne"),
             filterMode: true);
         GenreFilters.SelectionChanged += OnFilterChanged;
         EngineFilters.SelectionChanged += OnFilterChanged;
@@ -65,9 +66,9 @@ public partial class GamesViewModel : ObservableObject
     public TaxonomySelection EngineFilters { get; }
     public TaxonomySelection FeatureFilters { get; }
 
-    public IReadOnlyList<string> PlatformOptions { get; } = ["Dowolna", "Windows", "Linux", "macOS"];
+    public IReadOnlyList<string> PlatformOptions { get; } = [Loc.T("Dowolna"), "Windows", "Linux", "macOS"];
     public IReadOnlyList<string> ReleaseStatusFilterOptions { get; } =
-        new[] { "Dowolny" }.Concat(GameStoreLabels.ReleaseStatusOptions).ToArray();
+        new[] { Loc.T("Dowolny") }.Concat(GameStoreLabels.ReleaseStatusOptions).ToArray();
 
     [ObservableProperty]
     public partial int SelectedPlatformIndex { get; set; }
@@ -117,7 +118,7 @@ public partial class GamesViewModel : ObservableObject
     public void SetOpenDetailsHandler(Action<int> openDetails) => _openDetails = openDetails;
     public void SetOpenAccountHandler(Action openAccount) => _openAccount = openAccount;
 
-    public string Title { get; } = "Sklep";
+    public string Title { get; } = Loc.T("Sklep");
 
     public ObservableCollection<GameListItem> Games { get; } = [];
     public IReadOnlyList<string> SortOptions { get; }
@@ -140,10 +141,10 @@ public partial class GamesViewModel : ObservableObject
     public partial string SearchText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string SelectedSort { get; set; } = "Wyróżnione";
+    public partial string SelectedSort { get; set; } = Loc.T("Wyróżnione");
 
     [ObservableProperty]
-    public partial string WishlistSectionTitle { get; set; } = "Lista życzeń";
+    public partial string WishlistSectionTitle { get; set; } = Loc.T("Lista życzeń");
 
     public ObservableCollection<GameListItem> Wishlist { get; } = [];
 
@@ -174,7 +175,7 @@ public partial class GamesViewModel : ObservableObject
     {
         if (_api is null)
         {
-            StatusText = "Brak klienta API. Sprawdź Api:BaseUrl w appsettings.";
+            StatusText = Loc.T("Brak połączenia ze sklepem. Sprawdź adres serwera w konfiguracji.");
             ShowEmpty = true;
             HasGames = false;
             return;
@@ -188,7 +189,7 @@ public partial class GamesViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            StatusText = "Ładowanie sklepu…";
+            StatusText = Loc.T("Ładowanie sklepu…");
             var query = BuildQuery();
             IReadOnlyList<GameDto> games;
             var fromCache = false;
@@ -238,20 +239,20 @@ public partial class GamesViewModel : ObservableObject
             ShowEmpty = !HasGames;
             StatusText = fromCache
                 ? HasGames
-                    ? $"Offline — cache sklepu z {cacheAt:g} ({Games.Count})"
-                    : "Offline — brak cache sklepu."
+                    ? Loc.F("Offline — zapisany katalog z {0:g} ({1})", cacheAt, Games.Count)
+                    : Loc.T("Offline — brak zapisanego katalogu sklepu.")
                 : HasGames
                     ? $"{Games.Count} gier w sklepie"
                     : HasActiveFilters
-                        ? "Brak gier pasujących do filtrów."
-                        : "Brak gier. Uruchom Api i upewnij się, że baza ma seed.";
+                        ? Loc.T("Brak gier pasujących do filtrów.")
+                        : Loc.T("W sklepie nie ma jeszcze żadnych gier.");
             CountText = HasGames ? $"liczba gier: {Games.Count}" : string.Empty;
         }
         catch (Exception ex)
         {
             HasGames = false;
             ShowEmpty = true;
-            StatusText = $"Nie udało się pobrać sklepu: {ex.Message}";
+            StatusText = Loc.F("Nie udało się pobrać sklepu: {0}", ex.Message);
         }
         finally
         {
@@ -345,13 +346,13 @@ public partial class GamesViewModel : ObservableObject
 
         if (item.BuildId <= 0)
         {
-            StatusText = $"Brak builda dla tej platformy: {item.Title}";
+            StatusText = Loc.F("Brak builda dla tej platformy: {0}", item.Title);
             return;
         }
 
         if (_auth is { IsAvailable: true } && !_auth.IsLoggedIn)
         {
-            StatusText = "Zaloguj się, żeby dodać grę do biblioteki.";
+            StatusText = Loc.T("Zaloguj się, żeby dodać grę do biblioteki.");
             _openAccount?.Invoke();
             return;
         }
@@ -364,7 +365,7 @@ public partial class GamesViewModel : ObservableObject
                 claimed = await _api.ClaimGameAsync(item.Id);
                 if (claimed is null)
                 {
-                    StatusText = "Nie udało się dodać gry (zaloguj się lub sprawdź uprawnienia).";
+                    StatusText = Loc.T("Nie udało się dodać gry (zaloguj się lub sprawdź uprawnienia).");
                     return;
                 }
             }
@@ -390,12 +391,12 @@ public partial class GamesViewModel : ObservableObject
 
             item.InLibrary = true;
             item.InWishlist = false;
-            StatusText = $"Dodano do biblioteki: {item.Title}";
+            StatusText = Loc.F("Dodano do biblioteki: {0}", item.Title);
             await LoadWishlistSectionAsync(await GetOwnedGameIdsAsync());
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się dodać gry: {ex.Message}";
+            StatusText = Loc.F("Nie udało się dodać gry: {0}", ex.Message);
         }
     }
 
@@ -409,7 +410,7 @@ public partial class GamesViewModel : ObservableObject
 
         if (_auth is { IsAvailable: true } && !_auth.IsLoggedIn)
         {
-            StatusText = "Zaloguj się, żeby zarządzać listą życzeń.";
+            StatusText = Loc.T("Zaloguj się, żeby zarządzać listą życzeń.");
             _openAccount?.Invoke();
             return;
         }
@@ -421,7 +422,7 @@ public partial class GamesViewModel : ObservableObject
                 if (await _api.RemoveFromWishlistAsync(item.Id))
                 {
                     item.InWishlist = false;
-                    StatusText = $"Usunięto z listy życzeń: {item.Title}";
+                    StatusText = Loc.F("Usunięto z listy życzeń: {0}", item.Title);
                 }
             }
             else
@@ -429,7 +430,7 @@ public partial class GamesViewModel : ObservableObject
                 if (await _api.AddToWishlistAsync(item.Id) is not null)
                 {
                     item.InWishlist = true;
-                    StatusText = $"Dodano do listy życzeń: {item.Title}";
+                    StatusText = Loc.F("Dodano do listy życzeń: {0}", item.Title);
                 }
             }
 
@@ -437,7 +438,7 @@ public partial class GamesViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"Lista życzeń: {ex.Message}";
+            StatusText = Loc.F("Lista życzeń: {0}", ex.Message);
         }
     }
 
@@ -462,10 +463,11 @@ public partial class GamesViewModel : ObservableObject
 
     private GameCatalogQuery BuildQuery()
     {
-        var sort = SelectedSort switch
+        // SortOptions order: featured, title, newest.
+        var sort = SortOptions.ToList().IndexOf(SelectedSort) switch
         {
-            "Tytuł" => "title",
-            "Najnowsze" => "newest",
+            1 => "title",
+            2 => "newest",
             _ => "featured"
         };
 
@@ -602,7 +604,7 @@ public partial class GameListItem : ObservableObject
     public bool Featured { get; init; }
     public string TileLabel { get; init; } = string.Empty;
     public string PlatformsText { get; init; } = string.Empty;
-    public string FeaturedBadge => Featured ? "Wyróżnione" : string.Empty;
+    public string FeaturedBadge => Featured ? Loc.T("Wyróżnione") : string.Empty;
     public string? StudioName { get; init; }
     public bool HasStudio => !string.IsNullOrWhiteSpace(StudioName);
 
@@ -613,7 +615,7 @@ public partial class GameListItem : ObservableObject
     public string? PosterImageUrl { get; init; }
     public bool HasPoster => !string.IsNullOrWhiteSpace(PosterImageUrl);
     public string ReleaseBadge { get; init; } = string.Empty;
-    public string StatusBadge => InLibrary ? "W bibliotece" : ReleaseBadge;
+    public string StatusBadge => InLibrary ? Loc.T("W bibliotece") : ReleaseBadge;
     public bool HasStatusBadge => StatusBadge.Length > 0;
     public string WishlistSymbol => InWishlist ? "♥" : "♡";
     public bool ShowFeaturedBadge => Featured;
@@ -640,8 +642,8 @@ public partial class GameListItem : ObservableObject
     public partial bool InWishlist { get; set; }
 
     public bool CanAdd => !InLibrary && BuildId > 0;
-    public string ActionLabel => InLibrary ? "W bibliotece" : (BuildId > 0 ? "Dodaj do biblioteki" : "Brak builda");
-    public string WishlistLabel => InWishlist ? "Na liście życzeń" : "Lista życzeń";
+    public string ActionLabel => InLibrary ? Loc.T("W bibliotece") : (BuildId > 0 ? Loc.T("Dodaj do biblioteki") : Loc.T("Brak builda"));
+    public string WishlistLabel => InWishlist ? Loc.T("Na liście życzeń") : Loc.T("Lista życzeń");
 
     public static GameListItem FromDto(GameDto dto, bool inLibrary, string apiBaseUrl, bool inWishlist = false)
     {
@@ -659,7 +661,7 @@ public partial class GameListItem : ObservableObject
             Title = dto.Title,
             Symbol = dto.Symbol,
             Description = string.IsNullOrWhiteSpace(dto.Description)
-                ? "Brak opisu."
+                ? Loc.T("Brak opisu.")
                 : dto.Description!,
             Featured = dto.FeaturedP,
             StudioName = dto.StudioName,
@@ -672,7 +674,7 @@ public partial class GameListItem : ObservableObject
             TileLabel = string.IsNullOrWhiteSpace(dto.Symbol)
                 ? dto.Title[..Math.Min(2, dto.Title.Length)].ToUpperInvariant()
                 : dto.Symbol[..Math.Min(3, dto.Symbol.Length)].ToUpperInvariant(),
-            PlatformsText = platforms.Length == 0 ? "Brak buildów" : string.Join(" · ", platforms),
+            PlatformsText = platforms.Length == 0 ? Loc.T("Brak buildów") : string.Join(" · ", platforms),
             BuildId = build?.Id ?? 0,
             Platform = build?.Platform ?? DetectCurrentPlatform(),
             Architecture = build?.Architecture,

@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -25,7 +26,7 @@ public partial class GameDetailsViewModel
 
         if (_auth is { IsAvailable: true } && !_auth.IsLoggedIn)
         {
-            StatusText = "Zaloguj się, żeby dodać grę do biblioteki.";
+            StatusText = Loc.T("Zaloguj się, żeby dodać grę do biblioteki.");
             _openAccount?.Invoke();
             return;
         }
@@ -33,7 +34,7 @@ public partial class GameDetailsViewModel
         var preferred = Builds.FirstOrDefault(b => b.IsPreferred) ?? Builds.FirstOrDefault();
         if (preferred is null || preferred.BuildId <= 0)
         {
-            StatusText = "Brak builda dla tej platformy.";
+            StatusText = Loc.T("Brak builda dla tej platformy.");
             return;
         }
 
@@ -46,7 +47,7 @@ public partial class GameDetailsViewModel
                 var claimed = await _api.ClaimGameAsync(GameId);
                 if (claimed is null)
                 {
-                    StatusText = "Nie udało się dodać gry (zaloguj się lub sprawdź uprawnienia).";
+                    StatusText = Loc.T("Nie udało się dodać gry (zaloguj się lub sprawdź uprawnienia).");
                     return;
                 }
             }
@@ -72,17 +73,17 @@ public partial class GameDetailsViewModel
 
             InLibrary = true;
             InWishlist = false;
-            WishlistLabel = "Lista życzeń";
+            WishlistLabel = Loc.T("Lista życzeń");
             CanAdd = false;
-            PrimaryActionLabel = "W bibliotece";
+            PrimaryActionLabel = Loc.T("W bibliotece");
             StatusText = preferred.SelectedVersion?.IsCurrent == true || preferred.SelectedVersion is null
-                ? "Dodano do biblioteki (najnowsza wersja)."
-                : $"Dodano do biblioteki (wersja {selectedVersion}).";
+                ? Loc.T("Dodano do biblioteki (najnowsza wersja).")
+                : Loc.F("Dodano do biblioteki (wersja {0}).", selectedVersion);
             await RefreshLibraryStateAsync(GameId);
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się dodać: {ex.Message}";
+            StatusText = Loc.F("Nie udało się dodać: {0}", ex.Message);
         }
     }
 
@@ -96,7 +97,7 @@ public partial class GameDetailsViewModel
 
         if (_auth is { IsAvailable: true } && !_auth.IsLoggedIn)
         {
-            StatusText = "Zaloguj się, żeby zarządzać listą życzeń.";
+            StatusText = Loc.T("Zaloguj się, żeby zarządzać listą życzeń.");
             _openAccount?.Invoke();
             return;
         }
@@ -108,8 +109,8 @@ public partial class GameDetailsViewModel
                 if (await _api.RemoveFromWishlistAsync(GameId))
                 {
                     InWishlist = false;
-                    WishlistLabel = "Lista życzeń";
-                    StatusText = "Usunięto z listy życzeń.";
+                    WishlistLabel = Loc.T("Lista życzeń");
+                    StatusText = Loc.T("Usunięto z listy życzeń.");
                 }
             }
             else
@@ -117,14 +118,14 @@ public partial class GameDetailsViewModel
                 if (await _api.AddToWishlistAsync(GameId) is not null)
                 {
                     InWishlist = true;
-                    WishlistLabel = "Na liście życzeń";
-                    StatusText = "Dodano do listy życzeń.";
+                    WishlistLabel = Loc.T("Na liście życzeń");
+                    StatusText = Loc.T("Dodano do listy życzeń.");
                 }
             }
         }
         catch (Exception ex)
         {
-            StatusText = $"Lista życzeń: {ex.Message}";
+            StatusText = Loc.F("Lista życzeń: {0}", ex.Message);
         }
     }
 
@@ -142,7 +143,7 @@ public partial class GameDetailsViewModel
     private async Task RefreshWishlistStateAsync(int gameId)
     {
         InWishlist = false;
-        WishlistLabel = "Lista życzeń";
+        WishlistLabel = Loc.T("Lista życzeń");
         if (_api is null)
         {
             return;
@@ -152,7 +153,7 @@ public partial class GameDetailsViewModel
         {
             var wish = await _api.GetWishlistAsync();
             InWishlist = wish.Any(g => g.Id == gameId);
-            WishlistLabel = InWishlist ? "Na liście życzeń" : "Lista życzeń";
+            WishlistLabel = InWishlist ? Loc.T("Na liście życzeń") : Loc.T("Lista życzeń");
         }
         catch
         {

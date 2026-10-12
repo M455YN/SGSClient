@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -43,12 +44,12 @@ public partial class GamePropertiesViewModel : ObservableObject
 
     public ObservableCollection<PropertiesNavItem> NavItems { get; } =
     [
-        new("general", "Ogólne"),
-        new("updates", "Aktualizacje"),
-        new("files", "Zainstalowane pliki"),
-        new("betas", "Wersje i bety gry"),
+        new("general", Loc.T("Ogólne")),
+        new("updates", Loc.T("Aktualizacje")),
+        new("files", Loc.T("Zainstalowane pliki")),
+        new("betas", Loc.T("Wersje i bety gry")),
         new("dlc", "DLC"),
-        new("personalization", "Personalizacja")
+        new("personalization", Loc.T("Personalizacja"))
     ];
 
     public ObservableCollection<BetaVersionItem> Versions { get; } = [];
@@ -119,7 +120,7 @@ public partial class GamePropertiesViewModel : ObservableObject
     public partial string InstallFilesText { get; set; } = "—";
 
     [ObservableProperty]
-    public partial string InstallStateText { get; set; } = "Niezainstalowana";
+    public partial string InstallStateText { get; set; } = Loc.T("Niezainstalowana");
 
     [ObservableProperty]
     public partial string InstalledVersionText { get; set; } = "—";
@@ -166,7 +167,7 @@ public partial class GamePropertiesViewModel : ObservableObject
     public bool ShowGeneral => SelectedSection == "general";
     public bool ShowUpdates => SelectedSection == "updates";
     public bool ShowPlaceholder => SelectedSection is not ("betas" or "personalization" or "files" or "dlc" or "general" or "updates");
-    public string PlaceholderText => "Ta sekcja pojawi się w kolejnej wersji klienta.";
+    public string PlaceholderText => Loc.T("Ta sekcja pojawi się w kolejnej wersji klienta.");
 
     partial void OnSelectedSectionChanged(string value)
     {
@@ -197,8 +198,8 @@ public partial class GamePropertiesViewModel : ObservableObject
         settings.AutoUpdateEnabled = value;
         _ = _userSettings.SaveAsync(settings);
         UpdatesStatusText = value
-            ? "Automatyczne aktualizacje włączone."
-            : "Automatyczne aktualizacje wyłączone.";
+            ? Loc.T("Automatyczne aktualizacje włączone.")
+            : Loc.T("Automatyczne aktualizacje wyłączone.");
     }
 
     partial void OnDlcSearchTextChanged(string value) => ApplyDlcFilter();
@@ -219,7 +220,7 @@ public partial class GamePropertiesViewModel : ObservableObject
         BuildId = buildId;
         GameTitle = title.ToUpperInvariant();
         SelectedSection = "general";
-        StatusText = "Ładowanie…";
+        StatusText = Loc.T("Ładowanie…");
         IsBusy = true;
 
         try
@@ -278,12 +279,12 @@ public partial class GamePropertiesViewModel : ObservableObject
                     ?? history.FirstOrDefault()?.Version;
                 LatestVersionText = string.IsNullOrWhiteSpace(_latestVersion) ? "—" : _latestVersion!;
                 GeneralSummaryText = game is null
-                    ? "Podstawowe informacje o instalacji na tym komputerze."
-                    : $"{game.Title} · lokalna instalacja i skróty.";
+                    ? Loc.T("Podstawowe informacje o instalacji na tym komputerze.")
+                    : Loc.F("{0} · lokalna instalacja i skróty.", game.Title);
             }
             else
             {
-                GeneralSummaryText = "Podstawowe informacje o instalacji na tym komputerze.";
+                GeneralSummaryText = Loc.T("Podstawowe informacje o instalacji na tym komputerze.");
             }
 
             RefreshUpdateState();
@@ -316,7 +317,7 @@ public partial class GamePropertiesViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"Błąd: {ex.Message}";
+            StatusText = Loc.F("Błąd: {0}", ex.Message);
         }
         finally
         {
@@ -348,7 +349,7 @@ public partial class GamePropertiesViewModel : ObservableObject
     {
         if (!CanBrowseFiles || string.IsNullOrWhiteSpace(_installPath) || !Directory.Exists(_installPath))
         {
-            StatusText = "Folder instalacji nie jest dostępny.";
+            StatusText = Loc.T("Folder instalacji nie jest dostępny.");
             return;
         }
 
@@ -362,7 +363,7 @@ public partial class GamePropertiesViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się otworzyć folderu: {ex.Message}";
+            StatusText = Loc.F("Nie udało się otworzyć folderu: {0}", ex.Message);
         }
     }
 
@@ -383,24 +384,24 @@ public partial class GamePropertiesViewModel : ObservableObject
             var model = await library.GetByGameIdAsync(GameId);
             if (model is null)
             {
-                StatusText = "Nie znaleziono gry w bibliotece.";
+                StatusText = Loc.T("Nie znaleziono gry w bibliotece.");
                 return;
             }
 
             var result = await installer.UninstallAsync(model);
             if (!result.Success)
             {
-                StatusText = result.Errors.FirstOrDefault() ?? "Odinstalowanie nie powiodło się.";
+                StatusText = result.Errors.FirstOrDefault() ?? Loc.T("Odinstalowanie nie powiodło się.");
                 return;
             }
 
             await library.UpsertAsync(model);
             ApplyInstallInfo(model);
-            StatusText = "Odinstalowano pliki lokalne. Gra pozostaje w bibliotece.";
+            StatusText = Loc.T("Odinstalowano pliki lokalne. Gra pozostaje w bibliotece.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Odinstalowanie nie powiodło się: {ex.Message}";
+            StatusText = Loc.F("Odinstalowanie nie powiodło się: {0}", ex.Message);
         }
         finally
         {
@@ -417,7 +418,7 @@ public partial class GamePropertiesViewModel : ObservableObject
         }
 
         IsMoving = true;
-        MoveProgressText = "Przenoszenie plików…";
+        MoveProgressText = Loc.T("Przenoszenie plików…");
         try
         {
             using var scope = _scopes.CreateScope();
@@ -426,29 +427,29 @@ public partial class GamePropertiesViewModel : ObservableObject
             var model = await library.GetByGameIdAsync(GameId);
             if (model is null)
             {
-                StatusText = "Nie znaleziono gry w bibliotece.";
+                StatusText = Loc.T("Nie znaleziono gry w bibliotece.");
                 return;
             }
 
             var progress = new Progress<InstallProgress>(p =>
             {
-                MoveProgressText = p.Message ?? "Przenoszenie…";
+                MoveProgressText = p.Message ?? Loc.T("Przenoszenie…");
             });
 
             var result = await installer.MoveAsync(model, SelectedMoveTarget.Path, progress);
             if (!result.Success)
             {
-                StatusText = result.Errors.FirstOrDefault() ?? "Przenoszenie nie powiodło się.";
+                StatusText = result.Errors.FirstOrDefault() ?? Loc.T("Przenoszenie nie powiodło się.");
                 return;
             }
 
             await library.UpsertAsync(model);
             ApplyInstallInfo(model);
-            StatusText = $"Przeniesiono do: {SelectedMoveTarget.DisplayName}";
+            StatusText = Loc.F("Przeniesiono do: {0}", SelectedMoveTarget.DisplayName);
         }
         catch (Exception ex)
         {
-            StatusText = $"Przenoszenie nie powiodło się: {ex.Message}";
+            StatusText = Loc.F("Przenoszenie nie powiodło się: {0}", ex.Message);
         }
         finally
         {
@@ -471,11 +472,11 @@ public partial class GamePropertiesViewModel : ObservableObject
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
             var item = await library.GetByGameIdAsync(GameId);
             ApplyInstallInfo(item);
-            StatusText = "Odświeżono informacje o plikach.";
+            StatusText = Loc.T("Odświeżono informacje o plikach.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się odświeżyć: {ex.Message}";
+            StatusText = Loc.F("Nie udało się odświeżyć: {0}", ex.Message);
         }
     }
 
@@ -494,7 +495,7 @@ public partial class GamePropertiesViewModel : ObservableObject
             var model = await library.GetByGameIdAsync(GameId);
             if (model is null)
             {
-                StatusText = "Nie znaleziono gry w bibliotece.";
+                StatusText = Loc.T("Nie znaleziono gry w bibliotece.");
                 return;
             }
 
@@ -502,11 +503,11 @@ public partial class GamePropertiesViewModel : ObservableObject
             await library.UpsertAsync(model);
             CustomCoverPath = savedPath;
             RefreshCoverPreview();
-            StatusText = "Ustawiono własny obrazek kafla.";
+            StatusText = Loc.T("Ustawiono własny obrazek kafla.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się ustawić obrazka: {ex.Message}";
+            StatusText = Loc.F("Nie udało się ustawić obrazka: {0}", ex.Message);
         }
     }
 
@@ -533,11 +534,11 @@ public partial class GamePropertiesViewModel : ObservableObject
             await library.UpsertAsync(model);
             CustomCoverPath = null;
             RefreshCoverPreview();
-            StatusText = "Przywrócono domyślny obrazek kafla.";
+            StatusText = Loc.T("Przywrócono domyślny obrazek kafla.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się wyczyścić obrazka: {ex.Message}";
+            StatusText = Loc.F("Nie udało się wyczyścić obrazka: {0}", ex.Message);
         }
     }
 
@@ -549,11 +550,11 @@ public partial class GamePropertiesViewModel : ObservableObject
     {
         if (_queue is null)
         {
-            UpdatesStatusText = "Kolejka aktualizacji niedostępna.";
+            UpdatesStatusText = Loc.T("Kolejka aktualizacji niedostępna.");
             return;
         }
 
-        StatusText = "Sprawdzanie aktualizacji…";
+        StatusText = Loc.T("Sprawdzanie aktualizacji…");
         try
         {
             if (_api is not null)
@@ -568,8 +569,8 @@ public partial class GamePropertiesViewModel : ObservableObject
 
             RefreshUpdateState();
             StatusText = UpdateAvailable
-                ? "Dostępna jest nowsza wersja."
-                : "Gra jest aktualna.";
+                ? Loc.T("Dostępna jest nowsza wersja.")
+                : Loc.T("Gra jest aktualna.");
         }
         catch (Exception ex)
         {
@@ -586,7 +587,7 @@ public partial class GamePropertiesViewModel : ObservableObject
         }
 
         await _queue.EnqueueUpdateAsync(GameId);
-        UpdatesStatusText = "Aktualizacja dodana do kolejki.";
+        UpdatesStatusText = Loc.T("Aktualizacja dodana do kolejki.");
         StatusText = UpdatesStatusText;
         CanUpdateNow = false;
     }
@@ -600,10 +601,10 @@ public partial class GamePropertiesViewModel : ObservableObject
             && !string.Equals(installed, _latestVersion, StringComparison.OrdinalIgnoreCase);
         CanUpdateNow = UpdateAvailable && _queue is not null && !_queue.IsQueuedOrActive(GameId);
         UpdatesStatusText = !IsInstalled
-            ? "Gra nie jest zainstalowana na tym komputerze."
+            ? Loc.T("Gra nie jest zainstalowana na tym komputerze.")
             : UpdateAvailable
-                ? $"Dostępna aktualizacja: {installed} → {_latestVersion}"
-                : "Zainstalowana jest najnowsza wersja.";
+                ? Loc.F("Dostępna aktualizacja: {0} → {1}", installed, _latestVersion)
+                : Loc.T("Zainstalowana jest najnowsza wersja.");
     }
 
     [RelayCommand]
@@ -649,14 +650,14 @@ public partial class GamePropertiesViewModel : ObservableObject
                 var result = await installer.UninstallAsync(model);
                 if (!result.Success)
                 {
-                    DlcStatusText = result.Errors.FirstOrDefault() ?? "Nie udało się odinstalować DLC.";
+                    DlcStatusText = result.Errors.FirstOrDefault() ?? Loc.T("Nie udało się odinstalować DLC.");
                     row.IsInstalled = true;
                     return;
                 }
 
                 await library.UpsertAsync(model);
                 row.IsInstalled = false;
-                DlcStatusText = $"Odinstalowano: {row.Title}";
+                DlcStatusText = Loc.F("Odinstalowano: {0}", row.Title);
                 return;
             }
 
@@ -682,14 +683,14 @@ public partial class GamePropertiesViewModel : ObservableObject
             if (!install.Success)
             {
                 DlcStatusText = install.Errors.FirstOrDefault()
-                    ?? "Nie udało się zainstalować DLC.";
+                    ?? Loc.T("Nie udało się zainstalować DLC.");
                 row.IsInstalled = false;
                 return;
             }
 
             await library.UpsertAsync(item);
             row.IsInstalled = true;
-            DlcStatusText = $"Zainstalowano: {row.Title}";
+            DlcStatusText = Loc.F("Zainstalowano: {0}", row.Title);
         }
         catch (Exception ex)
         {
@@ -706,13 +707,13 @@ public partial class GamePropertiesViewModel : ObservableObject
     {
         if (_api is null || GameId <= 0)
         {
-            DlcStatusText = "Brak API.";
+            DlcStatusText = Loc.T("Brak API.");
             return;
         }
 
         try
         {
-            DlcStatusText = "Ładowanie DLC…";
+            DlcStatusText = Loc.T("Ładowanie DLC…");
             var apiBase = string.Empty;
             if (_scopes is not null)
             {
@@ -745,11 +746,11 @@ public partial class GamePropertiesViewModel : ObservableObject
             }
 
             ApplyDlcFilter();
-            DlcStatusText = DlcRows.Count == 0 ? "Brak DLC dla tej gry." : string.Empty;
+            DlcStatusText = DlcRows.Count == 0 ? Loc.T("Brak DLC dla tej gry.") : string.Empty;
         }
         catch (Exception ex)
         {
-            DlcStatusText = $"Błąd DLC: {ex.Message}";
+            DlcStatusText = Loc.F("Błąd DLC: {0}", ex.Message);
         }
     }
 
@@ -775,7 +776,7 @@ public partial class GamePropertiesViewModel : ObservableObject
         InstallPathText = "—";
         InstallSizeText = "—";
         InstallFilesText = "—";
-        InstallStateText = "Niezainstalowana";
+        InstallStateText = Loc.T("Niezainstalowana");
         InstalledVersionText = "—";
         IsInstalled = false;
         CanBrowseFiles = false;
@@ -807,12 +808,12 @@ public partial class GamePropertiesViewModel : ObservableObject
         InstalledVersionText = string.IsNullOrWhiteSpace(item.InstalledVersion) ? "—" : item.InstalledVersion!;
         InstallStateText = item.InstallState switch
         {
-            InstallState.Installed when folderExists => "Zainstalowana",
-            InstallState.Installed => "Zainstalowana (folder niedostępny)",
-            InstallState.Downloading => "Pobieranie…",
-            InstallState.Installing => "Instalowanie…",
-            InstallState.Failed => "Błąd instalacji",
-            _ => "Niezainstalowana"
+            InstallState.Installed when folderExists => Loc.T("Zainstalowana"),
+            InstallState.Installed => Loc.T("Zainstalowana (folder niedostępny)"),
+            InstallState.Downloading => Loc.T("Pobieranie…"),
+            InstallState.Installing => Loc.T("Instalowanie…"),
+            InstallState.Failed => Loc.T("Błąd instalacji"),
+            _ => Loc.T("Niezainstalowana")
         };
 
         if (!folderExists)
@@ -825,7 +826,7 @@ public partial class GamePropertiesViewModel : ObservableObject
 
         var stats = InstallFolderInfo.Measure(_installPath);
         InstallSizeText = InstallFolderInfo.FormatSize(stats.Bytes);
-        InstallFilesText = stats.FileCount == 1 ? "1 plik" : $"{stats.FileCount} plików";
+        InstallFilesText = stats.FileCount == 1 ? "1 plik" : Loc.F("{0} plików", stats.FileCount);
         RefreshMoveTargets(_installPath);
     }
 
@@ -913,12 +914,12 @@ public partial class GamePropertiesViewModel : ObservableObject
             model.TargetVersion = selected.Version;
             await library.UpsertAsync(model);
             StatusText = selected.IsCurrent
-                ? "Ustawiono domyślną wersję publiczną."
-                : $"Wybrano wersję {selected.Version}.";
+                ? Loc.T("Ustawiono domyślną wersję publiczną.")
+                : Loc.F("Wybrano wersję {0}.", selected.Version);
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się zapisać: {ex.Message}";
+            StatusText = Loc.F("Nie udało się zapisać: {0}", ex.Message);
         }
     }
 }
@@ -950,8 +951,8 @@ public sealed class BetaVersionItem
     public static BetaVersionItem CreatePublicDefault(string version) => new()
     {
         Version = version,
-        Title = "Domyślna wersja publiczna",
-        Description = "Najpowszechniejsza wersja gry",
+        Title = Loc.T("Domyślna wersja publiczna"),
+        Description = Loc.T("Najpowszechniejsza wersja gry"),
         UpdatedText = "—",
         IsCurrent = true,
         PublishedAtUtc = DateTimeOffset.UtcNow
@@ -960,10 +961,10 @@ public sealed class BetaVersionItem
     public static BetaVersionItem FromDto(GameBuildVersionDto dto) => new()
     {
         Version = dto.Version,
-        Title = dto.IsCurrent ? "Domyślna wersja publiczna" : $"Wersja {dto.Version}",
+        Title = dto.IsCurrent ? Loc.T("Domyślna wersja publiczna") : Loc.F("Wersja {0}", dto.Version),
         Description = dto.IsCurrent
-            ? "Najpowszechniejsza wersja gry"
-            : $"Historyczna paczka v{dto.Version}",
+            ? Loc.T("Najpowszechniejsza wersja gry")
+            : Loc.F("Historyczna paczka v{0}", dto.Version),
         UpdatedText = dto.PublishedAtUtc.LocalDateTime.ToString("d MMM yyyy"),
         IsCurrent = dto.IsCurrent,
         PublishedAtUtc = dto.PublishedAtUtc

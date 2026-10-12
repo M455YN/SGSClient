@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -549,7 +550,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
             if (model is null)
             {
                 entry.State = InstallState.Failed;
-                entry.Error = "Nie znaleziono gry w lokalnej bibliotece.";
+                entry.Error = Loc.T("Nie znaleziono gry w lokalnej bibliotece.");
                 RaiseChanged();
                 return;
             }

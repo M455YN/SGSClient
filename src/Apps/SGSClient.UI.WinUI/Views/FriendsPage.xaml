@@ -1,4 +1,4 @@
-<Page
+<Page xmlns:loc="using:SGSClient.UI.WinUI.Localization"
     x:Class="SGSClient.UI.WinUI.Views.FriendsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -67,17 +67,17 @@
           </StackPanel>
         </Button>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-          <Button Content="Napisz" Tag="{Binding}" Click="Message_Click" Style="{StaticResource CompactButton}"
+          <Button Content="{loc:Tr Key='Napisz'}" Tag="{Binding}" Click="Message_Click" Style="{StaticResource CompactButton}"
                   Visibility="{Binding ShowMessage, Converter={StaticResource BoolToVis}}" />
-          <Button Content="Akceptuj" Tag="{Binding}" Click="Accept_Click" Style="{StaticResource CompactAccentButton}"
+          <Button Content="{loc:Tr Key='Akceptuj'}" Tag="{Binding}" Click="Accept_Click" Style="{StaticResource CompactAccentButton}"
                   Visibility="{Binding ShowAccept, Converter={StaticResource BoolToVis}}" />
-          <Button Content="Dodaj" Tag="{Binding}" Click="AddFriend_Click" Style="{StaticResource CompactAccentButton}"
+          <Button Content="{loc:Tr Key='Dodaj'}" Tag="{Binding}" Click="AddFriend_Click" Style="{StaticResource CompactAccentButton}"
                   Visibility="{Binding ShowAddFriend, Converter={StaticResource BoolToVis}}" />
           <Button Content="{Binding RemoveFriendLabel}" Tag="{Binding}" Click="RemoveFriend_Click" Style="{StaticResource CompactButton}"
                   Visibility="{Binding ShowRemoveFriend, Converter={StaticResource BoolToVis}}" />
-          <Button Content="Obserwuj" Tag="{Binding}" Click="Follow_Click" Style="{StaticResource CompactButton}"
+          <Button Content="{loc:Tr Key='Obserwuj'}" Tag="{Binding}" Click="Follow_Click" Style="{StaticResource CompactButton}"
                   Visibility="{Binding ShowFollow, Converter={StaticResource BoolToVis}}" />
-          <Button Content="Przestań" Tag="{Binding}" Click="Unfollow_Click" Style="{StaticResource CompactButton}"
+          <Button Content="{loc:Tr Key='Przestań'}" Tag="{Binding}" Click="Unfollow_Click" Style="{StaticResource CompactButton}"
                   Visibility="{Binding ShowUnfollow, Converter={StaticResource BoolToVis}}" />
         </StackPanel>
       </Grid>
@@ -98,7 +98,7 @@
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
           </StackPanel>
-          <Button Grid.Column="1" Content="Usuń" Tag="{Binding}" Click="DeleteComment_Click"
+          <Button Grid.Column="1" Content="{loc:Tr Key='Usuń'}" Tag="{Binding}" Click="DeleteComment_Click"
                   Style="{StaticResource CompactButton}" VerticalAlignment="Top"
                   Visibility="{Binding CanDelete, Converter={StaticResource BoolToVis}}" />
         </Grid>
@@ -154,10 +154,10 @@
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
       <SelectorBar x:Name="SocialTabs" Grid.Column="0" SelectionChanged="SocialTabs_SelectionChanged">
-        <SelectorBarItem x:Name="TabProfile" Tag="Profile" Text="Profil" Icon="Contact" />
-        <SelectorBarItem x:Name="TabFriends" Tag="Friends" Text="Znajomi" Icon="People" IsSelected="True" />
-        <SelectorBarItem x:Name="TabChat" Tag="Chat" Text="Czat" Icon="Message" />
-        <SelectorBarItem x:Name="TabSearch" Tag="Search" Text="Dodaj" Icon="AddFriend" />
+        <SelectorBarItem x:Name="TabProfile" Tag="Profile" Text="{loc:Tr Key='Profil'}" Icon="Contact" />
+        <SelectorBarItem x:Name="TabFriends" Tag="Friends" Text="{loc:Tr Key='Znajomi'}" Icon="People" IsSelected="True" />
+        <SelectorBarItem x:Name="TabChat" Tag="Chat" Text="{loc:Tr Key='Czat'}" Icon="Message" />
+        <SelectorBarItem x:Name="TabSearch" Tag="Search" Text="{loc:Tr Key='Dodaj'}" Icon="AddFriend" />
       </SelectorBar>
       <Button Grid.Column="1" VerticalAlignment="Center"
               Style="{StaticResource CloseGlyphButton}"
@@ -166,10 +166,10 @@
       </Button>
     </Grid>
 
-    <TextBlock Grid.Row="1" Text="Społeczność" Style="{StaticResource SubtitleTextBlockStyle}" Margin="4,4,4,0" />
+    <TextBlock Grid.Row="1" Text="{loc:Tr Key='Społeczność'}" Style="{StaticResource SubtitleTextBlockStyle}" Margin="4,4,4,0" />
 
     <AutoSuggestBox x:Name="SearchBox" Grid.Row="2" QueryIcon="Find"
-                    PlaceholderText="Szukaj znajomych"
+                    PlaceholderText="{loc:Tr Key='Szukaj znajomych'}"
                     QuerySubmitted="Search_QuerySubmitted"
                     TextChanged="Search_TextChanged" />
 
@@ -181,18 +181,18 @@
         <!-- Public profile + wall -->
         <StackPanel x:Name="ProfilePanel" Spacing="10" Visibility="Collapsed">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="← Wróć" Click="CloseProfile_Click" Style="{StaticResource CompactButton}" />
-            <Button x:Name="MessageFromProfileButton" Content="Napisz wiadomość"
+            <Button Content="{loc:Tr Key='← Wróć'}" Click="CloseProfile_Click" Style="{StaticResource CompactButton}" />
+            <Button x:Name="MessageFromProfileButton" Content="{loc:Tr Key='Napisz wiadomość'}"
                     Click="MessageFromProfile_Click" Style="{StaticResource CompactAccentButton}" />
           </StackPanel>
           <TextBlock x:Name="ProfileHeaderText" Style="{StaticResource TitleTextBlockStyle}" />
           <TextBlock x:Name="ProfileSubtitleText" Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-          <TextBlock Text="Ściana" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
-          <TextBox x:Name="ProfileCommentBox" PlaceholderText="Podpisz się pod profilem…"
+          <TextBlock Text="{loc:Tr Key='Ściana'}" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
+          <TextBox x:Name="ProfileCommentBox" PlaceholderText="{loc:Tr Key='Podpisz się pod profilem…'}"
                    AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
                    TextChanged="ProfileCommentBox_TextChanged" />
-          <Button Content="Dodaj podpis" Style="{StaticResource CompactAccentButton}"
+          <Button Content="{loc:Tr Key='Dodaj podpis'}" Style="{StaticResource CompactAccentButton}"
                   Click="PostComment_Click" HorizontalAlignment="Left" />
           <TextBlock x:Name="ProfileStatusText" Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -206,10 +206,10 @@
             <ColumnDefinition Width="*" />
           </Grid.ColumnDefinitions>
           <StackPanel Spacing="6">
-            <TextBlock Text="Rozmowy" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <TextBlock Text="{loc:Tr Key='Rozmowy'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
             <TextBlock x:Name="ChatStatusText" Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-            <TextBlock x:Name="EmptyChatText" Text="Brak rozmów." Style="{StaticResource CaptionTextBlockStyle}"
+            <TextBlock x:Name="EmptyChatText" Text="{loc:Tr Key='Brak rozmów.'}" Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             <ItemsControl x:Name="ChatThreadsList" ItemTemplate="{StaticResource ChatThreadTemplate}" />
           </StackPanel>
@@ -223,16 +223,16 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <TextBox x:Name="ChatDraftBox" PlaceholderText="Wiadomość…"
+              <TextBox x:Name="ChatDraftBox" PlaceholderText="{loc:Tr Key='Wiadomość…'}"
                        KeyDown="ChatDraft_KeyDown" TextChanged="ChatDraftBox_TextChanged" />
-              <Button Grid.Column="1" Content="Wyślij" Style="{StaticResource AccentButtonStyle}"
+              <Button Grid.Column="1" Content="{loc:Tr Key='Wyślij'}" Style="{StaticResource AccentButtonStyle}"
                       Click="SendChat_Click" />
             </Grid>
           </StackPanel>
         </Grid>
 
         <StackPanel x:Name="FriendsPanel" Spacing="8">
-          <TextBlock x:Name="EmptyFriendsText" Text="Nie masz jeszcze znajomych. Wpisz nazwę lub @tag, żeby kogoś znaleźć."
+          <TextBlock x:Name="EmptyFriendsText" Text="{loc:Tr Key='Nie masz jeszcze znajomych. Wpisz nazwę lub @tag, żeby kogoś znaleźć.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
 
@@ -240,7 +240,7 @@
                     Expanding="IncomingExpander_Expanding" Collapsed="IncomingExpander_Collapsed">
             <Expander.Header>
               <Grid>
-                <TextBlock Text="Zaproszenia" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock Text="{loc:Tr Key='Zaproszenia'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                 <InfoBadge x:Name="IncomingBadge" HorizontalAlignment="Right" VerticalAlignment="Center" />
               </Grid>
             </Expander.Header>
@@ -280,15 +280,15 @@
         </StackPanel>
 
         <StackPanel x:Name="RequestsPanel" Spacing="8" Visibility="Collapsed">
-          <TextBlock Text="Do Ciebie" Style="{StaticResource BodyStrongTextBlockStyle}" />
-          <TextBlock x:Name="EmptyIncomingText" Text="Brak nowych zaproszeń."
+          <TextBlock Text="{loc:Tr Key='Do Ciebie'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+          <TextBlock x:Name="EmptyIncomingText" Text="{loc:Tr Key='Brak nowych zaproszeń.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
           <ListView x:Name="IncomingListAlt" ItemTemplate="{StaticResource PersonRowTemplate}"
                     ItemContainerStyle="{StaticResource SocialListItem}"
                     SelectionMode="None" ScrollViewer.VerticalScrollBarVisibility="Disabled" />
-          <TextBlock Text="Wysłane" Style="{StaticResource BodyStrongTextBlockStyle}" />
-          <TextBlock x:Name="EmptyOutgoingText" Text="Nie czekasz na żadną odpowiedź."
+          <TextBlock Text="{loc:Tr Key='Wysłane'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+          <TextBlock x:Name="EmptyOutgoingText" Text="{loc:Tr Key='Nie czekasz na żadną odpowiedź.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
           <ListView x:Name="OutgoingList" ItemTemplate="{StaticResource PersonRowTemplate}"
@@ -297,8 +297,8 @@
         </StackPanel>
 
         <StackPanel x:Name="FollowingPanel" Spacing="8" Visibility="Collapsed">
-          <TextBlock Text="Obserwowane" Style="{StaticResource BodyStrongTextBlockStyle}" />
-          <TextBlock x:Name="EmptyFollowingText" Text="Nikogo nie obserwujesz."
+          <TextBlock Text="{loc:Tr Key='Obserwowane'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+          <TextBlock x:Name="EmptyFollowingText" Text="{loc:Tr Key='Nikogo nie obserwujesz.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
           <ListView x:Name="FollowingList" ItemTemplate="{StaticResource PersonRowTemplate}"
@@ -307,8 +307,8 @@
         </StackPanel>
 
         <StackPanel x:Name="FollowersPanel" Spacing="8" Visibility="Collapsed">
-          <TextBlock Text="Obserwujący" Style="{StaticResource BodyStrongTextBlockStyle}" />
-          <TextBlock x:Name="EmptyFollowersText" Text="Nikt Cię jeszcze nie obserwuje."
+          <TextBlock Text="{loc:Tr Key='Obserwujący'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+          <TextBlock x:Name="EmptyFollowersText" Text="{loc:Tr Key='Nikt Cię jeszcze nie obserwuje.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
           <ListView x:Name="FollowersList" ItemTemplate="{StaticResource PersonRowTemplate}"
@@ -317,7 +317,7 @@
         </StackPanel>
 
         <StackPanel x:Name="SearchPanel" Spacing="8" Visibility="Collapsed">
-          <TextBlock x:Name="EmptySearchText" Text="Wpisz nazwę lub @tag i naciśnij Enter."
+          <TextBlock x:Name="EmptySearchText" Text="{loc:Tr Key='Wpisz nazwę lub @tag i naciśnij Enter.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
           <ListView x:Name="SearchList" ItemTemplate="{StaticResource PersonRowTemplate}"

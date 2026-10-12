@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Net;
@@ -33,19 +34,19 @@ public sealed class GameInstallService(
         IProgress<InstallProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        progress?.Report(InstallProgress.Of(InstallPhase.Queued, 0, "Przygotowanie instalacji…"));
+        progress?.Report(InstallProgress.Of(InstallPhase.Queued, 0, Loc.T("Przygotowanie instalacji…")));
 
         var game = await api.GetGameAsync(item.GameId, cancellationToken).ConfigureAwait(false);
         if (game is null)
         {
-            return FailItem(item, InstallState.Failed, "Nie znaleziono gry w sklepie.");
+            return FailItem(item, InstallState.Failed, Loc.T("Nie znaleziono gry w sklepie."));
         }
 
         if (game.Kind == GameContentKind.Dlc)
         {
             if (game.ParentGameId is not int parentId || parentId <= 0)
             {
-                return FailItem(item, InstallState.Failed, "DLC nie ma powiązanej gry bazowej.");
+                return FailItem(item, InstallState.Failed, Loc.T("DLC nie ma powiązanej gry bazowej."));
             }
 
             var parent = await library.GetByGameIdAsync(parentId, cancellationToken).ConfigureAwait(false);
@@ -58,7 +59,7 @@ public sealed class GameInstallService(
                 return FailItem(
                     item,
                     InstallState.Failed,
-                    "Najpierw zainstaluj grę bazową, zanim zainstalujesz DLC.");
+                    Loc.T("Najpierw zainstaluj grę bazową, zanim zainstalujesz DLC."));
             }
         }
 
@@ -70,7 +71,7 @@ public sealed class GameInstallService(
 
         if (build is null)
         {
-            return FailItem(item, InstallState.Failed, "Brak builda do pobrania dla tej gry.");
+            return FailItem(item, InstallState.Failed, Loc.T("Brak builda do pobrania dla tej gry."));
         }
 
         var targetVersion = string.IsNullOrWhiteSpace(version) ? build.CurrentVersion : version.Trim();
@@ -85,7 +86,7 @@ public sealed class GameInstallService(
                 string.Equals(v.Version, targetVersion, StringComparison.OrdinalIgnoreCase));
             if (selected is null)
             {
-                return FailItem(item, InstallState.Failed, $"Wersja {targetVersion} nie jest dostępna na serwerze.");
+                return FailItem(item, InstallState.Failed, Loc.F("Wersja {0} nie jest dostępna na serwerze.", targetVersion));
             }
 
             exeName = selected.ExeName;
@@ -94,11 +95,11 @@ public sealed class GameInstallService(
 
         if (string.IsNullOrWhiteSpace(downloadUrl))
         {
-            return FailItem(item, InstallState.Failed, "Brak adresu pobierania paczki (ZipLink).");
+            return FailItem(item, InstallState.Failed, Loc.T("Brak adresu pobierania paczki (ZipLink)."));
         }
 
         item.InstallState = InstallState.Downloading;
-        progress?.Report(InstallProgress.Of(InstallPhase.Downloading, 0, "Pobieranie paczki…"));
+        progress?.Report(InstallProgress.Of(InstallPhase.Downloading, 0, Loc.T("Pobieranie paczki…")));
 
         var libraryRoot = libraryPaths.GetPrimaryLibraryFolder();
         var tempZip = Path.Combine(Path.GetTempPath(), $"sgs-dl-{item.Symbol}-{targetVersion}-{Guid.NewGuid():N}.zip");
@@ -111,7 +112,7 @@ public sealed class GameInstallService(
             await DownloadAsync(downloadUrl, tempZip, progress, cancellationToken).ConfigureAwait(false);
 
             item.InstallState = InstallState.Installing;
-            progress?.Report(InstallProgress.Of(InstallPhase.Installing, 0.9, "Rozpakowywanie…"));
+            progress?.Report(InstallProgress.Of(InstallPhase.Installing, 0.9, Loc.T("Rozpakowywanie…")));
 
             if (Directory.Exists(installDir))
             {
@@ -127,7 +128,7 @@ public sealed class GameInstallService(
             if (!File.Exists(executablePath))
             {
                 return FailItem(item, InstallState.Failed,
-                    $"Po rozpakowaniu brak pliku uruchomieniowego: {exeName}");
+                    Loc.F("Po rozpakowaniu brak pliku uruchomieniowego: {0}", exeName));
             }
 
             item.InstallState = InstallState.Installed;
@@ -141,7 +142,7 @@ public sealed class GameInstallService(
             await SgsInstallRecordWriter.WriteAsync(item, libraryRoot, exeName, cancellationToken)
                 .ConfigureAwait(false);
 
-            progress?.Report(InstallProgress.Of(InstallPhase.Completed, 1, "Zainstalowano."));
+            progress?.Report(InstallProgress.Of(InstallPhase.Completed, 1, Loc.T("Zainstalowano.")));
             return GameInstallResult.Ok(item);
         }
         catch (OperationCanceledException)
@@ -151,7 +152,7 @@ public sealed class GameInstallService(
         }
         catch (Exception ex)
         {
-            return FailItem(item, InstallState.Failed, $"Instalacja nie powiodła się: {ex.Message}");
+            return FailItem(item, InstallState.Failed, Loc.F("Instalacja nie powiodła się: {0}", ex.Message));
         }
         finally
         {
@@ -167,7 +168,7 @@ public sealed class GameInstallService(
 
         if (item.InstallState != InstallState.Installed)
         {
-            return Task.FromResult(GameInstallResult.Fail("Gra nie jest zainstalowana."));
+            return Task.FromResult(GameInstallResult.Fail(Loc.T("Gra nie jest zainstalowana.")));
         }
 
         try
@@ -192,7 +193,7 @@ public sealed class GameInstallService(
         }
         catch (Exception ex)
         {
-            return Task.FromResult(GameInstallResult.Fail($"Odinstalowanie nie powiodło się: {ex.Message}"));
+            return Task.FromResult(GameInstallResult.Fail(Loc.F("Odinstalowanie nie powiodło się: {0}", ex.Message)));
         }
     }
 
@@ -206,22 +207,22 @@ public sealed class GameInstallService(
 
         if (item.InstallState != InstallState.Installed)
         {
-            return GameInstallResult.Fail("Gra nie jest zainstalowana.");
+            return GameInstallResult.Fail(Loc.T("Gra nie jest zainstalowana."));
         }
 
         if (string.IsNullOrWhiteSpace(item.InstallPath) || !Directory.Exists(item.InstallPath))
         {
-            return GameInstallResult.Fail("Folder instalacji nie istnieje.");
+            return GameInstallResult.Fail(Loc.T("Folder instalacji nie istnieje."));
         }
 
         if (string.IsNullOrWhiteSpace(item.InstalledVersion))
         {
-            return GameInstallResult.Fail("Brak informacji o zainstalowanej wersji.");
+            return GameInstallResult.Fail(Loc.T("Brak informacji o zainstalowanej wersji."));
         }
 
         if (string.IsNullOrWhiteSpace(destinationLibraryRoot))
         {
-            return GameInstallResult.Fail("Nie wybrano folderu docelowego.");
+            return GameInstallResult.Fail(Loc.T("Nie wybrano folderu docelowego."));
         }
 
         var sourcePath = Path.GetFullPath(item.InstallPath);
@@ -233,14 +234,14 @@ public sealed class GameInstallService(
 
         if (!knownRoots.Any(r => string.Equals(r, destinationRoot, StringComparison.OrdinalIgnoreCase)))
         {
-            return GameInstallResult.Fail("Folder docelowy nie jest zarejestrowanym folderem biblioteki.");
+            return GameInstallResult.Fail(Loc.T("Folder docelowy nie jest zarejestrowanym folderem biblioteki."));
         }
 
         var sourceRoot = FindLibraryRoot(sourcePath, knownRoots);
         if (sourceRoot is not null
             && string.Equals(sourceRoot, destinationRoot, StringComparison.OrdinalIgnoreCase))
         {
-            return GameInstallResult.Fail("Gra jest już w wybranym folderze biblioteki.");
+            return GameInstallResult.Fail(Loc.T("Gra jest już w wybranym folderze biblioteki."));
         }
 
         var destinationPath = Path.GetFullPath(
@@ -248,16 +249,16 @@ public sealed class GameInstallService(
 
         if (string.Equals(sourcePath, destinationPath, StringComparison.OrdinalIgnoreCase))
         {
-            return GameInstallResult.Fail("Ścieżka źródłowa i docelowa są takie same.");
+            return GameInstallResult.Fail(Loc.T("Ścieżka źródłowa i docelowa są takie same."));
         }
 
         if (Directory.Exists(destinationPath)
             && Directory.EnumerateFileSystemEntries(destinationPath).Any())
         {
-            return GameInstallResult.Fail("W folderze docelowym już istnieją pliki tej gry.");
+            return GameInstallResult.Fail(Loc.T("W folderze docelowym już istnieją pliki tej gry."));
         }
 
-        progress?.Report(InstallProgress.Of(InstallPhase.Installing, 0.1, "Przenoszenie plików…"));
+        progress?.Report(InstallProgress.Of(InstallPhase.Installing, 0.1, Loc.T("Przenoszenie plików…")));
 
         try
         {
@@ -306,7 +307,7 @@ public sealed class GameInstallService(
         }
         catch (Exception ex)
         {
-            return GameInstallResult.Fail($"Przenoszenie nie powiodło się: {ex.Message}");
+            return GameInstallResult.Fail(Loc.F("Przenoszenie nie powiodło się: {0}", ex.Message));
         }
     }
 
@@ -382,18 +383,18 @@ public sealed class GameInstallService(
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            throw new InvalidOperationException("Zaloguj się, żeby pobrać grę (401).");
+            throw new InvalidOperationException(Loc.T("Zaloguj się, żeby pobrać grę (401)."));
         }
 
         if (response.StatusCode == HttpStatusCode.Forbidden)
         {
             throw new InvalidOperationException(
-                "Brak uprawnień do pobrania. Dodaj grę do biblioteki (403).");
+                Loc.T("Brak uprawnień do pobrania. Dodaj grę do biblioteki (403)."));
         }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
         {
-            throw new InvalidOperationException("Paczka nie została znaleziona na serwerze (404).");
+            throw new InvalidOperationException(Loc.T("Paczka nie została znaleziona na serwerze (404)."));
         }
 
         response.EnsureSuccessStatusCode();
@@ -456,7 +457,7 @@ public sealed class GameInstallService(
                 {
                     lastProgressReport = Stopwatch.GetTimestamp();
                     lastReportedFraction = fraction;
-                    progress.Report(InstallProgress.Of(InstallPhase.Downloading, fraction, "Pobieranie paczki…"));
+                    progress.Report(InstallProgress.Of(InstallPhase.Downloading, fraction, Loc.T("Pobieranie paczki…")));
                 }
             }
         }

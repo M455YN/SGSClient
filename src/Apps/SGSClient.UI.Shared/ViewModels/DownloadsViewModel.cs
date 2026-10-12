@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -103,7 +104,7 @@ public partial class DownloadsViewModel : ObservableObject
             Items.Clear();
             HasItems = false;
             IsEmpty = true;
-            StatusText = "Kolejka instalacji niedostępna.";
+            StatusText = Loc.T("Kolejka instalacji niedostępna.");
             return;
         }
 
@@ -152,7 +153,7 @@ public partial class DownloadsViewModel : ObservableObject
         IsEmpty = !HasItems;
         StatusText = HasItems
             ? $"{Items.Count} w kolejce"
-            : "Brak aktywnych pobierań.";
+            : Loc.T("Brak aktywnych pobierań.");
 
         ActiveDownloadCount = Items.Count;
         var primary = Items.FirstOrDefault(i => i.ShowProgress) ?? Items.FirstOrDefault();
@@ -168,7 +169,7 @@ public partial class DownloadsViewModel : ObservableObject
 
         ActiveDownloadTitle = primary.Title;
         ActiveDownloadDetail = Items.Count > 1
-            ? $"{primary.StateText} · +{Items.Count - 1} w kolejce"
+            ? Loc.F("{0} · +{1} w kolejce", primary.StateText, Items.Count - 1)
             : $"{primary.KindText} · {primary.StateText}";
         ActiveDownloadProgress = primary.Progress;
         ActiveDownloadProgressText = primary.ShowProgress
@@ -348,17 +349,18 @@ public partial class DownloadRowItem : ObservableObject
         return new DownloadRowItem
         {
             GameId = entry.GameId,
-            Title = string.IsNullOrWhiteSpace(entry.Title) ? $"Gra #{entry.GameId}" : entry.Title!,
-            KindText = entry.IsUpdate ? "Aktualizacja" : "Instalacja",
+            Title = string.IsNullOrWhiteSpace(entry.Title) ? Loc.T("Gra bez tytułu") : entry.Title!,
+            KindText = entry.IsUpdate ? Loc.T("Aktualizacja") : Loc.T("Instalacja"),
             StateText = entry.State switch
             {
-                InstallState.Queued => "W kolejce",
-                InstallState.Paused => "Wstrzymano",
-                InstallState.Downloading => "Pobieranie",
-                InstallState.Installing => "Instalowanie",
-                InstallState.Updating => "Aktualizowanie",
-                InstallState.Failed => "Błąd",
-                _ => entry.State.ToString()
+                InstallState.Queued => Loc.T("W kolejce"),
+                InstallState.Paused => Loc.T("Wstrzymano"),
+                InstallState.Downloading => Loc.T("Pobieranie"),
+                InstallState.Installing => Loc.T("Instalowanie"),
+                InstallState.Updating => Loc.T("Aktualizowanie"),
+                InstallState.Failed => Loc.T("Błąd"),
+                InstallState.Installed => Loc.T("Zainstalowano"),
+                _ => "—"
             },
             Progress = pct,
             ProgressText = showProgress ? $"{pct * 100:0}%" : string.Empty,

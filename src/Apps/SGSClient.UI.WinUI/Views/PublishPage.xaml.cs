@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -39,7 +40,7 @@ public sealed partial class PublishPage : Page
     {
         AuthHintText.Text = ViewModel.AuthHint;
         FolderText.Text = string.IsNullOrWhiteSpace(ViewModel.SelectedFolder)
-            ? "Nie wybrano folderu."
+            ? Loc.T("Nie wybrano folderu.")
             : ViewModel.SelectedFolder;
         StatusText.Text = ViewModel.StatusText;
         SummaryTitleText.Text = ViewModel.SummaryTitle;
@@ -205,7 +206,7 @@ public sealed partial class PublishPage : Page
             return;
         }
 
-        var path = await WinUiFilePicker.PickFolderAsync(App.MainWindow, commitLabel: "Wybierz folder");
+        var path = await WinUiFilePicker.PickFolderAsync(App.MainWindow, commitLabel: Loc.T("Wybierz folder"));
         if (string.IsNullOrWhiteSpace(path))
         {
             return;
@@ -224,7 +225,7 @@ public sealed partial class PublishPage : Page
     {
         var path = await PickSingleFileAsync(
             [".png", ".jpg", ".jpeg", ".webp", ".gif"],
-            "Obrazy");
+            Loc.T("Obrazy"));
         if (path is null)
         {
             return;
@@ -233,8 +234,8 @@ public sealed partial class PublishPage : Page
         if (!ViewModel.TrySetCoverFromFile(path, out var error))
         {
             ViewModel.Issues.Clear();
-            ViewModel.Issues.Add(error ?? "Nie udało się ustawić miniaturki.");
-            ViewModel.StatusText = "Nie udało się dodać miniaturki.";
+            ViewModel.Issues.Add(error ?? Loc.T("Nie udało się ustawić miniaturki."));
+            ViewModel.StatusText = Loc.T("Nie udało się dodać miniaturki.");
         }
 
         PushFormFromViewModel();
@@ -245,7 +246,7 @@ public sealed partial class PublishPage : Page
     {
         var path = await PickSingleFileAsync(
             [".png", ".jpg", ".jpeg", ".webp", ".gif"],
-            "Obrazy");
+            Loc.T("Obrazy"));
         if (path is null)
         {
             return;
@@ -254,8 +255,8 @@ public sealed partial class PublishPage : Page
         if (!ViewModel.TrySetHeaderFromFile(path, out var error))
         {
             ViewModel.Issues.Clear();
-            ViewModel.Issues.Add(error ?? "Nie udało się ustawić okładki poziomej.");
-            ViewModel.StatusText = "Nie udało się dodać okładki poziomej.";
+            ViewModel.Issues.Add(error ?? Loc.T("Nie udało się ustawić okładki poziomej."));
+            ViewModel.StatusText = Loc.T("Nie udało się dodać okładki poziomej.");
         }
 
         PushFormFromViewModel();
@@ -266,7 +267,7 @@ public sealed partial class PublishPage : Page
     {
         var path = await PickSingleFileAsync(
             [".png", ".jpg", ".jpeg", ".webp", ".gif"],
-            "Obrazy");
+            Loc.T("Obrazy"));
         if (path is null)
         {
             return;
@@ -275,8 +276,8 @@ public sealed partial class PublishPage : Page
         if (!ViewModel.TrySetLogoFromFile(path, out var error))
         {
             ViewModel.Issues.Clear();
-            ViewModel.Issues.Add(error ?? "Nie udało się ustawić logo.");
-            ViewModel.StatusText = "Nie udało się dodać logo.";
+            ViewModel.Issues.Add(error ?? Loc.T("Nie udało się ustawić logo."));
+            ViewModel.StatusText = Loc.T("Nie udało się dodać logo.");
         }
 
         PushFormFromViewModel();
@@ -285,7 +286,7 @@ public sealed partial class PublishPage : Page
 
     private async void PickIntro_Click(object sender, RoutedEventArgs e)
     {
-        var path = await PickSingleFileAsync([".mp4", ".webm"], "Wideo");
+        var path = await PickSingleFileAsync([".mp4", ".webm"], Loc.T("Wideo"));
         if (path is null)
         {
             return;
@@ -294,8 +295,8 @@ public sealed partial class PublishPage : Page
         if (!ViewModel.TrySetIntroFromFile(path, out var error))
         {
             ViewModel.Issues.Clear();
-            ViewModel.Issues.Add(error ?? "Nie udało się ustawić intro.");
-            ViewModel.StatusText = "Nie udało się dodać intro.";
+            ViewModel.Issues.Add(error ?? Loc.T("Nie udało się ustawić intro."));
+            ViewModel.StatusText = Loc.T("Nie udało się dodać intro.");
         }
 
         PushFormFromViewModel();
@@ -312,7 +313,7 @@ public sealed partial class PublishPage : Page
         var paths = await WinUiFilePicker.PickMultipleFilesAsync(
             App.MainWindow,
             [".png", ".jpg", ".jpeg", ".webp", ".gif"],
-            commitLabel: "Dodaj");
+            commitLabel: Loc.T("Dodaj"));
         if (paths.Count == 0)
         {
             return;
@@ -321,8 +322,8 @@ public sealed partial class PublishPage : Page
         if (!ViewModel.TryAddScreenshotsFromFiles(paths, out var error))
         {
             ViewModel.Issues.Clear();
-            ViewModel.Issues.Add(error ?? "Nie udało się dodać screenów.");
-            ViewModel.StatusText = "Nie udało się dodać screenów.";
+            ViewModel.Issues.Add(error ?? Loc.T("Nie udało się dodać screenów."));
+            ViewModel.StatusText = Loc.T("Nie udało się dodać screenów.");
         }
 
         PushFormFromViewModel();

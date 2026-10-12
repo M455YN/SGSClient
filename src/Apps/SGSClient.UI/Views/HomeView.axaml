@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
@@ -125,19 +125,19 @@
             <Border Classes="stat">
               <StackPanel>
                 <TextBlock Text="{Binding LibraryCountText}" FontSize="22" FontWeight="SemiBold"/>
-                <TextBlock Text="W bibliotece" FontSize="12" Opacity="0.65"/>
+                <TextBlock Text="{loc:Tr Key='W bibliotece'}" FontSize="12" Opacity="0.65"/>
               </StackPanel>
             </Border>
             <Border Classes="stat">
               <StackPanel>
                 <TextBlock Text="{Binding InstalledCountText}" FontSize="22" FontWeight="SemiBold"/>
-                <TextBlock Text="Zainstalowane" FontSize="12" Opacity="0.65"/>
+                <TextBlock Text="{loc:Tr Key='Zainstalowane'}" FontSize="12" Opacity="0.65"/>
               </StackPanel>
             </Border>
             <Border Classes="stat">
               <StackPanel>
                 <TextBlock Text="{Binding CatalogCountText}" FontSize="22" FontWeight="SemiBold"/>
-                <TextBlock Text="W sklepie" FontSize="12" Opacity="0.65"/>
+                <TextBlock Text="{loc:Tr Key='W sklepie'}" FontSize="12" Opacity="0.65"/>
               </StackPanel>
             </Border>
           </StackPanel>
@@ -148,13 +148,13 @@
                 BorderBrush="{DynamicResource SystemFillColorCriticalBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="16,12">
           <StackPanel Spacing="4">
-            <TextBlock Text="Katalog" FontWeight="SemiBold"/>
+            <TextBlock Text="{loc:Tr Key='Katalog'}" FontWeight="SemiBold"/>
             <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Opacity="0.75" FontSize="13"/>
           </StackPanel>
         </Border>
 
         <StackPanel Spacing="10" IsVisible="{Binding HasHero}">
-          <TextBlock Text="WYRÓŻNIONE I POLECANE" FontSize="11" FontWeight="SemiBold" Opacity="0.7"
+          <TextBlock Text="{loc:Tr Key='WYRÓŻNIONE I POLECANE'}" FontSize="11" FontWeight="SemiBold" Opacity="0.7"
                      LetterSpacing="1"/>
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Height="340">
             <Button Classes="slide" Content="‹"
@@ -286,8 +286,8 @@
             <StackPanel Orientation="Horizontal" Spacing="14">
               <ui:FASymbolIcon Symbol="Shop" FontSize="20"/>
               <StackPanel>
-                <TextBlock Text="Sklep" FontWeight="SemiBold"/>
-                <TextBlock Text="Przeglądaj katalog" FontSize="12" Opacity="0.65"/>
+                <TextBlock Text="{loc:Tr Key='Sklep'}" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Przeglądaj katalog'}" FontSize="12" Opacity="0.65"/>
               </StackPanel>
             </StackPanel>
           </Button>
@@ -295,8 +295,8 @@
             <StackPanel Orientation="Horizontal" Spacing="14">
               <ui:FASymbolIcon Symbol="Library" FontSize="20"/>
               <StackPanel>
-                <TextBlock Text="Biblioteka" FontWeight="SemiBold"/>
-                <TextBlock Text="Twoje gry" FontSize="12" Opacity="0.65"/>
+                <TextBlock Text="{loc:Tr Key='Biblioteka'}" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Twoje gry'}" FontSize="12" Opacity="0.65"/>
               </StackPanel>
             </StackPanel>
           </Button>
@@ -304,8 +304,8 @@
             <StackPanel Orientation="Horizontal" Spacing="14">
               <ui:FASymbolIcon Symbol="People" FontSize="20"/>
               <StackPanel>
-                <TextBlock Text="Znajomi" FontWeight="SemiBold"/>
-                <TextBlock Text="Panel społecznościowy" FontSize="12" Opacity="0.65"/>
+                <TextBlock Text="{loc:Tr Key='Znajomi'}" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Panel społecznościowy'}" FontSize="12" Opacity="0.65"/>
               </StackPanel>
             </StackPanel>
           </Button>
@@ -314,8 +314,8 @@
             <StackPanel Orientation="Horizontal" Spacing="14">
               <ui:FASymbolIcon Symbol="Upload" FontSize="20"/>
               <StackPanel>
-                <TextBlock Text="Panel twórcy" FontWeight="SemiBold"/>
-                <TextBlock Text="Twoje gry i wydania" FontSize="12" Opacity="0.65"/>
+                <TextBlock Text="{loc:Tr Key='Panel twórcy'}" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Twoje gry i wydania'}" FontSize="12" Opacity="0.65"/>
               </StackPanel>
             </StackPanel>
           </Button>
@@ -323,8 +323,8 @@
 
         <StackPanel Spacing="12" IsVisible="{Binding HasContinue}">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="Kontynuuj" FontSize="20" FontWeight="SemiBold"/>
-            <Button Grid.Column="1" Content="Biblioteka" Classes="subtle" Padding="8,4"
+            <TextBlock Text="{loc:Tr Key='Kontynuuj'}" FontSize="20" FontWeight="SemiBold"/>
+            <Button Grid.Column="1" Content="{loc:Tr Key='Biblioteka'}" Classes="subtle" Padding="8,4"
                     Click="OpenLibrary_OnClick"/>
           </Grid>
           <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
@@ -340,7 +340,7 @@
         </StackPanel>
 
         <StackPanel Spacing="12" IsVisible="{Binding HasReadyToInstall}">
-          <TextBlock Text="Gotowe do instalacji" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Gotowe do instalacji'}" FontSize="20" FontWeight="SemiBold"/>
           <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding ReadyToInstall}"
                           ItemTemplate="{StaticResource PosterTemplate}">
@@ -354,7 +354,7 @@
         </StackPanel>
 
         <StackPanel Spacing="12" IsVisible="{Binding HasFeatured}">
-          <TextBlock Text="Wyróżnione" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Wyróżnione'}" FontSize="20" FontWeight="SemiBold"/>
           <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Featured}"
                           ItemTemplate="{StaticResource WideCardTemplate}">
@@ -368,7 +368,7 @@
         </StackPanel>
 
         <StackPanel Spacing="12" IsVisible="{Binding HasCategories}">
-          <TextBlock Text="Kategorie" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Kategorie'}" FontSize="20" FontWeight="SemiBold"/>
           <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
             <ItemsControl ItemsSource="{Binding Categories}">
               <ItemsControl.ItemsPanel>
@@ -405,8 +405,8 @@
 
         <StackPanel Spacing="12" IsVisible="{Binding HasCatalog}">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="Nowe w sklepie" FontSize="20" FontWeight="SemiBold"/>
-            <Button Grid.Column="1" Content="Sklep" Classes="subtle" Padding="8,4"
+            <TextBlock Text="{loc:Tr Key='Nowe w sklepie'}" FontSize="20" FontWeight="SemiBold"/>
+            <Button Grid.Column="1" Content="{loc:Tr Key='Sklep'}" Classes="subtle" Padding="8,4"
                     Click="OpenStore_OnClick"/>
           </Grid>
           <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
@@ -422,10 +422,10 @@
         </StackPanel>
 
         <StackPanel Spacing="12" MaxWidth="480" HorizontalAlignment="Left" IsVisible="{Binding ShowEmpty}">
-          <TextBlock Text="Nic tu jeszcze nie ma" FontSize="20" FontWeight="SemiBold"/>
-          <TextBlock Text="Dodaj gry ze sklepu albo uruchom Api, żeby zobaczyć wyróżnione tytuły."
+          <TextBlock Text="{loc:Tr Key='Nic tu jeszcze nie ma'}" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Wyróżnione gry pojawią się tutaj, gdy sklep będzie dostępny.'}"
                      Opacity="0.7" TextWrapping="Wrap"/>
-          <Button Content="Przeglądaj sklep" Classes="accent" Padding="16,8"
+          <Button Content="{loc:Tr Key='Przeglądaj sklep'}" Classes="accent" Padding="16,8"
                   HorizontalAlignment="Left" Click="OpenStore_OnClick"/>
         </StackPanel>
       </StackPanel>

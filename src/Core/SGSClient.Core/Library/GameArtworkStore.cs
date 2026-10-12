@@ -1,3 +1,5 @@
+using SGSClient.Core.Localization;
+
 namespace SGSClient.Core.Library;
 
 /// <summary>Local custom capsule/tile art for library games (Steam-like).</summary>
@@ -16,7 +18,7 @@ public static class GameArtworkStore
         ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
         if (!File.Exists(sourcePath))
         {
-            throw new FileNotFoundException("Nie znaleziono pliku obrazka.", sourcePath);
+            throw new FileNotFoundException(Loc.T("Nie znaleziono pliku obrazka."), sourcePath);
         }
 
         Directory.CreateDirectory(ArtworkDirectory);

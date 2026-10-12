@@ -1,8 +1,13 @@
-﻿<Page
+﻿<Page xmlns:loc="using:SGSClient.UI.WinUI.Localization"
     x:Class="SGSClient.UI.WinUI.Views.LibraryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SGSClient.UI.WinUI.Views"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+  <Page.Resources>
+    <local:InverseBoolToVisibilityConverter x:Key="BoolToVisInv" />
+  </Page.Resources>
 
   <Grid>
     <Grid.ColumnDefinitions>
@@ -27,7 +32,7 @@
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Biblioteka"
+            <TextBlock Text="{loc:Tr Key='Biblioteka'}"
                        Style="{StaticResource SubtitleTextBlockStyle}"
                        VerticalAlignment="Center" />
             <Button Grid.Column="1"
@@ -39,7 +44,7 @@
           </Grid>
 
           <AutoSuggestBox x:Name="SearchBox"
-                          PlaceholderText="Szukaj w bibliotece"
+                          PlaceholderText="{loc:Tr Key='Szukaj w bibliotece'}"
                           QueryIcon="Find"
                           TextChanged="Search_TextChanged" />
 
@@ -49,7 +54,7 @@
                   Style="{StaticResource SubtleButtonStyle}">
             <StackPanel Orientation="Horizontal" Spacing="10">
               <FontIcon Glyph="&#xE80F;" FontSize="16" />
-              <TextBlock Text="Strona główna" VerticalAlignment="Center" />
+              <TextBlock Text="{loc:Tr Key='Strona główna'}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
         </StackPanel>
@@ -74,7 +79,8 @@
                     <TextBlock Text="{Binding TileLabel}"
                                FontWeight="SemiBold" FontSize="12"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Visibility="{Binding HasCover, Converter={StaticResource BoolToVisInv}}" />
                     <Image Source="{Binding CoverImageUrl}" Stretch="Uniform" />
                   </Grid>
                 </Border>
@@ -114,7 +120,7 @@
                     VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,24,28,32" Spacing="28">
           <StackPanel x:Name="RecentPanel" Spacing="12" Visibility="Collapsed">
-            <TextBlock Text="Niedawne gry" Style="{StaticResource SubtitleTextBlockStyle}" />
+            <TextBlock Text="{loc:Tr Key='Niedawne gry'}" Style="{StaticResource SubtitleTextBlockStyle}" />
             <GridView x:Name="RecentList"
                       SelectionMode="None"
                       IsItemClickEnabled="True"
@@ -168,7 +174,7 @@
               </Grid.ColumnDefinitions>
               <TextBlock x:Name="AllGamesHeader" Style="{StaticResource SubtitleTextBlockStyle}" />
               <TextBlock Grid.Column="1"
-                         Text="Sortuj: alfabetycznie"
+                         Text="{loc:Tr Key='Sortuj: alfabetycznie'}"
                          VerticalAlignment="Center"
                          Style="{StaticResource CaptionTextBlockStyle}"
                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />

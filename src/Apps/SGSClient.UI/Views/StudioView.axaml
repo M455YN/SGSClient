@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.StudioView"
@@ -20,19 +20,19 @@
   <Grid RowDefinitions="Auto,*,Auto">
     <Grid Margin="28,20,28,12" ColumnDefinitions="*,Auto">
       <StackPanel Spacing="4">
-        <TextBlock Text="Panel twórcy" FontSize="28" FontWeight="SemiBold"/>
-        <TextBlock Text="Strona sklepu, multimedia, buildy i DLC." Classes="caption"/>
+        <TextBlock Text="{loc:Tr Key='Panel twórcy'}" FontSize="28" FontWeight="SemiBold"/>
+        <TextBlock Text="{loc:Tr Key='Strona sklepu, multimedia, buildy i DLC.'}" Classes="caption"/>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
-        <Button Content="Nowa gra" Classes="accent" Click="AddGame_OnClick" Padding="14,8"/>
-        <Button Content="Odśwież" Click="Refresh_OnClick" Padding="12,6"/>
+        <Button Content="{loc:Tr Key='Nowa gra'}" Classes="accent" Click="AddGame_OnClick" Padding="14,8"/>
+        <Button Content="{loc:Tr Key='Odśwież'}" Click="Refresh_OnClick" Padding="12,6"/>
       </StackPanel>
     </Grid>
 
     <Grid Grid.Row="1" Margin="28,0,28,0" ColumnDefinitions="360,*" ColumnSpacing="16">
       <Border Classes="card" Padding="0" Margin="0,0,0,16">
         <Grid RowDefinitions="Auto,*,Auto">
-          <TextBox Margin="12,12,12,8" PlaceholderText="Szukaj po tytule lub symbolu"
+          <TextBox Margin="12,12,12,8" PlaceholderText="{loc:Tr Key='Szukaj po tytule lub symbolu'}"
                    Text="{Binding SearchText, Mode=TwoWay}"/>
           <ListBox Grid.Row="1" ItemsSource="{Binding FilteredGames}"
                    SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
@@ -64,21 +64,21 @@
       <ScrollViewer Grid.Column="1" Margin="0,0,0,16" IsVisible="{Binding HasSelection}">
         <StackPanel Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <RadioButton Content="Przegląd" GroupName="StudioTab" IsChecked="{Binding IsOverviewTab, Mode=OneWay}"
+            <RadioButton Content="{loc:Tr Key='Przegląd'}" GroupName="StudioTab" IsChecked="{Binding IsOverviewTab, Mode=OneWay}"
                          Command="{Binding SelectTabCommand}" CommandParameter="overview"/>
-            <RadioButton Content="Strona sklepu" GroupName="StudioTab" IsChecked="{Binding IsStoreTab, Mode=OneWay}"
+            <RadioButton Content="{loc:Tr Key='Strona sklepu'}" GroupName="StudioTab" IsChecked="{Binding IsStoreTab, Mode=OneWay}"
                          Command="{Binding SelectTabCommand}" CommandParameter="store"/>
             <RadioButton Content="Multimedia" GroupName="StudioTab" IsChecked="{Binding IsMediaTab, Mode=OneWay}"
                          Command="{Binding SelectTabCommand}" CommandParameter="media"/>
-            <RadioButton Content="Buildy" GroupName="StudioTab" IsChecked="{Binding IsBuildsTab, Mode=OneWay}"
+            <RadioButton Content="{loc:Tr Key='Buildy'}" GroupName="StudioTab" IsChecked="{Binding IsBuildsTab, Mode=OneWay}"
                          Command="{Binding SelectTabCommand}" CommandParameter="builds"/>
             <RadioButton Content="DLC" GroupName="StudioTab" IsChecked="{Binding IsDlcTab, Mode=OneWay}"
                          Command="{Binding SelectTabCommand}" CommandParameter="dlc"/>
           </StackPanel>
 
           <StackPanel Spacing="16" IsVisible="{Binding IsOverviewTab}">
-            <Border CornerRadius="8" ClipToBounds="True" Background="#1AFFFFFF">
-              <Viewbox Stretch="Uniform" Width="560" Height="262" HorizontalAlignment="Left">
+            <Border CornerRadius="8" ClipToBounds="True" Background="#1AFFFFFF" MaxWidth="920" HorizontalAlignment="Left">
+              <Viewbox Stretch="Uniform">
                 <Panel Width="920" Height="430">
                   <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="42" FontWeight="Bold"
                              Opacity="0.2" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -95,25 +95,25 @@
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
               <Border Classes="card">
                 <StackPanel Spacing="2">
-                  <TextBlock Text="Pobrania" Classes="caption"/>
+                  <TextBlock Text="{loc:Tr Key='Pobrania'}" Classes="caption"/>
                   <TextBlock Text="{Binding TotalDownloadsText}" FontSize="22" FontWeight="SemiBold"/>
                 </StackPanel>
               </Border>
               <Border Grid.Column="1" Classes="card">
                 <StackPanel Spacing="2">
-                  <TextBlock Text="30 dni" Classes="caption"/>
+                  <TextBlock Text="{loc:Tr Key='30 dni'}" Classes="caption"/>
                   <TextBlock Text="{Binding Last30Text}" FontSize="22" FontWeight="SemiBold"/>
                 </StackPanel>
               </Border>
               <Border Grid.Column="2" Classes="card">
                 <StackPanel Spacing="2">
-                  <TextBlock Text="7 dni" Classes="caption"/>
+                  <TextBlock Text="{loc:Tr Key='7 dni'}" Classes="caption"/>
                   <TextBlock Text="{Binding Last7Text}" FontSize="22" FontWeight="SemiBold"/>
                 </StackPanel>
               </Border>
               <Border Grid.Column="3" Classes="card">
                 <StackPanel Spacing="2">
-                  <TextBlock Text="Wersja" Classes="caption"/>
+                  <TextBlock Text="{loc:Tr Key='Wersja'}" Classes="caption"/>
                   <TextBlock Text="{Binding SelectedGame.CurrentVersionText}" FontSize="22" FontWeight="SemiBold"/>
                 </StackPanel>
               </Border>
@@ -121,31 +121,31 @@
             <Border Classes="card">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="4">
-                  <TextBlock Text="Widoczność w sklepie" FontWeight="SemiBold"/>
-                  <TextBlock Text="Szkic jest ukryty dla graczy." Classes="caption" TextWrapping="Wrap"/>
+                  <TextBlock Text="{loc:Tr Key='Widoczność w sklepie'}" FontWeight="SemiBold"/>
+                  <TextBlock Text="{loc:Tr Key='Szkic jest ukryty dla graczy.'}" Classes="caption" TextWrapping="Wrap"/>
                 </StackPanel>
-                <ToggleSwitch x:Name="PublishedSwitch" Grid.Column="1" OnContent="W sklepie" OffContent="Szkic"
+                <ToggleSwitch x:Name="PublishedSwitch" Grid.Column="1" OnContent="{loc:Tr Key='W sklepie'}" OffContent="{loc:Tr Key='Szkic'}"
                               IsChecked="{Binding SelectedGame.IsPublished, Mode=OneWay}"
                               IsCheckedChanged="Published_OnChanged"/>
               </Grid>
             </Border>
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Content="Opublikuj nową wersję" Click="AddVersion_OnClick" Padding="14,8"/>
-              <Button Content="Dodaj DLC" Click="AddDlc_OnClick" Padding="14,8"/>
-              <Button Content="Usuń grę" Click="Delete_OnClick" Padding="14,8"/>
+              <Button Content="{loc:Tr Key='Opublikuj nową wersję'}" Click="AddVersion_OnClick" Padding="14,8"/>
+              <Button Content="{loc:Tr Key='Dodaj DLC'}" Click="AddDlc_OnClick" Padding="14,8"/>
+              <Button Content="{loc:Tr Key='Usuń grę'}" Click="Delete_OnClick" Padding="14,8"/>
             </StackPanel>
           </StackPanel>
 
           <StackPanel Spacing="12" IsVisible="{Binding IsStoreTab}">
             <Border Classes="card">
               <StackPanel Spacing="10">
-                <TextBlock Text="Podstawowe" FontWeight="SemiBold"/>
-                <TextBox PlaceholderText="Tytuł" Text="{Binding SelectedGame.EditTitle, Mode=TwoWay}"/>
-                <TextBox PlaceholderText="Opis" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="88"
+                <TextBlock Text="{loc:Tr Key='Podstawowe'}" FontWeight="SemiBold"/>
+                <TextBox PlaceholderText="{loc:Tr Key='Tytuł'}" Text="{Binding SelectedGame.EditTitle, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="{loc:Tr Key='Opis'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="88"
                          Text="{Binding SelectedGame.EditDescription, Mode=TwoWay}"/>
-                <TextBox PlaceholderText="Wymagania sprzętowe" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
+                <TextBox PlaceholderText="{loc:Tr Key='Wymagania sprzętowe'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
                          Text="{Binding SelectedGame.EditHardwareRequirements, Mode=TwoWay}"/>
-                <TextBlock Text="Gatunki" Classes="caption"/>
+                <TextBlock Text="{loc:Tr Key='Gatunki'}" Classes="caption"/>
                 <Expander Header="{Binding SelectedGame.EditGenres.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                   <ScrollViewer MaxHeight="220">
                     <ItemsControl ItemsSource="{Binding SelectedGame.EditGenres.Options}">
@@ -157,7 +157,7 @@
                     </ItemsControl>
                   </ScrollViewer>
                 </Expander>
-                <TextBlock Text="Silniki" Classes="caption"/>
+                <TextBlock Text="{loc:Tr Key='Silniki'}" Classes="caption"/>
                 <Expander Header="{Binding SelectedGame.EditEngines.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                   <ScrollViewer MaxHeight="220">
                     <ItemsControl ItemsSource="{Binding SelectedGame.EditEngines.Options}">
@@ -173,30 +173,30 @@
             </Border>
             <Border Classes="card">
               <StackPanel Spacing="10">
-                <TextBlock Text="Wydanie, studio i funkcje" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Wydanie, studio i funkcje'}" FontWeight="SemiBold"/>
                 <ComboBox ItemsSource="{Binding ReleaseStatusOptions}"
                           SelectedIndex="{Binding SelectedGame.EditReleaseStatusIndex, Mode=TwoWay}"/>
                 <ComboBox ItemsSource="{Binding AgeRatingOptions}"
                           SelectedIndex="{Binding SelectedGame.EditAgeRatingIndex, Mode=TwoWay}"/>
-                <TextBox PlaceholderText="Nazwa studia" Text="{Binding SelectedGame.EditStudioName, Mode=TwoWay}"/>
-                <TextBox PlaceholderText="Strona www" Text="{Binding SelectedGame.EditWebsiteUrl, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="{loc:Tr Key='Nazwa studia'}" Text="{Binding SelectedGame.EditStudioName, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="{loc:Tr Key='Strona www'}" Text="{Binding SelectedGame.EditWebsiteUrl, Mode=TwoWay}"/>
                 <TextBox PlaceholderText="Discord" Text="{Binding SelectedGame.EditDiscordUrl, Mode=TwoWay}"/>
-                <TextBox PlaceholderText="Wsparcie" Text="{Binding SelectedGame.EditSupportUrl, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="{loc:Tr Key='Wsparcie'}" Text="{Binding SelectedGame.EditSupportUrl, Mode=TwoWay}"/>
                 <WrapPanel>
                   <CheckBox Content="Singleplayer" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasSinglePlayer, Mode=TwoWay}"/>
                   <CheckBox Content="Multiplayer" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasMultiPlayer, Mode=TwoWay}"/>
-                  <CheckBox Content="Kooperacja" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasCoOp, Mode=TwoWay}"/>
+                  <CheckBox Content="{loc:Tr Key='Kooperacja'}" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasCoOp, Mode=TwoWay}"/>
                   <CheckBox Content="Pad" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasController, Mode=TwoWay}"/>
-                  <CheckBox Content="Chmura" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasCloudSaves, Mode=TwoWay}"/>
-                  <CheckBox Content="Osiągnięcia" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasAchievements, Mode=TwoWay}"/>
-                  <CheckBox Content="Mody" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasModding, Mode=TwoWay}"/>
+                  <CheckBox Content="{loc:Tr Key='Chmura'}" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasCloudSaves, Mode=TwoWay}"/>
+                  <CheckBox Content="{loc:Tr Key='Osiągnięcia'}" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasAchievements, Mode=TwoWay}"/>
+                  <CheckBox Content="{loc:Tr Key='Mody'}" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasModding, Mode=TwoWay}"/>
                   <CheckBox Content="VR" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasVr, Mode=TwoWay}"/>
                 </WrapPanel>
-                <TextBox PlaceholderText="Języki, np. Polski, English" Text="{Binding SelectedGame.EditLanguages, Mode=TwoWay}"/>
-                <TextBox PlaceholderText="Tagi, np. roguelike, pixel art" Text="{Binding SelectedGame.EditTags, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="{loc:Tr Key='Języki, np. Polski, English'}" Text="{Binding SelectedGame.EditLanguages, Mode=TwoWay}"/>
+                <TextBox PlaceholderText="{loc:Tr Key='Tagi, np. roguelike, pixel art'}" Text="{Binding SelectedGame.EditTags, Mode=TwoWay}"/>
               </StackPanel>
             </Border>
-            <Button Content="Zapisz stronę sklepu" Classes="accent" Click="SaveStore_OnClick"
+            <Button Content="{loc:Tr Key='Zapisz stronę sklepu'}" Classes="accent" Click="SaveStore_OnClick"
                     HorizontalAlignment="Left" Padding="16,8"/>
           </StackPanel>
 
@@ -207,12 +207,12 @@
                   <Image Source="{Binding SelectedGame.OwnCoverImageUrl}" Stretch="UniformToFill"/>
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
-                  <TextBlock Text="Miniaturka" FontWeight="SemiBold"/>
-                  <TextBlock Text="Pionowa, na listy i w bibliotece (jak kapsuła Steam)."
+                  <TextBlock Text="{loc:Tr Key='Miniaturka'}" FontWeight="SemiBold"/>
+                  <TextBlock Text="{loc:Tr Key='Pionowa, używana na listach i w bibliotece. Zalecane 600 × 900.'}"
                              Classes="caption" TextWrapping="Wrap"/>
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="Wybierz plik" Click="PickCover_OnClick"/>
-                    <Button Content="Usuń" Click="ClearCover_OnClick"/>
+                    <Button Content="{loc:Tr Key='Wybierz plik'}" Click="PickCover_OnClick"/>
+                    <Button Content="{loc:Tr Key='Usuń'}" Click="ClearCover_OnClick"/>
                   </StackPanel>
                 </StackPanel>
               </Grid>
@@ -223,12 +223,12 @@
                   <Image Source="{Binding SelectedGame.OwnHeaderImageUrl}" Stretch="UniformToFill"/>
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
-                  <TextBlock Text="Okładka pozioma" FontWeight="SemiBold"/>
-                  <TextBlock Text="920 × 430 (proporcje Steam header) — wypełnia kafelek w całości."
+                  <TextBlock Text="{loc:Tr Key='Okładka pozioma'}" FontWeight="SemiBold"/>
+                  <TextBlock Text="{loc:Tr Key='920 × 430 — wypełnia nagłówek strony gry w całości.'}"
                              Classes="caption" TextWrapping="Wrap"/>
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="Wybierz plik" Click="PickHeader_OnClick"/>
-                    <Button Content="Usuń" Click="ClearHeader_OnClick"/>
+                    <Button Content="{loc:Tr Key='Wybierz plik'}" Click="PickHeader_OnClick"/>
+                    <Button Content="{loc:Tr Key='Usuń'}" Click="ClearHeader_OnClick"/>
                   </StackPanel>
                 </StackPanel>
               </Grid>
@@ -239,12 +239,12 @@
                   <Image Source="{Binding SelectedGame.OwnLogoImageUrl}" Stretch="Uniform"/>
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
-                  <TextBlock Text="Logo (kwadratowe)" FontWeight="SemiBold"/>
-                  <TextBlock Text="Kwadratowe logo na małe kafelki (np. lista zainstalowanych w sidebarze). Zalecane 512×512."
+                  <TextBlock Text="{loc:Tr Key='Logo (kwadratowe)'}" FontWeight="SemiBold"/>
+                  <TextBlock Text="{loc:Tr Key='Kwadratowe logo na małe kafelki (np. lista zainstalowanych w sidebarze). Zalecane 512×512.'}"
                              Classes="caption" TextWrapping="Wrap"/>
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="Wybierz plik" Click="PickLogo_OnClick"/>
-                    <Button Content="Usuń" Click="ClearLogo_OnClick"/>
+                    <Button Content="{loc:Tr Key='Wybierz plik'}" Click="PickLogo_OnClick"/>
+                    <Button Content="{loc:Tr Key='Usuń'}" Click="ClearLogo_OnClick"/>
                   </StackPanel>
                 </StackPanel>
               </Grid>
@@ -253,16 +253,16 @@
               <StackPanel Spacing="8">
                 <TextBlock Text="Intro" FontWeight="SemiBold"/>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Content="Wybierz wideo" Click="PickIntro_OnClick"/>
-                  <Button Content="Usuń" Click="ClearIntro_OnClick"/>
+                  <Button Content="{loc:Tr Key='Wybierz wideo'}" Click="PickIntro_OnClick"/>
+                  <Button Content="{loc:Tr Key='Usuń'}" Click="ClearIntro_OnClick"/>
                 </StackPanel>
               </StackPanel>
             </Border>
             <Border Classes="card">
               <StackPanel Spacing="8">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="Zrzuty ekranu" FontWeight="SemiBold"/>
-                  <Button Grid.Column="1" Content="Dodaj" Click="AddScreenshot_OnClick"/>
+                  <TextBlock Text="{loc:Tr Key='Zrzuty ekranu'}" FontWeight="SemiBold"/>
+                  <Button Grid.Column="1" Content="{loc:Tr Key='Dodaj'}" Click="AddScreenshot_OnClick"/>
                 </Grid>
                 <ItemsControl ItemsSource="{Binding SelectedGame.ScreenshotItems}">
                   <ItemsControl.ItemsPanel>
@@ -272,7 +272,7 @@
                   </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <Button Content="Usuń zrzut" Tag="{Binding}" Click="RemoveScreenshot_OnClick"
+                      <Button Content="{loc:Tr Key='Usuń zrzut'}" Tag="{Binding}" Click="RemoveScreenshot_OnClick"
                               Margin="0,0,8,8" Padding="10,6"/>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
@@ -285,8 +285,8 @@
             <Border Classes="card">
               <StackPanel Spacing="8">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="Aktualne buildy" FontWeight="SemiBold"/>
-                  <Button Grid.Column="1" Content="Nowa wersja" Click="AddVersion_OnClick"/>
+                  <TextBlock Text="{loc:Tr Key='Aktualne buildy'}" FontWeight="SemiBold"/>
+                  <Button Grid.Column="1" Content="{loc:Tr Key='Nowa wersja'}" Click="AddVersion_OnClick"/>
                 </Grid>
                 <ItemsControl ItemsSource="{Binding SelectedGame.Builds}">
                   <ItemsControl.ItemTemplate>
@@ -307,7 +307,7 @@
             </Border>
             <Border Classes="card">
               <StackPanel Spacing="8">
-                <TextBlock Text="Historia i opis zmian" FontWeight="SemiBold"/>
+                <TextBlock Text="{loc:Tr Key='Historia i opis zmian'}" FontWeight="SemiBold"/>
                 <ItemsControl ItemsSource="{Binding Versions}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:StudioVersionItem">
@@ -317,9 +317,9 @@
                             <TextBlock Text="{Binding Version}" FontWeight="SemiBold"/>
                             <TextBlock Grid.Column="1" Text="{Binding MetaText}" Classes="caption"/>
                           </Grid>
-                          <TextBox PlaceholderText="Notatki do tej wersji" AcceptsReturn="True" TextWrapping="Wrap"
+                          <TextBox PlaceholderText="{loc:Tr Key='Notatki do tej wersji'}" AcceptsReturn="True" TextWrapping="Wrap"
                                    MinHeight="64" Text="{Binding EditNotes, Mode=TwoWay}"/>
-                          <Button Content="Zapisz opis zmian" Tag="{Binding}" Click="SaveNotes_OnClick"
+                          <Button Content="{loc:Tr Key='Zapisz opis zmian'}" Tag="{Binding}" Click="SaveNotes_OnClick"
                                   HorizontalAlignment="Left" Padding="12,6"/>
                         </StackPanel>
                       </Border>
@@ -334,8 +334,8 @@
             <Border Classes="card">
               <StackPanel Spacing="8">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="Dodatki" FontWeight="SemiBold"/>
-                  <Button Grid.Column="1" Content="Dodaj DLC" Click="AddDlc_OnClick"/>
+                  <TextBlock Text="{loc:Tr Key='Dodatki'}" FontWeight="SemiBold"/>
+                  <Button Grid.Column="1" Content="{loc:Tr Key='Dodaj DLC'}" Click="AddDlc_OnClick"/>
                 </Grid>
                 <ItemsControl ItemsSource="{Binding SelectedGame.Dlcs}">
                   <ItemsControl.ItemTemplate>
@@ -346,7 +346,7 @@
                             <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
                             <TextBlock Text="{Binding MetaText}" Classes="caption"/>
                           </StackPanel>
-                          <Button Grid.Column="1" Content="Usuń" Tag="{Binding}" Click="DeleteDlc_OnClick"/>
+                          <Button Grid.Column="1" Content="{loc:Tr Key='Usuń'}" Tag="{Binding}" Click="DeleteDlc_OnClick"/>
                         </Grid>
                       </Border>
                     </DataTemplate>

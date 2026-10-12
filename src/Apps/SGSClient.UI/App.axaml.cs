@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Localization;
 using SGSClient.Infrastructure.Client;
 using SGSClient.Infrastructure.Client.Persistence;
 using SGSClient.Infrastructure.Client.Services;
@@ -23,6 +24,10 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        var userSettings = new ClientUserSettingsStore().Load();
+        Loc.Initialize(userSettings.Language);
+        RequestedThemeVariant = AvaloniaThemeApplier.ToVariant(userSettings.Theme);
+
         var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
             ?? Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
             ?? "Production";
@@ -37,6 +42,7 @@ public partial class App : Application
 
         var services = new ServiceCollection();
         services.AddSingleton<IConfiguration>(configuration);
+        services.AddSingleton<IThemeApplier, AvaloniaThemeApplier>();
         services.AddClientInfrastructure(configuration);
 
         services.AddTransient(sp => new HomeViewModel(
@@ -97,7 +103,9 @@ public partial class App : Application
             sp.GetRequiredService<IConfiguration>(),
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetRequiredService<ILibraryFolderService>(),
-            sp.GetService<IAuthSession>()));
+            sp.GetService<IAuthSession>(),
+            sp.GetService<IClientUserSettingsStore>(),
+            sp.GetService<IThemeApplier>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
@@ -124,7 +132,8 @@ public partial class App : Application
             configuration,
             sp.GetService<NotificationsViewModel>(),
             sp.GetService<ISgsApiService>(),
-            sp.GetService<ICatalogCacheStore>()));
+            sp.GetService<ICatalogCacheStore>(),
+            sp.GetService<IUiDispatcher>()));
         services.AddTransient(sp => new MainWindowViewModel(
             sp.GetRequiredService<HomeViewModel>(),
             sp.GetRequiredService<GamesViewModel>(),

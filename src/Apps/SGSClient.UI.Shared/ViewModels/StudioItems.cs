@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SGSClient.Core.DTOs;
@@ -16,7 +17,7 @@ public sealed class StudioBuildItem
     public required string Version { get; init; }
     public required string ExeName { get; init; }
     public bool IsDefault { get; init; }
-    public string MetaText => IsDefault ? $"{ExeName} · domyślny" : ExeName;
+    public string MetaText => IsDefault ? Loc.F("{0} · domyślny", ExeName) : ExeName;
 }
 
 public partial class StudioVersionItem : ObservableObject
@@ -32,8 +33,8 @@ public partial class StudioVersionItem : ObservableObject
     public string MetaText =>
         (string.IsNullOrWhiteSpace(PlatformLabel) ? "build" : PlatformLabel)
         + " · "
-        + PublishedAtUtc.LocalDateTime.ToString("d MMM yyyy HH:mm", CultureInfo.GetCultureInfo("pl-PL"))
-        + (IsCurrent ? " · aktualna" : "");
+        + PublishedAtUtc.LocalDateTime.ToString("d MMM yyyy HH:mm", Loc.Culture)
+        + (IsCurrent ? Loc.T(" · aktualna") : "");
 
     public static StudioVersionItem FromDto(GameBuildVersionDto dto)
     {

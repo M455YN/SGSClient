@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -20,7 +21,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
     {
         if (string.IsNullOrWhiteSpace(localFilePath) || !File.Exists(localFilePath))
         {
-            return (null, "Nie można odczytać wybranego pliku.");
+            return (null, Loc.T("Nie można odczytać wybranego pliku."));
         }
 
         await using var stream = File.OpenRead(localFilePath);
@@ -36,12 +37,12 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(token))
         {
-            return (null, "Brak tokena — zaloguj się ponownie.");
+            return (null, Loc.T("Brak tokena — zaloguj się ponownie."));
         }
 
         if (content is null || string.IsNullOrWhiteSpace(fileName))
         {
-            return (null, "Brak pliku zdjęcia.");
+            return (null, Loc.T("Brak pliku zdjęcia."));
         }
 
         try
@@ -51,7 +52,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             await content.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
             if (buffer.Length == 0)
             {
-                return (null, "Wybrany plik jest pusty.");
+                return (null, Loc.T("Wybrany plik jest pusty."));
             }
 
             buffer.Position = 0;
@@ -82,7 +83,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             var profile = await response.Content.ReadFromJsonAsync<UserProfileDto>(cancellationToken)
                 .ConfigureAwait(false);
             return profile is null
-                ? (null, "API nie zwróciło profilu.")
+                ? (null, Loc.T("API nie zwróciło profilu."))
                 : (profile, null);
         }
         catch (Exception ex)
@@ -193,7 +194,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(token))
         {
-            return (false, "Zaloguj się, żeby usunąć komentarz.");
+            return (false, Loc.T("Zaloguj się, żeby usunąć komentarz."));
         }
 
         try
@@ -207,7 +208,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             }
 
             var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            return (false, TryExtractError(text) ?? response.ReasonPhrase ?? "Nie udało się usunąć komentarza.");
+            return (false, TryExtractError(text) ?? response.ReasonPhrase ?? Loc.T("Nie udało się usunąć komentarza."));
         }
         catch (Exception ex)
         {
@@ -269,7 +270,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(token))
             {
-                return (false, "Brak tokena.");
+                return (false, Loc.T("Brak tokena."));
             }
 
             using var request = new HttpRequestMessage(HttpMethod.Post, $"api/me/notifications/{notificationId}/read");
@@ -296,7 +297,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(token))
             {
-                return (false, "Brak tokena.");
+                return (false, Loc.T("Brak tokena."));
             }
 
             using var request = new HttpRequestMessage(HttpMethod.Post, "api/me/notifications/read-all");
@@ -353,7 +354,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             {
                 if (errors.ValueKind == JsonValueKind.Array && errors.GetArrayLength() > 0)
                 {
-                    return errors[0].GetString();
+                    return Loc.TS(errors[0].GetString());
                 }
 
                 if (errors.ValueKind == JsonValueKind.Object)
@@ -362,7 +363,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
                     {
                         if (prop.Value.ValueKind == JsonValueKind.Array && prop.Value.GetArrayLength() > 0)
                         {
-                            return prop.Value[0].GetString();
+                            return Loc.TS(prop.Value[0].GetString());
                         }
                     }
                 }
@@ -370,7 +371,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
 
             if (doc.RootElement.TryGetProperty("title", out var title))
             {
-                return title.GetString();
+                return Loc.TS(title.GetString());
             }
         }
         catch
@@ -438,7 +439,7 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(token))
         {
-            return (null, "Brak tokena — zaloguj się ponownie.");
+            return (null, Loc.T("Brak tokena — zaloguj się ponownie."));
         }
 
         try
@@ -459,14 +460,14 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
 
             if (string.IsNullOrWhiteSpace(text))
             {
-                return (null, "API nie zwróciło danych.");
+                return (null, Loc.T("API nie zwróciło danych."));
             }
 
             var value = JsonSerializer.Deserialize<T>(text, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
-            return value is null ? (null, "API nie zwróciło danych.") : (value, null);
+            return value is null ? (null, Loc.T("API nie zwróciło danych.")) : (value, null);
         }
         catch (Exception ex)
         {

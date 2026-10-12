@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -28,7 +29,7 @@ public sealed class GameUploadClient(HttpClient http) : IGameUploadClient
     {
         if (!File.Exists(zipPath))
         {
-            return GamePackagePublishResult.Fail("Brak pliku paczki do wysłania.");
+            return GamePackagePublishResult.Fail(Loc.T("Brak pliku paczki do wysłania."));
         }
 
         using var content = new MultipartFormDataContent();
@@ -51,7 +52,7 @@ public sealed class GameUploadClient(HttpClient http) : IGameUploadClient
             var game = await response.Content.ReadFromJsonAsync<GameDto>(JsonOptions, cancellationToken)
                 .ConfigureAwait(false);
             return game is null
-                ? GamePackagePublishResult.Fail("Serwer nie zwrócił danych gry.")
+                ? GamePackagePublishResult.Fail(Loc.T("Serwer nie zwrócił danych gry."))
                 : GamePackagePublishResult.Ok(game);
         }
 
@@ -63,12 +64,12 @@ public sealed class GameUploadClient(HttpClient http) : IGameUploadClient
 
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            return GamePackagePublishResult.Fail("Musisz być zalogowany, żeby opublikować grę. Wejdź w Profil i zaloguj się.");
+            return GamePackagePublishResult.Fail(Loc.T("Musisz być zalogowany, żeby opublikować grę. Wejdź w Profil i zaloguj się."));
         }
 
         return GamePackagePublishResult.Fail(
             string.IsNullOrWhiteSpace(body)
-                ? $"Upload nieudany ({(int)response.StatusCode})."
+                ? Loc.F("Upload nieudany ({0}).", (int)response.StatusCode)
                 : body);
     }
 
@@ -83,7 +84,7 @@ public sealed class GameUploadClient(HttpClient http) : IGameUploadClient
                 errors = arr.EnumerateArray()
                     .Select(x => x.GetString())
                     .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .Cast<string>()
+                    .Select(x => Loc.TS(x))
                     .ToArray();
                 return errors.Length > 0;
             }

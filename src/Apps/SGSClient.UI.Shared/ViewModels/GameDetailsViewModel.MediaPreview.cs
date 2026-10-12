@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -56,11 +57,11 @@ public partial class GameDetailsViewModel
     public string PreviewHintText =>
         MediaPreviewIsVideo
             ? (PreviewableThumbs.Count > 1
-                ? "Odtwarzanie trailera · strzałki przełączają multimedia"
-                : "Odtwarzanie trailera · kliknij ✕, żeby zamknąć")
+                ? Loc.T("Odtwarzanie trailera · strzałki przełączają multimedia")
+                : Loc.T("Odtwarzanie trailera · kliknij ✕, żeby zamknąć"))
             : PreviewableThumbs.Count > 1
-                ? "Kliknij strzałkę lub tło, żeby zobaczyć kolejne zdjęcie"
-                : "Kliknij tło lub ✕, żeby zamknąć";
+                ? Loc.T("Kliknij strzałkę lub tło, żeby zobaczyć kolejne zdjęcie")
+                : Loc.T("Kliknij tło lub ✕, żeby zamknąć");
 
     private IReadOnlyList<MediaThumbItem> PreviewableThumbs =>
         MediaThumbs.Where(t => t.HasMedia).ToList();

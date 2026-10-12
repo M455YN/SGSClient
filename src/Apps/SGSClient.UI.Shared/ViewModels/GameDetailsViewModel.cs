@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -45,7 +46,7 @@ public partial class GameDetailsViewModel : ObservableObject
         _auth = auth;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
-        StatusText = "Ładowanie…";
+        StatusText = Loc.T("Ładowanie…");
 
         if (_queue is not null)
         {
@@ -127,7 +128,7 @@ public partial class GameDetailsViewModel : ObservableObject
     public partial bool CanAdd { get; set; }
 
     [ObservableProperty]
-    public partial string PrimaryActionLabel { get; set; } = "Dodaj do biblioteki";
+    public partial string PrimaryActionLabel { get; set; } = Loc.T("Dodaj do biblioteki");
 
     [ObservableProperty]
     public partial bool ShowHardware { get; set; }
@@ -142,7 +143,7 @@ public partial class GameDetailsViewModel : ObservableObject
     public partial bool FromLibrary { get; set; }
 
     [ObservableProperty]
-    public partial string BackLabel { get; set; } = "← Sklep";
+    public partial string BackLabel { get; set; } = Loc.T("← Sklep");
 
     [ObservableProperty]
     public partial string ContextLabel { get; set; } = "SGS STORE";
@@ -175,7 +176,7 @@ public partial class GameDetailsViewModel : ObservableObject
     public partial bool InWishlist { get; set; }
 
     [ObservableProperty]
-    public partial string WishlistLabel { get; set; } = "Lista życzeń";
+    public partial string WishlistLabel { get; set; } = Loc.T("Lista życzeń");
 
     [ObservableProperty]
     public partial bool CanToggleWishlist { get; set; } = true;
@@ -198,8 +199,8 @@ public partial class GameDetailsViewModel : ObservableObject
     [ObservableProperty] public partial string ReviewDraftText { get; set; } = string.Empty;
     [ObservableProperty] public partial bool HasMyReview { get; set; }
     [ObservableProperty] public partial string ReviewStatusText { get; set; } = string.Empty;
-    [ObservableProperty] public partial string SelectedReviewSort { get; set; } = "Najnowsze";
-    [ObservableProperty] public partial string SelectedReviewFilter { get; set; } = "Wszystkie";
+    [ObservableProperty] public partial string SelectedReviewSort { get; set; } = Loc.T("Najnowsze");
+    [ObservableProperty] public partial string SelectedReviewFilter { get; set; } = Loc.T("Wszystkie");
 
     partial void OnSelectedTabChanged(string value)
     {
@@ -218,32 +219,32 @@ public partial class GameDetailsViewModel : ObservableObject
             : returnTag.Trim();
         BackLabel = ReturnTag switch
         {
-            "Library" => "← Biblioteka",
-            "Wishlist" => "← Lista życzeń",
-            _ => "← Sklep"
+            "Library" => Loc.T("← Biblioteka"),
+            "Wishlist" => Loc.T("← Lista życzeń"),
+            _ => Loc.T("← Sklep")
         };
         ContextLabel = ReturnTag switch
         {
             "Library" => "BIBLIOTEKA",
-            "Wishlist" => "LISTA ŻYCZEŃ",
+            "Wishlist" => Loc.T("LISTA ŻYCZEŃ"),
             _ => "SGS STORE"
         };
         if (_api is null)
         {
-            StatusText = "Brak klienta API.";
+            StatusText = Loc.T("Brak klienta API.");
             HasContent = false;
             return;
         }
 
         IsBusy = true;
         HasContent = false;
-        StatusText = "Ładowanie szczegółów…";
+        StatusText = Loc.T("Ładowanie szczegółów…");
         try
         {
             var game = await _api.GetGameAsync(gameId);
             if (game is null)
             {
-                StatusText = "Nie znaleziono gry.";
+                StatusText = Loc.T("Nie znaleziono gry.");
                 return;
             }
 
@@ -259,7 +260,7 @@ public partial class GameDetailsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusText = $"Błąd: {ex.Message}";
+            StatusText = Loc.F("Błąd: {0}", ex.Message);
             HasContent = false;
         }
         finally
@@ -300,12 +301,12 @@ public partial class GameDetailsViewModel : ObservableObject
             ? game.Title[..Math.Min(2, game.Title.Length)].ToUpperInvariant()
             : game.Symbol[..Math.Min(3, game.Symbol.Length)].ToUpperInvariant();
         Tagline = string.IsNullOrWhiteSpace(game.Description)
-            ? "Poznaj szczegóły tej gry."
+            ? string.Empty
             : game.Description.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .FirstOrDefault() is { Length: > 0 } first
                 ? first + "."
                 : game.Description!;
-        Description = string.IsNullOrWhiteSpace(game.Description) ? "Brak opisu." : game.Description!;
+        Description = string.IsNullOrWhiteSpace(game.Description) ? Loc.T("Brak opisu.") : game.Description!;
         HardwareRequirements = game.HardwareRequirements ?? string.Empty;
         OtherInformation = game.OtherInformation ?? string.Empty;
         ShowHardware = HardwareRequirements.Length > 0;
@@ -322,7 +323,7 @@ public partial class GameDetailsViewModel : ObservableObject
             Badges.Insert(0, game.StudioName);
         }
 
-        Badges.Add("Sklep SGS");
+        Badges.Add(Loc.T("Sklep SGS"));
         foreach (var platform in game.Builds
                      .Select(b => FormatPlatform(b.Platform, b.Architecture))
                      .Distinct(StringComparer.OrdinalIgnoreCase))
@@ -331,7 +332,7 @@ public partial class GameDetailsViewModel : ObservableObject
         }
 
         PlatformsText = game.Builds.Count == 0
-            ? "Brak buildów"
+            ? Loc.T("Brak buildów")
             : string.Join(" · ", game.Builds
                 .Select(b => FormatPlatform(b.Platform, b.Architecture))
                 .Distinct(StringComparer.OrdinalIgnoreCase));
@@ -364,7 +365,7 @@ public partial class GameDetailsViewModel : ObservableObject
         {
             MediaThumbs.Add(new MediaThumbItem { Label = "Hero" });
             MediaThumbs.Add(new MediaThumbItem { Label = "Gameplay" });
-            MediaThumbs.Add(new MediaThumbItem { Label = "Świat" });
+            MediaThumbs.Add(new MediaThumbItem { Label = Loc.T("Świat") });
             MediaThumbs.Add(new MediaThumbItem { Label = "UI" });
         }
 
@@ -380,9 +381,9 @@ public partial class GameDetailsViewModel : ObservableObject
                 Version = build.CurrentVersion,
                 ExeName = build.ExeName,
                 PlatformText = FormatPlatform(build.Platform, build.Architecture),
-                MetaText = build.ExeName + (build.IsDefault ? " · domyślny" : ""),
+                MetaText = build.ExeName + (build.IsDefault ? Loc.T(" · domyślny") : ""),
                 IsPreferred = build.Platform == preferredPlatform,
-                PreferredLabel = build.Platform == preferredPlatform ? "Twoja platforma" : string.Empty
+                PreferredLabel = build.Platform == preferredPlatform ? Loc.T("Twoja platforma") : string.Empty
             };
             row.Versions.Add(VersionOptionItem.FromCurrent(build.CurrentVersion));
             row.SelectedVersion = row.Versions[0];
@@ -425,10 +426,10 @@ public partial class GameDetailsViewModel : ObservableObject
         var preferred = GameListItem.PickPreferredBuild(game.Builds);
         CanAdd = !InLibrary && preferred is not null;
         PrimaryActionLabel = InLibrary
-            ? "W bibliotece"
+            ? Loc.T("W bibliotece")
             : preferred is null
-                ? "Brak builda"
-                : "Dodaj do biblioteki";
+                ? Loc.T("Brak builda")
+                : Loc.T("Dodaj do biblioteki");
         ShowLibraryActions = InLibrary;
         ShowStoreActions = !InLibrary;
         CanToggleWishlist = !InLibrary;

@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -32,7 +33,7 @@ public partial class AdminViewModel : ObservableObject
         _auth = auth;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
-        StatusText = "Ładowanie panelu admina…";
+        StatusText = Loc.T("Ładowanie panelu admina…");
     }
 
     public string Title { get; } = "Admin";
@@ -153,7 +154,7 @@ public partial class AdminViewModel : ObservableObject
     {
         if (_api is null)
         {
-            StatusText = "API niedostępne.";
+            StatusText = Loc.T("API niedostępne.");
             ShowEmpty = true;
             return;
         }
@@ -167,7 +168,7 @@ public partial class AdminViewModel : ObservableObject
             SelectedGame = null;
             HeroPreview = null;
             ShowEmpty = true;
-            StatusText = "Zaloguj się jako admin (Profil), aby zarządzać katalogiem.";
+            StatusText = Loc.T("Zaloguj się jako admin (Profil), aby zarządzać katalogiem.");
             return;
         }
 
@@ -209,12 +210,12 @@ public partial class AdminViewModel : ObservableObject
                 : Games.FirstOrDefault(g => g.Id == selectedId) ?? FilteredGames.FirstOrDefault();
 
             StatusText = Games.Count == 0 && Users.Count == 0
-                ? "Brak danych lub brak uprawnień admina."
-                : $"{Games.Count} pozycji katalogu · {Users.Count} użytkowników";
+                ? Loc.T("Brak danych lub brak uprawnień admina.")
+                : Loc.F("{0} pozycji katalogu · {1} użytkowników", Games.Count, Users.Count);
         }
         catch (Exception ex)
         {
-            StatusText = $"Błąd: {ex.Message}";
+            StatusText = Loc.F("Błąd: {0}", ex.Message);
             ShowEmpty = true;
         }
         finally
@@ -244,7 +245,7 @@ public partial class AdminViewModel : ObservableObject
     {
         if (_api is null)
         {
-            StatusText = "Brak połączenia z API.";
+            StatusText = Loc.T("Brak połączenia z API.");
             item.OnRoleReverted();
             return;
         }
@@ -263,7 +264,7 @@ public partial class AdminViewModel : ObservableObject
             if (!result.Success || result.User is null)
             {
                 item.Role = previous;
-                StatusText = result.Error ?? "Nie udało się zmienić roli.";
+                StatusText = result.Error ?? Loc.T("Nie udało się zmienić roli.");
                 item.OnRoleReverted();
                 return;
             }
@@ -276,7 +277,7 @@ public partial class AdminViewModel : ObservableObject
         {
             item.Role = previous;
             item.OnRoleReverted();
-            StatusText = $"Błąd zmiany roli: {ex.Message}";
+            StatusText = Loc.F("Błąd zmiany roli: {0}", ex.Message);
         }
         finally
         {
@@ -335,8 +336,8 @@ public partial class AdminViewModel : ObservableObject
         HasFeatured = FeaturedGames.Count > 0;
         HeroPreview = FeaturedGames.FirstOrDefault();
         FeaturedSummary = HasFeatured
-            ? $"{FeaturedGames.Count} wyróżnionych · pierwsza pozycja trafia na hero"
-            : "Brak wyróżnionych gier. Włącz przełącznik przy grze na liście.";
+            ? Loc.F("{0} wyróżnionych · pierwsza pozycja trafia na hero", FeaturedGames.Count)
+            : Loc.T("Brak wyróżnionych gier. Włącz przełącznik przy grze na liście.");
     }
 
     [RelayCommand]
@@ -405,16 +406,16 @@ public partial class AdminViewModel : ObservableObject
             var updated = await _api.UpdateAdminGameAsync(item.Id, item.ToUpdateRequest());
             if (updated is null)
             {
-                StatusText = "Nie udało się zapisać strony sklepu.";
+                StatusText = Loc.T("Nie udało się zapisać strony sklepu.");
                 return;
             }
 
             item.ApplyDto(updated, _apiBaseUrl);
-            StatusText = $"Zapisano stronę sklepu: {updated.Title}";
+            StatusText = Loc.F("Zapisano stronę sklepu: {0}", updated.Title);
         }
         catch (Exception ex)
         {
-            StatusText = $"Błąd zapisu: {ex.Message}";
+            StatusText = Loc.F("Błąd zapisu: {0}", ex.Message);
         }
         finally
         {
@@ -431,7 +432,7 @@ public partial class AdminViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.UploadGameCoverAsync(id, path, asAdmin: true),
                 ReloadAfterMediaAsync,
-                "Zaktualizowano miniaturkę.");
+                Loc.T("Zaktualizowano miniaturkę."));
 
     [RelayCommand]
     private Task ClearCoverAsync() =>
@@ -441,7 +442,7 @@ public partial class AdminViewModel : ObservableObject
                 SelectedGame?.Id,
                 id => _api.ClearGameCoverAsync(id, asAdmin: true),
                 ReloadAfterMediaAsync,
-                "Usunięto miniaturkę.");
+                Loc.T("Usunięto miniaturkę."));
 
     [RelayCommand]
     private Task PickHeaderAsync() =>
@@ -452,7 +453,7 @@ public partial class AdminViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.UploadGameHeaderAsync(id, path, asAdmin: true),
                 ReloadAfterMediaAsync,
-                "Zaktualizowano okładkę poziomą.");
+                Loc.T("Zaktualizowano okładkę poziomą."));
 
     [RelayCommand]
     private Task ClearHeaderAsync() =>
@@ -462,7 +463,7 @@ public partial class AdminViewModel : ObservableObject
                 SelectedGame?.Id,
                 id => _api.ClearGameHeaderAsync(id, asAdmin: true),
                 ReloadAfterMediaAsync,
-                "Usunięto okładkę poziomą.");
+                Loc.T("Usunięto okładkę poziomą."));
 
     [RelayCommand]
     private Task PickLogoAsync() =>
@@ -473,7 +474,7 @@ public partial class AdminViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.UploadGameLogoAsync(id, path, asAdmin: true),
                 ReloadAfterMediaAsync,
-                "Zaktualizowano logo.");
+                Loc.T("Zaktualizowano logo."));
 
     [RelayCommand]
     private Task ClearLogoAsync() =>
@@ -483,7 +484,7 @@ public partial class AdminViewModel : ObservableObject
                 SelectedGame?.Id,
                 id => _api.ClearGameLogoAsync(id, asAdmin: true),
                 ReloadAfterMediaAsync,
-                "Usunięto logo.");
+                Loc.T("Usunięto logo."));
 
     [RelayCommand]
     private Task PickIntroAsync() =>
@@ -494,7 +495,7 @@ public partial class AdminViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.UploadGameIntroAsync(id, path, asAdmin: true),
                 ReloadAfterMediaAsync,
-                "Zaktualizowano intro.");
+                Loc.T("Zaktualizowano intro."));
 
     [RelayCommand]
     private Task ClearIntroAsync() =>
@@ -504,7 +505,7 @@ public partial class AdminViewModel : ObservableObject
                 SelectedGame?.Id,
                 id => _api.ClearGameIntroAsync(id, asAdmin: true),
                 ReloadAfterMediaAsync,
-                "Usunięto intro.");
+                Loc.T("Usunięto intro."));
 
     [RelayCommand]
     private Task AddScreenshotAsync() =>
@@ -515,7 +516,7 @@ public partial class AdminViewModel : ObservableObject
                 SelectedGame?.Id,
                 (id, path) => _api.AddGameScreenshotAsync(id, path, asAdmin: true),
                 ReloadAfterMediaAsync,
-                "Dodano zrzut ekranu.");
+                Loc.T("Dodano zrzut ekranu."));
 
     [RelayCommand]
     private async Task RemoveScreenshotAsync(StudioScreenshotItem? shot)
@@ -526,16 +527,16 @@ public partial class AdminViewModel : ObservableObject
         }
 
         var updated = await _api.RemoveGameScreenshotAsync(SelectedGame.Id, shot.Id, asAdmin: true);
-        await ReloadAfterMediaAsync(updated, "Usunięto zrzut ekranu.");
+        await ReloadAfterMediaAsync(updated, Loc.T("Usunięto zrzut ekranu."));
     }
 
     private Task ReloadAfterMediaAsync(GameDto? updated, string okText)
     {
         if (updated is null)
         {
-            StatusText = okText.StartsWith("Błąd", StringComparison.OrdinalIgnoreCase)
+            StatusText = okText.StartsWith(Loc.T("Błąd"), StringComparison.OrdinalIgnoreCase)
                 ? okText
-                : "Nie udało się zaktualizować mediów (serwer odrzucił plik lub brak uprawnień).";
+                : Loc.T("Nie udało się zaktualizować mediów (serwer odrzucił plik lub brak uprawnień).");
             return Task.CompletedTask;
         }
 
@@ -563,12 +564,12 @@ public partial class AdminViewModel : ObservableObject
         var updated = await _api.UpdateAdminVersionNotesAsync(SelectedGame.Id, version.Id, version.EditNotes);
         if (updated is null)
         {
-            StatusText = "Nie udało się zapisać opisu zmian.";
+            StatusText = Loc.T("Nie udało się zapisać opisu zmian.");
             return;
         }
 
         version.ApplyDto(updated);
-        StatusText = $"Zapisano opis zmian dla {updated.Version}.";
+        StatusText = Loc.F("Zapisano opis zmian dla {0}.", updated.Version);
     }
 
     private async Task LoadSelectionExtrasAsync()
@@ -643,7 +644,7 @@ public partial class AdminViewModel : ObservableObject
         var updated = await _api.UpdateAdminGameAsync(item.Id, new UpdateGameRequestDto { DraftP = draft });
         if (updated is null)
         {
-            StatusText = "Nie udało się zmienić statusu publikacji.";
+            StatusText = Loc.T("Nie udało się zmienić statusu publikacji.");
             item.DraftP = !draft;
             OnPropertyChanged(nameof(SelectedPublished));
             return;
@@ -653,7 +654,7 @@ public partial class AdminViewModel : ObservableObject
         ApplyFilter();
         OnPropertyChanged(nameof(SelectedPublished));
         StatusText = updated.DraftP
-            ? $"Ukryto w sklepie: {updated.Title}"
+            ? Loc.F("Ukryto w sklepie: {0}", updated.Title)
             : $"Opublikowano: {updated.Title}";
     }
 
@@ -675,7 +676,7 @@ public partial class AdminViewModel : ObservableObject
 
         if (updated is null)
         {
-            StatusText = "Nie udało się zmienić wyróżnienia.";
+            StatusText = Loc.T("Nie udało się zmienić wyróżnienia.");
             item.FeaturedP = !featured;
             OnPropertyChanged(nameof(SelectedFeatured));
             return;
@@ -686,8 +687,8 @@ public partial class AdminViewModel : ObservableObject
         RebuildFeatured();
         OnPropertyChanged(nameof(SelectedFeatured));
         StatusText = updated.FeaturedP
-            ? $"Wyróżniono: {updated.Title}"
-            : $"Usunięto wyróżnienie: {updated.Title}";
+            ? Loc.F("Wyróżniono: {0}", updated.Title)
+            : Loc.F("Usunięto wyróżnienie: {0}", updated.Title);
     }
 
     [RelayCommand]
@@ -743,11 +744,11 @@ public partial class AdminViewModel : ObservableObject
             }
 
             HeroPreview = FeaturedGames.FirstOrDefault();
-            StatusText = "Zapisano kolejność wyróżnionych.";
+            StatusText = Loc.T("Zapisano kolejność wyróżnionych.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się zapisać kolejności: {ex.Message}";
+            StatusText = Loc.F("Nie udało się zapisać kolejności: {0}", ex.Message);
         }
         finally
         {
@@ -774,8 +775,8 @@ public partial class AdminViewModel : ObservableObject
         {
             var deleted = await _api.DeleteAdminGameAsync(item.Id);
             StatusText = deleted
-                ? $"Usunięto: {item.Title}"
-                : "Nie udało się usunąć (sprawdź powiązane DLC).";
+                ? Loc.F("Usunięto: {0}", item.Title)
+                : Loc.T("Nie udało się usunąć (sprawdź powiązane DLC).");
             if (deleted)
             {
                 SelectedGame = null;

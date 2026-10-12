@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.PublishView"
@@ -7,16 +7,16 @@
     <StackPanel Margin="28,24,28,32" Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
       <StackPanel Spacing="6">
         <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
-        <TextBlock Text="Wybierz folder gry z sgs-manifest.json, popraw dane w formularzu i wyślij do sklepu. Zmiany zapiszą się też w manifeście."
+        <TextBlock Text="{loc:Tr Key='Wybierz folder gry z sgs-manifest.json, popraw dane w formularzu i wyślij do sklepu. Zmiany zapiszą się też w manifeście.'}"
                    Opacity="0.65" TextWrapping="Wrap"/>
         <TextBlock Text="{Binding AuthHint}" Opacity="0.55" FontSize="12" TextWrapping="Wrap"/>
       </StackPanel>
 
       <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
         <StackPanel Spacing="14">
-          <TextBlock Text="1. Folder gry" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='1. Folder gry'}" FontSize="18" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding SelectedFolder}" Opacity="0.8" TextWrapping="Wrap"/>
-          <Button Content="Wybierz folder…" Click="PickFolder_OnClick" Padding="14,8"
+          <Button Content="{loc:Tr Key='Wybierz folder…'}" Click="PickFolder_OnClick" Padding="14,8"
                   HorizontalAlignment="Left" IsEnabled="{Binding !IsBusy}"/>
         </StackPanel>
       </Border>
@@ -24,12 +24,12 @@
       <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
               IsVisible="{Binding HasManifestForm}">
         <StackPanel Spacing="14">
-          <TextBlock Text="2. Dane gry w sklepie" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='2. Dane gry w sklepie'}" FontSize="18" FontWeight="SemiBold"/>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Typ treści" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Typ treści'}" Opacity="0.55" FontSize="12"/>
             <StackPanel Orientation="Horizontal" Spacing="16">
-              <RadioButton x:Name="KindGameRadio" Content="Gra" GroupName="ContentKind"
+              <RadioButton x:Name="KindGameRadio" Content="{loc:Tr Key='Gra'}" GroupName="ContentKind"
                            IsChecked="True" Click="KindGame_OnClick"/>
               <RadioButton x:Name="KindDlcRadio" Content="DLC" GroupName="ContentKind"
                            Click="KindDlc_OnClick"/>
@@ -37,46 +37,46 @@
           </StackPanel>
 
           <StackPanel Spacing="4" IsVisible="{Binding ShowParentField}">
-            <TextBlock Text="Symbol gry bazowej (parentSymbol)" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Symbol gry bazowej'}" Opacity="0.55" FontSize="12"/>
             <ComboBox ItemsSource="{Binding ParentGameOptions}"
                       SelectedItem="{Binding ParentSymbol}"
                       Text="{Binding ParentSymbol}"
                       IsEditable="True"
                       HorizontalAlignment="Stretch"
-                      PlaceholderText="np. demo-runner"/>
+                      PlaceholderText="{loc:Tr Key='np. demo-runner'}"/>
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Nazwa" Opacity="0.55" FontSize="12"/>
-            <TextBox Text="{Binding GameTitle}" PlaceholderText="np. Demo Runner"/>
+            <TextBlock Text="{loc:Tr Key='Nazwa'}" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding GameTitle}" PlaceholderText="{loc:Tr Key='np. Demo Runner'}"/>
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Symbol (URL, kebab-case)" Opacity="0.55" FontSize="12"/>
-            <TextBox Text="{Binding GameSymbol}" PlaceholderText="np. demo-runner"/>
+            <TextBlock Text="{loc:Tr Key='Symbol (małe litery i myślniki)'}" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding GameSymbol}" PlaceholderText="{loc:Tr Key='np. demo-runner'}"/>
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Opis" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Opis'}" Opacity="0.55" FontSize="12"/>
             <TextBox Text="{Binding GameDescription}" AcceptsReturn="True" TextWrapping="Wrap"
-                     MinHeight="88" PlaceholderText="Krótki opis widoczny w sklepie"/>
+                     MinHeight="88" PlaceholderText="{loc:Tr Key='Krótki opis widoczny w sklepie'}"/>
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Wymagania sprzętowe" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Wymagania sprzętowe'}" Opacity="0.55" FontSize="12"/>
             <TextBox Text="{Binding HardwareRequirements}" AcceptsReturn="True" TextWrapping="Wrap"
-                     MinHeight="56" PlaceholderText="opcjonalnie"/>
+                     MinHeight="56" PlaceholderText="{loc:Tr Key='opcjonalnie'}"/>
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Inne informacje" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Inne informacje'}" Opacity="0.55" FontSize="12"/>
             <TextBox Text="{Binding OtherInformation}" AcceptsReturn="True" TextWrapping="Wrap"
-                     MinHeight="56" PlaceholderText="opcjonalnie"/>
+                     MinHeight="56" PlaceholderText="{loc:Tr Key='opcjonalnie'}"/>
           </StackPanel>
 
           <Grid ColumnDefinitions="*,12,*">
             <StackPanel Grid.Column="0" Spacing="4">
-              <TextBlock Text="Gatunki" Opacity="0.55" FontSize="12"/>
+              <TextBlock Text="{loc:Tr Key='Gatunki'}" Opacity="0.55" FontSize="12"/>
               <Expander Header="{Binding GameGenres.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                 <ScrollViewer MaxHeight="220">
                   <ItemsControl ItemsSource="{Binding GameGenres.Options}">
@@ -90,7 +90,7 @@
               </Expander>
             </StackPanel>
             <StackPanel Grid.Column="2" Spacing="4">
-              <TextBlock Text="Silniki" Opacity="0.55" FontSize="12"/>
+              <TextBlock Text="{loc:Tr Key='Silniki'}" Opacity="0.55" FontSize="12"/>
               <Expander Header="{Binding GameEngines.Summary}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                 <ScrollViewer MaxHeight="220">
                   <ItemsControl ItemsSource="{Binding GameEngines.Options}">
@@ -105,42 +105,42 @@
             </StackPanel>
           </Grid>
 
-          <TextBlock Text="Media (opcjonalne)" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
-          <TextBlock Text="Wybierz pliki z dysku — skopiujemy je do folderu media/ w grze. Możesz też zostawić puste."
+          <TextBlock Text="{loc:Tr Key='Media (opcjonalne)'}" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+          <TextBlock Text="{loc:Tr Key='Wybierz pliki z dysku — skopiujemy je do folderu media/ w grze. Możesz też zostawić puste.'}"
                      Opacity="0.5" FontSize="12" TextWrapping="Wrap"/>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Miniaturka" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Miniaturka'}" Opacity="0.55" FontSize="12"/>
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
               <TextBox Grid.Column="0" Text="{Binding MediaCover}" PlaceholderText="media/cover.png"
                        IsReadOnly="True"/>
-              <Button Grid.Column="1" Content="Wybierz…" Click="PickCover_OnClick"
+              <Button Grid.Column="1" Content="{loc:Tr Key='Wybierz…'}" Click="PickCover_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
-              <Button Grid.Column="2" Content="Wyczyść" Click="ClearCover_OnClick"
+              <Button Grid.Column="2" Content="{loc:Tr Key='Wyczyść'}" Click="ClearCover_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
             </Grid>
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Okładka pozioma (920 × 430)" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Okładka pozioma (920 × 430)'}" Opacity="0.55" FontSize="12"/>
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
               <TextBox Grid.Column="0" Text="{Binding MediaHeader}" PlaceholderText="media/header.png"
                        IsReadOnly="True"/>
-              <Button Grid.Column="1" Content="Wybierz…" Click="PickHeader_OnClick"
+              <Button Grid.Column="1" Content="{loc:Tr Key='Wybierz…'}" Click="PickHeader_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
-              <Button Grid.Column="2" Content="Wyczyść" Click="ClearHeader_OnClick"
+              <Button Grid.Column="2" Content="{loc:Tr Key='Wyczyść'}" Click="ClearHeader_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
             </Grid>
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Logo (kwadratowe)" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Logo (kwadratowe)'}" Opacity="0.55" FontSize="12"/>
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
               <TextBox Grid.Column="0" Text="{Binding MediaLogo}" PlaceholderText="media/logo.png"
                        IsReadOnly="True"/>
-              <Button Grid.Column="1" Content="Wybierz…" Click="PickLogo_OnClick"
+              <Button Grid.Column="1" Content="{loc:Tr Key='Wybierz…'}" Click="PickLogo_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
-              <Button Grid.Column="2" Content="Wyczyść" Click="ClearLogo_OnClick"
+              <Button Grid.Column="2" Content="{loc:Tr Key='Wyczyść'}" Click="ClearLogo_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
             </Grid>
           </StackPanel>
@@ -150,21 +150,21 @@
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
               <TextBox Grid.Column="0" Text="{Binding MediaIntro}" PlaceholderText="media/intro.mp4"
                        IsReadOnly="True"/>
-              <Button Grid.Column="1" Content="Wybierz…" Click="PickIntro_OnClick"
+              <Button Grid.Column="1" Content="{loc:Tr Key='Wybierz…'}" Click="PickIntro_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
-              <Button Grid.Column="2" Content="Wyczyść" Click="ClearIntro_OnClick"
+              <Button Grid.Column="2" Content="{loc:Tr Key='Wyczyść'}" Click="ClearIntro_OnClick"
                       Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
             </Grid>
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Screeny" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Screeny'}" Opacity="0.55" FontSize="12"/>
             <TextBox Text="{Binding MediaScreenshots}" AcceptsReturn="True" TextWrapping="Wrap"
-                     MinHeight="72" IsReadOnly="True" PlaceholderText="Brak — kliknij Dodaj…"/>
+                     MinHeight="72" IsReadOnly="True" PlaceholderText="{loc:Tr Key='Brak — kliknij Dodaj…'}"/>
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <Button Content="Dodaj…" Click="PickScreenshots_OnClick" Padding="12,8"
+              <Button Content="{loc:Tr Key='Dodaj…'}" Click="PickScreenshots_OnClick" Padding="12,8"
                       IsEnabled="{Binding !IsBusy}"/>
-              <Button Content="Wyczyść listę" Click="ClearScreenshots_OnClick" Padding="12,8"
+              <Button Content="{loc:Tr Key='Wyczyść listę'}" Click="ClearScreenshots_OnClick" Padding="12,8"
                       IsEnabled="{Binding !IsBusy}"/>
             </StackPanel>
           </StackPanel>
@@ -173,35 +173,35 @@
 
           <Grid ColumnDefinitions="*,12,*" RowDefinitions="Auto,Auto">
             <StackPanel Grid.Column="0" Spacing="4">
-              <TextBlock Text="Wersja" Opacity="0.55" FontSize="12"/>
+              <TextBlock Text="{loc:Tr Key='Wersja'}" Opacity="0.55" FontSize="12"/>
               <TextBox Text="{Binding BuildVersion}" PlaceholderText="1.0.0"/>
             </StackPanel>
             <StackPanel Grid.Column="2" Spacing="4">
-              <TextBlock Text="Plik uruchomieniowy" Opacity="0.55" FontSize="12"/>
+              <TextBlock Text="{loc:Tr Key='Plik uruchomieniowy'}" Opacity="0.55" FontSize="12"/>
               <TextBox Text="{Binding BuildExecutable}" PlaceholderText="bin/Game.exe"/>
             </StackPanel>
           </Grid>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="Opis zmian (changelog)" Opacity="0.55" FontSize="12"/>
-            <TextBox Text="{Binding ReleaseNotes}" PlaceholderText="Co nowego w tej wersji"
+            <TextBlock Text="{loc:Tr Key='Opis zmian (changelog)'}" Opacity="0.55" FontSize="12"/>
+            <TextBox Text="{Binding ReleaseNotes}" PlaceholderText="{loc:Tr Key='Co nowego w tej wersji'}"
                      AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"/>
           </StackPanel>
 
           <Grid ColumnDefinitions="*,12,*">
             <StackPanel Grid.Column="0" Spacing="4">
-              <TextBlock Text="Platforma" Opacity="0.55" FontSize="12"/>
+              <TextBlock Text="{loc:Tr Key='Platforma'}" Opacity="0.55" FontSize="12"/>
               <ComboBox ItemsSource="{Binding PlatformOptions}" SelectedItem="{Binding BuildPlatform}"
                         HorizontalAlignment="Stretch"/>
             </StackPanel>
             <StackPanel Grid.Column="2" Spacing="4">
-              <TextBlock Text="Architektura" Opacity="0.55" FontSize="12"/>
+              <TextBlock Text="{loc:Tr Key='Architektura'}" Opacity="0.55" FontSize="12"/>
               <ComboBox ItemsSource="{Binding ArchitectureOptions}" SelectedItem="{Binding BuildArchitecture}"
                         HorizontalAlignment="Stretch"/>
             </StackPanel>
           </Grid>
 
-          <Button Content="Przygotuj paczkę" Click="Prepare_OnClick" Padding="14,8"
+          <Button Content="{loc:Tr Key='Przygotuj paczkę'}" Click="Prepare_OnClick" Padding="14,8"
                   HorizontalAlignment="Left" IsEnabled="{Binding !IsBusy}"/>
         </StackPanel>
       </Border>
@@ -209,17 +209,17 @@
       <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
               IsVisible="{Binding HasSummary}">
         <StackPanel Spacing="12">
-          <TextBlock Text="3. Publikacja" FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='3. Publikacja'}" FontSize="18" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding SummaryTitle}" FontSize="20" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding SummaryMeta}" Opacity="0.7" TextWrapping="Wrap"/>
-          <Button Content="Opublikuj w sklepie" Click="Publish_OnClick"
+          <Button Content="{loc:Tr Key='Opublikuj w sklepie'}" Click="Publish_OnClick"
                   IsEnabled="{Binding CanPublish}" Padding="18,12"
                   Background="#2E7D32" Foreground="White" HorizontalAlignment="Left"/>
         </StackPanel>
       </Border>
 
       <StackPanel Spacing="8" IsVisible="{Binding ShowProgress}">
-        <TextBlock Text="Wysyłanie…" Opacity="0.7"/>
+        <TextBlock Text="{loc:Tr Key='Wysyłanie…'}" Opacity="0.7"/>
         <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress}" Height="8"/>
       </StackPanel>
 

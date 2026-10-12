@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using SGSClient.Core.DTOs;
@@ -6,7 +7,7 @@ namespace SGSClient.UI.ViewModels;
 
 public static class GameEditorStats
 {
-    private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
+    private static readonly CultureInfo Polish = Loc.Culture;
 
     public static void Apply(
         GameStatsDto? stats,

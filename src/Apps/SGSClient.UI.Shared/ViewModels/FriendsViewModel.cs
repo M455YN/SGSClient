@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -28,8 +29,8 @@ public partial class FriendsViewModel : ObservableObject
         _auth = auth;
         _realtime = realtime;
         StatusText = auth?.IsAvailable != true
-            ? "Zaloguj się, żeby zobaczyć znajomych."
-            : "Ładowanie…";
+            ? Loc.T("Zaloguj się, żeby zobaczyć znajomych.")
+            : Loc.T("Ładowanie…");
 
         _dispatcher = dispatcher;
         _chatPollTimer = dispatcher?.CreateTimer(TimeSpan.FromSeconds(5), PollChatAsync);
@@ -167,7 +168,7 @@ public partial class FriendsViewModel : ObservableObject
     public partial string ChatStatus { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string ChatPeerTitle { get; set; } = "Wybierz rozmowę";
+    public partial string ChatPeerTitle { get; set; } = Loc.T("Wybierz rozmowę");
 
     [ObservableProperty]
     public partial bool HasActiveChat { get; set; }
@@ -191,8 +192,8 @@ public partial class FriendsViewModel : ObservableObject
     public bool ShowFriendsGroups => ShowFriendsTab && Friends.Count > 0;
     public int OnlineCount => OnlineFriends.Count;
     public int OfflineCount => OfflineFriends.Count;
-    public string RequestsTabLabel => IncomingCount > 0 ? $"Zaproszenia ({IncomingCount})" : "Zaproszenia";
-    public string SearchPlaceholder => ShowSearchTab ? "Szukaj graczy…" : "Szukaj znajomych…";
+    public string RequestsTabLabel => IncomingCount > 0 ? $"Zaproszenia ({IncomingCount})" : Loc.T("Zaproszenia");
+    public string SearchPlaceholder => ShowSearchTab ? Loc.T("Szukaj graczy…") : Loc.T("Szukaj znajomych…");
 
     public async Task InitializeAsync(string? tab = null)
     {
@@ -276,7 +277,7 @@ public partial class FriendsViewModel : ObservableObject
     {
         if (_userApi is null || _auth?.IsAvailable != true)
         {
-            StatusText = "Zaloguj się w Profilu, żeby dodać znajomych.";
+            StatusText = Loc.T("Zaloguj się w Profilu, żeby dodać znajomych.");
             return;
         }
 
@@ -286,13 +287,13 @@ public partial class FriendsViewModel : ObservableObject
             var overview = await _userApi.GetSocialAsync();
             if (overview is null)
             {
-                StatusText = "Nie udało się pobrać znajomych. Zaloguj się ponownie.";
+                StatusText = Loc.T("Nie udało się pobrać znajomych. Zaloguj się ponownie.");
                 return;
             }
 
             ApplyOverview(overview);
             StatusText = overview.IncomingCount > 0
-                ? $"{overview.IncomingCount} oczekujących zaproszeń."
+                ? Loc.F("{0} oczekujących zaproszeń.", overview.IncomingCount)
                 : $"{overview.FriendsCount} znajomych";
         }
         catch (Exception ex)
@@ -312,14 +313,14 @@ public partial class FriendsViewModel : ObservableObject
         SelectedTab = "Search";
         if (_userApi is null)
         {
-            StatusText = "Brak klienta API.";
+            StatusText = Loc.T("Brak klienta API.");
             return;
         }
 
         var q = SearchQuery.Trim();
         if (q.Length < 2)
         {
-            StatusText = "Wpisz co najmniej 2 znaki.";
+            StatusText = Loc.T("Wpisz co najmniej 2 znaki.");
             return;
         }
 
@@ -334,7 +335,7 @@ public partial class FriendsViewModel : ObservableObject
             }
 
             StatusText = SearchResults.Count == 0
-                ? "Brak graczy o tej nazwie."
+                ? Loc.T("Brak graczy o tej nazwie.")
                 : $"Znaleziono {SearchResults.Count}.";
         }
         catch (Exception ex)
@@ -357,13 +358,13 @@ public partial class FriendsViewModel : ObservableObject
         }
 
         IsBusy = true;
-        ProfileStatus = "Ładowanie profilu…";
+        ProfileStatus = Loc.T("Ładowanie profilu…");
         try
         {
             var profile = await _userApi.GetPublicProfileAsync(person.UserId);
             if (profile is null)
             {
-                ProfileStatus = "Nie udało się wczytać profilu.";
+                ProfileStatus = Loc.T("Nie udało się wczytać profilu.");
                 return;
             }
 
@@ -401,21 +402,21 @@ public partial class FriendsViewModel : ObservableObject
         var text = ProfileCommentDraft.Trim();
         if (text.Length < 2)
         {
-            ProfileStatus = "Wpisz dłuższy komentarz.";
+            ProfileStatus = Loc.T("Wpisz dłuższy komentarz.");
             return;
         }
 
-        ProfileStatus = "Wysyłanie…";
+        ProfileStatus = Loc.T("Wysyłanie…");
         var (comment, error) = await _userApi.AddProfileCommentAsync(userId, text);
         if (comment is null)
         {
-            ProfileStatus = error ?? "Nie udało się dodać komentarza.";
+            ProfileStatus = error ?? Loc.T("Nie udało się dodać komentarza.");
             return;
         }
 
         ProfileCommentDraft = string.Empty;
         ProfileComments.Insert(0, ProfileCommentItem.FromDto(comment));
-        ProfileStatus = "Dodano podpis.";
+        ProfileStatus = Loc.T("Dodano podpis.");
     }
 
     [RelayCommand]
@@ -429,12 +430,12 @@ public partial class FriendsViewModel : ObservableObject
         var (ok, error) = await _userApi.DeleteProfileCommentAsync(userId, comment.Id);
         if (!ok)
         {
-            ProfileStatus = error ?? "Nie udało się usunąć.";
+            ProfileStatus = error ?? Loc.T("Nie udało się usunąć.");
             return;
         }
 
         ProfileComments.Remove(comment);
-        ProfileStatus = "Usunięto.";
+        ProfileStatus = Loc.T("Usunięto.");
     }
 
     [RelayCommand]
@@ -456,7 +457,7 @@ public partial class FriendsViewModel : ObservableObject
     {
         if (_userApi is null || _auth?.IsAvailable != true)
         {
-            ChatStatus = "Zaloguj się, żeby pisać.";
+            ChatStatus = Loc.T("Zaloguj się, żeby pisać.");
             return;
         }
 
@@ -478,7 +479,7 @@ public partial class FriendsViewModel : ObservableObject
             }
 
             ChatStatus = ChatThreads.Count == 0
-                ? "Dodaj znajomych, żeby zacząć czat."
+                ? Loc.T("Dodaj znajomych, żeby zacząć czat.")
                 : string.Empty;
             OnPropertyChanged(nameof(ShowEmptyChat));
         }
@@ -529,7 +530,7 @@ public partial class FriendsViewModel : ObservableObject
         var (message, error) = await _userApi.SendChatMessageAsync(peerId, text);
         if (message is null)
         {
-            ChatStatus = error ?? "Nie wysłano.";
+            ChatStatus = error ?? Loc.T("Nie wysłano.");
             return;
         }
 
@@ -569,7 +570,7 @@ public partial class FriendsViewModel : ObservableObject
         HasActiveChat = true;
         ChatPeerTitle = title;
         SelectedChatThread = ChatThreads.FirstOrDefault(t => t.PeerUserId == peerUserId);
-        ChatStatus = "Ładowanie…";
+        ChatStatus = Loc.T("Ładowanie…");
         await RefreshConversationAsync(peerUserId);
         await EnsureChatRealtimeOrPollAsync();
         OnPropertyChanged(nameof(ShowEmptyChat));
@@ -589,7 +590,7 @@ public partial class FriendsViewModel : ObservableObject
             ChatMessages.Clear();
             if (convo is null)
             {
-                ChatStatus = "Nie udało się wczytać rozmowy (tylko znajomi).";
+                ChatStatus = Loc.T("Nie udało się wczytać rozmowy (tylko znajomi).");
                 return;
             }
 
@@ -632,8 +633,8 @@ public partial class FriendsViewModel : ObservableObject
         ProfileUserId = profile.User.Id;
         ProfileHeader = ViewedProfile.Title;
         ProfileSubtitle = profile.IsOwnProfile
-            ? "Twój profil — inni mogą się tu podpisać."
-            : $"{profile.User.DisplayName} · ściana komentarzy";
+            ? Loc.T("Twój profil — inni mogą się tu podpisać.")
+            : Loc.F("{0} · ściana komentarzy", profile.User.DisplayName);
         CanMessageProfile = !profile.IsOwnProfile && profile.User.FriendRelation == FriendRelation.Friends;
         ProfileComments.Clear();
         foreach (var c in profile.Comments)
@@ -642,8 +643,8 @@ public partial class FriendsViewModel : ObservableObject
         }
 
         ProfileStatus = ProfileComments.Count == 0
-            ? "Brak podpisów — napisz coś."
-            : $"{ProfileComments.Count} podpisów";
+            ? Loc.T("Brak podpisów — napisz coś.")
+            : Loc.F("{0} podpisów", ProfileComments.Count);
         NotifyLists();
     }
 
@@ -662,7 +663,7 @@ public partial class FriendsViewModel : ObservableObject
             var (overview, error) = await action(person.UserId);
             if (overview is null)
             {
-                StatusText = error ?? "Nie udało się zapisać.";
+                StatusText = error ?? Loc.T("Nie udało się zapisać.");
                 return;
             }
 
@@ -673,7 +674,7 @@ public partial class FriendsViewModel : ObservableObject
                 return;
             }
 
-            StatusText = "Zapisano.";
+            StatusText = Loc.T("Zapisano.");
         }
         catch (Exception ex)
         {
@@ -795,7 +796,7 @@ public sealed class ChatThreadItem
             PeerUserId = dto.Peer.Id,
             Title = title,
             Preview = string.IsNullOrWhiteSpace(dto.LastMessagePreview)
-                ? "Brak wiadomości"
+                ? Loc.T("Brak wiadomości")
                 : dto.LastMessagePreview!,
             UnreadCount = dto.UnreadCount
         };
@@ -805,7 +806,7 @@ public sealed class ChatThreadItem
     {
         PeerUserId = friend.UserId,
         Title = friend.Title,
-        Preview = "Nowa rozmowa",
+        Preview = Loc.T("Nowa rozmowa"),
         UnreadCount = 0
     };
 }
@@ -822,7 +823,7 @@ public sealed class ChatMessageItem
         Id = dto.Id,
         Text = dto.Text,
         Meta = dto.IsMine
-            ? $"Ty · {dto.CreatedAtUtc.LocalDateTime:t}"
+            ? Loc.F("Ty · {0:t}", dto.CreatedAtUtc.LocalDateTime)
             : dto.CreatedAtUtc.LocalDateTime.ToString("t"),
         IsMine = dto.IsMine
     };
@@ -847,7 +848,7 @@ public sealed class SocialPersonItem
     public bool ShowAddFriend => FriendRelation == FriendRelation.None;
     public bool ShowAccept => FriendRelation == FriendRelation.IncomingRequest;
     public bool ShowRemoveFriend => FriendRelation is FriendRelation.Friends or FriendRelation.OutgoingRequest;
-    public string RemoveFriendLabel => FriendRelation == FriendRelation.OutgoingRequest ? "Anuluj" : "Usuń";
+    public string RemoveFriendLabel => FriendRelation == FriendRelation.OutgoingRequest ? Loc.T("Anuluj") : Loc.T("Usuń");
     public bool ShowFollow => !IsFollowing && FriendRelation == FriendRelation.None;
     public bool ShowUnfollow => IsFollowing && FriendRelation != FriendRelation.Friends;
     public bool ShowMessage => FriendRelation == FriendRelation.Friends;
@@ -865,10 +866,10 @@ public sealed class SocialPersonItem
         var title = string.IsNullOrWhiteSpace(user.PlayerTag) ? user.DisplayName : user.PlayerTag!;
         var relation = user.FriendRelation switch
         {
-            FriendRelation.IncomingRequest => "Zaproszenie do Ciebie",
-            FriendRelation.OutgoingRequest => "Zaproszenie wysłane",
+            FriendRelation.IncomingRequest => Loc.T("Zaproszenie do Ciebie"),
+            FriendRelation.OutgoingRequest => Loc.T("Zaproszenie wysłane"),
             FriendRelation.Friends => isOnline ? "Online" : "Offline",
-            _ => user.IsFollowing ? "Obserwujesz" : (user.IsFollower ? "Obserwuje Cię" : (isOnline ? "Online" : "Offline"))
+            _ => user.IsFollowing ? Loc.T("Obserwujesz") : (user.IsFollower ? Loc.T("Obserwuje Cię") : (isOnline ? "Online" : "Offline"))
         };
 
         return new SocialPersonItem

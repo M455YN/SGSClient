@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -221,17 +222,17 @@ public sealed partial class AdminPage : Page
         return await WinUiFilePicker.PickSingleFileAsync(
             App.MainWindow,
             extensions,
-            commitLabel: "Wybierz");
+            commitLabel: Loc.T("Wybierz"));
     }
 
     private async Task<bool> ConfirmDeleteAsync(AdminGameItem item)
     {
         var dialog = new ContentDialog
         {
-            Title = item.IsDlc ? "Usuń DLC (admin)" : "Usuń (admin)",
-            Content = $"Na pewno usunąć „{item.Title}”? Operacji nie można cofnąć.",
-            PrimaryButtonText = "Usuń",
-            CloseButtonText = "Anuluj",
+            Title = item.IsDlc ? Loc.T("Usuń DLC (admin)") : Loc.T("Usuń (admin)"),
+            Content = Loc.F("Na pewno usunąć „{0}”? Operacji nie można cofnąć.", item.Title),
+            PrimaryButtonText = Loc.T("Usuń"),
+            CloseButtonText = Loc.T("Anuluj"),
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = XamlRoot
         };

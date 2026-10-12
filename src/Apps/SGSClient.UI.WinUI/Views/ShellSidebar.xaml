@@ -1,4 +1,4 @@
-<UserControl
+<UserControl xmlns:loc="using:SGSClient.UI.WinUI.Localization"
     x:Class="SGSClient.UI.WinUI.Views.ShellSidebar"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -7,6 +7,7 @@
 
   <UserControl.Resources>
     <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <local:InverseBoolToVisibilityConverter x:Key="BoolToVisInv" />
     <Style x:Key="NavButtonStyle" TargetType="Button">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -98,14 +99,14 @@
                 ToolTipService.ToolTip="Sklep">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <FontIcon Glyph="&#xE719;" FontSize="16" />
-            <TextBlock x:Name="NavGamesLabel" Text="Sklep" VerticalAlignment="Center" />
+            <TextBlock x:Name="NavGamesLabel" Text="{loc:Tr Key='Sklep'}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="NavLibrary" Tag="Library" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
                 ToolTipService.ToolTip="Biblioteka">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <FontIcon Glyph="&#xE8F1;" FontSize="16" />
-            <TextBlock x:Name="NavLibraryLabel" Text="Biblioteka" VerticalAlignment="Center" />
+            <TextBlock x:Name="NavLibraryLabel" Text="{loc:Tr Key='Biblioteka'}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="NavDownloads" Tag="Downloads" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
@@ -113,28 +114,28 @@
                 ToolTipService.ToolTip="Pobrania">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <FontIcon Glyph="&#xE896;" FontSize="16" />
-            <TextBlock x:Name="NavDownloadsLabel" Text="Pobrania" VerticalAlignment="Center" />
+            <TextBlock x:Name="NavDownloadsLabel" Text="{loc:Tr Key='Pobrania'}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="NavWishlist" Tag="Wishlist" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
                 ToolTipService.ToolTip="Lista życzeń">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <FontIcon Glyph="&#xEB51;" FontSize="16" />
-            <TextBlock x:Name="NavWishlistLabel" Text="Lista życzeń" VerticalAlignment="Center" />
+            <TextBlock x:Name="NavWishlistLabel" Text="{loc:Tr Key='Lista życzeń'}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="NavPublish" Tag="Publish" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
                 Visibility="Collapsed" ToolTipService.ToolTip="Publikuj">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <FontIcon Glyph="&#xE898;" FontSize="16" />
-            <TextBlock x:Name="NavPublishLabel" Text="Publikuj" VerticalAlignment="Center" />
+            <TextBlock x:Name="NavPublishLabel" Text="{loc:Tr Key='Publikuj'}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="NavStudio" Tag="Studio" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
                 ToolTipService.ToolTip="Panel twórcy">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <FontIcon Glyph="&#xE7C3;" FontSize="16" />
-            <TextBlock x:Name="NavStudioLabel" Text="Panel twórcy" VerticalAlignment="Center" />
+            <TextBlock x:Name="NavStudioLabel" Text="{loc:Tr Key='Panel twórcy'}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
         <Button x:Name="NavAdmin" Tag="Admin" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
@@ -157,7 +158,7 @@
                    FontWeight="SemiBold"
                    CharacterSpacing="40"
                    Opacity="0.55"
-                   Text="0 ZAINSTALOWANYCH" />
+                   Text="{loc:Tr Key='0 ZAINSTALOWANYCH'}" />
         <ListView x:Name="InstalledList"
                   Grid.Row="1"
                   SelectionMode="None"
@@ -185,7 +186,8 @@
                   <Grid>
                     <TextBlock Text="{x:Bind TileLabel}"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                               FontSize="10" FontWeight="SemiBold" Opacity="0.7" />
+                               FontSize="10" FontWeight="SemiBold" Opacity="0.7"
+                               Visibility="{Binding HasCover, Converter={StaticResource BoolToVisInv}}" />
                     <Image Width="36" Height="36" Stretch="UniformToFill"
                            Source="{Binding CoverImageUrl}"
                            Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
@@ -208,8 +210,8 @@
                           ToolTipService.ToolTip="Więcej">
                     <Button.Flyout>
                       <MenuFlyout>
-                        <MenuFlyoutItem Text="Szczegóły" Tag="{x:Bind}" Click="DetailsMenu_Click" />
-                        <MenuFlyoutItem Text="Właściwości" Tag="{x:Bind}" Click="PropertiesMenu_Click" />
+                        <MenuFlyoutItem Text="{loc:Tr Key='Szczegóły'}" Tag="{x:Bind}" Click="DetailsMenu_Click" />
+                        <MenuFlyoutItem Text="{loc:Tr Key='Właściwości'}" Tag="{x:Bind}" Click="PropertiesMenu_Click" />
                       </MenuFlyout>
                     </Button.Flyout>
                   </Button>
@@ -228,7 +230,7 @@
             ToolTipService.ToolTip="Ustawienia">
       <StackPanel Orientation="Horizontal" Spacing="12">
         <FontIcon Glyph="&#xE713;" FontSize="16" />
-        <TextBlock x:Name="NavSettingsLabel" Text="Ustawienia" VerticalAlignment="Center" />
+        <TextBlock x:Name="NavSettingsLabel" Text="{loc:Tr Key='Ustawienia'}" VerticalAlignment="Center" />
       </StackPanel>
     </Button>
   </Grid>

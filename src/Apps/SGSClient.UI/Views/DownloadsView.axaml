@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.DownloadsView"
@@ -6,24 +6,24 @@
   <Grid Margin="28,24" RowDefinitions="Auto,Auto,*" RowSpacing="14">
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Spacing="6">
-        <TextBlock Text="Pobrania" FontSize="28" FontWeight="SemiBold"/>
+        <TextBlock Text="{loc:Tr Key='Pobrania'}" FontSize="28" FontWeight="SemiBold"/>
         <TextBlock Text="{Binding StatusText}" Opacity="0.65" FontSize="13"/>
       </StackPanel>
-      <Button Grid.Column="1" Content="Odśwież" Padding="12,6"
+      <Button Grid.Column="1" Content="{loc:Tr Key='Odśwież'}" Padding="12,6"
               Command="{Binding RefreshListCommand}" VerticalAlignment="Top"/>
     </Grid>
 
     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
-      <TextBlock Text="Limit pasma (KB/s):" VerticalAlignment="Center" Opacity="0.75" FontSize="13"/>
+      <TextBlock Text="{loc:Tr Key='Limit pasma (KB/s):'}" VerticalAlignment="Center" Opacity="0.75" FontSize="13"/>
       <NumericUpDown Width="120" Minimum="0" Maximum="100000"
                      Value="{Binding DownloadMaxKbps}"
                      FormatString="0"
                      ToolTip.Tip="0 = bez limitu"/>
-      <TextBlock Text="0 = bez limitu" VerticalAlignment="Center" Opacity="0.5" FontSize="12"/>
+      <TextBlock Text="{loc:Tr Key='0 = bez limitu'}" VerticalAlignment="Center" Opacity="0.5" FontSize="12"/>
     </StackPanel>
 
     <Panel Grid.Row="2">
-      <TextBlock Text="Brak aktywnych pobierań." Opacity="0.6"
+      <TextBlock Text="{loc:Tr Key='Brak aktywnych pobierań.'}" Opacity="0.6"
                  HorizontalAlignment="Center" VerticalAlignment="Center"
                  IsVisible="{Binding IsEmpty}"/>
       <ListBox ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}"
@@ -54,15 +54,15 @@
                         IsVisible="{Binding CanMoveDown}"
                         Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).MoveDownCommand}"
                         CommandParameter="{Binding}"/>
-                <Button Content="Pauza" Padding="12,6"
+                <Button Content="{loc:Tr Key='Pauza'}" Padding="12,6"
                         IsVisible="{Binding CanPause}"
                         Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).PauseCommand}"
                         CommandParameter="{Binding}"/>
-                <Button Content="Wznów" Padding="12,6"
+                <Button Content="{loc:Tr Key='Wznów'}" Padding="12,6"
                         IsVisible="{Binding CanResume}"
                         Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).ResumeCommand}"
                         CommandParameter="{Binding}"/>
-                <Button Content="Anuluj" Padding="12,6"
+                <Button Content="{loc:Tr Key='Anuluj'}" Padding="12,6"
                         IsVisible="{Binding CanCancel}"
                         Command="{Binding $parent[UserControl].((vm:DownloadsViewModel)DataContext).CancelCommand}"
                         CommandParameter="{Binding}"/>

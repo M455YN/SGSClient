@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.LoginView"
@@ -21,11 +21,11 @@
       </StackPanel>
 
       <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="8">
-        <TextBlock Text="Zaloguj się" FontSize="28" FontWeight="SemiBold"/>
-        <TextBlock Text="Użyj konta SGS." FontSize="14"
+        <TextBlock Text="{loc:Tr Key='Zaloguj się'}" FontSize="28" FontWeight="SemiBold"/>
+        <TextBlock Text="{loc:Tr Key='Użyj konta SGS.'}" FontSize="14"
                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
 
-        <Button Content="Zaloguj się"
+        <Button Content="{loc:Tr Key='Zaloguj się'}"
                 Classes="accent"
                 Command="{Binding LoginCommand}"
                 IsEnabled="{Binding !IsBusy}"
@@ -35,13 +35,13 @@
                 Margin="0,24,0,0"/>
 
         <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
-          <TextBlock Text="Nie masz konta?" FontSize="12" VerticalAlignment="Center"
+          <TextBlock Text="{loc:Tr Key='Nie masz konta?'}" FontSize="12" VerticalAlignment="Center"
                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
           <Button Command="{Binding SignUpCommand}"
                   IsEnabled="{Binding !IsBusy}"
                   Background="Transparent" BorderThickness="0"
                   Padding="4,2" Cursor="Hand">
-            <TextBlock Text="Zarejestruj się" FontSize="12"
+            <TextBlock Text="{loc:Tr Key='Zarejestruj się'}" FontSize="12"
                        Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
           </Button>
         </StackPanel>
@@ -55,7 +55,7 @@
           <Button Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}"
                   Background="Transparent" BorderThickness="0"
                   Padding="4,2" Cursor="Hand" VerticalAlignment="Center">
-            <TextBlock Text="Anuluj" FontSize="12"
+            <TextBlock Text="{loc:Tr Key='Anuluj'}" FontSize="12"
                        Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"/>
           </Button>
         </StackPanel>

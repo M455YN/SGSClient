@@ -1,4 +1,4 @@
-<UserControl
+<UserControl xmlns:loc="using:SGSClient.UI.WinUI.Localization"
     x:Class="SGSClient.UI.WinUI.Views.GamePropertiesDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -38,9 +38,9 @@
     <ScrollViewer Grid.Column="1" Padding="24,20">
       <StackPanel Spacing="16">
         <StackPanel x:Name="BetasPanel" Spacing="12">
-          <TextBlock Text="Wersje i bety gry" Style="{StaticResource SubtitleTextBlockStyle}" />
-          <TextBlock Text="Wybrana wersja gry" Style="{StaticResource BodyStrongTextBlockStyle}" />
-          <TextBlock Text="Wersje są udostępniane przez twórców. Starsze buildy mogą być niestabilne."
+          <TextBlock Text="{loc:Tr Key='Wersje i bety gry'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock Text="{loc:Tr Key='Wybrana wersja gry'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+          <TextBlock Text="{loc:Tr Key='Wersje są udostępniane przez twórców. Starsze buildy mogą być niestabilne.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                      TextWrapping="Wrap" />
@@ -50,11 +50,11 @@
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Tytuł i opis"
+            <TextBlock Text="{loc:Tr Key='Tytuł i opis'}"
                        Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             <TextBlock Grid.Column="1"
-                       Text="Ostatnia aktualizacja"
+                       Text="{loc:Tr Key='Ostatnia aktualizacja'}"
                        Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
           </Grid>
@@ -91,13 +91,13 @@
           <InfoBar IsOpen="True"
                    IsClosable="False"
                    Severity="Informational"
-                   Title="Wersje prywatne"
-                   Message="Odblokowywanie prywatnych bet będzie dostępne w kolejnej wersji." />
+                   Title="{loc:Tr Key='Wersje prywatne'}"
+                   Message="Prywatne wersje beta — wkrótce." />
         </StackPanel>
 
         <StackPanel x:Name="FilesPanel" Spacing="14" Visibility="Collapsed">
-          <TextBlock Text="Zainstalowane pliki" Style="{StaticResource SubtitleTextBlockStyle}" />
-          <TextBlock Text="Lokalne pliki gry na tym komputerze. Odinstalowanie usuwa pliki, ale gra zostaje w bibliotece."
+          <TextBlock Text="{loc:Tr Key='Zainstalowane pliki'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock Text="{loc:Tr Key='Lokalne pliki gry na tym komputerze. Odinstalowanie usuwa pliki, ale gra zostaje w bibliotece.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                      TextWrapping="Wrap" />
@@ -120,16 +120,16 @@
                 </Grid.RowDefinitions>
                 <TextBlock Text="Status" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <TextBlock x:Name="InstallStateText" Grid.Column="1" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                <TextBlock Grid.Row="1" Text="Wersja" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock Grid.Row="1" Text="{loc:Tr Key='Wersja'}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <TextBlock x:Name="InstalledVersionText" Grid.Row="1" Grid.Column="1" />
-                <TextBlock Grid.Row="2" Text="Rozmiar" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock Grid.Row="2" Text="{loc:Tr Key='Rozmiar'}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <TextBlock x:Name="InstallSizeText" Grid.Row="2" Grid.Column="1" />
-                <TextBlock Grid.Row="3" Text="Pliki" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock Grid.Row="3" Text="{loc:Tr Key='Pliki'}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <TextBlock x:Name="InstallFilesText" Grid.Row="3" Grid.Column="1" />
               </Grid>
 
               <StackPanel Spacing="4">
-                <TextBlock Text="Folder instalacji"
+                <TextBlock Text="{loc:Tr Key='Folder instalacji'}"
                            Style="{StaticResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 <TextBlock x:Name="InstallPathText" TextWrapping="Wrap"
@@ -140,16 +140,16 @@
 
           <StackPanel Orientation="Horizontal" Spacing="10">
             <Button x:Name="BrowseFilesButton"
-                    Content="Przeglądaj pliki lokalne…"
+                    Content="{loc:Tr Key='Przeglądaj pliki lokalne…'}"
                     Click="BrowseLocalFiles_Click"
                     Style="{StaticResource AccentButtonStyle}"
                     Padding="14,10" />
-            <Button Content="Odśwież"
+            <Button Content="{loc:Tr Key='Odśwież'}"
                     Click="RefreshInstallInfo_Click"
                     Style="{StaticResource SubtleButtonStyle}"
                     Padding="14,10" />
             <Button x:Name="UninstallFilesButton"
-                    Content="Odinstaluj…"
+                    Content="{loc:Tr Key='Odinstaluj…'}"
                     Click="UninstallFiles_Click"
                     Padding="14,10" />
           </StackPanel>
@@ -163,8 +163,8 @@
                   BorderThickness="1"
                   Visibility="Collapsed">
             <StackPanel Spacing="10">
-              <TextBlock Text="Przenieś pliki" Style="{StaticResource BodyStrongTextBlockStyle}" />
-              <TextBlock Text="Wybierz inny folder biblioteki (dodajesz je w Ustawieniach)."
+              <TextBlock Text="{loc:Tr Key='Przenieś pliki'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+              <TextBlock Text="{loc:Tr Key='Wybierz inny folder biblioteki (dodajesz je w Ustawieniach).'}"
                          Style="{StaticResource CaptionTextBlockStyle}"
                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                          TextWrapping="Wrap" />
@@ -175,7 +175,7 @@
                         MinHeight="36" />
               <StackPanel Orientation="Horizontal" Spacing="10">
                 <Button x:Name="MoveFilesButton"
-                        Content="Przenieś pliki…"
+                        Content="{loc:Tr Key='Przenieś pliki…'}"
                         Click="MoveFiles_Click"
                         Style="{StaticResource AccentButtonStyle}"
                         Padding="14,10" />
@@ -187,15 +187,15 @@
             </StackPanel>
           </Border>
 
-          <TextBlock Text="Weryfikacja integralności plików pojawi się w kolejnej wersji."
+          <TextBlock Text="{loc:Tr Key='Weryfikacja plików — wkrótce.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                      TextWrapping="Wrap" />
         </StackPanel>
 
         <StackPanel x:Name="PersonalizationPanel" Spacing="14" Visibility="Collapsed">
-          <TextBlock Text="Personalizacja" Style="{StaticResource SubtitleTextBlockStyle}" />
-          <TextBlock Text="Własny obrazek kafla w bibliotece (nadpisuje okładkę ze sklepu)."
+          <TextBlock Text="{loc:Tr Key='Personalizacja'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock Text="{loc:Tr Key='Własny obrazek kafla w bibliotece (nadpisuje okładkę ze sklepu).'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                      TextWrapping="Wrap" />
@@ -206,7 +206,7 @@
                   BorderThickness="1">
             <Grid>
               <TextBlock x:Name="CustomCoverPlaceholder"
-                         Text="Podgląd"
+                         Text="{loc:Tr Key='Podgląd'}"
                          Opacity="0.45"
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center" />
@@ -215,17 +215,17 @@
           </Border>
 
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Content="Wybierz obrazek…"
+            <Button Content="{loc:Tr Key='Wybierz obrazek…'}"
                     Click="PickCustomCover_Click"
                     Style="{StaticResource AccentButtonStyle}"
                     Padding="14,10" />
             <Button x:Name="ClearCustomCoverButton"
-                    Content="Przywróć domyślny"
+                    Content="{loc:Tr Key='Przywróć domyślny'}"
                     Click="ClearCustomCover_Click"
                     Style="{StaticResource SubtleButtonStyle}"
                     Padding="14,10" />
           </StackPanel>
-          <TextBlock Text="Obsługiwane: PNG, JPG, WEBP. Plik trafia do lokalnej pamięci klienta."
+          <TextBlock Text="{loc:Tr Key='Obsługiwane: PNG, JPG, WEBP. Plik trafia do lokalnej pamięci klienta.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                      TextWrapping="Wrap" />
@@ -239,14 +239,14 @@
             </Grid.ColumnDefinitions>
             <TextBlock Text="DLC" Style="{StaticResource SubtitleTextBlockStyle}" VerticalAlignment="Center" />
             <Button Grid.Column="1"
-                    Content="Zobacz więcej w sklepie"
+                    Content="{loc:Tr Key='Zobacz więcej w sklepie'}"
                     Click="ViewMoreInStore_Click"
                     Style="{StaticResource SubtleButtonStyle}"
                     Padding="12,8" />
           </Grid>
 
           <TextBox x:Name="DlcSearchBox"
-                   PlaceholderText="Szukaj DLC…"
+                   PlaceholderText="{loc:Tr Key='Szukaj DLC…'}"
                    TextChanged="DlcSearchBox_TextChanged" />
 
           <Grid Margin="0,4,0,0" ColumnSpacing="12">
@@ -256,13 +256,13 @@
               <ColumnDefinition Width="120" />
               <ColumnDefinition Width="100" />
             </Grid.ColumnDefinitions>
-            <TextBlock Text="Instaluj" Style="{StaticResource CaptionTextBlockStyle}"
+            <TextBlock Text="{loc:Tr Key='Instaluj'}" Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock Grid.Column="1" Text="Nazwa" Style="{StaticResource CaptionTextBlockStyle}"
+            <TextBlock Grid.Column="1" Text="{loc:Tr Key='Nazwa'}" Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock Grid.Column="2" Text="Dodano" Style="{StaticResource CaptionTextBlockStyle}"
+            <TextBlock Grid.Column="2" Text="{loc:Tr Key='Dodano'}" Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock Grid.Column="3" Text="Rozmiar" Style="{StaticResource CaptionTextBlockStyle}"
+            <TextBlock Grid.Column="3" Text="{loc:Tr Key='Rozmiar'}" Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                        HorizontalAlignment="Right" />
           </Grid>
@@ -311,7 +311,7 @@
         </StackPanel>
 
         <StackPanel x:Name="GeneralPanel" Spacing="14" Visibility="Collapsed">
-          <TextBlock Text="Ogólne" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock Text="{loc:Tr Key='Ogólne'}" Style="{StaticResource SubtitleTextBlockStyle}" />
           <TextBlock x:Name="GeneralSummaryText"
                      Style="{StaticResource BodyTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -328,20 +328,20 @@
             </Grid.RowDefinitions>
             <TextBlock Text="Status" Opacity="0.65" />
             <TextBlock x:Name="GeneralStateText" Grid.Column="1" FontWeight="SemiBold" />
-            <TextBlock Grid.Row="1" Text="Wersja" Opacity="0.65" />
+            <TextBlock Grid.Row="1" Text="{loc:Tr Key='Wersja'}" Opacity="0.65" />
             <TextBlock x:Name="GeneralVersionText" Grid.Row="1" Grid.Column="1" />
-            <TextBlock Grid.Row="2" Text="Lokalizacja" Opacity="0.65" />
+            <TextBlock Grid.Row="2" Text="{loc:Tr Key='Lokalizacja'}" Opacity="0.65" />
             <TextBlock x:Name="GeneralPathText" Grid.Row="2" Grid.Column="1"
                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Otwórz folder" Click="BrowseLocalFiles_Click" x:Name="GeneralBrowseButton" />
-            <Button Content="Zobacz w sklepie" Click="ViewMoreInStore_Click" />
+            <Button Content="{loc:Tr Key='Otwórz folder'}" Click="BrowseLocalFiles_Click" x:Name="GeneralBrowseButton" />
+            <Button Content="{loc:Tr Key='Zobacz w sklepie'}" Click="ViewMoreInStore_Click" />
           </StackPanel>
         </StackPanel>
 
         <StackPanel x:Name="UpdatesPanel" Spacing="14" Visibility="Collapsed">
-          <TextBlock Text="Aktualizacje" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock Text="{loc:Tr Key='Aktualizacje'}" Style="{StaticResource SubtitleTextBlockStyle}" />
           <TextBlock x:Name="UpdatesStatusText"
                      Style="{StaticResource BodyTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -355,18 +355,18 @@
               <RowDefinition Height="Auto" />
               <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <TextBlock Text="Zainstalowana" Opacity="0.65" />
+            <TextBlock Text="{loc:Tr Key='Zainstalowana'}" Opacity="0.65" />
             <TextBlock x:Name="UpdatesInstalledText" Grid.Column="1" />
-            <TextBlock Grid.Row="1" Text="Dostępna w sklepie" Opacity="0.65" />
+            <TextBlock Grid.Row="1" Text="{loc:Tr Key='Dostępna w sklepie'}" Opacity="0.65" />
             <TextBlock x:Name="UpdatesLatestText" Grid.Row="1" Grid.Column="1" />
           </Grid>
           <ToggleSwitch x:Name="AutoUpdateSwitch"
-                        OffContent="Aktualizacje ręczne"
-                        OnContent="Aktualizuj automatycznie"
+                        OffContent="{loc:Tr Key='Aktualizacje ręczne'}"
+                        OnContent="{loc:Tr Key='Aktualizuj automatycznie'}"
                         Toggled="AutoUpdateSwitch_Toggled" />
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Sprawdź aktualizacje" Click="CheckForUpdates_Click" />
-            <Button x:Name="UpdateNowButton" Content="Aktualizuj teraz"
+            <Button Content="{loc:Tr Key='Sprawdź aktualizacje'}" Click="CheckForUpdates_Click" />
+            <Button x:Name="UpdateNowButton" Content="{loc:Tr Key='Aktualizuj teraz'}"
                     Style="{StaticResource AccentButtonStyle}"
                     Click="UpdateNow_Click" />
           </StackPanel>
@@ -377,7 +377,7 @@
                    IsOpen="True"
                    IsClosable="False"
                    Severity="Informational"
-                   Title="Wkrótce"
+                   Title="{loc:Tr Key='Wkrótce'}"
                    Message="Ta sekcja pojawi się w kolejnej wersji klienta." />
         </StackPanel>
 
