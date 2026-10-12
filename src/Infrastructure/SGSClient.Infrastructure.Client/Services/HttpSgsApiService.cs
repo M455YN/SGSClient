@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Net.Http.Json;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -331,7 +332,7 @@ public sealed class HttpSgsApiService(
             var updated = await response.Content.ReadFromJsonAsync<AdminUserDto>(cancellationToken)
                 .ConfigureAwait(false);
             return updated is null
-                ? new AdminRoleUpdateResult { Error = "Serwer nie zwrócił zaktualizowanego użytkownika." }
+                ? new AdminRoleUpdateResult { Error = Loc.T("Serwer nie zwrócił zaktualizowanego użytkownika.") }
                 : new AdminRoleUpdateResult { User = updated };
         }
         catch (Exception ex)
@@ -348,7 +349,7 @@ public sealed class HttpSgsApiService(
                 .ConfigureAwait(false);
             if (payload?.Errors is { Length: > 0 } errors)
             {
-                return string.Join(" ", errors);
+                return string.Join(" ", errors.Select(Loc.TS));
             }
         }
         catch
@@ -358,10 +359,10 @@ public sealed class HttpSgsApiService(
 
         return response.StatusCode switch
         {
-            System.Net.HttpStatusCode.Unauthorized => "Zaloguj się ponownie.",
-            System.Net.HttpStatusCode.Forbidden => "Brak uprawnień do tej operacji.",
-            System.Net.HttpStatusCode.NotFound => "Nie znaleziono użytkownika.",
-            _ => $"Błąd serwera ({(int)response.StatusCode})."
+            System.Net.HttpStatusCode.Unauthorized => Loc.T("Zaloguj się ponownie."),
+            System.Net.HttpStatusCode.Forbidden => Loc.T("Brak uprawnień do tej operacji."),
+            System.Net.HttpStatusCode.NotFound => Loc.T("Nie znaleziono użytkownika."),
+            _ => Loc.F("Błąd serwera ({0}).", (int)response.StatusCode)
         };
     }
 

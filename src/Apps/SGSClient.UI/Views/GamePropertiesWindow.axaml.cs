@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -22,7 +23,7 @@ public partial class GamePropertiesWindow : Window
 
     public async void SetGame(int gameId, int buildId, string title)
     {
-        Title = $"Właściwości — {title}";
+        Title = Loc.F("Właściwości — {0}", title);
         await ViewModel.LoadAsync(gameId, buildId, title);
     }
 
@@ -38,11 +39,11 @@ public partial class GamePropertiesWindow : Window
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Wybierz obrazek kafla",
+            Title = Loc.T("Wybierz obrazek kafla"),
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Obrazy")
+                new FilePickerFileType(Loc.T("Obrazy"))
                 {
                     Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.bmp"]
                 }
@@ -95,17 +96,17 @@ public partial class GamePropertiesWindow : Window
         if (!_uninstallArmed)
         {
             _uninstallArmed = true;
-            button.Content = "Potwierdź odinstalowanie";
-            ViewModel.StatusText = "Kliknij ponownie, aby usunąć lokalne pliki.";
+            button.Content = Loc.T("Potwierdź odinstalowanie");
+            ViewModel.StatusText = Loc.T("Kliknij ponownie, aby usunąć lokalne pliki.");
             return;
         }
 
         _uninstallArmed = false;
-        button.Content = "Odinstaluj…";
+        button.Content = Loc.T("Odinstaluj…");
         await ViewModel.UninstallFilesCommand.ExecuteAsync(null);
         if (!ViewModel.CanUninstallFiles)
         {
-            button.Content = "Odinstaluj…";
+            button.Content = Loc.T("Odinstaluj…");
         }
     }
 
@@ -119,14 +120,14 @@ public partial class GamePropertiesWindow : Window
         if (!_moveArmed)
         {
             _moveArmed = true;
-            button.Content = "Potwierdź przeniesienie";
-            ViewModel.StatusText = "Kliknij ponownie, aby przenieść pliki do wybranego folderu.";
+            button.Content = Loc.T("Potwierdź przeniesienie");
+            ViewModel.StatusText = Loc.T("Kliknij ponownie, aby przenieść pliki do wybranego folderu.");
             return;
         }
 
         _moveArmed = false;
-        button.Content = "Przenieś pliki…";
+        button.Content = Loc.T("Przenieś pliki…");
         await ViewModel.MoveFilesCommand.ExecuteAsync(null);
-        button.Content = "Przenieś pliki…";
+        button.Content = Loc.T("Przenieś pliki…");
     }
 }

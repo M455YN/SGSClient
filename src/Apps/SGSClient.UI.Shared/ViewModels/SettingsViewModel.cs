@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Reflection;
@@ -16,31 +17,41 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IServiceScopeFactory? _scopes;
     private readonly ILibraryFolderService? _libraryFolders;
     private readonly IAuthSession? _auth;
+    private readonly IClientUserSettingsStore? _userSettings;
+    private readonly IThemeApplier? _themes;
     private readonly string _accountStatusFallback;
+    private readonly bool _loaded;
+
+    private static readonly string[] ThemeValues = ["system", "light", "dark"];
+    private static readonly string[] LanguageValues = ["system", "pl", "en"];
 
     /// <summary>Design-time / fallback constructor (no services).</summary>
     public SettingsViewModel()
     {
-        Title = "Ustawienia";
-        StoreStatus = "Nie skonfigurowano";
-        _accountStatusFallback = "Logowanie wyłączone";
+        Title = Loc.T("Ustawienia");
+        StoreStatus = Loc.T("Brak adresu serwera");
+        _accountStatusFallback = Loc.T("Logowanie wyłączone");
         AccountStatus = _accountStatusFallback;
-        AppearanceText = "Jak w systemie";
-        LanguageText = "Polski";
-        LibrarySummary = "Dodaj foldery biblioteki jak w Steam. Każdy folder ma plik libraryfolder.json i katalog sgsapps/.";
-        AboutText = $"SGSClient · wersja {ReadVersion()}";
+        ThemeOptions = [Loc.T("Jak w systemie"), Loc.T("Jasny"), Loc.T("Ciemny")];
+        LanguageOptions = [Loc.T("Jak w systemie"), Loc.T("Polski"), "English"];
+        LibrarySummary = Loc.T("Foldery, w których klient szuka i instaluje gry.");
+        AboutText = ReadVersion();
     }
 
     public SettingsViewModel(
         IConfiguration configuration,
         IServiceScopeFactory scopes,
         ILibraryFolderService libraryFolders,
-        IAuthSession? auth = null)
+        IAuthSession? auth = null,
+        IClientUserSettingsStore? userSettings = null,
+        IThemeApplier? themes = null)
     {
         _scopes = scopes;
         _libraryFolders = libraryFolders;
         _auth = auth;
-        Title = "Ustawienia";
+        _userSettings = userSettings;
+        _themes = themes;
+        Title = Loc.T("Ustawienia");
 
         var api = configuration.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()
                   ?? new ApiClientSettings();
@@ -48,20 +59,25 @@ public partial class SettingsViewModel : ObservableObject
                     ?? new AzureAdSettings();
 
         StoreStatus = string.IsNullOrWhiteSpace(api.BaseUrl)
-            ? "Sklep niedostępny — brak adresu serwera"
-            : $"Sklep: {api.BaseUrl.TrimEnd('/')}";
+            ? Loc.T("Brak adresu serwera")
+            : api.BaseUrl.TrimEnd('/');
         _accountStatusFallback = azure.IsConfigured
-            ? "Możesz zalogować się w zakładce Profil"
+            ? Loc.T("Możesz zalogować się w zakładce Profil")
             : azure.Enabled
-                ? "Logowanie wymaga dokończenia konfiguracji"
-                : "Logowanie jest wyłączone";
+                ? Loc.T("Logowanie wymaga dokończenia konfiguracji")
+                : Loc.T("Logowanie jest wyłączone");
         AccountStatus = _accountStatusFallback;
-        AppearanceText = "Jak w systemie";
-        LanguageText = "Polski";
-        LibrarySummary = "Dodaj foldery biblioteki jak w Steam. Każdy folder ma plik libraryfolder.json i katalog sgsapps/.";
-        AboutText = $"SGSClient · wersja {ReadVersion()}";
+        ThemeOptions = [Loc.T("Jak w systemie"), Loc.T("Jasny"), Loc.T("Ciemny")];
+        LanguageOptions = [Loc.T("Jak w systemie"), Loc.T("Polski"), "English"];
+        LibrarySummary = Loc.T("Foldery, w których klient szuka i instaluje gry.");
+        AboutText = ReadVersion();
         ReloadFolders();
         RefreshAccountStatus();
+
+        var saved = _userSettings?.Load() ?? new ClientUserSettings();
+        SelectedThemeIndex = Math.Max(0, Array.IndexOf(ThemeValues, saved.Theme));
+        SelectedLanguageIndex = Math.Max(0, Array.IndexOf(LanguageValues, saved.Language));
+        _loaded = true;
     }
 
     public string Title { get; }
@@ -70,8 +86,59 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial string AccountStatus { get; set; } = string.Empty;
 
-    public string AppearanceText { get; }
-    public string LanguageText { get; }
+    public IReadOnlyList<string> ThemeOptions { get; }
+    public IReadOnlyList<string> LanguageOptions { get; }
+
+    [ObservableProperty]
+    public partial int SelectedThemeIndex { get; set; }
+
+    [ObservableProperty]
+    public partial int SelectedLanguageIndex { get; set; }
+
+    [ObservableProperty]
+    public partial string LanguageHint { get; set; } = string.Empty;
+
+    partial void OnSelectedThemeIndexChanged(int value)
+    {
+        if (!_loaded || value < 0 || value >= ThemeValues.Length)
+        {
+            return;
+        }
+
+        _themes?.Apply(ThemeValues[value]);
+        _ = SavePreferencesAsync();
+    }
+
+    partial void OnSelectedLanguageIndexChanged(int value)
+    {
+        if (!_loaded || value < 0 || value >= LanguageValues.Length)
+        {
+            return;
+        }
+
+        LanguageHint = Loc.T("Zmiana języka zacznie działać po ponownym uruchomieniu aplikacji.");
+        _ = SavePreferencesAsync();
+    }
+
+    private async Task SavePreferencesAsync()
+    {
+        if (_userSettings is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var settings = _userSettings.Load();
+            settings.Theme = ThemeValues[Math.Clamp(SelectedThemeIndex, 0, ThemeValues.Length - 1)];
+            settings.Language = LanguageValues[Math.Clamp(SelectedLanguageIndex, 0, LanguageValues.Length - 1)];
+            await _userSettings.SaveAsync(settings);
+        }
+        catch (Exception ex)
+        {
+            StatusText = Loc.F("Nie udało się zapisać: {0}", ex.Message);
+        }
+    }
     public string LibrarySummary { get; }
     public string AboutText { get; }
 
@@ -99,12 +166,12 @@ public partial class SettingsViewModel : ObservableObject
             var user = _auth.CurrentUser;
             var email = string.IsNullOrWhiteSpace(user.Email) ? "(brak e-maila w tokenie)" : user.Email;
             AccountStatus = user.IsAdmin
-                ? $"Zalogowano jako: {email} · admin"
-                : $"Zalogowano jako: {email}";
+                ? Loc.F("Zalogowano jako: {0} · admin", email)
+                : Loc.F("Zalogowano jako: {0}", email);
             return;
         }
 
-        AccountStatus = "Niezalogowany — zaloguj się w Profilu";
+        AccountStatus = Loc.T("Niezalogowany — zaloguj się w Profilu");
     }
 
     public void ReloadFolders()
@@ -134,12 +201,12 @@ public partial class SettingsViewModel : ObservableObject
             var result = await discovery.ScanAsync();
 
             StatusText = result.DiscoveredInstalls + result.UpdatedEntries > 0
-                ? $"Dodano folder biblioteki. Znaleziono {result.DiscoveredInstalls} gier, zaktualizowano {result.UpdatedEntries}."
-                : "Dodano folder biblioteki.";
+                ? Loc.F("Dodano folder biblioteki. Znaleziono {0} gier, zaktualizowano {1}.", result.DiscoveredInstalls, result.UpdatedEntries)
+                : Loc.T("Dodano folder biblioteki.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się dodać folderu biblioteki: {ex.Message}";
+            StatusText = Loc.F("Nie udało się dodać folderu biblioteki: {0}", ex.Message);
         }
         finally
         {
@@ -161,11 +228,11 @@ public partial class SettingsViewModel : ObservableObject
             await _libraryFolders.RemoveFolderAsync(SelectedLibraryFolder.Path);
             ReloadFolders();
             SelectedLibraryFolder = null;
-            StatusText = "Usunięto folder z listy bibliotek klienta. Pliki gier na dysku pozostały.";
+            StatusText = Loc.T("Usunięto folder z listy bibliotek klienta. Pliki gier na dysku pozostały.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się usunąć folderu z listy: {ex.Message}";
+            StatusText = Loc.F("Nie udało się usunąć folderu z listy: {0}", ex.Message);
         }
         finally
         {
@@ -194,11 +261,11 @@ public partial class SettingsViewModel : ObservableObject
             var discovery = scope.ServiceProvider.GetRequiredService<ILibraryDiscoveryService>();
             var result = await discovery.ScanAsync();
 
-            StatusText = $"Skan zakończony: {result.DiscoveredInstalls} nowych, {result.UpdatedEntries} zaktualizowanych, {result.MarkedNotInstalled} oznaczonych jako niezainstalowane.";
+            StatusText = Loc.F("Skan zakończony: {0} nowych, {1} zaktualizowanych, {2} oznaczonych jako niezainstalowane.", result.DiscoveredInstalls, result.UpdatedEntries, result.MarkedNotInstalled);
         }
         catch (Exception ex)
         {
-            StatusText = $"Skan biblioteki nie powiodł się: {ex.Message}";
+            StatusText = Loc.F("Skan biblioteki nie powiodł się: {0}", ex.Message);
         }
         finally
         {
@@ -212,7 +279,7 @@ public partial class SettingsViewModel : ObservableObject
         {
             if (string.IsNullOrWhiteSpace(path))
             {
-                StatusText = "Wybierz folder biblioteki z listy.";
+                StatusText = Loc.T("Wybierz folder biblioteki z listy.");
                 return;
             }
 
@@ -222,11 +289,11 @@ public partial class SettingsViewModel : ObservableObject
                 FileName = path,
                 UseShellExecute = true
             });
-            StatusText = "Otwarto folder biblioteki.";
+            StatusText = Loc.T("Otwarto folder biblioteki.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się otworzyć folderu: {ex.Message}";
+            StatusText = Loc.F("Nie udało się otworzyć folderu: {0}", ex.Message);
         }
     }
 

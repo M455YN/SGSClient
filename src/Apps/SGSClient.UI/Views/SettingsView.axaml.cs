@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -36,13 +37,13 @@ public partial class SettingsView : UserControl
         var top = TopLevel.GetTopLevel(this);
         if (top?.StorageProvider is not { } storage)
         {
-            vm.StatusText = "Wybór folderu niedostępny na tej platformie.";
+            vm.StatusText = Loc.T("Wybór folderu niedostępny na tej platformie.");
             return;
         }
 
         var folders = await storage.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Dodaj folder biblioteki gier",
+            Title = Loc.T("Dodaj folder biblioteki gier"),
             AllowMultiple = false
         });
 

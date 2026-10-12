@@ -2,6 +2,7 @@ using SGSClient.Core.Playtime;
 
 namespace SGSClient.Core.Tests;
 
+[Collection("Loc")]
 public class PlaytimeFormatTests
 {
     [Fact]

@@ -1,4 +1,4 @@
-﻿<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:SGSClient.UI.ViewModels"
         xmlns:views="using:SGSClient.UI.Views"
@@ -21,7 +21,7 @@
       <Border IsVisible="{Binding IsOffline}"
               Background="#CC8B0000"
               Padding="12,8">
-        <TextBlock Text="Tryb offline — wyświetlane dane z cache"
+        <TextBlock Text="{loc:Tr Key='Tryb offline — pokazujemy zapisane dane'}"
                    Foreground="White" FontSize="13" HorizontalAlignment="Center"/>
       </Border>
       <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
@@ -57,7 +57,7 @@
             <Panel>
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="🔔" FontSize="12" VerticalAlignment="Center"/>
-                <TextBlock Text="Powiadomienia" FontSize="12" VerticalAlignment="Center"/>
+                <TextBlock Text="{loc:Tr Key='Powiadomienia'}" FontSize="12" VerticalAlignment="Center"/>
                 <Border MinWidth="18" Height="18" CornerRadius="9" Background="#C62828" Padding="4,0"
                         IsVisible="{Binding Sidebar.Notifications.HasUnread}"
                         VerticalAlignment="Center">
@@ -75,8 +75,8 @@
                         BoxShadow="0 8 24 0 #40000000">
                   <Grid RowDefinitions="Auto,*">
                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                      <TextBlock Text="Powiadomienia" FontWeight="SemiBold" FontSize="13"/>
-                      <Button Grid.Column="1" Content="Przeczytaj wszystkie" FontSize="11" Padding="6,2"
+                      <TextBlock Text="{loc:Tr Key='Powiadomienia'}" FontWeight="SemiBold" FontSize="13"/>
+                      <Button Grid.Column="1" Content="{loc:Tr Key='Przeczytaj wszystkie'}" FontSize="11" Padding="6,2"
                               Command="{Binding Sidebar.Notifications.MarkAllReadCommand}"/>
                     </Grid>
                     <ScrollViewer Grid.Row="1" MaxHeight="220">
@@ -120,7 +120,7 @@
                   <ProgressBar Minimum="0" Maximum="1" Height="3"
                                Value="{Binding Downloads.ActiveDownloadProgress}"/>
                 </StackPanel>
-                <TextBlock Text="Zarządzaj pobieraniem" FontSize="12" Opacity="0.7"
+                <TextBlock Text="{loc:Tr Key='Zarządzaj pobieraniem'}" FontSize="12" Opacity="0.7"
                            VerticalAlignment="Center"
                            IsVisible="{Binding !Downloads.HasActiveDownload}"/>
               </Panel>
@@ -138,7 +138,7 @@
                   ToolTip.Tip="Znajomi">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <TextBlock Text="👥" FontSize="12" VerticalAlignment="Center"/>
-              <TextBlock Text="Znajomi" FontSize="12" VerticalAlignment="Center"/>
+              <TextBlock Text="{loc:Tr Key='Znajomi'}" FontSize="12" VerticalAlignment="Center"/>
             </StackPanel>
           </Button>
         </Grid>

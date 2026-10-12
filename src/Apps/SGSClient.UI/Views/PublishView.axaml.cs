@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -7,14 +8,14 @@ namespace SGSClient.UI.Views;
 
 public partial class PublishView : UserControl
 {
-    private static readonly FilePickerFileType ImageFiles = new("Obrazy")
+    private static readonly FilePickerFileType ImageFiles = new(Loc.T("Obrazy"))
     {
         Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif"],
         AppleUniformTypeIdentifiers = ["public.image"],
         MimeTypes = ["image/*"]
     };
 
-    private static readonly FilePickerFileType VideoFiles = new("Wideo")
+    private static readonly FilePickerFileType VideoFiles = new(Loc.T("Wideo"))
     {
         Patterns = ["*.mp4", "*.webm"],
         AppleUniformTypeIdentifiers = ["public.movie"],
@@ -79,7 +80,7 @@ public partial class PublishView : UserControl
 
         var folders = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Wybierz folder gry",
+            Title = Loc.T("Wybierz folder gry"),
             AllowMultiple = false
         });
 
@@ -96,7 +97,7 @@ public partial class PublishView : UserControl
             return;
         }
 
-        var path = await PickSingleFileAsync("Wybierz miniaturkę", ImageFiles);
+        var path = await PickSingleFileAsync(Loc.T("Wybierz miniaturkę"), ImageFiles);
         if (path is null)
         {
             return;
@@ -105,8 +106,8 @@ public partial class PublishView : UserControl
         if (!vm.TrySetCoverFromFile(path, out var error))
         {
             vm.Issues.Clear();
-            vm.Issues.Add(error ?? "Nie udało się ustawić miniaturki.");
-            vm.StatusText = "Nie udało się dodać miniaturki.";
+            vm.Issues.Add(error ?? Loc.T("Nie udało się ustawić miniaturki."));
+            vm.StatusText = Loc.T("Nie udało się dodać miniaturki.");
         }
     }
 
@@ -117,7 +118,7 @@ public partial class PublishView : UserControl
             return;
         }
 
-        var path = await PickSingleFileAsync("Wybierz okładkę poziomą", ImageFiles);
+        var path = await PickSingleFileAsync(Loc.T("Wybierz okładkę poziomą"), ImageFiles);
         if (path is null)
         {
             return;
@@ -126,8 +127,8 @@ public partial class PublishView : UserControl
         if (!vm.TrySetHeaderFromFile(path, out var error))
         {
             vm.Issues.Clear();
-            vm.Issues.Add(error ?? "Nie udało się ustawić okładki poziomej.");
-            vm.StatusText = "Nie udało się dodać okładki poziomej.";
+            vm.Issues.Add(error ?? Loc.T("Nie udało się ustawić okładki poziomej."));
+            vm.StatusText = Loc.T("Nie udało się dodać okładki poziomej.");
         }
     }
 
@@ -138,7 +139,7 @@ public partial class PublishView : UserControl
             return;
         }
 
-        var path = await PickSingleFileAsync("Wybierz logo (kwadratowe)", ImageFiles);
+        var path = await PickSingleFileAsync(Loc.T("Wybierz logo (kwadratowe)"), ImageFiles);
         if (path is null)
         {
             return;
@@ -147,8 +148,8 @@ public partial class PublishView : UserControl
         if (!vm.TrySetLogoFromFile(path, out var error))
         {
             vm.Issues.Clear();
-            vm.Issues.Add(error ?? "Nie udało się ustawić logo.");
-            vm.StatusText = "Nie udało się dodać logo.";
+            vm.Issues.Add(error ?? Loc.T("Nie udało się ustawić logo."));
+            vm.StatusText = Loc.T("Nie udało się dodać logo.");
         }
     }
 
@@ -159,7 +160,7 @@ public partial class PublishView : UserControl
             return;
         }
 
-        var path = await PickSingleFileAsync("Wybierz intro / trailer", VideoFiles);
+        var path = await PickSingleFileAsync(Loc.T("Wybierz intro / trailer"), VideoFiles);
         if (path is null)
         {
             return;
@@ -168,8 +169,8 @@ public partial class PublishView : UserControl
         if (!vm.TrySetIntroFromFile(path, out var error))
         {
             vm.Issues.Clear();
-            vm.Issues.Add(error ?? "Nie udało się ustawić intro.");
-            vm.StatusText = "Nie udało się dodać intro.";
+            vm.Issues.Add(error ?? Loc.T("Nie udało się ustawić intro."));
+            vm.StatusText = Loc.T("Nie udało się dodać intro.");
         }
     }
 
@@ -181,7 +182,7 @@ public partial class PublishView : UserControl
         }
 
         var paths = await AvaloniaStoragePicker.PickMultipleFilesAsync(
-            TopLevel.GetTopLevel(this), ImageFiles, "Wybierz screeny");
+            TopLevel.GetTopLevel(this), ImageFiles, Loc.T("Wybierz screeny"));
         if (paths.Count == 0)
         {
             return;
@@ -190,8 +191,8 @@ public partial class PublishView : UserControl
         if (!vm.TryAddScreenshotsFromFiles(paths, out var error))
         {
             vm.Issues.Clear();
-            vm.Issues.Add(error ?? "Nie udało się dodać screenów.");
-            vm.StatusText = "Nie udało się dodać screenów.";
+            vm.Issues.Add(error ?? Loc.T("Nie udało się dodać screenów."));
+            vm.StatusText = Loc.T("Nie udało się dodać screenów.");
         }
     }
 

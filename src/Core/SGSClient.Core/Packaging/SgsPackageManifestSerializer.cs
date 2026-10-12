@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Text.Json;
 
 namespace SGSClient.Core.Packaging;
@@ -34,14 +35,14 @@ public static class SgsPackageManifestSerializer
             if (LooksLikeJsonSchema(document.RootElement))
             {
                 return (null,
-                    $"Plik {SgsPackageManifest.FileName} wygląda na schemat JSON (JSON Schema), a nie na manifest gry. " +
-                    "Skopiuj przykład z schemas/examples/ albo utwórz plik z polami schemaVersion, game i build.");
+                    Loc.F("Plik {0} wygląda na schemat JSON (JSON Schema), a nie na manifest gry. ", SgsPackageManifest.FileName) +
+                    Loc.T("Skopiuj przykład z schemas/examples/ albo utwórz plik z polami schemaVersion, game i build."));
             }
 
             var manifest = document.RootElement.Deserialize<SgsPackageManifest>(Options);
             if (manifest is null)
             {
-                return (null, "Manifest jest pusty lub ma nieprawidłowy format.");
+                return (null, Loc.T("Manifest jest pusty lub ma nieprawidłowy format."));
             }
 
             return (manifest, null);
@@ -52,7 +53,7 @@ public static class SgsPackageManifestSerializer
         }
         catch (Exception ex)
         {
-            return (null, $"Nie udało się odczytać manifestu: {ex.Message}");
+            return (null, Loc.F("Nie udało się odczytać manifestu: {0}", ex.Message));
         }
     }
 
@@ -71,14 +72,14 @@ public static class SgsPackageManifestSerializer
             if (LooksLikeJsonSchema(document.RootElement))
             {
                 return (null,
-                    $"Plik {SgsPackageManifest.FileName} wygląda na schemat JSON (JSON Schema), a nie na manifest gry. " +
-                    "Skopiuj przykład z schemas/examples/ albo utwórz plik z polami schemaVersion, game i build.");
+                    Loc.F("Plik {0} wygląda na schemat JSON (JSON Schema), a nie na manifest gry. ", SgsPackageManifest.FileName) +
+                    Loc.T("Skopiuj przykład z schemas/examples/ albo utwórz plik z polami schemaVersion, game i build."));
             }
 
             var manifest = document.RootElement.Deserialize<SgsPackageManifest>(Options);
             if (manifest is null)
             {
-                return (null, "Manifest jest pusty lub ma nieprawidłowy format.");
+                return (null, Loc.T("Manifest jest pusty lub ma nieprawidłowy format."));
             }
 
             return (manifest, null);
@@ -89,7 +90,7 @@ public static class SgsPackageManifestSerializer
         }
         catch (Exception ex)
         {
-            return (null, $"Nie udało się odczytać manifestu: {ex.Message}");
+            return (null, Loc.F("Nie udało się odczytać manifestu: {0}", ex.Message));
         }
     }
 
@@ -123,10 +124,10 @@ public static class SgsPackageManifestSerializer
         var detail = ex.Message;
         if (detail.Contains("missing required properties", StringComparison.OrdinalIgnoreCase))
         {
-            return "Manifest jest niekompletny — wymagane są m.in. pola game (title, symbol) i build (version, platform, executable). "
+            return Loc.T("Manifest jest niekompletny — wymagane są m.in. pola game (title, symbol) i build (version, platform, executable). ")
                    + detail;
         }
 
-        return $"Nie udało się odczytać manifestu: {detail}";
+        return Loc.F("Nie udało się odczytać manifestu: {0}", detail);
     }
 }

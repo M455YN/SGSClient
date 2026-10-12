@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -35,9 +36,9 @@ public sealed partial class GamePropertiesDialog : UserControl
 
         var dialog = new ContentDialog
         {
-            Title = $"Właściwości — {title}",
+            Title = Loc.F("Właściwości — {0}", title),
             Content = this,
-            CloseButtonText = "Zamknij",
+            CloseButtonText = Loc.T("Zamknij"),
             XamlRoot = xamlRoot,
             DefaultButton = ContentDialogButton.Close,
             FullSizeDesired = true
@@ -99,7 +100,7 @@ public sealed partial class GamePropertiesDialog : UserControl
             _uninstallArmed = false;
         }
 
-        UninstallFilesButton.Content = _uninstallArmed ? "Potwierdź odinstalowanie" : "Odinstaluj…";
+        UninstallFilesButton.Content = _uninstallArmed ? Loc.T("Potwierdź odinstalowanie") : Loc.T("Odinstaluj…");
 
         MoveFilesPanel.Visibility = ViewModel.IsInstalled ? Visibility.Visible : Visibility.Collapsed;
         MoveTargetCombo.ItemsSource = ViewModel.MoveTargets;
@@ -110,11 +111,11 @@ public sealed partial class GamePropertiesDialog : UserControl
         }
 
         MoveFilesButton.IsEnabled = ViewModel.CanMoveFiles && !ViewModel.IsMoving;
-        MoveFilesButton.Content = _moveArmed ? "Potwierdź przeniesienie" : "Przenieś pliki…";
+        MoveFilesButton.Content = _moveArmed ? Loc.T("Potwierdź przeniesienie") : Loc.T("Przenieś pliki…");
         if (!ViewModel.CanMoveFiles)
         {
             _moveArmed = false;
-            MoveFilesButton.Content = "Przenieś pliki…";
+            MoveFilesButton.Content = Loc.T("Przenieś pliki…");
         }
 
         MoveProgressText.Text = ViewModel.MoveProgressText;
@@ -162,7 +163,7 @@ public sealed partial class GamePropertiesDialog : UserControl
         var path = await WinUiFilePicker.PickSingleFileAsync(
             App.MainWindow,
             [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"],
-            commitLabel: "Użyj jako kafel");
+            commitLabel: Loc.T("Użyj jako kafel"));
         if (string.IsNullOrWhiteSpace(path))
         {
             return;
@@ -238,7 +239,7 @@ public sealed partial class GamePropertiesDialog : UserControl
         if (!_uninstallArmed)
         {
             _uninstallArmed = true;
-            ViewModel.StatusText = "Kliknij ponownie, aby usunąć lokalne pliki.";
+            ViewModel.StatusText = Loc.T("Kliknij ponownie, aby usunąć lokalne pliki.");
             RefreshUi();
             return;
         }
@@ -261,7 +262,7 @@ public sealed partial class GamePropertiesDialog : UserControl
         if (!_moveArmed)
         {
             _moveArmed = true;
-            ViewModel.StatusText = "Kliknij ponownie, aby przenieść pliki do wybranego folderu.";
+            ViewModel.StatusText = Loc.T("Kliknij ponownie, aby przenieść pliki do wybranego folderu.");
             RefreshUi();
             return;
         }

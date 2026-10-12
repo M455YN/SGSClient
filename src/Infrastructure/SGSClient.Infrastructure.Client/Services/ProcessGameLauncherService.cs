@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +22,7 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
         ArgumentNullException.ThrowIfNull(request);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.ExecutablePath);
 
-        var title = string.IsNullOrWhiteSpace(request.Title) ? "Gra" : request.Title.Trim();
+        var title = string.IsNullOrWhiteSpace(request.Title) ? Loc.T("Gra") : request.Title.Trim();
         string exe;
         try
         {

@@ -1,3 +1,5 @@
+using SGSClient.Core.Localization;
+
 namespace SGSClient.Core.Models;
 
 public enum GameLaunchStatus
@@ -23,25 +25,25 @@ public sealed class GameLaunchResult
 
     public static GameLaunchResult AlreadyRunning(string title)
     {
-        var name = string.IsNullOrWhiteSpace(title) ? "Gra" : title.Trim();
+        var name = string.IsNullOrWhiteSpace(title) ? Loc.T("Gra") : title.Trim();
         return new GameLaunchResult
         {
             Status = GameLaunchStatus.AlreadyRunning,
-            Message = $"„{name}” jest już uruchomiona."
+            Message = Loc.F("„{0}” jest już uruchomiona.", name)
         };
     }
 
     public static GameLaunchResult NotFound() => new()
     {
         Status = GameLaunchStatus.NotFound,
-        Message = "Nie znaleziono pliku gry."
+        Message = Loc.T("Nie znaleziono pliku gry.")
     };
 
     public static GameLaunchResult Failed(string? message = null) => new()
     {
         Status = GameLaunchStatus.Failed,
         Message = string.IsNullOrWhiteSpace(message)
-            ? "Nie udało się uruchomić gry."
+            ? Loc.T("Nie udało się uruchomić gry.")
             : message
     };
 }

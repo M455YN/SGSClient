@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -159,11 +160,11 @@ public partial class AccountView : UserControl
 
         var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Wybierz zdjęcie profilowe",
+            Title = Loc.T("Wybierz zdjęcie profilowe"),
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("Obrazy")
+                new FilePickerFileType(Loc.T("Obrazy"))
                 {
                     Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif"]
                 }

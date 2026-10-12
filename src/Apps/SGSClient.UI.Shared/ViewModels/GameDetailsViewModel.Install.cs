@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,7 +21,7 @@ public partial class GameDetailsViewModel
     {
         if (_scopes is null || _libraryItem is null || string.IsNullOrWhiteSpace(_libraryItem.ExecutablePath))
         {
-            StatusText = "Gra nie jest zainstalowana.";
+            StatusText = Loc.T("Gra nie jest zainstalowana.");
             return;
         }
 
@@ -39,7 +40,7 @@ public partial class GameDetailsViewModel
         }
         catch (Exception ex)
         {
-            StatusText = $"Nie udało się uruchomić: {ex.Message}";
+            StatusText = Loc.F("Nie udało się uruchomić: {0}", ex.Message);
         }
     }
 
@@ -54,7 +55,7 @@ public partial class GameDetailsViewModel
         if (_queue is not null)
         {
             IsInstalling = true;
-            StatusText = "Dodano do kolejki instalacji…";
+            StatusText = Loc.T("Dodano do kolejki instalacji…");
             await _queue.EnqueueInstallAsync(GameId, _libraryItem.TargetVersion);
             SyncInstallQueueState();
             return;
@@ -69,7 +70,7 @@ public partial class GameDetailsViewModel
             var model = await library.GetByGameIdAsync(GameId);
             if (model is null)
             {
-                StatusText = "Nie znaleziono gry w bibliotece.";
+                StatusText = Loc.T("Nie znaleziono gry w bibliotece.");
                 return;
             }
 
@@ -84,12 +85,12 @@ public partial class GameDetailsViewModel
             _libraryItem = model;
             ApplyLibraryActions(model);
             StatusText = result.Success
-                ? $"Zainstalowano: {model.Title}"
-                : result.Errors.FirstOrDefault() ?? "Instalacja nie powiodła się.";
+                ? Loc.F("Zainstalowano: {0}", model.Title)
+                : result.Errors.FirstOrDefault() ?? Loc.T("Instalacja nie powiodła się.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Instalacja nie powiodła się: {ex.Message}";
+            StatusText = Loc.F("Instalacja nie powiodła się: {0}", ex.Message);
         }
         finally
         {
@@ -111,7 +112,7 @@ public partial class GameDetailsViewModel
         IsInstalling = false;
         InstallProgressFraction = 0;
         InstallProgressText = string.Empty;
-        StatusText = "Anulowano instalację.";
+        StatusText = Loc.T("Anulowano instalację.");
         SyncInstallQueueState();
         _ = RefreshLibraryStateAsync(GameId);
     }
@@ -133,7 +134,7 @@ public partial class GameDetailsViewModel
             var model = await library.GetByGameIdAsync(GameId);
             if (model is null)
             {
-                StatusText = "Nie znaleziono gry w bibliotece.";
+                StatusText = Loc.T("Nie znaleziono gry w bibliotece.");
                 return;
             }
 
@@ -142,12 +143,12 @@ public partial class GameDetailsViewModel
             _libraryItem = model;
             ApplyLibraryActions(model);
             StatusText = result.Success
-                ? $"Odinstalowano: {model.Title}"
-                : result.Errors.FirstOrDefault() ?? "Odinstalowanie nie powiodło się.";
+                ? Loc.F("Odinstalowano: {0}", model.Title)
+                : result.Errors.FirstOrDefault() ?? Loc.T("Odinstalowanie nie powiodło się.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Odinstalowanie nie powiodło się: {ex.Message}";
+            StatusText = Loc.F("Odinstalowanie nie powiodło się: {0}", ex.Message);
         }
         finally
         {
@@ -184,7 +185,7 @@ public partial class GameDetailsViewModel
         if (!active)
         {
             InstallProgressFraction = 0;
-            if (string.Equals(InstallProgressText, "Dodano do kolejki instalacji…", StringComparison.Ordinal))
+            if (string.Equals(InstallProgressText, Loc.T("Dodano do kolejki instalacji…"), StringComparison.Ordinal))
             {
                 InstallProgressText = string.Empty;
             }

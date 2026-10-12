@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,7 +21,7 @@ public partial class GameReviewItem : ObservableObject
     public string? AuthorPlayerTag { get; init; }
     public bool Recommended { get; init; }
     public required string Text { get; init; }
-    public string VerdictLabel => Recommended ? "Poleca" : "Nie poleca";
+    public string VerdictLabel => Recommended ? Loc.T("Poleca") : Loc.T("Nie poleca");
     public string MetaText { get; init; } = string.Empty;
     public bool IsMine { get; init; }
     public int HelpfulCount { get; set; }
@@ -28,10 +29,10 @@ public partial class GameReviewItem : ObservableObject
     public int CommentCount { get; set; }
     public bool CanVote => !IsMine;
     public string HelpfulButtonText => MyHelpfulVote == true
-        ? $"Pomocne ✓ ({HelpfulCount})"
+        ? Loc.F("Pomocne ✓ ({0})", HelpfulCount)
         : $"Pomocne ({HelpfulCount})";
     public string CommentsToggleText => CommentsExpanded
-        ? "Ukryj komentarze"
+        ? Loc.T("Ukryj komentarze")
         : $"Komentarze ({CommentCount})";
 
     public ObservableCollection<GameReviewCommentItem> Comments { get; } = [];
@@ -58,7 +59,7 @@ public partial class GameReviewItem : ObservableObject
             HelpfulCount = dto.HelpfulCount,
             MyHelpfulVote = dto.MyHelpfulVote,
             CommentCount = dto.CommentCount,
-            MetaText = $"{dto.AuthorDisplayName}{tag} · {dto.UpdatedAtUtc.LocalDateTime:g}{play}"
+            MetaText = $"{(string.IsNullOrWhiteSpace(dto.AuthorDisplayName) ? "Gracz" : dto.AuthorDisplayName)}{tag} · {dto.UpdatedAtUtc.LocalDateTime:g}{play}"
         };
     }
 }
@@ -82,7 +83,7 @@ public sealed class GameReviewCommentItem
             AuthorDisplayName = dto.AuthorDisplayName,
             Text = dto.Text,
             IsMine = dto.IsMine,
-            MetaText = $"{dto.AuthorDisplayName}{tag} · {dto.CreatedAtUtc.LocalDateTime:g}"
+            MetaText = $"{(string.IsNullOrWhiteSpace(dto.AuthorDisplayName) ? "Gracz" : dto.AuthorDisplayName)}{tag} · {dto.CreatedAtUtc.LocalDateTime:g}"
         };
     }
 }

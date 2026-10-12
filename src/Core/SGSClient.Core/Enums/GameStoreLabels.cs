@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using SGSClient.Core.DTOs;
 
 namespace SGSClient.Core.Enums;
@@ -6,10 +7,10 @@ namespace SGSClient.Core.Enums;
 public static class GameStoreLabels
 {
     public static IReadOnlyList<string> ReleaseStatusOptions { get; } =
-        ["Wkrótce", "Wczesny dostęp", "Pełna wersja", "Demo"];
+        [Loc.T("Wkrótce"), Loc.T("Wczesny dostęp"), Loc.T("Pełna wersja"), "Demo"];
 
     public static IReadOnlyList<string> AgeRatingOptions { get; } =
-        ["Bez kategorii", "PEGI 3", "PEGI 7", "PEGI 12", "PEGI 16", "PEGI 18"];
+        [Loc.T("Bez kategorii"), "PEGI 3", "PEGI 7", "PEGI 12", "PEGI 16", "PEGI 18"];
 
     public static string ReleaseStatus(GameReleaseStatus status) => status switch
     {
@@ -69,11 +70,11 @@ public static class GameStoreLabels
     {
         GameFeatures.SinglePlayer => "Singleplayer",
         GameFeatures.MultiPlayer => "Multiplayer",
-        GameFeatures.CoOp => "Kooperacja",
+        GameFeatures.CoOp => Loc.T("Kooperacja"),
         GameFeatures.ControllerSupport => "Pad",
-        GameFeatures.CloudSaves => "Zapisy w chmurze",
-        GameFeatures.Achievements => "Osiągnięcia",
-        GameFeatures.Modding => "Mody",
+        GameFeatures.CloudSaves => Loc.T("Zapisy w chmurze"),
+        GameFeatures.Achievements => Loc.T("Osiągnięcia"),
+        GameFeatures.Modding => Loc.T("Mody"),
         GameFeatures.Vr => "VR",
         _ => feature.ToString()
     };
@@ -98,7 +99,7 @@ public static class GameStoreLabels
         var badges = new List<string>();
         if (game.FeaturedP)
         {
-            badges.Add("Wyróżnione");
+            badges.Add(Loc.T("Wyróżnione"));
         }
 
         if (game.ReleaseStatus != GameReleaseStatus.Released)

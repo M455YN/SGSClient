@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.WishlistView"
@@ -10,9 +10,9 @@
           <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding StatusText}" Opacity="0.65" FontSize="13"/>
         </StackPanel>
-        <Button Grid.Column="1" Content="Zaloguj się" Command="{Binding OpenAccountCommand}"
+        <Button Grid.Column="1" Content="{loc:Tr Key='Zaloguj się'}" Command="{Binding OpenAccountCommand}"
                 IsVisible="{Binding NeedsLogin}" Padding="12,6" VerticalAlignment="Top"/>
-        <Button Grid.Column="2" Content="Odśwież" Command="{Binding LoadCommand}" Padding="12,6" VerticalAlignment="Top"/>
+        <Button Grid.Column="2" Content="{loc:Tr Key='Odśwież'}" Command="{Binding LoadCommand}" Padding="12,6" VerticalAlignment="Top"/>
       </Grid>
     </StackPanel>
 
@@ -52,7 +52,7 @@
                         IsEnabled="{Binding CanAdd}"
                         HorizontalAlignment="Stretch"
                         Padding="10,8"/>
-                <Button Content="Usuń z listy"
+                <Button Content="{loc:Tr Key='Usuń z listy'}"
                         Tag="{Binding}"
                         Command="{Binding $parent[UserControl].((vm:WishlistViewModel)DataContext).RemoveCommand}"
                         CommandParameter="{Binding}"

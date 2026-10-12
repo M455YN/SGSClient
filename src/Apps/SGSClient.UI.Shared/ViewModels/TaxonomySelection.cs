@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SGSClient.Core.Packaging;
@@ -8,7 +9,7 @@ namespace SGSClient.UI.ViewModels;
 public sealed partial class TaxonomyOption(TaxonomySelection owner, SgsGameTaxonomy.TaxonomyItem item) : ObservableObject
 {
     public string Symbol { get; } = item.Symbol;
-    public string Name { get; } = item.Name;
+    public string Name { get; } = Loc.T(item.Name);
 
     [ObservableProperty] public partial bool IsSelected { get; set; }
 

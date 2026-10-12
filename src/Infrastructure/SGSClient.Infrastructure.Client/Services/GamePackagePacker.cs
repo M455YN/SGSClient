@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.IO.Compression;
 using System.Text.Json;
 using SGSClient.Core.Interfaces;
@@ -13,21 +14,21 @@ public sealed class GamePackagePacker : IGamePackagePacker
     {
         if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
         {
-            return GamePackageManifestLoadResult.Fail("Wybierz folder z grą.");
+            return GamePackageManifestLoadResult.Fail(Loc.T("Wybierz folder z grą."));
         }
 
         var manifestPath = Path.Combine(folderPath, SgsPackageManifest.FileName);
         if (!File.Exists(manifestPath))
         {
             return GamePackageManifestLoadResult.Fail(
-                $"W folderze brakuje pliku {SgsPackageManifest.FileName}. Dodaj manifest i spróbuj ponownie.");
+                Loc.F("W folderze brakuje pliku {0}. Dodaj manifest i spróbuj ponownie.", SgsPackageManifest.FileName));
         }
 
         await using var stream = File.OpenRead(manifestPath);
         var (manifest, parseError) = await SgsPackageManifestSerializer.TryDeserializeAsync(stream, cancellationToken);
         if (parseError is not null || manifest is null)
         {
-            return GamePackageManifestLoadResult.Fail(parseError ?? "Nie udało się odczytać manifestu.");
+            return GamePackageManifestLoadResult.Fail(parseError ?? Loc.T("Nie udało się odczytać manifestu."));
         }
 
         return GamePackageManifestLoadResult.Ok(manifest);
@@ -40,7 +41,7 @@ public sealed class GamePackagePacker : IGamePackagePacker
     {
         if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
         {
-            return GamePackagePackResult.Fail("Wybierz folder z grą.");
+            return GamePackagePackResult.Fail(Loc.T("Wybierz folder z grą."));
         }
 
         var manifestPath = Path.Combine(folderPath, SgsPackageManifest.FileName);
@@ -51,14 +52,14 @@ public sealed class GamePackagePacker : IGamePackagePacker
             if (!File.Exists(manifestPath))
             {
                 return GamePackagePackResult.Fail(
-                    $"W folderze brakuje pliku {SgsPackageManifest.FileName}. Dodaj manifest i spróbuj ponownie.");
+                    Loc.F("W folderze brakuje pliku {0}. Dodaj manifest i spróbuj ponownie.", SgsPackageManifest.FileName));
             }
 
             await using var stream = File.OpenRead(manifestPath);
             var (loaded, parseError) = await SgsPackageManifestSerializer.TryDeserializeAsync(stream, cancellationToken);
             if (parseError is not null || loaded is null)
             {
-                return GamePackagePackResult.Fail(parseError ?? "Nie udało się odczytać manifestu.");
+                return GamePackagePackResult.Fail(parseError ?? Loc.T("Nie udało się odczytać manifestu."));
             }
 
             manifest = loaded;
@@ -83,7 +84,7 @@ public sealed class GamePackagePacker : IGamePackagePacker
             }
             catch (Exception ex)
             {
-                return GamePackagePackResult.Fail($"Nie udało się zapisać manifestu: {ex.Message}");
+                return GamePackagePackResult.Fail(Loc.F("Nie udało się zapisać manifestu: {0}", ex.Message));
             }
         }
 
@@ -97,7 +98,7 @@ public sealed class GamePackagePacker : IGamePackagePacker
         var exeFull = Path.Combine(folderPath, exeRelative.Replace('/', Path.DirectorySeparatorChar));
         if (!File.Exists(exeFull))
         {
-            return GamePackagePackResult.Fail($"Brak pliku uruchomieniowego w folderze: {exeRelative}");
+            return GamePackagePackResult.Fail(Loc.F("Brak pliku uruchomieniowego w folderze: {0}", exeRelative));
         }
 
         foreach (var mediaPath in SgsPackageRules.EnumerateDeclaredMediaPaths(manifest.Game.Media))
@@ -110,7 +111,7 @@ public sealed class GamePackagePacker : IGamePackagePacker
             var mediaFull = Path.Combine(folderPath, mediaRelative.Replace('/', Path.DirectorySeparatorChar));
             if (!File.Exists(mediaFull))
             {
-                return GamePackagePackResult.Fail($"Brak pliku media w folderze: {mediaRelative}");
+                return GamePackagePackResult.Fail(Loc.F("Brak pliku media w folderze: {0}", mediaRelative));
             }
         }
 
@@ -155,12 +156,12 @@ public sealed class GamePackagePacker : IGamePackagePacker
             var info = new FileInfo(tempZip);
             if (info.Length == 0)
             {
-                return GamePackagePackResult.Fail("Utworzona paczka jest pusta.");
+                return GamePackagePackResult.Fail(Loc.T("Utworzona paczka jest pusta."));
             }
 
             if (info.Length > SgsPackageRules.MaxZipBytes)
             {
-                return GamePackagePackResult.Fail("Paczka po spakowaniu jest za duża.");
+                return GamePackagePackResult.Fail(Loc.T("Paczka po spakowaniu jest za duża."));
             }
 
             return GamePackagePackResult.Ok(tempZip, manifest);
@@ -168,7 +169,7 @@ public sealed class GamePackagePacker : IGamePackagePacker
         catch (Exception ex)
         {
             TryDelete(tempZip);
-            return GamePackagePackResult.Fail($"Pakowanie nie powiodło się: {ex.Message}");
+            return GamePackagePackResult.Fail(Loc.F("Pakowanie nie powiodło się: {0}", ex.Message));
         }
     }
 

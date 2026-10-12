@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -17,14 +18,16 @@ public sealed partial class SettingsPage : Page
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(SettingsViewModel.AccountStatus) or nameof(SettingsViewModel.StatusText)
-                or nameof(SettingsViewModel.IsBusy))
+                or nameof(SettingsViewModel.IsBusy) or nameof(SettingsViewModel.LanguageHint))
             {
                 RefreshUi();
             }
         };
         TitleText.Text = ViewModel.Title;
-        AppearanceText.Text = ViewModel.AppearanceText;
-        LanguageText.Text = ViewModel.LanguageText;
+        ThemeBox.ItemsSource = ViewModel.ThemeOptions;
+        ThemeBox.SelectedIndex = ViewModel.SelectedThemeIndex;
+        LanguageBox.ItemsSource = ViewModel.LanguageOptions;
+        LanguageBox.SelectedIndex = ViewModel.SelectedLanguageIndex;
         StoreStatusText.Text = ViewModel.StoreStatus;
         LibrarySummaryText.Text = ViewModel.LibrarySummary;
         AboutText.Text = ViewModel.AboutText;
@@ -42,10 +45,28 @@ public sealed partial class SettingsPage : Page
     {
         AccountStatusText.Text = ViewModel.AccountStatus;
         StatusText.Text = ViewModel.StatusText;
+        LanguageHintText.Text = ViewModel.LanguageHint;
+        LanguageHintText.Visibility = string.IsNullOrEmpty(ViewModel.LanguageHint) ? Visibility.Collapsed : Visibility.Visible;
         LibraryFoldersList.ItemsSource = ViewModel.LibraryFolders;
         AddLibraryFolderButton.IsEnabled = !ViewModel.IsBusy;
         RemoveLibraryFolderButton.IsEnabled = !ViewModel.IsBusy;
         RescanLibraryButton.IsEnabled = !ViewModel.IsBusy;
+    }
+
+    private void ThemeBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ThemeBox.SelectedIndex >= 0)
+        {
+            ViewModel.SelectedThemeIndex = ThemeBox.SelectedIndex;
+        }
+    }
+
+    private void LanguageBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (LanguageBox.SelectedIndex >= 0)
+        {
+            ViewModel.SelectedLanguageIndex = LanguageBox.SelectedIndex;
+        }
     }
 
     private async void AddLibraryFolder_Click(object sender, RoutedEventArgs e)
@@ -55,7 +76,7 @@ public sealed partial class SettingsPage : Page
             return;
         }
 
-        var path = await WinUiFilePicker.PickFolderAsync(App.MainWindow, commitLabel: "Dodaj folder");
+        var path = await WinUiFilePicker.PickFolderAsync(App.MainWindow, commitLabel: Loc.T("Dodaj folder"));
         if (string.IsNullOrWhiteSpace(path))
         {
             return;

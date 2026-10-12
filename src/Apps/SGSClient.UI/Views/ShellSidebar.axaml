@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
@@ -76,7 +76,7 @@
                   ToolTip.Tip="Sklep">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ui:FASymbolIcon Symbol="Shop" FontSize="16" />
-              <TextBlock x:Name="NavGamesLabel" Text="Sklep" VerticalAlignment="Center" />
+              <TextBlock x:Name="NavGamesLabel" Text="{loc:Tr Key='Sklep'}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button x:Name="NavLibrary" Tag="Library" Click="Nav_OnClick"
@@ -85,7 +85,7 @@
                   ToolTip.Tip="Biblioteka">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ui:FASymbolIcon Symbol="Library" FontSize="16" />
-              <TextBlock x:Name="NavLibraryLabel" Text="Biblioteka" VerticalAlignment="Center" />
+              <TextBlock x:Name="NavLibraryLabel" Text="{loc:Tr Key='Biblioteka'}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button x:Name="NavDownloads" Tag="Downloads" Click="Nav_OnClick" IsVisible="False"
@@ -94,7 +94,7 @@
                   ToolTip.Tip="Pobrania">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ui:FASymbolIcon Symbol="Download" FontSize="16" />
-              <TextBlock x:Name="NavDownloadsLabel" Text="Pobrania" VerticalAlignment="Center" />
+              <TextBlock x:Name="NavDownloadsLabel" Text="{loc:Tr Key='Pobrania'}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button x:Name="NavWishlist" Tag="Wishlist" Click="Nav_OnClick"
@@ -103,7 +103,7 @@
                   ToolTip.Tip="Lista życzeń">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ui:FASymbolIcon Symbol="OutlineStar" FontSize="16" />
-              <TextBlock x:Name="NavWishlistLabel" Text="Lista życzeń" VerticalAlignment="Center" />
+              <TextBlock x:Name="NavWishlistLabel" Text="{loc:Tr Key='Lista życzeń'}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button x:Name="NavPublish" Tag="Publish" Click="Nav_OnClick" IsVisible="False"
@@ -112,7 +112,7 @@
                   ToolTip.Tip="Publikuj">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ui:FASymbolIcon Symbol="Upload" FontSize="16" />
-              <TextBlock x:Name="NavPublishLabel" Text="Publikuj" VerticalAlignment="Center" />
+              <TextBlock x:Name="NavPublishLabel" Text="{loc:Tr Key='Publikuj'}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button x:Name="NavStudio" Tag="Studio" Click="Nav_OnClick"
@@ -121,7 +121,7 @@
                   ToolTip.Tip="Panel twórcy">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <ui:FASymbolIcon Symbol="Library" FontSize="16" />
-              <TextBlock x:Name="NavStudioLabel" Text="Panel twórcy" VerticalAlignment="Center" />
+              <TextBlock x:Name="NavStudioLabel" Text="{loc:Tr Key='Panel twórcy'}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button x:Name="NavAdmin" Tag="Admin" Click="Nav_OnClick" IsVisible="False"
@@ -138,7 +138,7 @@
         <Grid x:Name="InstalledSection" Grid.Row="1" RowDefinitions="Auto,*" Margin="4,8,4,0">
           <TextBlock x:Name="InstalledHeaderText"
                      FontSize="11" FontWeight="SemiBold" Opacity="0.55"
-                     Margin="8,0,8,8" Text="0 ZAINSTALOWANYCH" />
+                     Margin="8,0,8,8" Text="{loc:Tr Key='0 ZAINSTALOWANYCH'}" />
           <ListBox x:Name="InstalledList"
                    Grid.Row="1"
                    Background="Transparent"
@@ -151,7 +151,7 @@
                     <Panel>
                       <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center"
                                  VerticalAlignment="Center" FontSize="10" FontWeight="SemiBold"
-                                 Opacity="0.7" />
+                                 Opacity="0.7" IsVisible="{Binding !HasCover}" />
                       <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                              IsVisible="{Binding HasCover}" />
                     </Panel>
@@ -188,7 +188,7 @@
               Margin="0,4,0,4">
         <StackPanel Orientation="Horizontal" Spacing="12">
           <ui:FASymbolIcon Symbol="Setting" FontSize="16" />
-          <TextBlock x:Name="NavSettingsLabel" Text="Ustawienia" VerticalAlignment="Center" />
+          <TextBlock x:Name="NavSettingsLabel" Text="{loc:Tr Key='Ustawienia'}" VerticalAlignment="Center" />
         </StackPanel>
       </Button>
     </Grid>

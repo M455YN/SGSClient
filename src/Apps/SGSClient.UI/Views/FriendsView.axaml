@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
@@ -57,17 +57,17 @@
           </StackPanel>
         </Button>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-          <Button Content="Napisz" Tag="{Binding}" Click="Message_OnClick" Classes="compact"
+          <Button Content="{loc:Tr Key='Napisz'}" Tag="{Binding}" Click="Message_OnClick" Classes="compact"
                   IsVisible="{Binding ShowMessage}"/>
-          <Button Content="Akceptuj" Tag="{Binding}" Click="Accept_OnClick" Classes="accent compact"
+          <Button Content="{loc:Tr Key='Akceptuj'}" Tag="{Binding}" Click="Accept_OnClick" Classes="accent compact"
                   IsVisible="{Binding ShowAccept}"/>
-          <Button Content="Dodaj" Tag="{Binding}" Click="AddFriend_OnClick" Classes="accent compact"
+          <Button Content="{loc:Tr Key='Dodaj'}" Tag="{Binding}" Click="AddFriend_OnClick" Classes="accent compact"
                   IsVisible="{Binding ShowAddFriend}"/>
           <Button Content="{Binding RemoveFriendLabel}" Tag="{Binding}" Click="RemoveFriend_OnClick" Classes="compact"
                   IsVisible="{Binding ShowRemoveFriend}"/>
-          <Button Content="Obserwuj" Tag="{Binding}" Click="Follow_OnClick" Classes="compact"
+          <Button Content="{loc:Tr Key='Obserwuj'}" Tag="{Binding}" Click="Follow_OnClick" Classes="compact"
                   IsVisible="{Binding ShowFollow}"/>
-          <Button Content="Przestań" Tag="{Binding}" Click="Unfollow_OnClick" Classes="compact"
+          <Button Content="{loc:Tr Key='Przestań'}" Tag="{Binding}" Click="Unfollow_OnClick" Classes="compact"
                   IsVisible="{Binding ShowUnfollow}"/>
         </StackPanel>
       </Grid>
@@ -80,28 +80,28 @@
         <Button Click="OverlayProfile_OnClick" ToolTip.Tip="Twój profil">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <ui:FASymbolIcon Symbol="Contact" FontSize="16"/>
-            <TextBlock Text="Profil" VerticalAlignment="Center"/>
+            <TextBlock Text="{loc:Tr Key='Profil'}" VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
         <Button Tag="Friends" Click="Tab_OnClick" ToolTip.Tip="Znajomi"
                 Classes.accent="{Binding ShowFriendsTab}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <ui:FASymbolIcon Symbol="People" FontSize="16"/>
-            <TextBlock Text="Znajomi" VerticalAlignment="Center"/>
+            <TextBlock Text="{loc:Tr Key='Znajomi'}" VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
         <Button Tag="Chat" Click="Tab_OnClick" ToolTip.Tip="Czat"
                 Classes.accent="{Binding ShowChatTab}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <ui:FASymbolIcon Symbol="Message" FontSize="16"/>
-            <TextBlock Text="Czat" VerticalAlignment="Center"/>
+            <TextBlock Text="{loc:Tr Key='Czat'}" VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
         <Button Tag="Search" Click="Tab_OnClick" ToolTip.Tip="Dodaj znajomego"
                 Classes.accent="{Binding ShowSearchTab}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <ui:FASymbolIcon Symbol="AddFriend" FontSize="16"/>
-            <TextBlock Text="Dodaj" VerticalAlignment="Center"/>
+            <TextBlock Text="{loc:Tr Key='Dodaj'}" VerticalAlignment="Center"/>
           </StackPanel>
         </Button>
       </StackPanel>
@@ -111,7 +111,7 @@
       </Button>
     </Grid>
 
-    <TextBlock Grid.Row="1" Text="Społeczność" FontSize="20" FontWeight="SemiBold" Margin="4,8,4,4"/>
+    <TextBlock Grid.Row="1" Text="{loc:Tr Key='Społeczność'}" FontSize="20" FontWeight="SemiBold" Margin="4,8,4,4"/>
 
     <TextBox Grid.Row="2" Text="{Binding SearchQuery}" PlaceholderText="{Binding SearchPlaceholder}"
              MinHeight="32" KeyDown="SearchBox_OnKeyDown"
@@ -126,16 +126,16 @@
         <!-- Public profile + wall -->
         <StackPanel Spacing="10" IsVisible="{Binding ShowProfileView}">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="← Wróć" Click="CloseProfile_OnClick" Classes="compact"/>
-            <Button Content="Napisz wiadomość" Click="MessageFromProfile_OnClick" Classes="accent compact"
+            <Button Content="{loc:Tr Key='← Wróć'}" Click="CloseProfile_OnClick" Classes="compact"/>
+            <Button Content="{loc:Tr Key='Napisz wiadomość'}" Click="MessageFromProfile_OnClick" Classes="accent compact"
                     IsVisible="{Binding CanMessageProfile}"/>
           </StackPanel>
           <TextBlock Text="{Binding ProfileHeader}" FontSize="22" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding ProfileSubtitle}" Opacity="0.7" FontSize="13"/>
-          <TextBlock Text="Ściana" FontWeight="SemiBold" Margin="0,8,0,0"/>
-          <TextBox Text="{Binding ProfileCommentDraft}" PlaceholderText="Podpisz się pod profilem…"
+          <TextBlock Text="{loc:Tr Key='Ściana'}" FontWeight="SemiBold" Margin="0,8,0,0"/>
+          <TextBox Text="{Binding ProfileCommentDraft}" PlaceholderText="{loc:Tr Key='Podpisz się pod profilem…'}"
                    AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"/>
-          <Button Content="Dodaj podpis" Classes="accent compact" Click="PostComment_OnClick"
+          <Button Content="{loc:Tr Key='Dodaj podpis'}" Classes="accent compact" Click="PostComment_OnClick"
                   HorizontalAlignment="Left"/>
           <TextBlock Text="{Binding ProfileStatus}" FontSize="12" Opacity="0.65"/>
           <ItemsControl ItemsSource="{Binding ProfileComments}">
@@ -149,7 +149,7 @@
                       <TextBlock Text="{Binding WhenText}" FontSize="11" Opacity="0.55"/>
                       <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
                     </StackPanel>
-                    <Button Grid.Column="1" Content="Usuń" Classes="compact"
+                    <Button Grid.Column="1" Content="{loc:Tr Key='Usuń'}" Classes="compact"
                             Tag="{Binding}" Click="DeleteComment_OnClick"
                             IsVisible="{Binding CanDelete}" VerticalAlignment="Top"/>
                   </Grid>
@@ -162,9 +162,9 @@
         <!-- Chat -->
         <Grid IsVisible="{Binding ShowChatTab}" ColumnDefinitions="140,*" ColumnSpacing="10" MinHeight="320">
           <StackPanel Spacing="6">
-            <TextBlock Text="Rozmowy" FontWeight="SemiBold"/>
+            <TextBlock Text="{loc:Tr Key='Rozmowy'}" FontWeight="SemiBold"/>
             <TextBlock Text="{Binding ChatStatus}" FontSize="11" Opacity="0.65" TextWrapping="Wrap"/>
-            <TextBlock Text="Brak rozmów." FontSize="12" Opacity="0.55" IsVisible="{Binding ShowEmptyChat}"/>
+            <TextBlock Text="{loc:Tr Key='Brak rozmów.'}" FontSize="12" Opacity="0.55" IsVisible="{Binding ShowEmptyChat}"/>
             <ItemsControl ItemsSource="{Binding ChatThreads}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ChatThreadItem">
@@ -200,18 +200,18 @@
               </ItemsControl>
             </ScrollViewer>
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-              <TextBox Text="{Binding ChatDraft}" PlaceholderText="Wiadomość…" KeyDown="ChatDraft_OnKeyDown"/>
-              <Button Grid.Column="1" Content="Wyślij" Classes="accent" Click="SendChat_OnClick"/>
+              <TextBox Text="{Binding ChatDraft}" PlaceholderText="{loc:Tr Key='Wiadomość…'}" KeyDown="ChatDraft_OnKeyDown"/>
+              <Button Grid.Column="1" Content="{loc:Tr Key='Wyślij'}" Classes="accent" Click="SendChat_OnClick"/>
             </Grid>
           </StackPanel>
         </Grid>
 
         <StackPanel Spacing="8" IsVisible="{Binding ShowFriendsTab}">
-          <TextBlock Text="Nie masz jeszcze znajomych. Wpisz nazwę lub @tag, żeby kogoś znaleźć."
+          <TextBlock Text="{loc:Tr Key='Nie masz jeszcze znajomych. Wpisz nazwę lub @tag, żeby kogoś znaleźć.'}"
                      FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                      TextWrapping="Wrap" IsVisible="{Binding ShowEmptyFriends}"/>
 
-          <Expander Header="Zaproszenia" IsExpanded="{Binding IncomingExpanded}"
+          <Expander Header="{loc:Tr Key='Zaproszenia'}" IsExpanded="{Binding IncomingExpanded}"
                     IsVisible="{Binding HasIncoming}">
             <ItemsControl ItemsSource="{Binding Incoming}" ItemTemplate="{StaticResource PersonRow}"/>
           </Expander>
@@ -239,32 +239,32 @@
         </StackPanel>
 
         <StackPanel Spacing="8" IsVisible="{Binding ShowRequestsTab}">
-          <TextBlock Text="Do Ciebie" FontWeight="SemiBold"/>
-          <TextBlock Text="Brak nowych zaproszeń." FontSize="12"
+          <TextBlock Text="{loc:Tr Key='Do Ciebie'}" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Brak nowych zaproszeń.'}" FontSize="12"
                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" IsVisible="{Binding !HasIncoming}"/>
           <ItemsControl ItemsSource="{Binding Incoming}" ItemTemplate="{StaticResource PersonRow}"/>
-          <TextBlock Text="Wysłane" FontWeight="SemiBold"/>
-          <TextBlock Text="Nie czekasz na żadną odpowiedź." FontSize="12"
+          <TextBlock Text="{loc:Tr Key='Wysłane'}" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Nie czekasz na żadną odpowiedź.'}" FontSize="12"
                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" IsVisible="{Binding !HasOutgoing}"/>
           <ItemsControl ItemsSource="{Binding Outgoing}" ItemTemplate="{StaticResource PersonRow}"/>
         </StackPanel>
 
         <StackPanel Spacing="8" IsVisible="{Binding ShowFollowingTab}">
-          <TextBlock Text="Obserwowane" FontWeight="SemiBold"/>
-          <TextBlock Text="Nikogo nie obserwujesz." FontSize="12"
+          <TextBlock Text="{loc:Tr Key='Obserwowane'}" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Nikogo nie obserwujesz.'}" FontSize="12"
                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" IsVisible="{Binding ShowEmptyFollowing}"/>
           <ItemsControl ItemsSource="{Binding Following}" ItemTemplate="{StaticResource PersonRow}"/>
         </StackPanel>
 
         <StackPanel Spacing="8" IsVisible="{Binding ShowFollowersTab}">
-          <TextBlock Text="Obserwujący" FontWeight="SemiBold"/>
-          <TextBlock Text="Nikt Cię jeszcze nie obserwuje." FontSize="12"
+          <TextBlock Text="{loc:Tr Key='Obserwujący'}" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Nikt Cię jeszcze nie obserwuje.'}" FontSize="12"
                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" IsVisible="{Binding ShowEmptyFollowers}"/>
           <ItemsControl ItemsSource="{Binding Followers}" ItemTemplate="{StaticResource PersonRow}"/>
         </StackPanel>
 
         <StackPanel Spacing="8" IsVisible="{Binding ShowSearchTab}">
-          <TextBlock Text="Wpisz nazwę lub @tag i naciśnij Enter." FontSize="12"
+          <TextBlock Text="{loc:Tr Key='Wpisz nazwę lub @tag i naciśnij Enter.'}" FontSize="12"
                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                      IsVisible="{Binding ShowEmptySearch}"/>
           <ItemsControl ItemsSource="{Binding SearchResults}" ItemTemplate="{StaticResource PersonRow}"/>

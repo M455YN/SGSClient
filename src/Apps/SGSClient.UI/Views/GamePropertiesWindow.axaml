@@ -1,10 +1,10 @@
-<Window xmlns="https://github.com/avaloniaui"
+<Window xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:SGSClient.UI.ViewModels"
         xmlns:conv="using:SGSClient.UI.Converters"
         x:Class="SGSClient.UI.Views.GamePropertiesWindow"
         x:DataType="vm:GamePropertiesViewModel"
-        Title="Właściwości gry"
+        Title="{loc:Tr Key='Właściwości gry'}"
         Width="1100" Height="720"
         MinWidth="960" MinHeight="600"
         WindowStartupLocation="CenterOwner">
@@ -32,14 +32,14 @@
     <ScrollViewer Grid.Column="1" Padding="24,20" HorizontalScrollBarVisibility="Disabled">
       <StackPanel Spacing="16">
         <StackPanel Spacing="12" IsVisible="{Binding ShowBetas}">
-          <TextBlock Text="Wersje i bety gry" FontSize="22" FontWeight="SemiBold"/>
-          <TextBlock Text="Wybrana wersja gry" FontWeight="SemiBold"/>
-          <TextBlock Text="Wersje są udostępniane przez twórców. Starsze buildy mogą być niestabilne."
+          <TextBlock Text="{loc:Tr Key='Wersje i bety gry'}" FontSize="22" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Wybrana wersja gry'}" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Wersje są udostępniane przez twórców. Starsze buildy mogą być niestabilne.'}"
                      Opacity="0.65" TextWrapping="Wrap" FontSize="12"/>
 
           <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-            <TextBlock Text="Tytuł i opis" Opacity="0.55" FontSize="11"/>
-            <TextBlock Grid.Column="1" Text="Ostatnia aktualizacja" Opacity="0.55" FontSize="11"/>
+            <TextBlock Text="{loc:Tr Key='Tytuł i opis'}" Opacity="0.55" FontSize="11"/>
+            <TextBlock Grid.Column="1" Text="{loc:Tr Key='Ostatnia aktualizacja'}" Opacity="0.55" FontSize="11"/>
           </Grid>
 
           <ListBox ItemsSource="{Binding Versions}"
@@ -65,20 +65,20 @@
                   BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                   BorderThickness="1">
             <StackPanel Spacing="6" Opacity="0.75">
-              <TextBlock Text="Wersje prywatne" FontWeight="SemiBold"/>
-              <TextBlock Text="Odblokowywanie prywatnych bet będzie dostępne w kolejnej wersji."
+              <TextBlock Text="{loc:Tr Key='Wersje prywatne'}" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Prywatne wersje beta — wkrótce.'}"
                          FontSize="12" TextWrapping="Wrap"/>
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                <TextBox IsEnabled="False" PlaceholderText="Kod dostępu"/>
-                <Button Grid.Column="1" Content="Sprawdź kod" IsEnabled="False" Padding="12,8"/>
+                <TextBox IsEnabled="False" PlaceholderText="{loc:Tr Key='Kod dostępu'}"/>
+                <Button Grid.Column="1" Content="{loc:Tr Key='Sprawdź kod'}" IsEnabled="False" Padding="12,8"/>
               </Grid>
             </StackPanel>
           </Border>
         </StackPanel>
 
         <StackPanel Spacing="14" IsVisible="{Binding ShowFiles}">
-          <TextBlock Text="Zainstalowane pliki" FontSize="22" FontWeight="SemiBold"/>
-          <TextBlock Text="Lokalne pliki gry na tym komputerze. Odinstalowanie usuwa pliki, ale gra zostaje w bibliotece."
+          <TextBlock Text="{loc:Tr Key='Zainstalowane pliki'}" FontSize="22" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Lokalne pliki gry na tym komputerze. Odinstalowanie usuwa pliki, ale gra zostaje w bibliotece.'}"
                      Opacity="0.65" TextWrapping="Wrap" FontSize="12"/>
 
           <Border Padding="16" CornerRadius="8"
@@ -89,32 +89,32 @@
               <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
                 <TextBlock Text="Status" Opacity="0.6"/>
                 <TextBlock Grid.Column="1" Text="{Binding InstallStateText}" FontWeight="SemiBold"/>
-                <TextBlock Grid.Row="1" Text="Wersja" Opacity="0.6"/>
+                <TextBlock Grid.Row="1" Text="{loc:Tr Key='Wersja'}" Opacity="0.6"/>
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding InstalledVersionText}"/>
-                <TextBlock Grid.Row="2" Text="Rozmiar" Opacity="0.6"/>
+                <TextBlock Grid.Row="2" Text="{loc:Tr Key='Rozmiar'}" Opacity="0.6"/>
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding InstallSizeText}"/>
-                <TextBlock Grid.Row="3" Text="Pliki" Opacity="0.6"/>
+                <TextBlock Grid.Row="3" Text="{loc:Tr Key='Pliki'}" Opacity="0.6"/>
                 <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding InstallFilesText}"/>
               </Grid>
 
               <StackPanel Spacing="4">
-                <TextBlock Text="Folder instalacji" Opacity="0.6" FontSize="12"/>
+                <TextBlock Text="{loc:Tr Key='Folder instalacji'}" Opacity="0.6" FontSize="12"/>
                 <TextBlock Text="{Binding InstallPathText}" TextWrapping="Wrap" FontSize="12"/>
               </StackPanel>
             </StackPanel>
           </Border>
 
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Content="Przeglądaj pliki lokalne…"
+            <Button Content="{loc:Tr Key='Przeglądaj pliki lokalne…'}"
                     Click="BrowseLocalFiles_OnClick"
                     IsEnabled="{Binding CanBrowseFiles}"
                     Classes="accent"
                     Padding="14,10"/>
-            <Button Content="Odśwież"
+            <Button Content="{loc:Tr Key='Odśwież'}"
                     Click="RefreshInstallInfo_OnClick"
                     Classes="subtle"
                     Padding="14,10"/>
-            <Button Content="Odinstaluj…"
+            <Button Content="{loc:Tr Key='Odinstaluj…'}"
                     Click="UninstallFiles_OnClick"
                     IsEnabled="{Binding CanUninstallFiles}"
                     Padding="14,10"/>
@@ -126,16 +126,16 @@
                   BorderThickness="1"
                   IsVisible="{Binding IsInstalled}">
             <StackPanel Spacing="10">
-              <TextBlock Text="Przenieś pliki" FontWeight="SemiBold"/>
-              <TextBlock Text="Wybierz inny folder biblioteki (dodajesz je w Ustawieniach)."
+              <TextBlock Text="{loc:Tr Key='Przenieś pliki'}" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Wybierz inny folder biblioteki (dodajesz je w Ustawieniach).'}"
                          Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
               <ComboBox ItemsSource="{Binding MoveTargets}"
                         SelectedItem="{Binding SelectedMoveTarget}"
-                        PlaceholderText="Brak innych folderów biblioteki"
+                        PlaceholderText="{loc:Tr Key='Brak innych folderów biblioteki'}"
                         HorizontalAlignment="Stretch"
                         MinHeight="36"/>
               <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button Content="Przenieś pliki…"
+                <Button Content="{loc:Tr Key='Przenieś pliki…'}"
                         Click="MoveFiles_OnClick"
                         IsEnabled="{Binding CanMoveFiles}"
                         Classes="accent"
@@ -149,13 +149,13 @@
             </StackPanel>
           </Border>
 
-          <TextBlock Text="Weryfikacja integralności plików pojawi się w kolejnej wersji."
+          <TextBlock Text="{loc:Tr Key='Weryfikacja plików — wkrótce.'}"
                      Opacity="0.5" FontSize="11" TextWrapping="Wrap"/>
         </StackPanel>
 
         <StackPanel Spacing="14" IsVisible="{Binding ShowPersonalization}">
-          <TextBlock Text="Personalizacja" FontSize="22" FontWeight="SemiBold"/>
-          <TextBlock Text="Własny obrazek kafla w bibliotece (nadpisuje okładkę ze sklepu)."
+          <TextBlock Text="{loc:Tr Key='Personalizacja'}" FontSize="22" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Własny obrazek kafla w bibliotece (nadpisuje okładkę ze sklepu).'}"
                      Opacity="0.65" TextWrapping="Wrap" FontSize="12"/>
 
           <Border Width="168" Height="248" CornerRadius="8" ClipToBounds="True" HorizontalAlignment="Left"
@@ -163,7 +163,7 @@
                   BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                   BorderThickness="1">
             <Panel>
-              <TextBlock Text="Podgląd" Opacity="0.45" HorizontalAlignment="Center" VerticalAlignment="Center"
+              <TextBlock Text="{loc:Tr Key='Podgląd'}" Opacity="0.45" HorizontalAlignment="Center" VerticalAlignment="Center"
                          IsVisible="{Binding !HasCustomCover}"/>
               <Image Source="{Binding CustomCoverPreviewUri, Converter={x:Static conv:FileUriToBitmapConverter.Instance}}" Stretch="UniformToFill"
                      IsVisible="{Binding HasCustomCover}"/>
@@ -171,32 +171,32 @@
           </Border>
 
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Content="Wybierz obrazek…" Click="PickCustomCover_OnClick" Classes="accent" Padding="14,10"/>
-            <Button Content="Przywróć domyślny"
+            <Button Content="{loc:Tr Key='Wybierz obrazek…'}" Click="PickCustomCover_OnClick" Classes="accent" Padding="14,10"/>
+            <Button Content="{loc:Tr Key='Przywróć domyślny'}"
                     Click="ClearCustomCover_OnClick"
                     IsEnabled="{Binding HasCustomCover}"
                     Classes="subtle"
                     Padding="14,10"/>
           </StackPanel>
-          <TextBlock Text="Obsługiwane: PNG, JPG, WEBP. Plik trafia do lokalnej pamięci klienta."
+          <TextBlock Text="{loc:Tr Key='Obsługiwane: PNG, JPG, WEBP. Plik trafia do lokalnej pamięci klienta.'}"
                      Opacity="0.55" FontSize="11" TextWrapping="Wrap"/>
         </StackPanel>
 
         <StackPanel Spacing="14" IsVisible="{Binding ShowDlc}">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
             <TextBlock Text="DLC" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
-            <Button Grid.Column="1" Content="Zobacz więcej w sklepie"
+            <Button Grid.Column="1" Content="{loc:Tr Key='Zobacz więcej w sklepie'}"
                     Command="{Binding ViewMoreInStoreCommand}"
                     Classes="subtle" Padding="12,8"/>
           </Grid>
 
-          <TextBox Text="{Binding DlcSearchText}" PlaceholderText="Szukaj DLC…"/>
+          <TextBox Text="{Binding DlcSearchText}" PlaceholderText="{loc:Tr Key='Szukaj DLC…'}"/>
 
           <Grid ColumnDefinitions="56,*,120,100" ColumnSpacing="12" Margin="0,4,0,0">
-            <TextBlock Text="Instaluj" Opacity="0.55" FontSize="11"/>
-            <TextBlock Grid.Column="1" Text="Nazwa" Opacity="0.55" FontSize="11"/>
-            <TextBlock Grid.Column="2" Text="Dodano" Opacity="0.55" FontSize="11"/>
-            <TextBlock Grid.Column="3" Text="Rozmiar" Opacity="0.55" FontSize="11" HorizontalAlignment="Right"/>
+            <TextBlock Text="{loc:Tr Key='Instaluj'}" Opacity="0.55" FontSize="11"/>
+            <TextBlock Grid.Column="1" Text="{loc:Tr Key='Nazwa'}" Opacity="0.55" FontSize="11"/>
+            <TextBlock Grid.Column="2" Text="{loc:Tr Key='Dodano'}" Opacity="0.55" FontSize="11"/>
+            <TextBlock Grid.Column="3" Text="{loc:Tr Key='Rozmiar'}" Opacity="0.55" FontSize="11" HorizontalAlignment="Right"/>
           </Grid>
 
           <ItemsControl ItemsSource="{Binding FilteredDlcRows}" MaxHeight="360">
@@ -228,37 +228,37 @@
         </StackPanel>
 
         <StackPanel Spacing="14" IsVisible="{Binding ShowGeneral}">
-          <TextBlock Text="Ogólne" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Ogólne'}" FontSize="20" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding GeneralSummaryText}" Opacity="0.7" TextWrapping="Wrap"/>
           <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="8" ColumnSpacing="16">
             <TextBlock Text="Status" Opacity="0.65"/>
             <TextBlock Grid.Column="1" Text="{Binding InstallStateText}" FontWeight="SemiBold"/>
-            <TextBlock Grid.Row="1" Text="Wersja" Opacity="0.65"/>
+            <TextBlock Grid.Row="1" Text="{loc:Tr Key='Wersja'}" Opacity="0.65"/>
             <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding InstalledVersionText}"/>
-            <TextBlock Grid.Row="2" Text="Lokalizacja" Opacity="0.65"/>
+            <TextBlock Grid.Row="2" Text="{loc:Tr Key='Lokalizacja'}" Opacity="0.65"/>
             <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding InstallPathText}"
                        TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
           </Grid>
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Otwórz folder" Command="{Binding BrowseLocalFilesCommand}"
+            <Button Content="{loc:Tr Key='Otwórz folder'}" Command="{Binding BrowseLocalFilesCommand}"
                     IsEnabled="{Binding CanBrowseFiles}"/>
-            <Button Content="Zobacz w sklepie" Command="{Binding ViewMoreInStoreCommand}"/>
+            <Button Content="{loc:Tr Key='Zobacz w sklepie'}" Command="{Binding ViewMoreInStoreCommand}"/>
           </StackPanel>
         </StackPanel>
 
         <StackPanel Spacing="14" IsVisible="{Binding ShowUpdates}">
-          <TextBlock Text="Aktualizacje" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{loc:Tr Key='Aktualizacje'}" FontSize="20" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding UpdatesStatusText}" Opacity="0.7" TextWrapping="Wrap"/>
           <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto" RowSpacing="8" ColumnSpacing="16">
-            <TextBlock Text="Zainstalowana" Opacity="0.65"/>
+            <TextBlock Text="{loc:Tr Key='Zainstalowana'}" Opacity="0.65"/>
             <TextBlock Grid.Column="1" Text="{Binding InstalledVersionText}"/>
-            <TextBlock Grid.Row="1" Text="Dostępna w sklepie" Opacity="0.65"/>
+            <TextBlock Grid.Row="1" Text="{loc:Tr Key='Dostępna w sklepie'}" Opacity="0.65"/>
             <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LatestVersionText}"/>
           </Grid>
-          <CheckBox Content="Aktualizuj automatycznie" IsChecked="{Binding AutoUpdateEnabled}"/>
+          <CheckBox Content="{loc:Tr Key='Aktualizuj automatycznie'}" IsChecked="{Binding AutoUpdateEnabled}"/>
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Sprawdź aktualizacje" Command="{Binding CheckForUpdatesCommand}"/>
-            <Button Content="Aktualizuj teraz" Classes="accent"
+            <Button Content="{loc:Tr Key='Sprawdź aktualizacje'}" Command="{Binding CheckForUpdatesCommand}"/>
+            <Button Content="{loc:Tr Key='Aktualizuj teraz'}" Classes="accent"
                     Command="{Binding UpdateNowCommand}"
                     IsEnabled="{Binding CanUpdateNow}"/>
           </StackPanel>

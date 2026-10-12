@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -42,8 +43,8 @@ public partial class PublishViewModel : ObservableObject
         _upload = upload;
         _auth = auth;
         _api = api;
-        Title = "Publikuj grę";
-        StatusText = "Wybierz folder z grą (musi zawierać sgs-manifest.json).";
+        Title = Loc.T("Publikuj grę");
+        StatusText = Loc.T("Wybierz folder z grą (musi zawierać sgs-manifest.json).");
         RefreshAuthHint();
     }
 
@@ -53,9 +54,9 @@ public partial class PublishViewModel : ObservableObject
     public IReadOnlyList<string> PlatformOptions { get; } = ["windows", "linux", "macos"];
     public IReadOnlyList<string> ArchitectureOptions { get; } = ["x64", "x86", "arm64"];
     public TaxonomySelection GameGenres { get; } =
-        new(SgsGameTaxonomy.Genres, SgsGameTaxonomy.MaxGenres, "Wybierz gatunki");
+        new(SgsGameTaxonomy.Genres, SgsGameTaxonomy.MaxGenres, Loc.T("Wybierz gatunki"));
     public TaxonomySelection GameEngines { get; } =
-        new(SgsGameTaxonomy.Engines, SgsGameTaxonomy.MaxEngines, "Wybierz silniki");
+        new(SgsGameTaxonomy.Engines, SgsGameTaxonomy.MaxEngines, Loc.T("Wybierz silniki"));
 
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
     [ObservableProperty] public partial string SelectedFolder { get; set; } = string.Empty;
@@ -114,7 +115,7 @@ public partial class PublishViewModel : ObservableObject
 
         if (string.IsNullOrWhiteSpace(folder))
         {
-            StatusText = "Wybierz folder z grą.";
+            StatusText = Loc.T("Wybierz folder z grą.");
             return;
         }
 
@@ -136,17 +137,17 @@ public partial class PublishViewModel : ObservableObject
                     Issues.Add(error);
                 }
 
-                StatusText = "Nie udało się wczytać manifestu z folderu.";
+                StatusText = Loc.T("Nie udało się wczytać manifestu z folderu.");
                 return;
             }
 
             ApplyManifestToForm(loaded.Manifest, preferExistingDlc: keepDlc);
             HasManifestForm = true;
-            StatusText = "Uzupełnij lub popraw dane gry, potem przygotuj paczkę.";
+            StatusText = Loc.T("Uzupełnij lub popraw dane gry, potem przygotuj paczkę.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Błąd odczytu manifestu: {ex.Message}";
+            StatusText = Loc.F("Błąd odczytu manifestu: {0}", ex.Message);
         }
         finally
         {
@@ -158,13 +159,13 @@ public partial class PublishViewModel : ObservableObject
     {
         if (_auth?.IsAvailable != true)
         {
-            AuthHint = "Logowanie jest wyłączone — lokalnie upload pójdzie bez konta.";
+            AuthHint = Loc.T("Logowanie jest wyłączone — publikacja nastąpi bez konta.");
         }
         else
         {
             AuthHint = _auth.IsLoggedIn
                 ? $"Zalogowano jako {_auth.CurrentUser?.DisplayName ?? "gracz"}."
-                : "Zaloguj się w Profilu przed publikacją (wymagane na serwerze z B2C).";
+                : Loc.T("Zaloguj się w Profilu przed publikacją.");
         }
 
         _ = LoadParentOptionsAsync();
@@ -175,8 +176,8 @@ public partial class PublishViewModel : ObservableObject
         IsDlc = true;
         ParentSymbol = parentSymbol?.Trim() ?? string.Empty;
         StatusText = string.IsNullOrWhiteSpace(ParentSymbol)
-            ? "Tryb DLC — wybierz grę bazową i folder z paczką."
-            : $"Tryb DLC dla gry bazowej: {ParentSymbol}. Wybierz folder z paczką.";
+            ? Loc.T("Tryb DLC — wybierz grę bazową i folder z paczką.")
+            : Loc.F("Tryb DLC dla gry bazowej: {0}. Wybierz folder z paczką.", ParentSymbol);
         _ = LoadParentOptionsAsync();
     }
 
@@ -184,7 +185,7 @@ public partial class PublishViewModel : ObservableObject
     {
         IsDlc = false;
         ParentSymbol = string.Empty;
-        StatusText = "Wybierz folder z grą (musi zawierać sgs-manifest.json).";
+        StatusText = Loc.T("Wybierz folder z grą (musi zawierać sgs-manifest.json).");
     }
 
     public async Task LoadParentOptionsAsync()
@@ -239,7 +240,7 @@ public partial class PublishViewModel : ObservableObject
         CanPublish = false;
         HasSummary = false;
         CleanupPackedZip();
-        StatusText = "Zapisuję dane i pakuję grę…";
+        StatusText = Loc.T("Zapisuję dane i pakuję grę…");
         try
         {
             var manifest = BuildManifestFromForm();
@@ -251,7 +252,7 @@ public partial class PublishViewModel : ObservableObject
                     Issues.Add(error);
                 }
 
-                StatusText = "Nie udało się przygotować paczki.";
+                StatusText = Loc.T("Nie udało się przygotować paczki.");
                 return;
             }
 
@@ -263,11 +264,11 @@ public partial class PublishViewModel : ObservableObject
                 $"{m.Game.Symbol} · {m.Build.Platform}/{m.Build.Architecture ?? "x64"} · v{m.Build.Version} · {m.Build.Executable}";
             HasSummary = true;
             CanPublish = true;
-            StatusText = "Paczka gotowa (manifest zapisany w folderze). Możesz ją wysłać do sklepu.";
+            StatusText = Loc.T("Paczka gotowa (manifest zapisany w folderze). Możesz ją wysłać do sklepu.");
         }
         catch (Exception ex)
         {
-            StatusText = $"Błąd pakowania: {ex.Message}";
+            StatusText = Loc.F("Błąd pakowania: {0}", ex.Message);
         }
         finally
         {
@@ -288,7 +289,7 @@ public partial class PublishViewModel : ObservableObject
         ShowProgress = true;
         Progress = 0;
         Issues.Clear();
-        StatusText = "Wysyłanie do sklepu…";
+        StatusText = Loc.T("Wysyłanie do sklepu…");
         try
         {
             var progress = new Progress<double>(p => Progress = p);
@@ -300,17 +301,17 @@ public partial class PublishViewModel : ObservableObject
                     Issues.Add(error);
                 }
 
-                StatusText = "Publikacja nie powiodła się.";
+                StatusText = Loc.T("Publikacja nie powiodła się.");
                 return;
             }
 
-            StatusText = $"Opublikowano: {result.Game.Title}. Znajdziesz ją w Sklepie.";
+            StatusText = Loc.F("Opublikowano: {0}. Znajdziesz ją w Sklepie.", result.Game.Title);
             CanPublish = false;
             CleanupPackedZip();
         }
         catch (Exception ex)
         {
-            StatusText = $"Błąd wysyłania: {ex.Message}";
+            StatusText = Loc.F("Błąd wysyłania: {0}", ex.Message);
         }
         finally
         {
@@ -327,7 +328,7 @@ public partial class PublishViewModel : ObservableObject
         }
 
         MediaCover = relative;
-        StatusText = $"Ustawiono miniaturkę: {relative}";
+        StatusText = Loc.F("Ustawiono miniaturkę: {0}", relative);
         return true;
     }
 
@@ -339,7 +340,7 @@ public partial class PublishViewModel : ObservableObject
         }
 
         MediaHeader = relative;
-        StatusText = $"Ustawiono okładkę poziomą: {relative}";
+        StatusText = Loc.F("Ustawiono okładkę poziomą: {0}", relative);
         return true;
     }
 
@@ -351,7 +352,7 @@ public partial class PublishViewModel : ObservableObject
         }
 
         MediaLogo = relative;
-        StatusText = $"Ustawiono logo: {relative}";
+        StatusText = Loc.F("Ustawiono logo: {0}", relative);
         return true;
     }
 
@@ -363,7 +364,7 @@ public partial class PublishViewModel : ObservableObject
         }
 
         MediaIntro = relative;
-        StatusText = $"Ustawiono intro: {relative}";
+        StatusText = Loc.F("Ustawiono intro: {0}", relative);
         return true;
     }
 
@@ -383,7 +384,7 @@ public partial class PublishViewModel : ObservableObject
 
         if (added.Count == 0)
         {
-            error = "Nie wybrano plików.";
+            error = Loc.T("Nie wybrano plików.");
             return false;
         }
 
@@ -401,43 +402,43 @@ public partial class PublishViewModel : ObservableObject
 
         if (existing.Count > SgsPackageRules.MaxScreenshots)
         {
-            error = $"Maksymalnie {SgsPackageRules.MaxScreenshots} screenów.";
+            error = Loc.F("Maksymalnie {0} screenów.", SgsPackageRules.MaxScreenshots);
             return false;
         }
 
         MediaScreenshots = string.Join(Environment.NewLine, existing);
-        StatusText = $"Dodano screeny ({added.Count}). Łącznie: {existing.Count}.";
+        StatusText = Loc.F("Dodano screeny ({0}). Łącznie: {1}.", added.Count, existing.Count);
         return true;
     }
 
     public void ClearCover()
     {
         MediaCover = string.Empty;
-        StatusText = "Usunięto miniaturkę z formularza.";
+        StatusText = Loc.T("Usunięto miniaturkę z formularza.");
     }
 
     public void ClearHeader()
     {
         MediaHeader = string.Empty;
-        StatusText = "Usunięto okładkę poziomą z formularza.";
+        StatusText = Loc.T("Usunięto okładkę poziomą z formularza.");
     }
 
     public void ClearLogo()
     {
         MediaLogo = string.Empty;
-        StatusText = "Usunięto logo z formularza.";
+        StatusText = Loc.T("Usunięto logo z formularza.");
     }
 
     public void ClearIntro()
     {
         MediaIntro = string.Empty;
-        StatusText = "Usunięto intro z formularza.";
+        StatusText = Loc.T("Usunięto intro z formularza.");
     }
 
     public void ClearScreenshots()
     {
         MediaScreenshots = string.Empty;
-        StatusText = "Usunięto listę screenów z formularza.";
+        StatusText = Loc.T("Usunięto listę screenów z formularza.");
     }
 
     private bool TryImportMediaFile(
@@ -452,20 +453,20 @@ public partial class PublishViewModel : ObservableObject
 
         if (string.IsNullOrWhiteSpace(SelectedFolder) || !Directory.Exists(SelectedFolder))
         {
-            error = "Najpierw wybierz folder gry.";
+            error = Loc.T("Najpierw wybierz folder gry.");
             return false;
         }
 
         if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
         {
-            error = "Nie znaleziono wybranego pliku.";
+            error = Loc.T("Nie znaleziono wybranego pliku.");
             return false;
         }
 
         var ext = Path.GetExtension(sourcePath);
         if (!allowedExtensions.Contains(ext))
         {
-            error = $"Niedozwolone rozszerzenie '{ext}'. Dozwolone: {string.Join(", ", allowedExtensions)}.";
+            error = Loc.F("Niedozwolone rozszerzenie '{0}'. Dozwolone: {1}.", ext, string.Join(", ", allowedExtensions));
             return false;
         }
 
@@ -502,7 +503,7 @@ public partial class PublishViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            error = $"Nie udało się skopiować pliku do folderu gry: {ex.Message}";
+            error = Loc.F("Nie udało się skopiować pliku do folderu gry: {0}", ex.Message);
             return false;
         }
 

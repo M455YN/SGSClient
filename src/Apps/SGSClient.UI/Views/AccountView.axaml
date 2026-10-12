@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.AccountView"
@@ -7,21 +7,21 @@
     <StackPanel Margin="32" Spacing="12" MaxWidth="480"
                 IsVisible="{Binding ShowSignedOut}"
                 VerticalAlignment="Center" HorizontalAlignment="Center">
-      <TextBlock Text="Profil" FontSize="32" FontWeight="SemiBold"/>
+      <TextBlock Text="{loc:Tr Key='Profil'}" FontSize="32" FontWeight="SemiBold"/>
       <TextBlock Text="{Binding AccountStatus}" Opacity="0.75" TextWrapping="Wrap"/>
-      <Button Content="Zaloguj się" Click="SignInButton_OnClick" HorizontalAlignment="Left" Padding="16,8"/>
+      <Button Content="{loc:Tr Key='Zaloguj się'}" Click="SignInButton_OnClick" HorizontalAlignment="Left" Padding="16,8"/>
     </StackPanel>
 
     <StackPanel Margin="32" Spacing="12" MaxWidth="480"
                 IsVisible="{Binding ShowTagSetup}"
                 VerticalAlignment="Center" HorizontalAlignment="Center">
-      <TextBlock Text="Wybierz tag gracza" FontSize="32" FontWeight="SemiBold"/>
-      <TextBlock Text="To Twoja unikalna nazwa w SGS — jak na Discordzie. Inni znajdą Cię po @tagu."
+      <TextBlock Text="{loc:Tr Key='Wybierz tag gracza'}" FontSize="32" FontWeight="SemiBold"/>
+      <TextBlock Text="{loc:Tr Key='Twój unikalny identyfikator w SGS. Inni znajdą Cię po @tagu.'}"
                  Opacity="0.75" TextWrapping="Wrap"/>
       <TextBlock Text="{Binding TagPreview}" FontSize="22" FontWeight="SemiBold" Opacity="0.9"/>
       <TextBox Text="{Binding DraftPlayerTag}" PlaceholderText="np. m455yn" MinHeight="40"/>
       <TextBlock Text="{Binding TagStatus}" Opacity="0.7" TextWrapping="Wrap" FontSize="13"/>
-      <Button Content="Zapisz tag" Command="{Binding ClaimPlayerTagCommand}"
+      <Button Content="{loc:Tr Key='Zapisz tag'}" Command="{Binding ClaimPlayerTagCommand}"
               HorizontalAlignment="Left" Padding="16,8"/>
     </StackPanel>
 
@@ -62,21 +62,21 @@
                           Command="{Binding OpenFriendsCommand}" CommandParameter="Friends">
                     <TextBlock Opacity="0.9">
                       <Run Text="{Binding FriendsCount}" FontWeight="SemiBold"/>
-                      <Run Text=" Znajomi"/>
+                      <Run Text="{loc:Tr Key=' Znajomi'}"/>
                     </TextBlock>
                   </Button>
                   <Button Background="Transparent" BorderThickness="0" Padding="0"
                           Command="{Binding OpenFriendsCommand}" CommandParameter="Following">
                     <TextBlock Opacity="0.9">
                       <Run Text="{Binding FollowingCount}" FontWeight="SemiBold"/>
-                      <Run Text=" Obserwowane"/>
+                      <Run Text="{loc:Tr Key=' Obserwowane'}"/>
                     </TextBlock>
                   </Button>
                   <Button Background="Transparent" BorderThickness="0" Padding="0"
                           Command="{Binding OpenFriendsCommand}" CommandParameter="Followers">
                     <TextBlock Opacity="0.9">
                       <Run Text="{Binding FollowersCount}" FontWeight="SemiBold"/>
-                      <Run Text=" Obserwujący"/>
+                      <Run Text="{loc:Tr Key=' Obserwujący'}"/>
                     </TextBlock>
                   </Button>
                 </StackPanel>
@@ -85,22 +85,22 @@
 
             <StackPanel Spacing="14">
               <StackPanel Spacing="4">
-                <TextBlock Text="Biografia" FontWeight="SemiBold" Opacity="0.55" FontSize="12"/>
+                <TextBlock Text="{loc:Tr Key='Biografia'}" FontWeight="SemiBold" Opacity="0.55" FontSize="12"/>
                 <TextBlock Text="{Binding BioDisplay}" TextWrapping="Wrap" Opacity="0.9"/>
               </StackPanel>
               <StackPanel Spacing="4">
-                <TextBlock Text="Lokalizacja" FontWeight="SemiBold" Opacity="0.55" FontSize="12"/>
+                <TextBlock Text="{loc:Tr Key='Lokalizacja'}" FontWeight="SemiBold" Opacity="0.55" FontSize="12"/>
                 <TextBlock Text="{Binding LocationDisplay}"/>
               </StackPanel>
               <TextBlock Text="{Binding Email}" Opacity="0.55" FontSize="12"/>
             </StackPanel>
 
             <StackPanel Spacing="10" Margin="0,8,0,0">
-              <TextBlock Text="Ściana" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="Jak na Steam — znajomi mogą się tu podpisać." Opacity="0.55" FontSize="12"/>
-              <TextBox Text="{Binding WallCommentDraft}" PlaceholderText="Napisz coś na swojej ścianie…"
+              <TextBlock Text="{loc:Tr Key='Ściana'}" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="Znajomi mogą zostawić tu podpis." Opacity="0.55" FontSize="12"/>
+              <TextBox Text="{Binding WallCommentDraft}" PlaceholderText="{loc:Tr Key='Napisz coś na swojej ścianie…'}"
                        AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"/>
-              <Button Content="Dodaj podpis" HorizontalAlignment="Left" Padding="12,8"
+              <Button Content="{loc:Tr Key='Dodaj podpis'}" HorizontalAlignment="Left" Padding="12,8"
                       Click="PostWall_OnClick"/>
               <TextBlock Text="{Binding WallStatus}" Opacity="0.6" FontSize="12"/>
               <ItemsControl ItemsSource="{Binding WallComments}">
@@ -114,7 +114,7 @@
                           <TextBlock Text="{Binding WhenText}" FontSize="11" Opacity="0.55"/>
                           <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
                         </StackPanel>
-                        <Button Grid.Column="1" Content="Usuń" Padding="8,4"
+                        <Button Grid.Column="1" Content="{loc:Tr Key='Usuń'}" Padding="8,4"
                                 Tag="{Binding}" Click="DeleteWall_OnClick"
                                 IsVisible="{Binding CanDelete}" VerticalAlignment="Top"/>
                       </Grid>
@@ -125,8 +125,8 @@
             </StackPanel>
 
             <StackPanel Spacing="10" Margin="0,8,0,0">
-              <TextBlock Text="Biblioteka" FontSize="18" FontWeight="SemiBold"/>
-              <TextBlock Text="Osiągnięcia i postęp gier pojawią się tutaj." Opacity="0.55" FontSize="13"/>
+              <TextBlock Text="{loc:Tr Key='Biblioteka'}" FontSize="18" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Osiągnięcia i postęp gier pojawią się tutaj.'}" Opacity="0.55" FontSize="13"/>
               <ItemsControl ItemsSource="{Binding RecentGames}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:RecentGameItem">
@@ -148,15 +148,15 @@
 
           <!-- Right rail: actions OR edit card -->
           <StackPanel Grid.Column="1" Spacing="16" IsVisible="{Binding ShowProfile}">
-            <Button Content="Dostosuj profil" HorizontalAlignment="Stretch" Padding="12,10"
+            <Button Content="{loc:Tr Key='Dostosuj profil'}" HorizontalAlignment="Stretch" Padding="12,10"
                     Click="EditButton_OnClick"/>
-            <Button Content="Znajomi" HorizontalAlignment="Stretch" Padding="12,10"
+            <Button Content="{loc:Tr Key='Znajomi'}" HorizontalAlignment="Stretch" Padding="12,10"
                     Command="{Binding OpenFriendsCommand}" CommandParameter="Friends"/>
-            <Button Content="Wyloguj" HorizontalAlignment="Stretch" Padding="12,10"
+            <Button Content="{loc:Tr Key='Wyloguj'}" HorizontalAlignment="Stretch" Padding="12,10"
                     Click="SignOutButton_OnClick"/>
 
             <StackPanel Spacing="10" Margin="0,8,0,0">
-              <TextBlock Text="Ostatnio używane gry" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Ostatnio używane gry'}" FontWeight="SemiBold"/>
               <ItemsControl ItemsSource="{Binding RecentGames}" IsVisible="{Binding HasRecentGames}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
@@ -173,12 +173,12 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
-              <TextBlock Text="Brak gier w lokalnej bibliotece." Opacity="0.5" FontSize="12"
+              <TextBlock Text="{loc:Tr Key='Brak gier w lokalnej bibliotece.'}" Opacity="0.5" FontSize="12"
                          IsVisible="{Binding ShowEmptyRecentGames}"/>
             </StackPanel>
 
             <StackPanel Spacing="8" Margin="0,8,0,0">
-              <TextBlock Text="Gdzie gram" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Gdzie gram'}" FontWeight="SemiBold"/>
               <TextBlock Text="PC" Opacity="0.75"/>
             </StackPanel>
           </StackPanel>
@@ -190,34 +190,34 @@
                   Padding="18"
                   VerticalAlignment="Top">
             <StackPanel Spacing="14">
-              <TextBlock Text="Dostosuj profil" FontSize="20" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Dostosuj profil'}" FontSize="20" FontWeight="SemiBold"/>
               <StackPanel Spacing="6">
-                <TextBlock Text="Tag gracza" Opacity="0.6" FontSize="12"/>
+                <TextBlock Text="{loc:Tr Key='Tag gracza'}" Opacity="0.6" FontSize="12"/>
                 <TextBox Text="{Binding EditPlayerTag}" MinHeight="36" PlaceholderText="np. m455yn"/>
               </StackPanel>
               <StackPanel Spacing="6">
-                <TextBlock Text="Nazwa wyświetlana" Opacity="0.6" FontSize="12"/>
+                <TextBlock Text="{loc:Tr Key='Nazwa wyświetlana'}" Opacity="0.6" FontSize="12"/>
                 <TextBox Text="{Binding EditDisplayName}" MinHeight="36"/>
               </StackPanel>
               <StackPanel Spacing="6">
-                <TextBlock Text="Biografia" Opacity="0.6" FontSize="12"/>
+                <TextBlock Text="{loc:Tr Key='Biografia'}" Opacity="0.6" FontSize="12"/>
                 <TextBox Text="{Binding EditBio}" AcceptsReturn="True" Height="110" TextWrapping="Wrap"/>
               </StackPanel>
               <StackPanel Spacing="6">
-                <TextBlock Text="Lokalizacja" Opacity="0.6" FontSize="12"/>
+                <TextBlock Text="{loc:Tr Key='Lokalizacja'}" Opacity="0.6" FontSize="12"/>
                 <TextBox Text="{Binding EditLocation}" MinHeight="36"/>
               </StackPanel>
               <StackPanel Spacing="6">
-                <TextBlock Text="Zdjęcie profilowe" Opacity="0.6" FontSize="12"/>
+                <TextBlock Text="{loc:Tr Key='Zdjęcie profilowe'}" Opacity="0.6" FontSize="12"/>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Content="Zmień zdjęcie" Click="ChangeAvatar_OnClick" Padding="12,8"/>
-                  <Button Content="Usuń" Click="ClearAvatar_OnClick" Padding="12,8"/>
+                  <Button Content="{loc:Tr Key='Zmień zdjęcie'}" Click="ChangeAvatar_OnClick" Padding="12,8"/>
+                  <Button Content="{loc:Tr Key='Usuń'}" Click="ClearAvatar_OnClick" Padding="12,8"/>
                 </StackPanel>
                 <TextBlock Text="{Binding ProfileActionStatus}" Opacity="0.7" FontSize="12" TextWrapping="Wrap"/>
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                <Button Content="Zapisz" Click="SaveButton_OnClick" Padding="16,8"/>
-                <Button Content="Anuluj" Click="CancelEditButton_OnClick" Padding="16,8"/>
+                <Button Content="{loc:Tr Key='Zapisz'}" Click="SaveButton_OnClick" Padding="16,8"/>
+                <Button Content="{loc:Tr Key='Anuluj'}" Click="CancelEditButton_OnClick" Padding="16,8"/>
               </StackPanel>
             </StackPanel>
           </Border>

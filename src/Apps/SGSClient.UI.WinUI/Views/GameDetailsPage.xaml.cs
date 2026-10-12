@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -65,7 +66,7 @@ public sealed partial class GameDetailsPage : Page
 
         if (gameId <= 0)
         {
-            EmptyStatus.Text = "Brak identyfikatora gry.";
+            EmptyStatus.Text = Loc.T("Brak identyfikatora gry.");
             ContentScroll.Visibility = Visibility.Collapsed;
             return;
         }
@@ -335,6 +336,8 @@ public sealed partial class GameDetailsPage : Page
         return false;
     }
 
+    private Uri? _shownCoverUri;
+
     private void RefreshHeroMedia()
     {
         if (_introPlaying)
@@ -351,13 +354,20 @@ public sealed partial class GameDetailsPage : Page
         if (!string.IsNullOrWhiteSpace(ViewModel.CoverImageUrl)
             && Uri.TryCreate(ViewModel.CoverImageUrl, UriKind.Absolute, out var coverUri))
         {
-            CoverImage.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(coverUri);
+            // Reload only when the URL changed, otherwise every progress tick flickers the header.
+            if (_shownCoverUri != coverUri)
+            {
+                CoverImage.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(coverUri);
+                _shownCoverUri = coverUri;
+            }
+
             CoverImage.Visibility = Visibility.Visible;
             TileLabelText.Visibility = Visibility.Collapsed;
         }
         else
         {
             CoverImage.Source = null;
+            _shownCoverUri = null;
             CoverImage.Visibility = Visibility.Collapsed;
             TileLabelText.Visibility = Visibility.Visible;
         }

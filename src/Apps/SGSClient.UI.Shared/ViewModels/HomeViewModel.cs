@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -16,7 +17,7 @@ namespace SGSClient.UI.ViewModels;
 
 public partial class HomeViewModel : ObservableObject
 {
-    private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
+    private static readonly CultureInfo Polish = Loc.Culture;
 
     private readonly ISgsApiService? _api;
     private readonly IServiceScopeFactory? _scopes;
@@ -59,7 +60,7 @@ public partial class HomeViewModel : ObservableObject
     private int _slideIndex;
 
     [ObservableProperty]
-    public partial string Greeting { get; set; } = "Dzień dobry";
+    public partial string Greeting { get; set; } = Loc.T("Dzień dobry");
 
     [ObservableProperty]
     public partial string DateText { get; set; } = string.Empty;
@@ -199,25 +200,25 @@ public partial class HomeViewModel : ObservableObject
                         if (cached.SavedAtUtc is not null)
                         {
                             games = cached.Games;
-                            StatusText = $"Offline — cache katalogu z {cached.SavedAtUtc:g}";
+                            StatusText = Loc.F("Offline — zapisany katalog z {0:g}", cached.SavedAtUtc);
                         }
                         else
                         {
                             HasError = true;
-                            StatusText = $"Nie udało się pobrać katalogu: {ex.Message}";
+                            StatusText = Loc.F("Nie udało się pobrać katalogu: {0}", ex.Message);
                         }
                     }
                     else
                     {
                         HasError = true;
-                        StatusText = $"Nie udało się pobrać katalogu: {ex.Message}";
+                        StatusText = Loc.F("Nie udało się pobrać katalogu: {0}", ex.Message);
                     }
                 }
             }
             else
             {
                 HasError = true;
-                StatusText = "Brak klienta API. Sprawdź Api:BaseUrl w appsettings.";
+                StatusText = Loc.T("Brak połączenia ze sklepem. Sprawdź adres serwera w konfiguracji.");
             }
 
             var library = await LoadLibraryAsync();
@@ -243,8 +244,8 @@ public partial class HomeViewModel : ObservableObject
 
         var hello = now.Hour switch
         {
-            >= 5 and < 18 => "Dzień dobry",
-            _ => "Dobry wieczór"
+            >= 5 and < 18 => Loc.T("Dzień dobry"),
+            _ => Loc.T("Dobry wieczór")
         };
 
         var name = _auth?.IsLoggedIn == true && !string.IsNullOrWhiteSpace(_auth.CurrentUser?.DisplayName)
@@ -483,10 +484,10 @@ public sealed class HomeGameCard
             TileLabel = MakeTile(dto.Title, dto.Symbol),
             Blurb = Truncate(dto.Description, blurbLength),
             CoverImageUrl = ResolveCover(landscape ? dto.LandscapeUrl : dto.ThumbnailUrl, apiBaseUrl),
-            Caption = string.IsNullOrWhiteSpace(dto.GenreName) ? "Sklep" : dto.GenreName!,
+            Caption = string.IsNullOrWhiteSpace(dto.GenreName) ? Loc.T("Sklep") : dto.GenreName!,
             ShowFeaturedBadge = dto.FeaturedP,
             ReleaseLine = ReleaseLineFor(dto.ReleaseStatus),
-            BadgeText = string.IsNullOrWhiteSpace(dto.GenreName) ? "Wyróżnione" : dto.GenreName!,
+            BadgeText = string.IsNullOrWhiteSpace(dto.GenreName) ? Loc.T("Wyróżnione") : dto.GenreName!,
             ShotCount = shots.Count,
             Shot1 = shots.ElementAtOrDefault(0),
             Shot2 = shots.ElementAtOrDefault(1),
@@ -497,10 +498,10 @@ public sealed class HomeGameCard
 
     private static string ReleaseLineFor(GameReleaseStatus status) => status switch
     {
-        GameReleaseStatus.EarlyAccess => "Wczesny dostęp już dostępny",
-        GameReleaseStatus.Announced => "Zapowiedź",
-        GameReleaseStatus.Demo => "Demo już dostępne",
-        _ => "Już dostępna"
+        GameReleaseStatus.EarlyAccess => Loc.T("Wczesny dostęp już dostępny"),
+        GameReleaseStatus.Announced => Loc.T("Zapowiedź"),
+        GameReleaseStatus.Demo => Loc.T("Demo już dostępne"),
+        _ => Loc.T("Już dostępna")
     };
 
     public static HomeGameCard FromLibrary(GameLibraryItem item, string apiBaseUrl) => new()
@@ -522,7 +523,7 @@ public sealed class HomeGameCard
     {
         if (string.IsNullOrWhiteSpace(text))
         {
-            return "Zobacz w sklepie";
+            return Loc.T("Zobacz w sklepie");
         }
 
         var value = text.Trim();
@@ -554,16 +555,16 @@ public sealed class HomeGameCard
     {
         if (utc is null)
         {
-            return "W bibliotece";
+            return Loc.T("W bibliotece");
         }
 
         var days = (DateTime.Now.Date - utc.Value.LocalDateTime.Date).TotalDays;
         return days switch
         {
-            < 1 => "Dzisiaj",
-            < 2 => "Wczoraj",
+            < 1 => Loc.T("Dzisiaj"),
+            < 2 => Loc.T("Wczoraj"),
             < 7 => $"{(int)days} dni temu",
-            _ => utc.Value.LocalDateTime.ToString("d", CultureInfo.GetCultureInfo("pl-PL"))
+            _ => utc.Value.LocalDateTime.ToString("d", Loc.Culture)
         };
     }
 }

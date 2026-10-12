@@ -1,3 +1,4 @@
+using SGSClient.Core.Localization;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SGSClient.Core.DTOs;
@@ -28,9 +29,9 @@ public partial class AdminGameItem : GameStoreEditItem
     [ObservableProperty] public partial string PositionLabel { get; set; } = string.Empty;
 
     public bool HasDlcs => Dlcs.Count > 0;
-    public string StateLabel => DraftP ? "Szkic" : "Opublikowana";
+    public string StateLabel => DraftP ? Loc.T("Szkic") : Loc.T("Opublikowana");
     public string OwnerText => string.IsNullOrWhiteSpace(OwnerDisplayName)
-        ? (string.IsNullOrWhiteSpace(OwnerEmail) ? $"#{OwnerUserId}" : OwnerEmail!)
+        ? (string.IsNullOrWhiteSpace(OwnerEmail) ? Loc.T("Brak danych właściciela") : OwnerEmail!)
         : OwnerDisplayName!;
     public string MetaText => $"{Symbol} · {KindLabel} · {StateLabel}";
 
