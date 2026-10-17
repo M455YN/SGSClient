@@ -13,13 +13,11 @@ public sealed partial class CreativeArtViewModel : CreativeSectionViewModel
     private static readonly string AllCategories = Loc.T("Wszystkie");
 
     public CreativeArtViewModel(ISgsApiService? api, string apiBaseUrl)
-        : base(api, apiBaseUrl)
+        : base(api, apiBaseUrl, "art")
     {
-        Items.CollectionChanged += (_, _) => RebuildCategories();
-        Comments = new CreativeCommentsViewModel(api, "art", apiBaseUrl);
     }
 
-    public CreativeCommentsViewModel Comments { get; }
+    protected override void OnLoaded() => RebuildCategories();
 
     protected override async Task<IEnumerable<CreativeItem>> FetchAsync(CreativeQuery query) =>
         (await Api!.GetArtworksAsync(query)).Select(x => CreativeItem.FromArtwork(x, ApiBaseUrl));

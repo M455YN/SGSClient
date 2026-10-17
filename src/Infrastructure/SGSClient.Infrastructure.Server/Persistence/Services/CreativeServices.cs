@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
@@ -236,20 +237,105 @@ internal static class CreativeSupport
     }
 }
 
-public sealed class EfArtworkService(SgsServerDbContext db, CreativeStorage storage) : IArtworkService
+/// <summary>List/get/delete/update shared by the file-based content kinds (art and music).</summary>
+public abstract class EfCreativeFileService<TEntity, TDto>(SgsServerDbContext db, CreativeStorage storage, string kind)
+    where TEntity : class, ICreativeEntity
 {
-    private const string Kind = "art";
+    protected SgsServerDbContext Db { get; } = db;
+    protected CreativeStorage Storage { get; } = storage;
+    protected string Kind { get; } = kind;
 
-    public async Task<IReadOnlyList<ArtworkDto>> ListAsync(CreativeQuery? query, CancellationToken cancellationToken = default) =>
-        await ToDtosAsync(await CreativeSupport.FilterAsync(db, db.Artworks.AsNoTracking(), query, cancellationToken), cancellationToken);
+    protected abstract DbSet<TEntity> Set { get; }
 
-    public async Task<IReadOnlyList<ArtworkDto>> ListMineAsync(int userId, CancellationToken cancellationToken = default) =>
+    protected abstract Task<IReadOnlyList<TDto>> ToDtosAsync(IQueryable<TEntity> query, CancellationToken cancellationToken);
+
+    public async Task<IReadOnlyList<TDto>> ListAsync(CreativeQuery? query, CancellationToken cancellationToken = default) =>
+        await ToDtosAsync(await CreativeSupport.FilterAsync(Db, Set.AsNoTracking(), query, cancellationToken), cancellationToken);
+
+    public async Task<IReadOnlyList<TDto>> ListMineAsync(int userId, CancellationToken cancellationToken = default) =>
         await ToDtosAsync(
-            await CreativeSupport.FilterAsync(db, db.Artworks.AsNoTracking().Where(x => x.UserId == userId), null, cancellationToken),
+            await CreativeSupport.FilterAsync(Db, Set.AsNoTracking().Where(x => x.UserId == userId), null, cancellationToken),
             cancellationToken);
 
-    public async Task<ArtworkDto?> GetAsync(int id, CancellationToken cancellationToken = default) =>
-        (await ToDtosAsync(db.Artworks.AsNoTracking().Where(x => x.Id == id), cancellationToken)).FirstOrDefault();
+    public async Task<TDto?> GetAsync(int id, CancellationToken cancellationToken = default) =>
+        (await ToDtosAsync(Set.AsNoTracking().Where(x => x.Id == id), cancellationToken)).FirstOrDefault();
+
+    public async Task<IReadOnlyList<TDto>> ListAllAsync(CancellationToken cancellationToken = default) =>
+        await ToDtosAsync(Set.AsNoTracking().OrderByDescending(x => x.CreatedAtUtc).ThenByDescending(x => x.Id), cancellationToken);
+
+    public async Task<CreativeDeleteResult> DeleteAsync(int id, int userId, bool isAdmin, CancellationToken cancellationToken = default)
+    {
+        var entity = await FindAsync(id, cancellationToken);
+        if (entity is null)
+        {
+            return CreativeDeleteResult.NotFound;
+        }
+
+        if (entity.UserId != userId && !isAdmin)
+        {
+            return CreativeDeleteResult.Forbidden;
+        }
+
+        Set.Remove(entity);
+        await CreativeSupport.RemoveCommentsAsync(Db, Kind, id, cancellationToken);
+        await Db.SaveChangesAsync(cancellationToken);
+        Storage.DeleteAll(Kind, id);
+        return CreativeDeleteResult.Deleted;
+    }
+
+    public async Task<TDto?> UpdateAsync(
+        int id, int userId, bool isAdmin, UpdateCreativeRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var entity = await FindAsync(id, cancellationToken);
+        if (entity is null)
+        {
+            return default;
+        }
+
+        CreativeSupport.CheckOwner(entity.UserId, userId, isAdmin);
+        entity.Title = CreativeSupport.Title(request.Title);
+        entity.Description = CreativeSupport.Description(request.Description);
+        entity.TagsCsv = CreativeSupport.Tags(request.Tags);
+        await Db.SaveChangesAsync(cancellationToken);
+        return await GetAsync(id, cancellationToken);
+    }
+
+    protected Task<TEntity?> FindAsync(int id, CancellationToken cancellationToken) =>
+        Set.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    /// <summary>Saves the row, then its files; removes both again when storing a file fails.</summary>
+    protected async Task AddWithFilesAsync(
+        TEntity entity, IEnumerable<(string StoredName, Stream Content)> files, CancellationToken cancellationToken)
+    {
+        Set.Add(entity);
+        await Db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            foreach (var (storedName, content) in files)
+            {
+                await Storage.SaveAsync(Kind, entity.Id, storedName, content, cancellationToken);
+            }
+        }
+        catch
+        {
+            Set.Remove(entity);
+            await Db.SaveChangesAsync(CancellationToken.None);
+            Storage.DeleteAll(Kind, entity.Id);
+            throw;
+        }
+    }
+
+    protected async Task<string?> PathAsync(int id, Expression<Func<TEntity, string?>> storedName, CancellationToken cancellationToken)
+    {
+        var name = await Set.AsNoTracking().Where(x => x.Id == id).Select(storedName).FirstOrDefaultAsync(cancellationToken);
+        return Storage.PathFor(Kind, id, name);
+    }
+}
+
+public sealed class EfArtworkService(SgsServerDbContext db, CreativeStorage storage)
+    : EfCreativeFileService<ArtworkEntity, ArtworkDto>(db, storage, "art"), IArtworkService
+{
+    protected override DbSet<ArtworkEntity> Set => Db.Artworks;
 
     public async Task<ArtworkDto> CreateAsync(
         int userId, string title, string? description, IReadOnlyList<string> tags,
@@ -267,73 +353,17 @@ public sealed class EfArtworkService(SgsServerDbContext db, CreativeStorage stor
             SizeBytes = sizeBytes,
             CreatedAtUtc = DateTimeOffset.UtcNow
         };
-        db.Artworks.Add(entity);
-        await db.SaveChangesAsync(cancellationToken);
-        try
-        {
-            await storage.SaveAsync(Kind, entity.Id, entity.StoredFileName, file, cancellationToken);
-        }
-        catch
-        {
-            db.Artworks.Remove(entity);
-            await db.SaveChangesAsync(CancellationToken.None);
-            storage.DeleteAll(Kind, entity.Id);
-            throw;
-        }
-
+        await AddWithFilesAsync(entity, [(entity.StoredFileName, file)], cancellationToken);
         return (await GetAsync(entity.Id, cancellationToken))!;
     }
 
-    public async Task<CreativeDeleteResult> DeleteAsync(int id, int userId, bool isAdmin, CancellationToken cancellationToken = default)
-    {
-        var entity = await db.Artworks.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (entity is null)
-        {
-            return CreativeDeleteResult.NotFound;
-        }
+    public Task<string?> GetFilePathAsync(int id, CancellationToken cancellationToken = default) =>
+        PathAsync(id, x => x.StoredFileName, cancellationToken);
 
-        if (entity.UserId != userId && !isAdmin)
-        {
-            return CreativeDeleteResult.Forbidden;
-        }
-
-        db.Artworks.Remove(entity);
-        await CreativeSupport.RemoveCommentsAsync(db, Kind, id, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
-        storage.DeleteAll(Kind, id);
-        return CreativeDeleteResult.Deleted;
-    }
-
-    public async Task<IReadOnlyList<ArtworkDto>> ListAllAsync(CancellationToken cancellationToken = default) =>
-        await ToDtosAsync(db.Artworks.AsNoTracking().OrderByDescending(x => x.CreatedAtUtc).ThenByDescending(x => x.Id), cancellationToken);
-
-    public async Task<ArtworkDto?> UpdateAsync(
-        int id, int userId, bool isAdmin, UpdateCreativeRequestDto request, CancellationToken cancellationToken = default)
-    {
-        var entity = await db.Artworks.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (entity is null)
-        {
-            return null;
-        }
-
-        CreativeSupport.CheckOwner(entity.UserId, userId, isAdmin);
-        entity.Title = CreativeSupport.Title(request.Title);
-        entity.Description = CreativeSupport.Description(request.Description);
-        entity.TagsCsv = CreativeSupport.Tags(request.Tags);
-        await db.SaveChangesAsync(cancellationToken);
-        return await GetAsync(id, cancellationToken);
-    }
-
-    public async Task<string?> GetFilePathAsync(int id, CancellationToken cancellationToken = default)
-    {
-        var name = await db.Artworks.AsNoTracking().Where(x => x.Id == id).Select(x => x.StoredFileName).FirstOrDefaultAsync(cancellationToken);
-        return storage.PathFor(Kind, id, name);
-    }
-
-    private async Task<IReadOnlyList<ArtworkDto>> ToDtosAsync(IQueryable<ArtworkEntity> query, CancellationToken cancellationToken)
+    protected override async Task<IReadOnlyList<ArtworkDto>> ToDtosAsync(IQueryable<ArtworkEntity> query, CancellationToken cancellationToken)
     {
         var rows = await query.ToListAsync(cancellationToken);
-        var authors = await CreativeSupport.AuthorsAsync(db, rows.Select(r => r.UserId), cancellationToken);
+        var authors = await CreativeSupport.AuthorsAsync(Db, rows.Select(r => r.UserId), cancellationToken);
         return rows.Select(r => new ArtworkDto
         {
             Id = r.Id,
@@ -350,20 +380,10 @@ public sealed class EfArtworkService(SgsServerDbContext db, CreativeStorage stor
     }
 }
 
-public sealed class EfMusicService(SgsServerDbContext db, CreativeStorage storage) : IMusicService
+public sealed class EfMusicService(SgsServerDbContext db, CreativeStorage storage)
+    : EfCreativeFileService<TrackEntity, TrackDto>(db, storage, "music"), IMusicService
 {
-    private const string Kind = "music";
-
-    public async Task<IReadOnlyList<TrackDto>> ListAsync(CreativeQuery? query, CancellationToken cancellationToken = default) =>
-        await ToDtosAsync(await CreativeSupport.FilterAsync(db, db.Tracks.AsNoTracking(), query, cancellationToken), cancellationToken);
-
-    public async Task<IReadOnlyList<TrackDto>> ListMineAsync(int userId, CancellationToken cancellationToken = default) =>
-        await ToDtosAsync(
-            await CreativeSupport.FilterAsync(db, db.Tracks.AsNoTracking().Where(x => x.UserId == userId), null, cancellationToken),
-            cancellationToken);
-
-    public async Task<TrackDto?> GetAsync(int id, CancellationToken cancellationToken = default) =>
-        (await ToDtosAsync(db.Tracks.AsNoTracking().Where(x => x.Id == id), cancellationToken)).FirstOrDefault();
+    protected override DbSet<TrackEntity> Set => Db.Tracks;
 
     public async Task<TrackDto> CreateAsync(
         int userId, string title, string? description, IReadOnlyList<string> tags,
@@ -386,71 +406,20 @@ public sealed class EfMusicService(SgsServerDbContext db, CreativeStorage storag
             SizeBytes = sizeBytes,
             CreatedAtUtc = DateTimeOffset.UtcNow
         };
-        db.Tracks.Add(entity);
-        await db.SaveChangesAsync(cancellationToken);
-        try
+        var files = new List<(string, Stream)> { (entity.StoredFileName, file) };
+        if (cover is not null && entity.CoverFileName is not null)
         {
-            await storage.SaveAsync(Kind, entity.Id, entity.StoredFileName, file, cancellationToken);
-            if (cover is not null && entity.CoverFileName is not null)
-            {
-                await storage.SaveAsync(Kind, entity.Id, entity.CoverFileName, cover, cancellationToken);
-            }
-        }
-        catch
-        {
-            db.Tracks.Remove(entity);
-            await db.SaveChangesAsync(CancellationToken.None);
-            storage.DeleteAll(Kind, entity.Id);
-            throw;
+            files.Add((entity.CoverFileName, cover));
         }
 
+        await AddWithFilesAsync(entity, files, cancellationToken);
         return (await GetAsync(entity.Id, cancellationToken))!;
-    }
-
-    public async Task<CreativeDeleteResult> DeleteAsync(int id, int userId, bool isAdmin, CancellationToken cancellationToken = default)
-    {
-        var entity = await db.Tracks.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (entity is null)
-        {
-            return CreativeDeleteResult.NotFound;
-        }
-
-        if (entity.UserId != userId && !isAdmin)
-        {
-            return CreativeDeleteResult.Forbidden;
-        }
-
-        db.Tracks.Remove(entity);
-        await CreativeSupport.RemoveCommentsAsync(db, Kind, id, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
-        storage.DeleteAll(Kind, id);
-        return CreativeDeleteResult.Deleted;
-    }
-
-    public async Task<IReadOnlyList<TrackDto>> ListAllAsync(CancellationToken cancellationToken = default) =>
-        await ToDtosAsync(db.Tracks.AsNoTracking().OrderByDescending(x => x.CreatedAtUtc).ThenByDescending(x => x.Id), cancellationToken);
-
-    public async Task<TrackDto?> UpdateAsync(
-        int id, int userId, bool isAdmin, UpdateCreativeRequestDto request, CancellationToken cancellationToken = default)
-    {
-        var entity = await db.Tracks.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
-        if (entity is null)
-        {
-            return null;
-        }
-
-        CreativeSupport.CheckOwner(entity.UserId, userId, isAdmin);
-        entity.Title = CreativeSupport.Title(request.Title);
-        entity.Description = CreativeSupport.Description(request.Description);
-        entity.TagsCsv = CreativeSupport.Tags(request.Tags);
-        await db.SaveChangesAsync(cancellationToken);
-        return await GetAsync(id, cancellationToken);
     }
 
     public async Task<TrackDto?> SetCoverAsync(
         int id, int userId, bool isAdmin, Stream cover, string coverFileName, long coverSizeBytes, CancellationToken cancellationToken = default)
     {
-        var entity = await db.Tracks.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var entity = await FindAsync(id, cancellationToken);
         if (entity is null)
         {
             return null;
@@ -460,28 +429,22 @@ public sealed class EfMusicService(SgsServerDbContext db, CreativeStorage storag
         var ext = CreativeSupport.CheckFile(coverFileName, coverSizeBytes, CreativeRules.CoverExtensions, CreativeRules.MaxCoverBytes, "Okładka");
         var old = entity.CoverFileName;
         entity.CoverFileName = CreativeStorage.NewStoredName(ext);
-        await storage.SaveAsync(Kind, id, entity.CoverFileName, cover, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
-        storage.Delete(Kind, id, old);
+        await Storage.SaveAsync(Kind, id, entity.CoverFileName, cover, cancellationToken);
+        await Db.SaveChangesAsync(cancellationToken);
+        Storage.Delete(Kind, id, old);
         return await GetAsync(id, cancellationToken);
     }
 
-    public async Task<string?> GetFilePathAsync(int id, CancellationToken cancellationToken = default)
-    {
-        var name = await db.Tracks.AsNoTracking().Where(x => x.Id == id).Select(x => x.StoredFileName).FirstOrDefaultAsync(cancellationToken);
-        return storage.PathFor(Kind, id, name);
-    }
+    public Task<string?> GetFilePathAsync(int id, CancellationToken cancellationToken = default) =>
+        PathAsync(id, x => x.StoredFileName, cancellationToken);
 
-    public async Task<string?> GetCoverPathAsync(int id, CancellationToken cancellationToken = default)
-    {
-        var name = await db.Tracks.AsNoTracking().Where(x => x.Id == id).Select(x => x.CoverFileName).FirstOrDefaultAsync(cancellationToken);
-        return storage.PathFor(Kind, id, name);
-    }
+    public Task<string?> GetCoverPathAsync(int id, CancellationToken cancellationToken = default) =>
+        PathAsync(id, x => x.CoverFileName, cancellationToken);
 
-    private async Task<IReadOnlyList<TrackDto>> ToDtosAsync(IQueryable<TrackEntity> query, CancellationToken cancellationToken)
+    protected override async Task<IReadOnlyList<TrackDto>> ToDtosAsync(IQueryable<TrackEntity> query, CancellationToken cancellationToken)
     {
         var rows = await query.ToListAsync(cancellationToken);
-        var authors = await CreativeSupport.AuthorsAsync(db, rows.Select(r => r.UserId), cancellationToken);
+        var authors = await CreativeSupport.AuthorsAsync(Db, rows.Select(r => r.UserId), cancellationToken);
         return rows.Select(r => new TrackDto
         {
             Id = r.Id,

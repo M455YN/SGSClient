@@ -65,7 +65,6 @@ public partial class PublishViewModel : ObservableObject
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
     [ObservableProperty] public partial string SelectedFolder { get; set; } = string.Empty;
     [ObservableProperty] public partial bool HasManifestForm { get; set; }
-    [ObservableProperty] public partial bool IsDlc { get; set; }
     [ObservableProperty] public partial string ParentSymbol { get; set; } = string.Empty;
     [ObservableProperty] public partial string GameTitle { get; set; } = string.Empty;
     [ObservableProperty] public partial string GameSymbol { get; set; } = string.Empty;
@@ -91,26 +90,18 @@ public partial class PublishViewModel : ObservableObject
     [ObservableProperty] public partial bool ShowProgress { get; set; }
     [ObservableProperty] public partial string AuthHint { get; set; } = string.Empty;
 
-    /// <summary>Manifest kind: game, dlc, app, book, music or art. <see cref="IsDlc"/> mirrors kind == "dlc".</summary>
+    /// <summary>Manifest kind: game, dlc or app.</summary>
     [ObservableProperty] public partial string Kind { get; set; } = "game";
 
+    public bool IsDlc => Kind == "dlc";
     public bool ShowParentField => IsDlc;
 
     partial void OnKindChanged(string value)
     {
-        IsDlc = value == "dlc";
-        OnPropertyChanged(nameof(Title));
-    }
-
-    partial void OnIsDlcChanged(bool value)
-    {
-        if (value != (Kind == "dlc"))
-        {
-            Kind = value ? "dlc" : "game";
-        }
-
+        OnPropertyChanged(nameof(IsDlc));
         OnPropertyChanged(nameof(ShowParentField));
-        if (value)
+        OnPropertyChanged(nameof(Title));
+        if (IsDlc)
         {
             _ = LoadParentOptionsAsync();
         }
@@ -175,16 +166,7 @@ public partial class PublishViewModel : ObservableObject
 
     public void RefreshAuthHint()
     {
-        if (_auth?.IsAvailable != true)
-        {
-            AuthHint = Loc.T("Logowanie jest wyłączone — publikacja nastąpi bez konta.");
-        }
-        else
-        {
-            AuthHint = _auth.IsLoggedIn
-                ? $"Zalogowano jako {_auth.CurrentUser?.DisplayName ?? "gracz"}."
-                : Loc.T("Zaloguj się w Profilu przed publikacją.");
-        }
+        AuthHint = AuthHints.For(_auth);
 
         _ = LoadParentOptionsAsync();
     }

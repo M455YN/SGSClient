@@ -33,26 +33,17 @@ public sealed class CreativeWorkRow
     public string MetaText => ShowAuthor && Author.Length > 0 ? $"{Author} · {DateText}" : DateText;
     public string DateText => CreatedAtUtc == default ? string.Empty : CreatedAtUtc.LocalDateTime.ToString("d");
 
-    private static string? Abs(string apiBaseUrl, string? relative) =>
-        string.IsNullOrWhiteSpace(relative) ? null : $"{apiBaseUrl.TrimEnd('/')}/{relative.TrimStart('/')}";
-
-    public static CreativeWorkRow From(ArtworkDto a, string baseUrl) => new()
+    private static CreativeWorkRow From(CreativeItem i) => new()
     {
-        Id = a.Id, Title = a.Title, Author = a.AuthorDisplayName ?? string.Empty, Description = a.Description ?? string.Empty,
-        Tags = a.Tags, ThumbUrl = Abs(baseUrl, a.FileUrl), CreatedAtUtc = a.CreatedAtUtc
+        Id = i.Id, Title = i.Title, Author = i.Author, Description = i.Description,
+        Tags = i.Tags, ThumbUrl = i.CoverUrl, CreatedAtUtc = i.CreatedAtUtc
     };
 
-    public static CreativeWorkRow From(TrackDto t, string baseUrl) => new()
-    {
-        Id = t.Id, Title = t.Title, Author = t.AuthorDisplayName ?? string.Empty, Description = t.Description ?? string.Empty,
-        Tags = t.Tags, ThumbUrl = Abs(baseUrl, t.CoverUrl), CreatedAtUtc = t.CreatedAtUtc
-    };
+    public static CreativeWorkRow From(ArtworkDto a, string baseUrl) => From(CreativeItem.FromArtwork(a, baseUrl));
 
-    public static CreativeWorkRow From(StoryDto s, string baseUrl) => new()
-    {
-        Id = s.Id, Title = s.Title, Author = s.AuthorDisplayName ?? string.Empty, Description = s.Description ?? string.Empty,
-        Tags = s.Tags, ThumbUrl = Abs(baseUrl, s.CoverUrl), CreatedAtUtc = s.CreatedAtUtc
-    };
+    public static CreativeWorkRow From(TrackDto t, string baseUrl) => From(CreativeItem.FromTrack(t, baseUrl));
+
+    public static CreativeWorkRow From(StoryDto s, string baseUrl) => From(CreativeItem.FromStory(s, baseUrl));
 }
 
 /// <summary>List + editor for the works of one section ("art" | "music" | "stories"), own (Studio) or all (Admin).</summary>
