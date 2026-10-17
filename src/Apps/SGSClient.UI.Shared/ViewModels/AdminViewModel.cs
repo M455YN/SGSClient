@@ -16,6 +16,7 @@ public partial class AdminViewModel : ObservableObject
     private readonly ISgsApiService? _api;
     private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
+    private readonly Dictionary<string, CreativeWorksViewModel> _works = [];
     private Action? _addVersion;
     private Action<string>? _addDlc;
     private Func<AdminGameItem, Task<bool>>? _confirmDelete;
@@ -34,6 +35,10 @@ public partial class AdminViewModel : ObservableObject
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = Loc.T("Ładowanie panelu admina…");
+        foreach (var section in new[] { "art", "music", "stories" })
+        {
+            _works[section] = new CreativeWorksViewModel(api, _apiBaseUrl, section, CreativeWorksMode.Admin);
+        }
         AchievementsEditor = new AchievementsEditorViewModel(api, _apiBaseUrl, text => StatusText = text, busy => IsBusy = busy);
         AchievementsEditor.Saved += hasAny =>
         {
@@ -94,6 +99,10 @@ public partial class AdminViewModel : ObservableObject
     public bool IsBuildsTab => EditorTab == "builds";
     public bool IsDlcTab => EditorTab == "dlc";
     public bool IsAchievementsTab => EditorTab == "achievements";
+    /// <summary>Tabs art | music | stories show the shared works editor in admin mode.</summary>
+    public bool IsWorksTab => _works.ContainsKey(SelectedTab);
+    public CreativeWorksViewModel? CurrentWorks => _works.GetValueOrDefault(SelectedTab);
+    public IEnumerable<CreativeWorksViewModel> AllWorks => _works.Values;
     public bool ShowGames => IsGamesTab && !ShowEmpty;
     public bool ShowFeatured => IsFeaturedTab && !ShowEmpty;
     public bool ShowUsers => IsUsersTab && !ShowEmpty;
@@ -126,12 +135,19 @@ public partial class AdminViewModel : ObservableObject
         OnPropertyChanged(nameof(IsGamesTab));
         OnPropertyChanged(nameof(IsFeaturedTab));
         OnPropertyChanged(nameof(IsUsersTab));
+        OnPropertyChanged(nameof(IsWorksTab));
+        OnPropertyChanged(nameof(CurrentWorks));
         ShowEmpty = value switch
         {
             "games" => FilteredGames.Count == 0,
             "featured" => FeaturedGames.Count == 0,
-            _ => Users.Count == 0
+            "users" => Users.Count == 0,
+            _ => false
         };
+        if (CurrentWorks is { IsLoaded: false } works)
+        {
+            _ = works.LoadAsync();
+        }
         NotifyPanels();
     }
 
@@ -336,9 +352,9 @@ public partial class AdminViewModel : ObservableObject
         }
 
         ListSummary = $"{FilteredGames.Count} z {Games.Count}";
-        ShowEmpty = IsGamesTab
+        ShowEmpty = !IsWorksTab && (IsGamesTab
             ? FilteredGames.Count == 0
-            : IsFeaturedTab ? FeaturedGames.Count == 0 : Users.Count == 0;
+            : IsFeaturedTab ? FeaturedGames.Count == 0 : Users.Count == 0);
         NotifyPanels();
     }
 

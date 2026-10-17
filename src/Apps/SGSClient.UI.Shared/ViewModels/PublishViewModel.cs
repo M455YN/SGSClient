@@ -51,9 +51,6 @@ public partial class PublishViewModel : ObservableObject
     {
         "dlc" => "Publikuj DLC",
         "app" => "Publikuj program",
-        "book" => "Publikuj książkę",
-        "music" => "Publikuj muzykę",
-        "art" => "Publikuj grafikę",
         _ => "Publikuj grę"
     });
     public ObservableCollection<string> Issues { get; } = [];

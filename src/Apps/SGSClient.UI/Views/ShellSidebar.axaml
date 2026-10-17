@@ -173,7 +173,7 @@
                   </StackPanel>
                   <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
                               VerticalAlignment="Center">
-                    <Button Padding="8" ToolTip.Tip="{Binding LaunchLabel}"
+                    <Button Padding="8" ToolTip.Tip="Uruchom"
                             Tag="{Binding}" Click="Play_OnClick"
                             IsEnabled="{Binding CanLaunch}">
                       <ui:FASymbolIcon Symbol="Play" FontSize="14" />

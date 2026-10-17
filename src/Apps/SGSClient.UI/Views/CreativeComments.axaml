@@ -1,0 +1,51 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.CreativeComments"
+             x:DataType="vm:CreativeCommentsViewModel">
+  <StackPanel Spacing="12">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <TextBlock Text="{Binding CommentCount}" FontSize="18" FontWeight="SemiBold"/>
+      <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Width="48" VerticalAlignment="Center"/>
+    </StackPanel>
+
+    <TextBlock Text="{Binding StatusText}" IsVisible="{Binding HasStatus}" TextWrapping="Wrap"
+               Foreground="{DynamicResource SystemFillColorCriticalBrush}"/>
+
+    <TextBlock Text="{loc:Tr Key='Brak komentarzy. Bądź pierwszy!'}" IsVisible="{Binding HasNoComments}"
+               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+
+    <ItemsControl ItemsSource="{Binding Comments}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:CreativeCommentItem">
+          <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,8">
+            <Border Width="32" Height="32" CornerRadius="16" VerticalAlignment="Top" ClipToBounds="True"
+                    Background="{DynamicResource AccentFillColorDefaultBrush}">
+              <Panel>
+                <TextBlock Text="{Binding AuthorInitial}" FontWeight="SemiBold" HorizontalAlignment="Center"
+                           VerticalAlignment="Center" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                           IsVisible="{Binding HasNoAvatar}"/>
+                <Image Source="{Binding AvatarUrl}" Stretch="UniformToFill" IsVisible="{Binding HasAvatar}"/>
+              </Panel>
+            </Border>
+            <StackPanel Grid.Column="1" Margin="12,0" Spacing="2">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding Author}" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding DateText}" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"/>
+              </StackPanel>
+              <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
+            </StackPanel>
+            <Button Grid.Column="2" VerticalAlignment="Top" Content="{loc:Tr Key='Usuń'}"
+                    IsVisible="{Binding CanDelete}" Click="Delete_OnClick"/>
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <TextBox MaxLength="2000" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"
+             Watermark="{loc:Tr Key='Napisz komentarz…'}" Text="{Binding NewCommentText, Mode=TwoWay}"
+             KeyDown="Input_OnKeyDown"/>
+    <Button Classes="accent" Content="{loc:Tr Key='Dodaj komentarz'}" Command="{Binding PostCommand}"/>
+  </StackPanel>
+</UserControl>

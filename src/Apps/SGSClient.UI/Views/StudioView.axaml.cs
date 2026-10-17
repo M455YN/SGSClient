@@ -75,6 +75,10 @@ public partial class StudioView : UserControl
         if (DataContext is StudioViewModel vm)
         {
             await vm.LoadCommand.ExecuteAsync(null);
+            if (vm.CurrentWorks is { } works)
+            {
+                await works.LoadAsync();
+            }
         }
     }
 
@@ -87,8 +91,14 @@ public partial class StudioView : UserControl
     private void AddApp_OnClick(object? sender, RoutedEventArgs e) =>
         GetMain()?.NavigateToPublish(kind: "app");
 
-    private void AddOther_OnClick(object? sender, RoutedEventArgs e) =>
-        GetMain()?.NavigateToContentPublish();
+    private void AddArt_OnClick(object? sender, RoutedEventArgs e) =>
+        GetMain()?.NavigateToAddMedia("art");
+
+    private void AddMusic_OnClick(object? sender, RoutedEventArgs e) =>
+        GetMain()?.NavigateToAddMedia("music");
+
+    private void AddStory_OnClick(object? sender, RoutedEventArgs e) =>
+        GetMain()?.NavigateToAddStory();
 
     private void AddVersion_OnClick(object? sender, RoutedEventArgs e) =>
         (DataContext as StudioViewModel)?.AddVersionCommand.Execute(null);

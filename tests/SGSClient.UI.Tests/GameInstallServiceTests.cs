@@ -432,5 +432,45 @@ public class GameInstallServiceTests
             int gameId,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(false);
+
+        public Task<IReadOnlyList<ArtworkDto>> GetArtworksAsync(CreativeQuery? query = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ArtworkDto>>([]);
+
+        public Task<(ArtworkDto? Item, IReadOnlyList<string> Errors)> UploadArtworkAsync(
+            string title, string? description, IReadOnlyList<string> tags, string localFilePath,
+            IProgress<double>? progress = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult<(ArtworkDto?, IReadOnlyList<string>)>((null, ["not supported"]));
+
+        public Task<IReadOnlyList<TrackDto>> GetTracksAsync(CreativeQuery? query = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<TrackDto>>([]);
+
+        public Task<(TrackDto? Item, IReadOnlyList<string> Errors)> UploadTrackAsync(
+            string title, string? description, IReadOnlyList<string> tags, string localFilePath, string? coverFilePath,
+            IProgress<double>? progress = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult<(TrackDto?, IReadOnlyList<string>)>((null, ["not supported"]));
+
+        public Task<IReadOnlyList<StoryDto>> GetStoriesAsync(CreativeQuery? query = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<StoryDto>>([]);
+
+        public Task<StoryDto?> GetStoryAsync(int id, CancellationToken cancellationToken = default) =>
+            Task.FromResult<StoryDto?>(null);
+
+        public Task<(StoryDto? Item, IReadOnlyList<string> Errors)> CreateStoryAsync(
+            CreateStoryRequestDto request, string? coverFilePath, CancellationToken cancellationToken = default) =>
+            Task.FromResult<(StoryDto?, IReadOnlyList<string>)>((null, ["not supported"]));
+
+        public Task<IReadOnlyList<ArtworkDto>> GetMyArtworksAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ArtworkDto>>([]);
+        public Task<IReadOnlyList<TrackDto>> GetMyTracksAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<TrackDto>>([]);
+        public Task<IReadOnlyList<StoryDto>> GetMyStoriesAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<StoryDto>>([]);
+        public Task<IReadOnlyList<ArtworkDto>> GetAdminArtworksAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ArtworkDto>>([]);
+        public Task<IReadOnlyList<TrackDto>> GetAdminTracksAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<TrackDto>>([]);
+        public Task<IReadOnlyList<StoryDto>> GetAdminStoriesAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<StoryDto>>([]);
+        public Task<(ArtworkDto? Item, IReadOnlyList<string> Errors)> UpdateArtworkAsync(int id, UpdateCreativeRequestDto request, CancellationToken cancellationToken = default) => Task.FromResult<(ArtworkDto?, IReadOnlyList<string>)>((null, ["not supported"]));
+        public Task<(TrackDto? Item, IReadOnlyList<string> Errors)> UpdateTrackAsync(int id, UpdateCreativeRequestDto request, string? newCoverFilePath, CancellationToken cancellationToken = default) => Task.FromResult<(TrackDto?, IReadOnlyList<string>)>((null, ["not supported"]));
+        public Task<(StoryDto? Item, IReadOnlyList<string> Errors)> UpdateStoryAsync(int id, UpdateStoryRequestDto request, string? newCoverFilePath, CancellationToken cancellationToken = default) => Task.FromResult<(StoryDto?, IReadOnlyList<string>)>((null, ["not supported"]));
+        public Task<bool> DeleteCreativeAsync(string section, int id, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task<IReadOnlyList<CreativeCommentDto>> GetCreativeCommentsAsync(string section, int itemId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<CreativeCommentDto>>([]);
+        public Task<(CreativeCommentDto? Item, IReadOnlyList<string> Errors)> AddCreativeCommentAsync(string section, int itemId, string text, CancellationToken cancellationToken = default) => Task.FromResult<(CreativeCommentDto?, IReadOnlyList<string>)>((null, ["not supported"]));
+        public Task<bool> DeleteCreativeCommentAsync(string section, int itemId, long commentId, CancellationToken cancellationToken = default) => Task.FromResult(false);
     }
 }

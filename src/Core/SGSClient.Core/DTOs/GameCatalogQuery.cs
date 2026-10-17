@@ -20,7 +20,7 @@ public sealed class GameCatalogQuery
     public GameFeatures? Features { get; init; }
     public string? Tag { get; init; }
 
-    /// <summary>Only this kind (game, app, book, music, art); null = everything except DLC.</summary>
+    /// <summary>Only this kind (game, app); null = everything except DLC.</summary>
     public GameContentKind? Kind { get; init; }
     public GameReleaseStatus? ReleaseStatus { get; init; }
     public bool? Featured { get; init; }

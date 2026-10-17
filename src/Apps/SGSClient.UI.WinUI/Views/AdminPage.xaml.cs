@@ -74,6 +74,11 @@ public sealed partial class AdminPage : Page
     private async void Refresh_Click(object sender, RoutedEventArgs e)
     {
         await ViewModel.LoadCommand.ExecuteAsync(null);
+        if (ViewModel.CurrentWorks is { } works)
+        {
+            await works.LoadAsync();
+        }
+
         SyncToggles();
         RefreshUi();
     }

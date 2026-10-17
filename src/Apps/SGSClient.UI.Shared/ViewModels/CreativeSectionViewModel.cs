@@ -2,8 +2,6 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SGSClient.Core.DTOs;
-using SGSClient.Core.Enums;
-using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Localization;
 
@@ -30,37 +28,74 @@ public sealed class CreativeItem
     public IReadOnlyList<string> Tags { get; init; } = [];
     public DateTimeOffset CreatedAtUtc { get; init; }
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverUrl);
+    public bool HasAuthor => !string.IsNullOrWhiteSpace(Author);
+    public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
+    public bool HasTags => Tags.Count > 0;
+    public string TagsText => string.Join(", ", Tags);
+    public string PublishedText => CreatedAtUtc == default ? string.Empty : CreatedAtUtc.LocalDateTime.ToString("d MMMM yyyy");
+    public string AuthorInitial => HasAuthor ? Author[..1].ToUpperInvariant() : "?";
 
     /// <summary>First letters of the title for tiles without a cover.</summary>
     public string TileLabel => Title.Length <= 2 ? Title.ToUpperInvariant() : Title[..2].ToUpperInvariant();
 
-    public static CreativeItem FromGame(GameDto game, string apiBaseUrl)
+    private static string Abs(string apiBaseUrl, string? relative) =>
+        string.IsNullOrWhiteSpace(relative) ? string.Empty : $"{apiBaseUrl.TrimEnd('/')}/{relative.TrimStart('/')}";
+
+    public static CreativeItem FromArtwork(ArtworkDto art, string apiBaseUrl)
     {
-        var build = game.Builds.FirstOrDefault(b => b.IsDefault) ?? game.Builds.FirstOrDefault();
+        var url = Abs(apiBaseUrl, art.FileUrl);
         return new CreativeItem
         {
-            Id = game.Id,
-            Title = game.Title,
-            Author = !string.IsNullOrWhiteSpace(game.StudioName) ? game.StudioName!
-                : game.OwnerDisplayName ?? string.Empty,
-            Description = game.Description ?? string.Empty,
-            CoverUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, game.ThumbnailUrl),
-            FileUrl = $"{apiBaseUrl.TrimEnd('/')}/api/Games/{game.Id}/file",
-            FileName = build?.ExeName ?? string.Empty,
-            Tags = game.Tags,
-            CreatedAtUtc = game.CreatedAtUtc
+            Id = art.Id,
+            Title = art.Title,
+            Author = art.AuthorDisplayName ?? string.Empty,
+            Description = art.Description ?? string.Empty,
+            CoverUrl = url,
+            FileUrl = url,
+            FileName = art.FileName,
+            Tags = art.Tags,
+            CreatedAtUtc = art.CreatedAtUtc
         };
     }
+
+    public static CreativeItem FromTrack(TrackDto track, string apiBaseUrl) => new()
+    {
+        Id = track.Id,
+        Title = track.Title,
+        Author = track.AuthorDisplayName ?? string.Empty,
+        Description = track.Description ?? string.Empty,
+        CoverUrl = string.IsNullOrWhiteSpace(track.CoverUrl) ? null : Abs(apiBaseUrl, track.CoverUrl),
+        FileUrl = Abs(apiBaseUrl, track.FileUrl),
+        FileName = track.FileName,
+        Tags = track.Tags,
+        CreatedAtUtc = track.CreatedAtUtc
+    };
+
+    /// <summary>Stories have no single file: <see cref="FileUrl"/> is empty and the text comes from the story endpoint.</summary>
+    public static CreativeItem FromStory(StoryDto story, string apiBaseUrl) => new()
+    {
+        Id = story.Id,
+        Title = story.Title,
+        Author = story.AuthorDisplayName ?? string.Empty,
+        Description = story.Description ?? string.Empty,
+        CoverUrl = string.IsNullOrWhiteSpace(story.CoverUrl) ? null : Abs(apiBaseUrl, story.CoverUrl),
+        FileUrl = string.Empty,
+        Tags = story.Tags,
+        CreatedAtUtc = story.CreatedAtUtc
+    };
 }
 
-/// <summary>Loads one kind of content (art, music or books) from the store catalog.</summary>
-public abstract partial class CreativeSectionViewModel(ISgsApiService? api, string apiBaseUrl, GameContentKind kind)
+/// <summary>Loads one kind of content (art, music or stories) from its own endpoint.</summary>
+public abstract partial class CreativeSectionViewModel(ISgsApiService? api, string apiBaseUrl)
     : ObservableObject
 {
     protected string ApiBaseUrl { get; } = apiBaseUrl;
     protected ISgsApiService? Api { get; } = api;
 
     public ObservableCollection<CreativeItem> Items { get; } = [];
+
+    /// <summary>Fetches this section's items from its endpoint, already mapped to <see cref="CreativeItem"/>.</summary>
+    protected abstract Task<IEnumerable<CreativeItem>> FetchAsync(CreativeQuery query);
 
     [ObservableProperty] public partial bool IsBusy { get; set; }
     [ObservableProperty] public partial string StatusText { get; set; } = string.Empty;
@@ -80,17 +115,15 @@ public abstract partial class CreativeSectionViewModel(ISgsApiService? api, stri
         IsBusy = true;
         try
         {
-            var games = await Api.GetGamesAsync(new GameCatalogQuery
+            var items = await FetchAsync(new CreativeQuery
             {
-                Kind = kind,
                 Q = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim(),
                 Sort = "newest"
             });
             Items.Clear();
-            // An API without the "kind" filter returns every title, so keep only this section's kind.
-            foreach (var game in games.Where(g => g.Kind == kind))
+            foreach (var item in items)
             {
-                Items.Add(CreativeItem.FromGame(game, ApiBaseUrl));
+                Items.Add(item);
             }
 
             HasItems = Items.Count > 0;

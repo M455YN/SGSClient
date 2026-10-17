@@ -317,8 +317,7 @@ public partial class ShellSidebarViewModel : ObservableObject
             {
                 GameId = item.GameId,
                 Title = item.Title,
-                ExecutablePath = item.ExecutablePath,
-                OpenAsDocument = item.IsDocument
+                ExecutablePath = item.ExecutablePath
             });
             _ = result;
             await LoadInstalledAsync();
@@ -358,8 +357,6 @@ public sealed class SidebarInstalledGame
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
     public string StateText { get; init; } = string.Empty;
     public bool CanLaunch { get; init; }
-    public bool IsDocument { get; init; }
-    public string LaunchLabel => Loc.T(IsDocument ? "Otwórz" : "Uruchom");
     public DateTimeOffset? LastPlayedUtc { get; init; }
     public string TileLabel { get; init; } = string.Empty;
 
@@ -387,7 +384,6 @@ public sealed class SidebarInstalledGame
             ExecutablePath = item.ExecutablePath,
             CoverImageUrl = cover,
             CanLaunch = canLaunch,
-            IsDocument = item.IsDocument,
             LastPlayedUtc = item.LastPlayedUtc,
             StateText = canLaunch ? Loc.T("Gotowa do uruchomienia") : Loc.T("Brak pliku wykonywalnego"),
             TileLabel = string.IsNullOrWhiteSpace(item.Symbol)

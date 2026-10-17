@@ -43,6 +43,12 @@
         <TextBlock Text="{loc:Tr Key='Strona sklepu, multimedia, buildy i DLC.'}"
                    Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        <SelectorBar x:Name="SectionBar" SelectionChanged="Section_SelectionChanged">
+          <SelectorBarItem Tag="games" Text="{loc:Tr Key='Gry'}" IsSelected="True" />
+          <SelectorBarItem Tag="art" Text="{loc:Tr Key='Grafiki'}" />
+          <SelectorBarItem Tag="music" Text="{loc:Tr Key='Muzyka'}" />
+          <SelectorBarItem Tag="stories" Text="{loc:Tr Key='Opowiadania'}" />
+        </SelectorBar>
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
         <DropDownButton Style="{StaticResource AccentButtonStyle}" Padding="14,8">
@@ -55,7 +61,9 @@
               <MenuFlyoutItem Text="{loc:Tr Key='Dodaj grę'}" Click="AddGame_Click" />
               <MenuFlyoutItem Text="{loc:Tr Key='Dodaj DLC'}" Click="AddNewDlc_Click" />
               <MenuFlyoutItem Text="{loc:Tr Key='Dodaj program'}" Click="AddApp_Click" />
-              <MenuFlyoutItem Text="{loc:Tr Key='Dodaj inne'}" Click="AddOther_Click" />
+              <MenuFlyoutItem Text="{loc:Tr Key='Dodaj grafikę'}" Click="AddArt_Click" />
+              <MenuFlyoutItem Text="{loc:Tr Key='Dodaj muzykę'}" Click="AddMusic_Click" />
+              <MenuFlyoutItem Text="{loc:Tr Key='Dodaj opowiadanie'}" Click="AddStory_Click" />
             </MenuFlyout>
           </DropDownButton.Flyout>
         </DropDownButton>
@@ -65,7 +73,12 @@
       </StackPanel>
     </Grid>
 
-    <Grid Grid.Row="1" Margin="28,0,28,0" ColumnSpacing="16">
+    <Grid Grid.Row="1" Margin="28,0,28,0" Visibility="{Binding IsWorksSection, Converter={StaticResource BoolToVis}}">
+      <local:CreativeWorksEditor DataContext="{Binding CurrentWorks}" />
+    </Grid>
+
+    <Grid Grid.Row="1" Margin="28,0,28,0" ColumnSpacing="16"
+          Visibility="{Binding IsGamesSection, Converter={StaticResource BoolToVis}}">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="360" />
         <ColumnDefinition Width="*" />

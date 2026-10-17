@@ -69,5 +69,15 @@ public partial class CreativeMusicSection : UserControl
         }
     }
 
+    private void Comments_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: CreativeItem item })
+        {
+            _viewModel?.ToggleCommentsCommand.Execute(item);
+        }
+    }
+
+    private void CloseComments_OnClick(object? sender, RoutedEventArgs e) => _viewModel?.ToggleCommentsCommand.Execute(null);
+
     private void Next_OnClick(object? sender, RoutedEventArgs e) => _viewModel?.NextCommand.Execute(null);
 }

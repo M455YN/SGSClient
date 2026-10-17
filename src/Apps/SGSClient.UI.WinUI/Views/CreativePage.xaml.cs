@@ -35,17 +35,18 @@ public sealed partial class CreativePage : Page
         ArtSection.Visibility = ViewModel.ShowArt ? Visibility.Visible : Visibility.Collapsed;
         MusicSection.Visibility = ViewModel.ShowMusic ? Visibility.Visible : Visibility.Collapsed;
         StoriesSection.Visibility = ViewModel.ShowStories ? Visibility.Visible : Visibility.Collapsed;
-        foreach (var radio in SectionPanel.Children.OfType<RadioButton>())
+        var selected = SectionBar.Items.FirstOrDefault(i => (string?)i.Tag == ViewModel.SelectedSection);
+        if (selected is not null && !ReferenceEquals(SectionBar.SelectedItem, selected))
         {
-            radio.IsChecked = (string)radio.Tag == ViewModel.SelectedSection;
+            SectionBar.SelectedItem = selected;
         }
 
         _syncing = false;
     }
 
-    private void Section_Checked(object sender, RoutedEventArgs e)
+    private void Section_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
-        if (!_syncing && sender is RadioButton { Tag: string section })
+        if (!_syncing && sender.SelectedItem?.Tag is string section)
         {
             ViewModel.SelectedSection = section;
         }

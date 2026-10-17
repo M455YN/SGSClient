@@ -124,4 +124,73 @@ public interface ISgsApiService
         int gameId,
         string? language = null,
         CancellationToken cancellationToken = default);
+
+    // ---- Creative content: artworks, tracks and stories (own tables and endpoints, not games) ----
+
+    Task<IReadOnlyList<ArtworkDto>> GetArtworksAsync(CreativeQuery? query = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Multipart POST api/art with fields title, description, tags (comma separated) and file.</summary>
+    Task<(ArtworkDto? Item, IReadOnlyList<string> Errors)> UploadArtworkAsync(
+        string title,
+        string? description,
+        IReadOnlyList<string> tags,
+        string localFilePath,
+        IProgress<double>? progress = null,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TrackDto>> GetTracksAsync(CreativeQuery? query = null, CancellationToken cancellationToken = default);
+
+    /// <summary>Multipart POST api/music with fields title, description, tags, file and optional cover.</summary>
+    Task<(TrackDto? Item, IReadOnlyList<string> Errors)> UploadTrackAsync(
+        string title,
+        string? description,
+        IReadOnlyList<string> tags,
+        string localFilePath,
+        string? coverFilePath,
+        IProgress<double>? progress = null,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<StoryDto>> GetStoriesAsync(CreativeQuery? query = null, CancellationToken cancellationToken = default);
+
+    /// <summary>The story with all its chapters.</summary>
+    Task<StoryDto?> GetStoryAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>POST api/stories (JSON), then POST api/stories/{id}/cover when <paramref name="coverFilePath"/> is set.</summary>
+    Task<(StoryDto? Item, IReadOnlyList<string> Errors)> CreateStoryAsync(
+        CreateStoryRequestDto request,
+        string? coverFilePath,
+        CancellationToken cancellationToken = default);
+
+    // ---- Creative content: own works, editing, admin and comments (section = "art" | "music" | "stories") ----
+
+    Task<IReadOnlyList<ArtworkDto>> GetMyArtworksAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TrackDto>> GetMyTracksAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<StoryDto>> GetMyStoriesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Admin only: every item, including other authors'.</summary>
+    Task<IReadOnlyList<ArtworkDto>> GetAdminArtworksAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<TrackDto>> GetAdminTracksAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<StoryDto>> GetAdminStoriesAsync(CancellationToken cancellationToken = default);
+
+    Task<(ArtworkDto? Item, IReadOnlyList<string> Errors)> UpdateArtworkAsync(
+        int id, UpdateCreativeRequestDto request, CancellationToken cancellationToken = default);
+
+    /// <summary>PUT metadata, then POST api/music/{id}/cover when <paramref name="newCoverFilePath"/> is set.</summary>
+    Task<(TrackDto? Item, IReadOnlyList<string> Errors)> UpdateTrackAsync(
+        int id, UpdateCreativeRequestDto request, string? newCoverFilePath, CancellationToken cancellationToken = default);
+
+    /// <summary>PUT story (title, description, tags, all chapters), then POST api/stories/{id}/cover when a new cover is given.</summary>
+    Task<(StoryDto? Item, IReadOnlyList<string> Errors)> UpdateStoryAsync(
+        int id, UpdateStoryRequestDto request, string? newCoverFilePath, CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteCreativeAsync(string section, int id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<CreativeCommentDto>> GetCreativeCommentsAsync(
+        string section, int itemId, CancellationToken cancellationToken = default);
+
+    Task<(CreativeCommentDto? Item, IReadOnlyList<string> Errors)> AddCreativeCommentAsync(
+        string section, int itemId, string text, CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteCreativeCommentAsync(
+        string section, int itemId, long commentId, CancellationToken cancellationToken = default);
 }

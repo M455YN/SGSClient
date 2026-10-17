@@ -1,9 +1,7 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SGSClient.Core.Enums;
+using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Localization;
 
@@ -18,13 +16,14 @@ public sealed class StoryChapter
     public override string ToString() => Title;
 }
 
-/// <summary>Wattpad-like story browser with an in-app reader for .txt and .md files.</summary>
+/// <summary>Wattpad-like story browser with an in-app chapter reader.</summary>
 public sealed partial class CreativeStoriesViewModel(ISgsApiService? api, string apiBaseUrl)
-    : CreativeSectionViewModel(api, apiBaseUrl, GameContentKind.Book)
+    : CreativeSectionViewModel(api, apiBaseUrl)
 {
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(60) };
     private readonly Dictionary<int, int> _lastChapterByItem = [];
     private CreativeItem? _readingItem;
+
+    public CreativeCommentsViewModel Comments { get; } = new(api, "stories", apiBaseUrl);
 
     [ObservableProperty] public partial bool IsReading { get; set; }
     [ObservableProperty] public partial string ReaderTitle { get; set; } = string.Empty;
@@ -37,21 +36,13 @@ public sealed partial class CreativeStoriesViewModel(ISgsApiService? api, string
     public bool HasPreviousChapter => SelectedChapterIndex > 0;
     public bool HasNextChapter => SelectedChapterIndex >= 0 && SelectedChapterIndex < Chapters.Count - 1;
 
+    protected override async Task<IEnumerable<CreativeItem>> FetchAsync(CreativeQuery query) =>
+        (await Api!.GetStoriesAsync(query)).Select(x => CreativeItem.FromStory(x, ApiBaseUrl));
+
     public async Task OpenAsync(CreativeItem item)
     {
-        if (item.Extension is not (".txt" or ".md"))
+        if (Api is null)
         {
-            // Binary formats (pdf, epub, docx...) are not parsed; the system viewer handles them.
-            StatusText = ReaderStatus = Loc.T("Ten format otwiera się w zewnętrznej aplikacji");
-            try
-            {
-                Process.Start(new ProcessStartInfo(item.FileUrl) { UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                StatusText = ReaderStatus = Loc.F("Nie udało się otworzyć pliku: {0}", ex.Message);
-            }
-
             return;
         }
 
@@ -62,26 +53,33 @@ public sealed partial class CreativeStoriesViewModel(ISgsApiService? api, string
         ChapterText = string.Empty;
         SelectedChapterIndex = -1;
         IsReading = true;
+        _ = Comments.LoadAsync(item.Id);
 
         try
         {
-            var text = await Http.GetStringAsync(item.FileUrl);
+            var story = await Api.GetStoryAsync(item.Id);
             if (_readingItem != item)
             {
-                return; // the reader was closed or another story opened while downloading
+                return; // the reader was closed or another story opened while loading
             }
 
-            foreach (var chapter in SplitChapters(text, item.Title))
+            if (story is null)
             {
-                Chapters.Add(chapter);
+                ReaderStatus = Loc.T("Nie udało się pobrać opowiadania.");
+                return;
+            }
+
+            foreach (var chapter in story.Chapters.OrderBy(c => c.Index))
+            {
+                Chapters.Add(new StoryChapter { Title = chapter.Title, Text = chapter.Text });
             }
 
             ReaderStatus = string.Empty;
-            SelectedChapterIndex = _lastChapterByItem.TryGetValue(item.Id, out var last)
-                ? Math.Min(last, Chapters.Count - 1)
-                : 0;
+            SelectedChapterIndex = Chapters.Count == 0
+                ? -1
+                : _lastChapterByItem.TryGetValue(item.Id, out var last) ? Math.Min(last, Chapters.Count - 1) : 0;
         }
-        catch (HttpRequestException)
+        catch (Exception)
         {
             if (_readingItem == item)
             {
@@ -95,6 +93,7 @@ public sealed partial class CreativeStoriesViewModel(ISgsApiService? api, string
     {
         _readingItem = null;
         IsReading = false;
+        Comments.Clear();
         SelectedChapterIndex = -1;
         Chapters.Clear();
         ChapterText = string.Empty;
@@ -119,47 +118,5 @@ public sealed partial class CreativeStoriesViewModel(ISgsApiService? api, string
         OnPropertyChanged(nameof(HasNextChapter));
         PreviousChapterCommand.NotifyCanExecuteChanged();
         NextChapterCommand.NotifyCanExecuteChanged();
-    }
-
-    /// <summary>Splits at "# " / "## " headings; a text without headings becomes one chapter.</summary>
-    private static List<StoryChapter> SplitChapters(string text, string storyTitle)
-    {
-        var chapters = new List<StoryChapter>();
-        var title = storyTitle;
-        var body = new StringBuilder();
-        var started = false;
-
-        void Flush()
-        {
-            var content = body.ToString().Trim();
-            if (started || content.Length > 0)
-            {
-                chapters.Add(new StoryChapter { Title = title, Text = content });
-            }
-
-            body.Clear();
-        }
-
-        foreach (var line in text.Split('\n'))
-        {
-            var trimmed = line.TrimEnd('\r');
-            if (trimmed.StartsWith("# ") || trimmed.StartsWith("## "))
-            {
-                Flush();
-                title = trimmed.TrimStart('#').Trim();
-                started = true;
-                continue;
-            }
-
-            body.AppendLine(trimmed);
-        }
-
-        Flush();
-        if (chapters.Count == 0)
-        {
-            chapters.Add(new StoryChapter { Title = storyTitle, Text = string.Empty });
-        }
-
-        return chapters;
     }
 }

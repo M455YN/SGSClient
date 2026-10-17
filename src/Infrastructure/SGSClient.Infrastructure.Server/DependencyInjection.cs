@@ -45,6 +45,11 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, EfNotificationService>();
         services.AddSingleton<IAdminAuthorization, AdminAuthorization>();
         services.AddScoped<GameBuildVersionService>();
+        services.AddScoped<CreativeStorage>();
+        services.AddScoped<IArtworkService, EfArtworkService>();
+        services.AddScoped<IMusicService, EfMusicService>();
+        services.AddScoped<IStoryService, EfStoryService>();
+        services.AddScoped<ICreativeCommentService, EfCreativeCommentService>();
         services.AddScoped<IGamePackagePublisher, GamePackagePublisher>();
         services.AddScoped<IGameMediaService, GameMediaService>();
         services.AddScoped<IUserAvatarService, UserAvatarService>();

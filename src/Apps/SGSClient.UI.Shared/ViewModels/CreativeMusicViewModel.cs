@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SGSClient.Core.Enums;
+using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Localization;
 
@@ -8,8 +8,40 @@ namespace SGSClient.UI.ViewModels;
 
 /// <summary>"Muzyka" section: track list plus a simple play queue. The view does the actual playback.</summary>
 public sealed partial class CreativeMusicViewModel(ISgsApiService? api, string apiBaseUrl)
-    : CreativeSectionViewModel(api, apiBaseUrl, GameContentKind.Music)
+    : CreativeSectionViewModel(api, apiBaseUrl)
 {
+    public CreativeCommentsViewModel Comments { get; } = new(api, "music", apiBaseUrl);
+
+    /// <summary>Track whose comments are shown below the list, or null when the panel is closed.</summary>
+    [ObservableProperty] public partial CreativeItem? CommentsItem { get; set; }
+
+    public bool IsCommentsOpen => CommentsItem is not null;
+    public string CommentsTitle => CommentsItem?.Title ?? string.Empty;
+
+    partial void OnCommentsItemChanged(CreativeItem? value)
+    {
+        OnPropertyChanged(nameof(IsCommentsOpen));
+        OnPropertyChanged(nameof(CommentsTitle));
+    }
+
+    /// <summary>Opens the comments of <paramref name="item"/>; a second click on the same track closes them.</summary>
+    [RelayCommand]
+    private void ToggleComments(CreativeItem? item)
+    {
+        if (item is null || CommentsItem?.Id == item.Id)
+        {
+            CommentsItem = null;
+            Comments.Clear();
+            return;
+        }
+
+        CommentsItem = item;
+        _ = Comments.LoadAsync(item.Id);
+    }
+
+    protected override async Task<IEnumerable<CreativeItem>> FetchAsync(CreativeQuery query) =>
+        (await Api!.GetTracksAsync(query)).Select(x => CreativeItem.FromTrack(x, ApiBaseUrl));
+
     /// <summary>Raised when a track must start from its beginning; the view loads <see cref="CreativeItem.FileUrl"/>.</summary>
     public event EventHandler<CreativeItem>? TrackStarted;
 

@@ -754,4 +754,310 @@ public sealed class HttpSgsApiService(
         HttpMethod method,
         CancellationToken cancellationToken) =>
         SendJsonAsync<GameDto>(method, url, null, cancellationToken);
+
+    // ---- creative content (artworks, tracks, stories) ---------------------------------------
+
+    private static string BuildCreativeUrl(string route, CreativeQuery? query)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(query?.Q)) parts.Add("q=" + Uri.EscapeDataString(query.Q.Trim()));
+        if (!string.IsNullOrWhiteSpace(query?.Tag)) parts.Add("tag=" + Uri.EscapeDataString(query.Tag.Trim()));
+        if (!string.IsNullOrWhiteSpace(query?.Sort)) parts.Add("sort=" + Uri.EscapeDataString(query.Sort.Trim()));
+        return parts.Count == 0 ? route : route + "?" + string.Join("&", parts);
+    }
+
+    public Task<IReadOnlyList<ArtworkDto>> GetArtworksAsync(CreativeQuery? query = null, CancellationToken cancellationToken = default) =>
+        SendListAsync<ArtworkDto>(BuildCreativeUrl("api/art", query), cancellationToken);
+
+    public Task<IReadOnlyList<TrackDto>> GetTracksAsync(CreativeQuery? query = null, CancellationToken cancellationToken = default) =>
+        SendListAsync<TrackDto>(BuildCreativeUrl("api/music", query), cancellationToken);
+
+    public Task<IReadOnlyList<StoryDto>> GetStoriesAsync(CreativeQuery? query = null, CancellationToken cancellationToken = default) =>
+        SendListAsync<StoryDto>(BuildCreativeUrl("api/stories", query), cancellationToken);
+
+    public Task<StoryDto?> GetStoryAsync(int id, CancellationToken cancellationToken = default) =>
+        SendJsonAsync<StoryDto>(HttpMethod.Get, $"api/stories/{id}", body: null, cancellationToken);
+
+    public Task<(ArtworkDto? Item, IReadOnlyList<string> Errors)> UploadArtworkAsync(
+        string title,
+        string? description,
+        IReadOnlyList<string> tags,
+        string localFilePath,
+        IProgress<double>? progress = null,
+        CancellationToken cancellationToken = default) =>
+        PostCreativeAsync<ArtworkDto>("api/art", title, description, tags, localFilePath, null, progress, cancellationToken);
+
+    public Task<(TrackDto? Item, IReadOnlyList<string> Errors)> UploadTrackAsync(
+        string title,
+        string? description,
+        IReadOnlyList<string> tags,
+        string localFilePath,
+        string? coverFilePath,
+        IProgress<double>? progress = null,
+        CancellationToken cancellationToken = default) =>
+        PostCreativeAsync<TrackDto>("api/music", title, description, tags, localFilePath, coverFilePath, progress, cancellationToken);
+
+    public async Task<(StoryDto? Item, IReadOnlyList<string> Errors)> CreateStoryAsync(
+        CreateStoryRequestDto request,
+        string? coverFilePath,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var create = CreateRequest(HttpMethod.Post, "api/stories", request);
+            using var response = await http.SendAsync(create, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ReadErrorsAsync(response, cancellationToken).ConfigureAwait(false));
+            }
+
+            var story = await response.Content.ReadFromJsonAsync<StoryDto>(cancellationToken).ConfigureAwait(false);
+            if (story is null)
+            {
+                return (null, [Loc.T("Serwer nie zwrócił danych.")]);
+            }
+
+            if (!string.IsNullOrWhiteSpace(coverFilePath))
+            {
+                if (!File.Exists(coverFilePath))
+                {
+                    return (story, [Loc.T("Nie można odczytać wybranego pliku.")]);
+                }
+
+                await using var stream = File.OpenRead(coverFilePath);
+                using var content = new MultipartFormDataContent
+                {
+                    { new StreamContent(stream), "cover", Path.GetFileName(coverFilePath) }
+                };
+                using var coverRequest = new HttpRequestMessage(HttpMethod.Post, $"api/stories/{story.Id}/cover") { Content = content };
+                using var coverResponse = await http.SendAsync(coverRequest, cancellationToken).ConfigureAwait(false);
+                if (!coverResponse.IsSuccessStatusCode)
+                {
+                    // the story exists already: hand it back together with the cover error
+                    return (story, await ReadErrorsAsync(coverResponse, cancellationToken).ConfigureAwait(false));
+                }
+            }
+
+            return (story, []);
+        }
+        catch (Exception ex)
+        {
+            return (null, [ex.Message]);
+        }
+    }
+
+    private async Task<(T? Item, IReadOnlyList<string> Errors)> PostCreativeAsync<T>(
+        string url,
+        string title,
+        string? description,
+        IReadOnlyList<string> tags,
+        string filePath,
+        string? coverPath,
+        IProgress<double>? progress,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)
+            || (!string.IsNullOrWhiteSpace(coverPath) && !File.Exists(coverPath)))
+        {
+            return (null, [Loc.T("Nie można odczytać wybranego pliku.")]);
+        }
+
+        try
+        {
+            await using var stream = File.OpenRead(filePath);
+            using var content = new MultipartFormDataContent
+            {
+                { new StringContent(title), "title" },
+                { new StringContent(description ?? string.Empty), "description" },
+                { new StringContent(string.Join(",", tags)), "tags" },
+                { new ProgressStreamContent(stream, progress), "file", Path.GetFileName(filePath) }
+            };
+            await using var coverStream = string.IsNullOrWhiteSpace(coverPath) ? null : File.OpenRead(coverPath);
+            if (coverStream is not null)
+            {
+                content.Add(new StreamContent(coverStream), "cover", Path.GetFileName(coverPath!));
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = content };
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ReadErrorsAsync(response, cancellationToken).ConfigureAwait(false));
+            }
+
+            progress?.Report(1);
+            var item = await response.Content.ReadFromJsonAsync<T>(cancellationToken).ConfigureAwait(false);
+            return item is null ? (null, [Loc.T("Serwer nie zwrócił danych.")]) : (item, []);
+        }
+        catch (Exception ex)
+        {
+            return (null, [ex.Message]);
+        }
+    }
+
+    /// <summary>Server "errors" array (or the status text) as a list.</summary>
+    private static async Task<IReadOnlyList<string>> ReadErrorsAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var payload = await response.Content.ReadFromJsonAsync<ApiErrorPayload>(cancellationToken).ConfigureAwait(false);
+            if (payload?.Errors is { Length: > 0 } errors)
+            {
+                return errors.Select(Loc.TS).ToArray();
+            }
+        }
+        catch
+        {
+            // fall through to the status code
+        }
+
+        return [await ReadErrorAsync(response, cancellationToken).ConfigureAwait(false)];
+    }
+
+    /// <summary>Streams a file and reports bytes sent as 0..1 (held below 1 until the server answers).</summary>
+    private sealed class ProgressStreamContent(Stream source, IProgress<double>? progress) : HttpContent
+    {
+        protected override async Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context)
+        {
+            var buffer = new byte[81920];
+            long sent = 0;
+            int read;
+            while ((read = await source.ReadAsync(buffer).ConfigureAwait(false)) > 0)
+            {
+                await stream.WriteAsync(buffer.AsMemory(0, read)).ConfigureAwait(false);
+                sent += read;
+                progress?.Report(source.Length == 0 ? 0 : Math.Min(0.99, (double)sent / source.Length));
+            }
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = source.Length;
+            return true;
+        }
+    }
+
+    // ---- creative content: own works, admin lists, editing, comments --------------------------
+
+    public Task<IReadOnlyList<ArtworkDto>> GetMyArtworksAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<ArtworkDto>("api/art/mine", cancellationToken);
+
+    public Task<IReadOnlyList<TrackDto>> GetMyTracksAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<TrackDto>("api/music/mine", cancellationToken);
+
+    public Task<IReadOnlyList<StoryDto>> GetMyStoriesAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<StoryDto>("api/stories/mine", cancellationToken);
+
+    public Task<IReadOnlyList<ArtworkDto>> GetAdminArtworksAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<ArtworkDto>("api/admin/art", cancellationToken);
+
+    public Task<IReadOnlyList<TrackDto>> GetAdminTracksAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<TrackDto>("api/admin/music", cancellationToken);
+
+    public Task<IReadOnlyList<StoryDto>> GetAdminStoriesAsync(CancellationToken cancellationToken = default) =>
+        SendListAsync<StoryDto>("api/admin/stories", cancellationToken);
+
+    public async Task<(ArtworkDto? Item, IReadOnlyList<string> Errors)> UpdateArtworkAsync(
+        int id, UpdateCreativeRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var (item, errors, _) = await PutCreativeAsync<ArtworkDto>($"api/art/{id}", request, null, null, cancellationToken).ConfigureAwait(false);
+        return (item, errors);
+    }
+
+    public async Task<(TrackDto? Item, IReadOnlyList<string> Errors)> UpdateTrackAsync(
+        int id, UpdateCreativeRequestDto request, string? newCoverFilePath, CancellationToken cancellationToken = default)
+    {
+        var (item, errors, _) = await PutCreativeAsync<TrackDto>($"api/music/{id}", request, $"api/music/{id}/cover", newCoverFilePath, cancellationToken).ConfigureAwait(false);
+        return (item, errors);
+    }
+
+    public async Task<(StoryDto? Item, IReadOnlyList<string> Errors)> UpdateStoryAsync(
+        int id, UpdateStoryRequestDto request, string? newCoverFilePath, CancellationToken cancellationToken = default)
+    {
+        var (item, errors, _) = await PutCreativeAsync<StoryDto>($"api/stories/{id}", request, $"api/stories/{id}/cover", newCoverFilePath, cancellationToken).ConfigureAwait(false);
+        return (item, errors);
+    }
+
+    /// <summary>PUT the JSON body, then the optional multipart cover; a cover failure returns the saved item with the errors.</summary>
+    private async Task<(T? Item, IReadOnlyList<string> Errors, bool Saved)> PutCreativeAsync<T>(
+        string url, object body, string? coverUrl, string? coverPath, CancellationToken cancellationToken)
+        where T : class
+    {
+        try
+        {
+            using var put = CreateRequest(HttpMethod.Put, url, body);
+            using var response = await http.SendAsync(put, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ReadErrorsAsync(response, cancellationToken).ConfigureAwait(false), false);
+            }
+
+            var item = await response.Content.ReadFromJsonAsync<T>(cancellationToken).ConfigureAwait(false);
+            if (item is null)
+            {
+                return (null, [Loc.T("Serwer nie zwrócił danych.")], true);
+            }
+
+            if (coverUrl is null || string.IsNullOrWhiteSpace(coverPath))
+            {
+                return (item, [], true);
+            }
+
+            if (!File.Exists(coverPath))
+            {
+                return (item, [Loc.T("Nie można odczytać wybranego pliku.")], true);
+            }
+
+            await using var stream = File.OpenRead(coverPath);
+            using var content = new MultipartFormDataContent
+            {
+                { new StreamContent(stream), "cover", Path.GetFileName(coverPath) }
+            };
+            using var coverRequest = new HttpRequestMessage(HttpMethod.Post, coverUrl) { Content = content };
+            using var coverResponse = await http.SendAsync(coverRequest, cancellationToken).ConfigureAwait(false);
+            if (!coverResponse.IsSuccessStatusCode)
+            {
+                return (item, await ReadErrorsAsync(coverResponse, cancellationToken).ConfigureAwait(false), true);
+            }
+
+            // the cover changed server side: re-read so CoverUrl is current
+            var fresh = await SendJsonAsync<T>(HttpMethod.Get, url, null, cancellationToken).ConfigureAwait(false);
+            return (fresh ?? item, [], true);
+        }
+        catch (Exception ex)
+        {
+            return (null, [ex.Message], false);
+        }
+    }
+
+    public Task<bool> DeleteCreativeAsync(string section, int id, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"api/{section}/{id}", null, cancellationToken);
+
+    public Task<IReadOnlyList<CreativeCommentDto>> GetCreativeCommentsAsync(string section, int itemId, CancellationToken cancellationToken = default) =>
+        SendListAsync<CreativeCommentDto>($"api/{section}/{itemId}/comments", cancellationToken);
+
+    public async Task<(CreativeCommentDto? Item, IReadOnlyList<string> Errors)> AddCreativeCommentAsync(
+        string section, int itemId, string text, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var request = CreateRequest(HttpMethod.Post, $"api/{section}/{itemId}/comments", new AddCreativeCommentRequestDto { Text = text });
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                return (null, await ReadErrorsAsync(response, cancellationToken).ConfigureAwait(false));
+            }
+
+            var item = await response.Content.ReadFromJsonAsync<CreativeCommentDto>(cancellationToken).ConfigureAwait(false);
+            return item is null ? (null, [Loc.T("Serwer nie zwrócił danych.")]) : (item, []);
+        }
+        catch (Exception ex)
+        {
+            return (null, [ex.Message]);
+        }
+    }
+
+    public Task<bool> DeleteCreativeCommentAsync(string section, int itemId, long commentId, CancellationToken cancellationToken = default) =>
+        SendAsync(HttpMethod.Delete, $"api/{section}/{itemId}/comments/{commentId}", null, cancellationToken);
 }

@@ -1,0 +1,111 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.AddStoryView"
+             x:DataType="vm:AddStoryViewModel">
+  <Grid ColumnDefinitions="280,*">
+    <Grid Grid.Column="0" Margin="28,24,16,32" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+      <TextBlock Grid.Row="0" Text="{loc:Tr Key='Rozdziały'}" FontSize="18" FontWeight="SemiBold"/>
+
+      <Border Grid.Row="1" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+        <ListBox ItemsSource="{Binding Chapters}" SelectedItem="{Binding SelectedChapter, Mode=TwoWay}"
+                 Background="Transparent">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ChapterDraft">
+              <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" Padding="4,6"/>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Border>
+
+      <StackPanel Grid.Row="2" Spacing="8">
+        <Button Content="{loc:Tr Key='+ Dodaj rozdział'}" Command="{Binding AddChapterCommand}"
+                HorizontalAlignment="Stretch" Padding="14,8"/>
+        <Button Content="{loc:Tr Key='Usuń rozdział'}" Command="{Binding RemoveChapterCommand}"
+                CommandParameter="{Binding SelectedChapter}"
+                IsEnabled="{Binding SelectedChapter, Converter={x:Static ObjectConverters.IsNotNull}}"
+                HorizontalAlignment="Stretch" Padding="14,8"/>
+      </StackPanel>
+    </Grid>
+
+    <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="16,24,28,32" Spacing="20" MaxWidth="820" HorizontalAlignment="Left">
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding PageTitle}" FontSize="28" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding AuthHint}" Opacity="0.55" FontSize="12" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+          <StackPanel Spacing="14">
+            <TextBlock Text="{loc:Tr Key='Szczegóły'}" FontSize="18" FontWeight="SemiBold"/>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Tr Key='Tytuł opowiadania'}" Opacity="0.55" FontSize="12"/>
+              <TextBox Text="{Binding StoryTitle, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='np. Moja historia'}"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Tr Key='Opis'}" Opacity="0.55" FontSize="12"/>
+              <TextBox Text="{Binding Description, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
+                       MinHeight="88" PlaceholderText="{loc:Tr Key='Krótki opis opowiadania'}"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Tr Key='Tagi (oddzielone przecinkami)'}" Opacity="0.55" FontSize="12"/>
+              <TextBox Text="{Binding Tags, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='np. fantasy, przygoda'}"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Tr Key='Okładka'}" Opacity="0.55" FontSize="12"/>
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                <TextBox Grid.Column="0" Text="{Binding CoverPath}" IsReadOnly="True"
+                         PlaceholderText="{loc:Tr Key='Brak okładki'}"/>
+                <Button Grid.Column="1" Content="{loc:Tr Key='Wybierz okładkę…'}" Click="PickCover_OnClick"
+                        Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+                <Button Grid.Column="2" Content="{loc:Tr Key='Importuj z pliku…'}" Click="ImportFile_OnClick"
+                        Padding="12,8" IsEnabled="{Binding !IsBusy}"/>
+              </Grid>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
+                IsVisible="{Binding SelectedChapter, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <StackPanel Spacing="14">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Tr Key='Tytuł rozdziału'}" Opacity="0.55" FontSize="12"/>
+              <TextBox Text="{Binding SelectedChapter.Title, Mode=TwoWay}"/>
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Tr Key='Treść rozdziału'}" Opacity="0.55" FontSize="12"/>
+              <TextBox Text="{Binding SelectedChapter.Text, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap"
+                       FontSize="16" MinHeight="360" PlaceholderText="{loc:Tr Key='Pisz tutaj…'}"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <StackPanel Spacing="12">
+          <Button Content="{loc:Tr Key='Opublikuj'}" Command="{Binding PublishCommand}"
+                  IsEnabled="{Binding !IsBusy}" Padding="18,12"
+                  Background="#2E7D32" Foreground="White" HorizontalAlignment="Left"/>
+
+          <StackPanel Spacing="8" IsVisible="{Binding IsBusy}">
+            <TextBlock Text="{loc:Tr Key='Wysyłanie…'}" Opacity="0.7"/>
+            <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress}" Height="8"/>
+          </StackPanel>
+
+          <TextBlock Text="{Binding StatusText}" Opacity="0.75" TextWrapping="Wrap"/>
+
+          <ItemsControl ItemsSource="{Binding Issues}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding}" Foreground="#EF9A9A" Margin="0,0,0,4" TextWrapping="Wrap"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

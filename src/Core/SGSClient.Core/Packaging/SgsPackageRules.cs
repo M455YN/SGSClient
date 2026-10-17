@@ -112,7 +112,7 @@ public static partial class SgsPackageRules
         && version.Length <= MaxVersionLength
         && VersionRegex().IsMatch(version);
 
-    /// <summary>Returns a lowercase kind (game, dlc, app, book, music, art), or null if invalid. Null/empty kind defaults to game.</summary>
+    /// <summary>Returns "game", "dlc" or "app", or null if invalid. Null/empty kind defaults to game.</summary>
     public static string? NormalizeContentKind(string? kind)
     {
         if (string.IsNullOrWhiteSpace(kind))
@@ -120,12 +120,13 @@ public static partial class SgsPackageRules
             return "game";
         }
 
-        var normalized = kind.Trim().ToLowerInvariant();
-        return char.IsLetter(normalized[0])
-               && Enum.TryParse<GameContentKind>(normalized, ignoreCase: true, out var parsed)
-               && Enum.IsDefined(parsed)
-            ? normalized
-            : null;
+        return kind.Trim().ToLowerInvariant() switch
+        {
+            "game" => "game",
+            "dlc" => "dlc",
+            "app" => "app",
+            _ => null
+        };
     }
 
     public static bool TryParsePlatform(string? value, out GamePlatform platform)
@@ -146,9 +147,6 @@ public static partial class SgsPackageRules
             case "linux":
                 platform = GamePlatform.Linux;
                 return true;
-            case "any":
-                platform = GamePlatform.Any;
-                return true;
             case "macos":
             case "osx":
             case "mac":
@@ -164,7 +162,6 @@ public static partial class SgsPackageRules
         GamePlatform.Windows => "windows",
         GamePlatform.Linux => "linux",
         GamePlatform.MacOS => "macos",
-        GamePlatform.Any => "any",
         _ => "windows"
     };
 
@@ -221,9 +218,6 @@ public static partial class SgsPackageRules
 
         return true;
     }
-
-    /// <summary>Book, music or art: files are downloaded and opened, not run.</summary>
-    public static bool IsContentKind(string? kind) => NormalizeContentKind(kind) is "book" or "music" or "art";
 
     public static bool ExecutableMatchesPlatform(string executable, GamePlatform platform)
     {
@@ -293,7 +287,7 @@ public static partial class SgsPackageRules
             var kind = NormalizeContentKind(game.Kind);
             if (kind is null)
             {
-                errors.Add(Loc.T("Pole 'kind' musi być: game, dlc, app, book, music lub art."));
+                errors.Add(Loc.T("Pole 'kind' musi być: game, dlc lub app."));
             }
             else
             {
@@ -370,11 +364,7 @@ public static partial class SgsPackageRules
             {
                 errors.Add($"executable: {pathError}");
             }
-            else if (platform == GamePlatform.Any && !IsContentKind(manifest.Game?.Kind))
-            {
-                errors.Add(Loc.T("Platforma 'any' jest dozwolona tylko dla książek, muzyki i grafiki."));
-            }
-            else if (platform != GamePlatform.Any && !ExecutableMatchesPlatform(exePath, platform))
+            else if (!ExecutableMatchesPlatform(exePath, platform))
             {
                 errors.Add(Loc.F("Plik uruchomieniowy nie pasuje do platformy {0}: {1}", build.Platform, exePath));
             }

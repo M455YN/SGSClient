@@ -10,9 +10,6 @@ public sealed class GameLibraryItem
     public required string Title { get; set; }
     public GamePlatform Platform { get; set; }
 
-    /// <summary>Books, music and art are opened with the default app, not run or timed.</summary>
-    public bool IsDocument => Platform == GamePlatform.Any;
-
     public string? Architecture { get; set; }
     public InstallState InstallState { get; set; } = InstallState.NotInstalled;
     public string? InstallPath { get; set; }
