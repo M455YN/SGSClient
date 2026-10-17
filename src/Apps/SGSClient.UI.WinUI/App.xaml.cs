@@ -119,6 +119,20 @@ public partial class App : Application
             sp.GetService<IGameUploadClient>(),
             sp.GetService<IAuthSession>(),
             sp.GetService<ISgsApiService>()));
+        services.AddTransient(sp => new ContentPublishViewModel(
+            sp.GetService<IGamePackagePacker>(),
+            sp.GetService<IGameUploadClient>(),
+            sp.GetService<IAuthSession>()));
+        services.AddTransient(sp =>
+        {
+            var apiBase = configuration?.GetSection(SGSClient.Core.Configuration.ApiClientSettings.SectionName).Get<SGSClient.Core.Configuration.ApiClientSettings>()?.BaseUrl
+                ?? new SGSClient.Core.Configuration.ApiClientSettings().BaseUrl;
+            var api = sp.GetService<ISgsApiService>();
+            return new CreativeViewModel(
+                new CreativeArtViewModel(api, apiBase),
+                new CreativeMusicViewModel(api, apiBase),
+                new CreativeStoriesViewModel(api, apiBase));
+        });
         services.AddTransient(sp => new StudioViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetService<IAuthSession>(),

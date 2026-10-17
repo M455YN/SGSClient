@@ -85,6 +85,7 @@ public partial class ShellSidebar : UserControl
         NavLibraryLabel.IsVisible = expanded;
         NavDownloadsLabel.IsVisible = expanded;
         NavWishlistLabel.IsVisible = expanded;
+        NavCreativeLabel.IsVisible = expanded;
         NavPublishLabel.IsVisible = expanded;
         NavStudioLabel.IsVisible = expanded;
         NavAdminLabel.IsVisible = expanded;
@@ -97,6 +98,7 @@ public partial class ShellSidebar : UserControl
         ApplyCompactChrome(NavLibrary, expanded, profileLike: false);
         ApplyCompactChrome(NavDownloads, expanded, profileLike: false);
         ApplyCompactChrome(NavWishlist, expanded, profileLike: false);
+        ApplyCompactChrome(NavCreative, expanded, profileLike: false);
         ApplyCompactChrome(NavPublish, expanded, profileLike: false);
         ApplyCompactChrome(NavStudio, expanded, profileLike: false);
         ApplyCompactChrome(NavAdmin, expanded, profileLike: false);
@@ -138,6 +140,7 @@ public partial class ShellSidebar : UserControl
         Highlight(NavLibrary, vm.IsLibrarySelected);
         Highlight(NavDownloads, vm.IsDownloadsSelected);
         Highlight(NavWishlist, vm.IsWishlistSelected);
+        Highlight(NavCreative, vm.IsCreativeSelected);
         Highlight(NavPublish, vm.IsPublishSelected);
         Highlight(NavStudio, vm.IsStudioSelected);
         Highlight(NavAdmin, vm.IsAdminSelected);

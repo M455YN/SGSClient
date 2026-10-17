@@ -13,6 +13,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly DownloadsViewModel _downloads;
     private readonly WishlistViewModel _wishlist;
     private readonly PublishViewModel _publish;
+    private readonly CreativeViewModel _creative;
+    private readonly ContentPublishViewModel _contentPublish;
     private readonly StudioViewModel _studio;
     private readonly AdminViewModel _admin;
     private readonly SettingsViewModel _settings;
@@ -30,7 +32,9 @@ public partial class MainWindowViewModel : ViewModelBase
             new LibraryViewModel(),
             new DownloadsViewModel(),
             new WishlistViewModel(),
+            new CreativeViewModel(),
             new PublishViewModel(),
+            new ContentPublishViewModel(),
             new StudioViewModel(),
             new AdminViewModel(),
             new SettingsViewModel(),
@@ -48,7 +52,9 @@ public partial class MainWindowViewModel : ViewModelBase
         LibraryViewModel library,
         DownloadsViewModel downloads,
         WishlistViewModel wishlist,
+        CreativeViewModel creative,
         PublishViewModel publish,
+        ContentPublishViewModel contentPublish,
         StudioViewModel studio,
         AdminViewModel admin,
         SettingsViewModel settings,
@@ -65,6 +71,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _downloads = downloads;
         _wishlist = wishlist;
         _publish = publish;
+        _creative = creative;
+        _contentPublish = contentPublish;
         _studio = studio;
         _admin = admin;
         _settings = settings;
@@ -192,6 +200,7 @@ public partial class MainWindowViewModel : ViewModelBase
             "Library" => _library,
             "Downloads" => _downloads,
             "Wishlist" => _wishlist,
+            "Creative" => _creative,
             "Publish" => _publish,
             "Studio" => _studio,
             "Admin" => _admin,
@@ -219,6 +228,11 @@ public partial class MainWindowViewModel : ViewModelBase
         if (tag == "Wishlist")
         {
             _ = _wishlist.LoadAsync();
+        }
+
+        if (tag == "Creative")
+        {
+            _ = _creative.LoadAsync();
         }
 
         if (tag is "Home")
@@ -275,11 +289,15 @@ public partial class MainWindowViewModel : ViewModelBase
         Sidebar.SelectNav(_contentNavTag);
     }
 
-    public void NavigateToPublish(string? parentSymbol = null, string selectTag = "Studio")
+    public void NavigateToPublish(string? parentSymbol = null, string selectTag = "Studio", string? kind = null)
     {
-        if (!string.IsNullOrWhiteSpace(parentSymbol))
+        if (kind == "app")
         {
-            _publish.PrepareForDlc(parentSymbol);
+            _publish.PrepareForApp();
+        }
+        else if (kind == "dlc" || !string.IsNullOrWhiteSpace(parentSymbol))
+        {
+            _publish.PrepareForDlc(parentSymbol ?? string.Empty);
         }
         else
         {
@@ -292,6 +310,16 @@ public partial class MainWindowViewModel : ViewModelBase
         Sidebar.SelectNav(selectTag);
         CurrentPage = _publish;
         _publish.RefreshAuthHint();
+    }
+
+    public void NavigateToContentPublish(string kind = "book", string selectTag = "Studio")
+    {
+        _contentPublish.PrepareFor(kind);
+        _contentNavTag = selectTag;
+        CloseSocial();
+        SelectedNavTag = selectTag;
+        Sidebar.SelectNav(selectTag);
+        CurrentPage = _contentPublish;
     }
 
     private void NavigateFromHome(string tag) => Navigate(tag);

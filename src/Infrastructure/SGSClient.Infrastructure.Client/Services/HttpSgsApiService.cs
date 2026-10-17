@@ -244,6 +244,11 @@ public sealed class HttpSgsApiService(
             parts.Add($"platform={(int)platform}");
         }
 
+        if (query.Kind is { } kind)
+        {
+            parts.Add($"kind={(int)kind}");
+        }
+
         if (query.Features is { } features && features != GameFeatures.None)
         {
             parts.Add($"features={(int)features}");
@@ -285,6 +290,7 @@ public sealed class HttpSgsApiService(
             && (query.Genres is null || query.Genres.Count == 0)
             && (query.Engines is null || query.Engines.Count == 0)
             && query.Platform is null
+            && query.Kind is null
             && (query.Features is null || query.Features == GameFeatures.None)
             && query.ReleaseStatus is null
             && query.Featured is null

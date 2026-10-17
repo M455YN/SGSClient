@@ -1,0 +1,45 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.CreativeMusicSection"
+             x:DataType="vm:CreativeMusicViewModel">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+    <TextBox Grid.Row="0" x:Name="SearchBox" Watermark="{loc:Tr Key='Szukaj utworów…'}"
+             KeyDown="SearchBox_OnKeyDown"/>
+    <TextBlock Grid.Row="1" Text="{Binding StatusText}" Opacity="0.75" TextWrapping="Wrap"/>
+
+    <ScrollViewer Grid.Row="2">
+      <ItemsControl ItemsSource="{Binding Items}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:CreativeItem">
+            <Grid ColumnDefinitions="56,*,Auto" Margin="0,6">
+              <Border Width="56" Height="56" CornerRadius="4" Background="#2A2A2A" ClipToBounds="True">
+                <Panel>
+                  <TextBlock Text="{Binding TileLabel}" FontWeight="Bold" FontSize="14" Opacity="0.4"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  <Image Source="{Binding CoverUrl}" Stretch="UniformToFill"/>
+                </Panel>
+              </Border>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0" Spacing="2">
+                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Text="{Binding Author}" Opacity="0.7" FontSize="12" TextTrimming="CharacterEllipsis"/>
+              </StackPanel>
+              <Button Grid.Column="2" Content="{loc:Tr Key='Graj'}" VerticalAlignment="Center" Click="Play_OnClick"/>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <Border Grid.Row="3" Padding="16,12" CornerRadius="8" Background="#1A1A1A">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <StackPanel VerticalAlignment="Center" Spacing="2">
+          <TextBlock Text="{Binding NowPlayingTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Text="{Binding NowPlayingAuthor}" Opacity="0.7" FontSize="12" TextTrimming="CharacterEllipsis"/>
+          <TextBlock Text="{loc:Tr Key='Odtwarzanie w domyślnym odtwarzaczu systemu'}" Opacity="0.5" FontSize="11"/>
+        </StackPanel>
+        <Button Grid.Column="1" Content="{loc:Tr Key='Następny'}" VerticalAlignment="Center" Click="Next_OnClick"/>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

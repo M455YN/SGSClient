@@ -20,7 +20,7 @@ public sealed class EfGameRepository(
     {
         var games = db.Games
             .AsNoTracking()
-            .Where(g => !g.DraftP && g.Kind == GameContentKind.Game);
+            .Where(g => !g.DraftP && g.Kind != GameContentKind.Dlc);
 
         if (query is not null)
         {
@@ -59,6 +59,11 @@ public sealed class EfGameRepository(
             if (query.Platform is { } platform)
             {
                 games = games.Where(g => g.Builds.Any(b => b.Platform == platform));
+            }
+
+            if (query.Kind is { } kind && kind != GameContentKind.Dlc)
+            {
+                games = games.Where(g => g.Kind == kind);
             }
 
             if (query.Features is { } features && features != GameFeatures.None)

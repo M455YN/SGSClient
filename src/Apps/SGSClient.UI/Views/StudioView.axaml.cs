@@ -81,6 +81,15 @@ public partial class StudioView : UserControl
     private void AddGame_OnClick(object? sender, RoutedEventArgs e) =>
         (DataContext as StudioViewModel)?.AddGameCommand.Execute(null);
 
+    private void AddNewDlc_OnClick(object? sender, RoutedEventArgs e) =>
+        GetMain()?.NavigateToPublish(kind: "dlc");
+
+    private void AddApp_OnClick(object? sender, RoutedEventArgs e) =>
+        GetMain()?.NavigateToPublish(kind: "app");
+
+    private void AddOther_OnClick(object? sender, RoutedEventArgs e) =>
+        GetMain()?.NavigateToContentPublish();
+
     private void AddVersion_OnClick(object? sender, RoutedEventArgs e) =>
         (DataContext as StudioViewModel)?.AddVersionCommand.Execute(null);
 

@@ -152,6 +152,9 @@ public partial class GameDetailsViewModel : ObservableObject
     public partial bool CanLaunch { get; set; }
 
     [ObservableProperty]
+    public partial string LaunchLabel { get; set; } = Loc.T("Graj");
+
+    [ObservableProperty]
     public partial bool IsDlc { get; set; }
 
     [ObservableProperty]
@@ -193,6 +196,10 @@ public partial class GameDetailsViewModel : ObservableObject
     public bool ShowReviewsTab => SelectedTab == "Reviews";
     public bool ShowMoreTab => SelectedTab == "More";
     public bool ShowAchievementsTab => SelectedTab == "Achievements";
+
+    /// <summary>Books, music and art have no achievements.</summary>
+    [ObservableProperty]
+    public partial bool HasAchievementsTabButton { get; set; } = true;
 
     [ObservableProperty] public partial string ReviewsSummaryText { get; set; } = string.Empty;
     [ObservableProperty] public partial bool CanWriteReview { get; set; }
@@ -297,6 +304,12 @@ public partial class GameDetailsViewModel : ObservableObject
         Title = game.Title;
         Symbol = game.Symbol;
         IsDlc = game.Kind == GameContentKind.Dlc;
+        HasAchievementsTabButton = game.Kind is not (GameContentKind.Book or GameContentKind.Music or GameContentKind.Art);
+        if (!HasAchievementsTabButton && SelectedTab == "Achievements")
+        {
+            SelectedTab = "Details";
+        }
+
         _coverUrl = game.ThumbnailUrl;
         _logoUrl = game.LogoUrl;
         CoverImageUrl = ResolveMediaUrl(game.LandscapeUrl);
@@ -389,8 +402,10 @@ public partial class GameDetailsViewModel : ObservableObject
                 ExeName = build.ExeName,
                 PlatformText = FormatPlatform(build.Platform, build.Architecture),
                 MetaText = build.ExeName + (build.IsDefault ? Loc.T(" · domyślny") : ""),
-                IsPreferred = build.Platform == preferredPlatform,
-                PreferredLabel = build.Platform == preferredPlatform ? Loc.T("Twoja platforma") : string.Empty
+                IsPreferred = build.Platform == preferredPlatform || build.Platform == GamePlatform.Any,
+                PreferredLabel = build.Platform == preferredPlatform || build.Platform == GamePlatform.Any
+                    ? Loc.T("Twoja platforma")
+                    : string.Empty
             };
             row.Versions.Add(VersionOptionItem.FromCurrent(build.CurrentVersion));
             row.SelectedVersion = row.Versions[0];
@@ -452,6 +467,7 @@ public partial class GameDetailsViewModel : ObservableObject
             GamePlatform.Windows => "Windows",
             GamePlatform.Linux => "Linux",
             GamePlatform.MacOS => "macOS",
+            GamePlatform.Any => Loc.T("Dowolna"),
             _ => platform.ToString()
         };
 

@@ -124,6 +124,13 @@
             <TextBlock x:Name="NavWishlistLabel" Text="{loc:Tr Key='Lista życzeń'}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
+        <Button x:Name="NavCreative" Tag="Creative" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
+                ToolTipService.ToolTip="Twórczość">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <FontIcon Glyph="&#xE790;" FontSize="16" />
+            <TextBlock x:Name="NavCreativeLabel" Text="{loc:Tr Key='Twórczość'}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
         <Button x:Name="NavPublish" Tag="Publish" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
                 Visibility="Collapsed" ToolTipService.ToolTip="Publikuj">
           <StackPanel Orientation="Horizontal" Spacing="12">
@@ -203,7 +210,7 @@
                             VerticalAlignment="Center">
                   <Button FontFamily="Segoe Fluent Icons" Content="&#xE768;"
                           Tag="{x:Bind}" Click="Play_Click" Padding="8"
-                          ToolTipService.ToolTip="Uruchom"
+                          ToolTipService.ToolTip="{x:Bind LaunchLabel}"
                           IsEnabled="{x:Bind CanLaunch}" />
                   <Button FontFamily="Segoe Fluent Icons" Content="&#xE712;"
                           Tag="{x:Bind}" Click="More_Click" Padding="8"

@@ -148,7 +148,7 @@ public partial class StudioViewModel : ObservableObject
         try
         {
             var all = await _api.GetMyGamesAsync();
-            var baseGames = all.Where(g => g.Kind == GameContentKind.Game).OrderBy(g => g.Title).ToList();
+            var baseGames = all.Where(g => g.Kind != GameContentKind.Dlc).OrderBy(g => g.Title).ToList();
             var dlcByParent = all
                 .Where(g => g.Kind == GameContentKind.Dlc && g.ParentGameId is not null)
                 .GroupBy(g => g.ParentGameId!.Value)

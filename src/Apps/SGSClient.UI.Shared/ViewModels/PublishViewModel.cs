@@ -43,12 +43,19 @@ public partial class PublishViewModel : ObservableObject
         _upload = upload;
         _auth = auth;
         _api = api;
-        Title = Loc.T("Publikuj grę");
         StatusText = Loc.T("Wybierz folder z grą (musi zawierać sgs-manifest.json).");
         RefreshAuthHint();
     }
 
-    public string Title { get; }
+    public string Title => Loc.T(Kind switch
+    {
+        "dlc" => "Publikuj DLC",
+        "app" => "Publikuj program",
+        "book" => "Publikuj książkę",
+        "music" => "Publikuj muzykę",
+        "art" => "Publikuj grafikę",
+        _ => "Publikuj grę"
+    });
     public ObservableCollection<string> Issues { get; } = [];
     public ObservableCollection<string> ParentGameOptions { get; } = [];
     public IReadOnlyList<string> PlatformOptions { get; } = ["windows", "linux", "macos"];
@@ -87,10 +94,24 @@ public partial class PublishViewModel : ObservableObject
     [ObservableProperty] public partial bool ShowProgress { get; set; }
     [ObservableProperty] public partial string AuthHint { get; set; } = string.Empty;
 
+    /// <summary>Manifest kind: game, dlc, app, book, music or art. <see cref="IsDlc"/> mirrors kind == "dlc".</summary>
+    [ObservableProperty] public partial string Kind { get; set; } = "game";
+
     public bool ShowParentField => IsDlc;
+
+    partial void OnKindChanged(string value)
+    {
+        IsDlc = value == "dlc";
+        OnPropertyChanged(nameof(Title));
+    }
 
     partial void OnIsDlcChanged(bool value)
     {
+        if (value != (Kind == "dlc"))
+        {
+            Kind = value ? "dlc" : "game";
+        }
+
         OnPropertyChanged(nameof(ShowParentField));
         if (value)
         {
@@ -106,10 +127,10 @@ public partial class PublishViewModel : ObservableObject
         HasManifestForm = false;
         Issues.Clear();
         CleanupPackedZip();
-        var keepDlc = IsDlc;
+        var keepKind = Kind;
         var keepParent = ParentSymbol;
         ClearForm();
-        IsDlc = keepDlc;
+        Kind = keepKind;
         ParentSymbol = keepParent;
         _packageHints = null;
 
@@ -141,7 +162,7 @@ public partial class PublishViewModel : ObservableObject
                 return;
             }
 
-            ApplyManifestToForm(loaded.Manifest, preferExistingDlc: keepDlc);
+            ApplyManifestToForm(loaded.Manifest, preferExistingDlc: keepKind == "dlc");
             HasManifestForm = true;
             StatusText = Loc.T("Uzupełnij lub popraw dane gry, potem przygotuj paczkę.");
         }
@@ -173,7 +194,7 @@ public partial class PublishViewModel : ObservableObject
 
     public void PrepareForDlc(string parentSymbol)
     {
-        IsDlc = true;
+        Kind = "dlc";
         ParentSymbol = parentSymbol?.Trim() ?? string.Empty;
         StatusText = string.IsNullOrWhiteSpace(ParentSymbol)
             ? Loc.T("Tryb DLC — wybierz grę bazową i folder z paczką.")
@@ -183,9 +204,16 @@ public partial class PublishViewModel : ObservableObject
 
     public void PrepareForNewGame()
     {
-        IsDlc = false;
+        Kind = "game";
         ParentSymbol = string.Empty;
         StatusText = Loc.T("Wybierz folder z grą (musi zawierać sgs-manifest.json).");
+    }
+
+    public void PrepareForApp()
+    {
+        Kind = "app";
+        ParentSymbol = string.Empty;
+        StatusText = Loc.T("Wybierz folder z programem (musi zawierać sgs-manifest.json).");
     }
 
     public async Task LoadParentOptionsAsync()
@@ -518,14 +546,14 @@ public partial class PublishViewModel : ObservableObject
         var manifestIsDlc = string.Equals(kind, "dlc", StringComparison.OrdinalIgnoreCase);
         if (manifestIsDlc)
         {
-            IsDlc = true;
+            Kind = "dlc";
             ParentSymbol = string.IsNullOrWhiteSpace(manifest.Game.ParentSymbol)
                 ? ParentSymbol
                 : manifest.Game.ParentSymbol!;
         }
         else if (!preferExistingDlc || !string.IsNullOrWhiteSpace(rawKind))
         {
-            IsDlc = false;
+            Kind = kind ?? "game";
             ParentSymbol = string.Empty;
         }
 
@@ -592,7 +620,7 @@ public partial class PublishViewModel : ObservableObject
             {
                 Title = GameTitle.Trim(),
                 Symbol = GameSymbol.Trim(),
-                Kind = IsDlc ? "dlc" : "game",
+                Kind = Kind,
                 ParentSymbol = IsDlc ? NullIfWhiteSpace(ParentSymbol) : null,
                 Description = NullIfWhiteSpace(GameDescription),
                 HardwareRequirements = NullIfWhiteSpace(HardwareRequirements),
@@ -628,7 +656,7 @@ public partial class PublishViewModel : ObservableObject
 
     private void ClearForm()
     {
-        IsDlc = false;
+        Kind = "game";
         ParentSymbol = string.Empty;
         GameTitle = string.Empty;
         GameSymbol = string.Empty;

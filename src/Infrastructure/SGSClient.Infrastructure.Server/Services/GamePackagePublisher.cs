@@ -91,10 +91,9 @@ public sealed class GamePackagePublisher(
                 return GamePackagePublishResult.Fail(iconError!);
             }
 
-            var isDlc = string.Equals(
-                SgsPackageRules.NormalizeContentKind(manifest.Game.Kind),
-                "dlc",
-                StringComparison.Ordinal);
+            var contentKind = Enum.Parse<GameContentKind>(
+                SgsPackageRules.NormalizeContentKind(manifest.Game.Kind)!, ignoreCase: true);
+            var isDlc = contentKind == GameContentKind.Dlc;
             int? parentGameId = null;
             if (isDlc)
             {
@@ -139,7 +138,7 @@ public sealed class GamePackagePublisher(
                     IntroUrl = mediaResult.IntroUrl,
                     DraftP = false,
                     FeaturedP = false,
-                    Kind = isDlc ? GameContentKind.Dlc : GameContentKind.Game,
+                    Kind = contentKind,
                     ParentGameId = parentGameId,
                     CreatedAtUtc = DateTimeOffset.UtcNow
                 };
@@ -154,11 +153,10 @@ public sealed class GamePackagePublisher(
                         "Ta gra należy do innego autora. Nie możesz nadpisać cudzej paczki.");
                 }
 
-                var existingKind = isDlc ? GameContentKind.Dlc : GameContentKind.Game;
-                if (game.Kind != existingKind)
+                if (game.Kind != contentKind)
                 {
                     return GamePackagePublishResult.Fail(
-                        "Nie można zmienić rodzaju pozycji (gra ↔ DLC) przy republishu.");
+                        "Nie można zmienić rodzaju pozycji (np. gra ↔ DLC) przy republishu.");
                 }
 
                 if (isDlc && game.ParentGameId != parentGameId)

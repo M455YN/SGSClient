@@ -105,7 +105,7 @@
                             <TextBlock Text="{Binding LastPlayedText}" Foreground="#CCFFFFFF" FontSize="11"/>
                             <TextBlock Text="{Binding PlaytimeText}" Foreground="#CCFFFFFF" FontSize="11"
                                        IsVisible="{Binding HasPlaytime}"/>
-                            <Button Content="{loc:Tr Key='Graj'}" Tag="{Binding}" Click="Launch_OnClick"
+                            <Button Content="{Binding LaunchLabel}" Tag="{Binding}" Click="Launch_OnClick"
                                     IsEnabled="{Binding CanLaunch}"
                                     Classes="accent" Padding="12,6"
                                     HorizontalAlignment="Left"/>

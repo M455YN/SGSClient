@@ -106,6 +106,15 @@
               <TextBlock x:Name="NavWishlistLabel" Text="{loc:Tr Key='Lista życzeń'}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
+          <Button x:Name="NavCreative" Tag="Creative" Click="Nav_OnClick"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="Twórczość">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Edit" FontSize="16" />
+              <TextBlock x:Name="NavCreativeLabel" Text="{loc:Tr Key='Twórczość'}" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
           <Button x:Name="NavPublish" Tag="Publish" Click="Nav_OnClick" IsVisible="False"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                   MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
@@ -164,7 +173,7 @@
                   </StackPanel>
                   <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
                               VerticalAlignment="Center">
-                    <Button Padding="8" ToolTip.Tip="Uruchom"
+                    <Button Padding="8" ToolTip.Tip="{Binding LaunchLabel}"
                             Tag="{Binding}" Click="Play_OnClick"
                             IsEnabled="{Binding CanLaunch}">
                       <ui:FASymbolIcon Symbol="Play" FontSize="14" />
