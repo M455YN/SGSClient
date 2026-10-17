@@ -92,12 +92,12 @@
             <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                    IsVisible="{Binding HasCover}"/>
           </Panel>
-          <Border Grid.Row="1" Padding="12,10"
+          <Border Grid.Row="1" Padding="12,10" Height="80"
                   Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}">
             <StackPanel Spacing="2">
               <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
               <TextBlock Text="{Binding Blurb}" Opacity="0.65" FontSize="12"
-                         TextTrimming="CharacterEllipsis"/>
+                         TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"/>
             </StackPanel>
           </Border>
         </Grid>

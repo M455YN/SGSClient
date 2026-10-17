@@ -82,13 +82,14 @@
             <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                    Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
           </Grid>
-          <StackPanel Grid.Row="1" Padding="12,10" Spacing="2"
+          <StackPanel Grid.Row="1" Padding="12,10" Spacing="2" Height="80"
                       Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}">
             <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
                        TextTrimming="CharacterEllipsis" />
             <TextBlock Text="{Binding Blurb}"
                        Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextWrapping="Wrap" MaxLines="2"
                        TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Grid>
