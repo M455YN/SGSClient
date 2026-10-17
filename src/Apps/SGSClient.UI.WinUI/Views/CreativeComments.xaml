@@ -1,0 +1,59 @@
+<UserControl xmlns:loc="using:SGSClient.UI.WinUI.Localization"
+    x:Class="SGSClient.UI.WinUI.Views.CreativeComments"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SGSClient.UI.WinUI.Views">
+
+  <UserControl.Resources>
+    <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+  </UserControl.Resources>
+
+  <StackPanel Spacing="12">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <TextBlock Text="{Binding CommentCount}" Style="{StaticResource SubtitleTextBlockStyle}" />
+      <ProgressRing Width="16" Height="16" IsActive="{Binding IsBusy}" VerticalAlignment="Center" />
+    </StackPanel>
+
+    <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap"
+               Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVis}}" />
+
+    <TextBlock Text="{loc:Tr Key='Brak komentarzy. Bądź pierwszy!'}"
+               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+               Visibility="{Binding HasNoComments, Converter={StaticResource BoolToVis}}" />
+
+    <ItemsControl ItemsSource="{Binding Comments}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Grid ColumnSpacing="12" Padding="0,8">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <PersonPicture Width="32" Height="32" VerticalAlignment="Top"
+                           DisplayName="{Binding Author}" ProfilePicture="{Binding AvatarUrl}" />
+            <StackPanel Grid.Column="1" Spacing="2">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding Author}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock Text="{Binding DateText}" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Text="{Binding Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+            </StackPanel>
+            <Button Grid.Column="2" Style="{StaticResource SubtleButtonStyle}" VerticalAlignment="Top"
+                    Content="{loc:Tr Key='Usuń'}" Click="Delete_Click"
+                    Visibility="{Binding CanDelete, Converter={StaticResource BoolToVis}}" />
+          </Grid>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <TextBox x:Name="InputBox" MaxLength="2000" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"
+             PlaceholderText="{loc:Tr Key='Napisz komentarz…'}"
+             Text="{Binding NewCommentText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+             KeyDown="Input_KeyDown" />
+    <Button Content="{loc:Tr Key='Dodaj komentarz'}" Style="{StaticResource AccentButtonStyle}"
+            Command="{Binding PostCommand}" />
+  </StackPanel>
+</UserControl>

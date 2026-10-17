@@ -125,7 +125,6 @@ public sealed partial class GameDetailsPage : Page
 
         LaunchButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
         LaunchButton.IsEnabled = ViewModel.CanLaunch;
-        LaunchButton.Content = ViewModel.LaunchLabel;
         InstallButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
         InstallButton.IsEnabled = ViewModel.CanInstall;
         UninstallButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
@@ -147,7 +146,6 @@ public sealed partial class GameDetailsPage : Page
         DetailsPanel.Visibility = ViewModel.ShowDetailsTab ? Visibility.Visible : Visibility.Collapsed;
         ReviewsPanel.Visibility = ViewModel.ShowReviewsTab ? Visibility.Visible : Visibility.Collapsed;
         MorePanel.Visibility = ViewModel.ShowMoreTab ? Visibility.Visible : Visibility.Collapsed;
-        AchievementsTabButton.Visibility = ViewModel.HasAchievementsTabButton ? Visibility.Visible : Visibility.Collapsed;
         AchievementsPanel.Visibility = ViewModel.ShowAchievementsTab ? Visibility.Visible : Visibility.Collapsed;
         AchievementsSummaryText.Text = ViewModel.AchievementsSummaryText;
         AchievementsList.ItemsSource = ViewModel.Achievements;

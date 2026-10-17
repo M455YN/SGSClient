@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using SGSClient.UI.ViewModels;
 using Windows.System;
 
@@ -21,31 +22,72 @@ public sealed partial class CreativeArtSection : UserControl
         set
         {
             _viewModel = value;
+            CommentsControl.ViewModel = value?.Comments;
             if (value is not null)
             {
-                value.PropertyChanged += (_, _) => RefreshUi();
+                value.PropertyChanged += (_, _) =>
+                {
+                    RefreshUi();
+                    RebuildChips();
+                };
                 value.Items.CollectionChanged += (_, _) => RefreshUi();
+                value.VisibleItems.CollectionChanged += (_, _) => RefreshUi();
+                value.Categories.CollectionChanged += (_, _) => RebuildChips();
             }
 
             RefreshUi();
+            RebuildChips();
         }
     }
 
     private void RefreshUi()
     {
-        if (_viewModel is null)
+        var vm = _viewModel;
+        if (vm is null)
         {
             return;
         }
 
-        StatusText.Text = _viewModel.StatusText;
-        ItemsList.ItemsSource = _viewModel.Items.ToList();
-        Lightbox.Visibility = _viewModel.IsLightboxOpen ? Visibility.Visible : Visibility.Collapsed;
-        LightboxPanel.DataContext = _viewModel.SelectedItem;
-        LightboxTags.Text = _viewModel.SelectedTagsText;
+        StatusText.Text = vm.StatusText;
+        BusyRing.IsActive = vm.IsBusy;
+        if (!ReferenceEquals(ItemsList.ItemsSource, vm.VisibleItems))
+        {
+            ItemsList.ItemsSource = vm.VisibleItems;
+        }
+
+        GalleryPanel.Visibility = ToVisibility(vm.ShowGallery);
+        DetailPanel.Visibility = ToVisibility(!vm.ShowGallery);
+        if (!ReferenceEquals(DetailPanel.DataContext, vm.SelectedItem))
+        {
+            DetailPanel.DataContext = vm.SelectedItem;
+            DetailPanel.ChangeView(null, 0, null);
+        }
     }
 
-    private async void SearchBox_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    private void RebuildChips()
+    {
+        ChipsPanel.Children.Clear();
+        var vm = _viewModel;
+        if (vm is null)
+        {
+            return;
+        }
+
+        foreach (var category in vm.Categories)
+        {
+            var chip = new Button
+            {
+                Content = category,
+                Style = (Style)Resources[category == vm.SelectedCategory ? "ChipSelectedStyle" : "ChipStyle"]
+            };
+            chip.Click += (_, _) => vm.SelectCategoryCommand.Execute(category);
+            ChipsPanel.Children.Add(chip);
+        }
+    }
+
+    private static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+
+    private async void SearchBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key != VirtualKey.Enter || _viewModel is null)
         {
@@ -56,11 +98,25 @@ public sealed partial class CreativeArtSection : UserControl
         await _viewModel.LoadAsync();
     }
 
-    private void Tile_Tapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    private void Gallery_ItemClick(object sender, ItemClickEventArgs e)
     {
-        if (_viewModel is not null && sender is FrameworkElement { DataContext: CreativeItem item })
+        if (_viewModel is not null && e.ClickedItem is CreativeItem item)
         {
             _viewModel.OpenCommand.Execute(item);
+        }
+    }
+
+    private void Tile_PointerEntered(object sender, PointerRoutedEventArgs e) =>
+        SetOverlayVisibility(sender, Visibility.Visible);
+
+    private void Tile_PointerExited(object sender, PointerRoutedEventArgs e) =>
+        SetOverlayVisibility(sender, Visibility.Collapsed);
+
+    private static void SetOverlayVisibility(object sender, Visibility visibility)
+    {
+        if (sender is Grid tile && tile.Children.OfType<Border>().FirstOrDefault(b => b.Tag as string == "overlay") is { } overlay)
+        {
+            overlay.Visibility = visibility;
         }
     }
 

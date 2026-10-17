@@ -1,58 +1,155 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
+             xmlns:sys="using:System"
+             xmlns:views="using:SGSClient.UI.Views"
              x:Class="SGSClient.UI.Views.CreativeArtSection"
              x:DataType="vm:CreativeArtViewModel">
-  <Grid RowDefinitions="Auto,*,Auto">
-    <TextBox Grid.Row="0" MaxWidth="360" HorizontalAlignment="Left" Margin="0,0,0,12"
-             Watermark="{loc:Tr Key='Szukaj grafik…'}" Text="{Binding SearchText}"
-             KeyDown="SearchBox_OnKeyDown"/>
+  <UserControl.Styles>
+    <Style Selector="Button.chip">
+      <Setter Property="CornerRadius" Value="16"/>
+      <Setter Property="Padding" Value="12,4"/>
+    </Style>
+    <Style Selector="Button.chip.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Button.chip.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+    </Style>
+    <Style Selector="Border.tile Border.overlay">
+      <Setter Property="Opacity" Value="0"/>
+    </Style>
+    <Style Selector="Border.tile:pointerover Border.overlay">
+      <Setter Property="Opacity" Value="1"/>
+    </Style>
+  </UserControl.Styles>
 
-    <ScrollViewer Grid.Row="1">
-      <ItemsControl ItemsSource="{Binding Items}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <WrapPanel/>
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="vm:CreativeItem">
-            <Border Width="220" Height="220" Margin="0,0,12,12" CornerRadius="8" ClipToBounds="True"
-                    Background="#2B2B2B" Cursor="Hand" Tag="{Binding}"
-                    PointerPressed="Tile_OnPointerPressed">
-              <Grid>
-                <TextBlock Text="{Binding TileLabel}" FontSize="48" FontWeight="Bold" Opacity="0.3"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                <Image Source="{Binding CoverUrl}" Stretch="UniformToFill"/>
-                <Border VerticalAlignment="Bottom" Background="#B3000000" Padding="10,6">
-                  <StackPanel Spacing="2">
-                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
-                               TextTrimming="CharacterEllipsis" MaxLines="1"/>
-                    <TextBlock Text="{Binding Author}" Opacity="0.7" FontSize="12"
-                               TextTrimming="CharacterEllipsis" MaxLines="1"/>
-                  </StackPanel>
-                </Border>
-              </Grid>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </ScrollViewer>
-
-    <TextBlock Grid.Row="2" Text="{Binding StatusText}" Opacity="0.75" TextWrapping="Wrap" Margin="0,12,0,0"/>
-
-    <Border Grid.RowSpan="3" Background="#E6101010" Padding="32" IsVisible="{Binding IsLightboxOpen}">
-      <Grid RowDefinitions="*,Auto,Auto,Auto,Auto,Auto">
-        <Image Grid.Row="0" Source="{Binding SelectedItem.FileUrl}" Stretch="Uniform" Margin="0,0,0,12"/>
-        <TextBlock Grid.Row="1" Text="{Binding SelectedItem.Title}" FontSize="22" FontWeight="SemiBold"/>
-        <TextBlock Grid.Row="2" Text="{Binding SelectedItem.Author}" Opacity="0.7"/>
-        <TextBlock Grid.Row="3" Text="{Binding SelectedItem.Description}" TextWrapping="Wrap" MaxHeight="120" Margin="0,8,0,0"/>
-        <TextBlock Grid.Row="4" Text="{Binding SelectedTagsText}" Opacity="0.6" Margin="0,4,0,0"/>
-        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
-          <Button Content="{loc:Tr Key='Pobierz'}" Classes="accent" Command="{Binding DownloadCommand}"/>
-          <Button Content="{loc:Tr Key='Zamknij'}" Command="{Binding CloseCommand}"/>
-        </StackPanel>
+  <Grid>
+    <Grid x:Name="GalleryPanel" RowDefinitions="Auto,*" IsVisible="{Binding ShowGallery}">
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+        <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,12,0">
+          <StackPanel x:Name="ChipsPanel" Orientation="Horizontal" Spacing="4"/>
+        </ScrollViewer>
+        <TextBox Grid.Column="1" Width="260" VerticalAlignment="Center"
+                 Watermark="{loc:Tr Key='Szukaj grafik…'}" Text="{Binding SearchText}"
+                 KeyDown="SearchBox_OnKeyDown"/>
       </Grid>
-    </Border>
+
+      <Grid Grid.Row="1">
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding VisibleItems}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CreativeItem">
+                <Border Classes="tile" Width="260" Height="240" Margin="0,0,8,8" CornerRadius="8" ClipToBounds="True"
+                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" Cursor="Hand" Tag="{Binding}"
+                        PointerPressed="Tile_OnPointerPressed">
+                  <Grid>
+                    <TextBlock Text="{Binding TileLabel}" FontSize="48" FontWeight="Bold" Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Image Source="{Binding CoverUrl}" Stretch="UniformToFill"/>
+                    <Border Classes="overlay" VerticalAlignment="Bottom" IsHitTestVisible="False" Padding="12,10">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                          <GradientStop Offset="0" Color="#00000000"/>
+                          <GradientStop Offset="1" Color="#E6000000"/>
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"
+                                   Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <Border Width="20" Height="20" CornerRadius="10" Background="{DynamicResource AccentFillColorDefaultBrush}">
+                            <TextBlock Text="{Binding AuthorInitial}" FontSize="11" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                          </Border>
+                          <TextBlock Text="{Binding Author}" IsVisible="{Binding HasAuthor}" FontSize="12"
+                                     Foreground="White" Opacity="0.85" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                          <TextBlock Text="{loc:Tr Key='Nieznany autor'}" IsVisible="{Binding !HasAuthor}" FontSize="12"
+                                     Foreground="White" Opacity="0.85"/>
+                        </StackPanel>
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Width="160"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
+      </Grid>
+    </Grid>
+
+    <ScrollViewer x:Name="DetailScroll" IsVisible="{Binding IsDetailOpen}">
+      <StackPanel MaxWidth="960" HorizontalAlignment="Left" Spacing="16" Margin="0,0,0,24">
+        <Grid ColumnDefinitions="*,Auto">
+          <Button Grid.Column="0" Content="{loc:Tr Key='← Wróć'}" Command="{Binding CloseCommand}"
+                  HorizontalAlignment="Left"/>
+          <Button Grid.Column="1" Classes="accent" Content="{loc:Tr Key='Pobierz'}" Command="{Binding DownloadCommand}"/>
+        </Grid>
+
+        <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="8" ClipToBounds="True"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+          <Image Source="{Binding SelectedItem.FileUrl}" Stretch="Uniform" MaxHeight="620"/>
+        </Border>
+
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Border Grid.Column="0" Width="48" Height="48" CornerRadius="24" Background="{DynamicResource AccentFillColorDefaultBrush}" VerticalAlignment="Top">
+            <TextBlock Text="{Binding SelectedItem.AuthorInitial}" FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <StackPanel Grid.Column="1" Margin="12,0,12,0" Spacing="2">
+            <TextBlock Text="{Binding SelectedItem.Title}" FontSize="18" FontWeight="Bold" TextWrapping="Wrap"/>
+            <TextBlock FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" IsVisible="{Binding SelectedItem.HasAuthor}">
+              <Run Text="{loc:Tr Key='przez'}"/><Run Text=" "/><Run Text="{Binding SelectedItem.Author}" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            </TextBlock>
+            <TextBlock Text="{loc:Tr Key='Nieznany autor'}" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       IsVisible="{Binding !SelectedItem.HasAuthor}"/>
+          </StackPanel>
+          <TextBlock Grid.Column="2" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Top">
+            <Run Text="{loc:Tr Key='Opublikowano:'}"/><Run Text=" "/><Run Text="{Binding SelectedItem.PublishedText}"/>
+          </TextBlock>
+        </Grid>
+
+        <Border Height="1" Background="{DynamicResource DividerStrokeColorDefaultBrush}"/>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" IsVisible="{Binding SelectedItem.HasTags}">
+          <ItemsControl ItemsSource="{Binding SelectedItem.Tags}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="4"/>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="sys:String">
+                <Border CornerRadius="4" BorderThickness="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Padding="8,4">
+                  <TextBlock Text="{Binding}" FontSize="12"/>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <TextBlock Text="{Binding SelectedItem.Description}" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                   IsVisible="{Binding SelectedItem.HasDescription}"/>
+
+        <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorTertiaryBrush}">
+          <Run Text="{loc:Tr Key='Plik:'}"/><Run Text=" "/><Run Text="{Binding SelectedItem.FileName}"/>
+        </TextBlock>
+
+        <views:CreativeComments DataContext="{Binding Comments}" Margin="0,16,0,0"/>
+      </StackPanel>
+    </ScrollViewer>
   </Grid>
 </UserControl>

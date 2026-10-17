@@ -61,7 +61,7 @@ public partial class GamesViewModel : ObservableObject
     }
 
     private static readonly GameContentKind[] FilterKinds =
-        [GameContentKind.Game, GameContentKind.App, GameContentKind.Book, GameContentKind.Music, GameContentKind.Art];
+        [GameContentKind.Game, GameContentKind.App];
 
     private static readonly GamePlatform[] FilterPlatforms = [GamePlatform.Windows, GamePlatform.Linux, GamePlatform.MacOS];
 
@@ -70,7 +70,7 @@ public partial class GamesViewModel : ObservableObject
     public TaxonomySelection FeatureFilters { get; }
 
     public IReadOnlyList<string> KindOptions { get; } =
-        [Loc.T("Dowolny"), Loc.T("Gry"), Loc.T("Programy"), Loc.T("Książki"), Loc.T("Muzyka"), Loc.T("Grafika")];
+        [Loc.T("Dowolny"), Loc.T("Gry"), Loc.T("Programy")];
 
     [ObservableProperty]
     public partial int SelectedKindIndex { get; set; }
@@ -495,7 +495,7 @@ public partial class GamesViewModel : ObservableObject
             Genres = GenreFilters.SelectedSymbols.Count == 0 ? null : GenreFilters.SelectedSymbols,
             Engines = EngineFilters.SelectedSymbols.Count == 0 ? null : EngineFilters.SelectedSymbols,
             Platform = SelectedPlatformIndex is > 0 and <= 3 ? FilterPlatforms[SelectedPlatformIndex - 1] : null,
-            Kind = SelectedKindIndex is > 0 and <= 5 ? FilterKinds[SelectedKindIndex - 1] : null,
+            Kind = SelectedKindIndex is > 0 and <= 2 ? FilterKinds[SelectedKindIndex - 1] : null,
             Features = BuildFeatureFlags(),
             ReleaseStatus = SelectedStatusIndex > 0
                 ? GameStoreLabels.ReleaseStatusFromIndex(SelectedStatusIndex - 1)
@@ -762,7 +762,6 @@ public partial class GameListItem : ObservableObject
             GamePlatform.Windows => "Windows",
             GamePlatform.Linux => "Linux",
             GamePlatform.MacOS => "macOS",
-            GamePlatform.Any => Loc.T("Dowolna"),
             _ => platform.ToString()
         };
 

@@ -14,7 +14,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly WishlistViewModel _wishlist;
     private readonly PublishViewModel _publish;
     private readonly CreativeViewModel _creative;
-    private readonly ContentPublishViewModel _contentPublish;
+    private readonly AddMediaViewModel _addMedia;
+    private readonly AddStoryViewModel _addStory;
     private readonly StudioViewModel _studio;
     private readonly AdminViewModel _admin;
     private readonly SettingsViewModel _settings;
@@ -34,7 +35,8 @@ public partial class MainWindowViewModel : ViewModelBase
             new WishlistViewModel(),
             new CreativeViewModel(),
             new PublishViewModel(),
-            new ContentPublishViewModel(),
+            new AddMediaViewModel(null, null),
+            new AddStoryViewModel(null, null),
             new StudioViewModel(),
             new AdminViewModel(),
             new SettingsViewModel(),
@@ -54,7 +56,8 @@ public partial class MainWindowViewModel : ViewModelBase
         WishlistViewModel wishlist,
         CreativeViewModel creative,
         PublishViewModel publish,
-        ContentPublishViewModel contentPublish,
+        AddMediaViewModel addMedia,
+        AddStoryViewModel addStory,
         StudioViewModel studio,
         AdminViewModel admin,
         SettingsViewModel settings,
@@ -72,7 +75,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _wishlist = wishlist;
         _publish = publish;
         _creative = creative;
-        _contentPublish = contentPublish;
+        _addMedia = addMedia;
+        _addStory = addStory;
         _studio = studio;
         _admin = admin;
         _settings = settings;
@@ -312,14 +316,25 @@ public partial class MainWindowViewModel : ViewModelBase
         _publish.RefreshAuthHint();
     }
 
-    public void NavigateToContentPublish(string kind = "book", string selectTag = "Studio")
+    public void NavigateToAddMedia(string kind, string selectTag = "Studio")
     {
-        _contentPublish.PrepareFor(kind);
+        _addMedia.PrepareFor(kind);
+        ShowAddScreen(_addMedia, selectTag);
+    }
+
+    public void NavigateToAddStory(string selectTag = "Studio")
+    {
+        _addStory.Prepare();
+        ShowAddScreen(_addStory, selectTag);
+    }
+
+    private void ShowAddScreen(ObservableObject page, string selectTag)
+    {
         _contentNavTag = selectTag;
         CloseSocial();
         SelectedNavTag = selectTag;
         Sidebar.SelectNav(selectTag);
-        CurrentPage = _contentPublish;
+        CurrentPage = page;
     }
 
     private void NavigateFromHome(string tag) => Navigate(tag);

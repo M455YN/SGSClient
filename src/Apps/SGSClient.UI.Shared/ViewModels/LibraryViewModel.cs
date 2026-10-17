@@ -561,8 +561,7 @@ public partial class LibraryViewModel : ObservableObject
             {
                 GameId = item.GameId,
                 Title = item.Title,
-                ExecutablePath = item.ExecutablePath,
-                OpenAsDocument = item.IsDocument
+                ExecutablePath = item.ExecutablePath
             });
             StatusText = result.Message;
             if (_scopes is not null)
@@ -711,12 +710,6 @@ public partial class LibraryGameItem : ObservableObject
     public partial string PlatformText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(LaunchLabel))]
-    public partial bool IsDocument { get; set; }
-
-    public string LaunchLabel => Loc.T(IsDocument ? "Otwórz" : "Graj");
-
-    [ObservableProperty]
     public partial string VersionText { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -789,7 +782,6 @@ public partial class LibraryGameItem : ObservableObject
         TileLabel = string.IsNullOrWhiteSpace(item.Symbol)
             ? item.Title[..Math.Min(2, item.Title.Length)].ToUpperInvariant()
             : item.Symbol[..Math.Min(3, item.Symbol.Length)].ToUpperInvariant();
-        IsDocument = item.IsDocument;
         PlatformText = item.Platform + (string.IsNullOrWhiteSpace(item.Architecture) ? "" : $" ({item.Architecture})");
         VersionText = string.IsNullOrWhiteSpace(item.InstalledVersion)
             ? (string.IsNullOrWhiteSpace(item.TargetVersion) ? "—" : Loc.F("Cel: {0}", item.TargetVersion))
@@ -802,11 +794,10 @@ public partial class LibraryGameItem : ObservableObject
         HasCover = !string.IsNullOrWhiteSpace(CoverImageUrl);
         PosterImageUrl = ResolvePosterImage(item, apiBaseUrl);
         HasPoster = !string.IsNullOrWhiteSpace(PosterImageUrl);
-        LastPlayedText = item.IsDocument ? string.Empty
-            : item.LastPlayedUtc is null
-                ? Loc.T("Niegrana")
-                : item.LastPlayedUtc.Value.LocalDateTime.ToString("g");
-        PlaytimeText = item.TotalPlayTimeSeconds > 0 && !item.IsDocument
+        LastPlayedText = item.LastPlayedUtc is null
+            ? Loc.T("Niegrana")
+            : item.LastPlayedUtc.Value.LocalDateTime.ToString("g");
+        PlaytimeText = item.TotalPlayTimeSeconds > 0
             ? PlaytimeFormat.ToPolishTotal(item.TotalPlayTimeSeconds)
             : string.Empty;
         ApplyInstallState(item.InstallState);

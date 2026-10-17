@@ -22,6 +22,7 @@ public partial class StudioViewModel : ObservableObject
     private Func<Task<string?>>? _pickImage;
     private Func<Task<string?>>? _pickVideo;
     private int _selectedId;
+    private readonly Dictionary<string, CreativeWorksViewModel> _works = [];
 
     public StudioViewModel()
         : this(null, null)
@@ -35,6 +36,10 @@ public partial class StudioViewModel : ObservableObject
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         StatusText = Loc.T("Ładowanie Twoich gier…");
+        foreach (var section in new[] { "art", "music", "stories" })
+        {
+            _works[section] = new CreativeWorksViewModel(api, _apiBaseUrl, section, CreativeWorksMode.Mine);
+        }
         AchievementsEditor = new AchievementsEditorViewModel(api, _apiBaseUrl, text => StatusText = text, busy => IsBusy = busy);
         AchievementsEditor.Saved += hasAny =>
         {
@@ -74,6 +79,34 @@ public partial class StudioViewModel : ObservableObject
     [ObservableProperty] public partial bool HasDailyBars { get; set; }
     [ObservableProperty] public partial bool HasVersions { get; set; }
     [ObservableProperty] public partial string ListSummary { get; set; } = string.Empty;
+
+    /// <summary>games | art | music | stories - the top-level section of the panel.</summary>
+    [ObservableProperty] public partial string Section { get; set; } = "games";
+
+    public bool IsGamesSection => Section == "games";
+    public bool IsWorksSection => Section != "games";
+    public CreativeWorksViewModel? CurrentWorks => _works.GetValueOrDefault(Section);
+    public IEnumerable<CreativeWorksViewModel> AllWorks => _works.Values;
+
+    [RelayCommand]
+    private void SelectSection(string? section)
+    {
+        if (!string.IsNullOrWhiteSpace(section))
+        {
+            Section = section;
+        }
+    }
+
+    partial void OnSectionChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsGamesSection));
+        OnPropertyChanged(nameof(IsWorksSection));
+        OnPropertyChanged(nameof(CurrentWorks));
+        if (CurrentWorks is { IsLoaded: false } works)
+        {
+            _ = works.LoadAsync();
+        }
+    }
 
     public bool HasSelection => SelectedGame is not null;
     public bool IsOverviewTab => SelectedTab == "overview";

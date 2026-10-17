@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SGSClient.Core.Enums;
 using SGSClient.Infrastructure.Server.Persistence.Entities;
 
@@ -26,6 +26,11 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
     public DbSet<UserNotificationEntity> UserNotifications => Set<UserNotificationEntity>();
     public DbSet<GameAchievementEntity> GameAchievements => Set<GameAchievementEntity>();
     public DbSet<UserGameAchievementEntity> UserGameAchievements => Set<UserGameAchievementEntity>();
+    public DbSet<ArtworkEntity> Artworks => Set<ArtworkEntity>();
+    public DbSet<TrackEntity> Tracks => Set<TrackEntity>();
+    public DbSet<StoryEntity> Stories => Set<StoryEntity>();
+    public DbSet<StoryChapterEntity> StoryChapters => Set<StoryChapterEntity>();
+    public DbSet<CreativeCommentEntity> CreativeComments => Set<CreativeCommentEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -431,6 +436,72 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.Url).HasMaxLength(2048).IsRequired();
             entity.Property(x => x.SourcePath).HasMaxLength(260);
             entity.HasIndex(x => new { x.GameId, x.SortOrder });
+        });
+
+        modelBuilder.Entity<ArtworkEntity>(entity =>
+        {
+            entity.ToTable("artworks");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Title).HasMaxLength(120).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(4000);
+            entity.Property(x => x.TagsCsv).HasMaxLength(512);
+            entity.Property(x => x.StoredFileName).HasMaxLength(128).IsRequired();
+            entity.Property(x => x.OriginalFileName).HasMaxLength(260).IsRequired();
+            entity.HasIndex(x => x.UserId);
+            entity.HasIndex(x => x.CreatedAtUtc);
+        });
+
+        modelBuilder.Entity<TrackEntity>(entity =>
+        {
+            entity.ToTable("tracks");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Title).HasMaxLength(120).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(4000);
+            entity.Property(x => x.TagsCsv).HasMaxLength(512);
+            entity.Property(x => x.StoredFileName).HasMaxLength(128).IsRequired();
+            entity.Property(x => x.OriginalFileName).HasMaxLength(260).IsRequired();
+            entity.Property(x => x.CoverFileName).HasMaxLength(128);
+            entity.HasIndex(x => x.UserId);
+            entity.HasIndex(x => x.CreatedAtUtc);
+        });
+
+        modelBuilder.Entity<StoryEntity>(entity =>
+        {
+            entity.ToTable("stories");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Title).HasMaxLength(120).IsRequired();
+            entity.Property(x => x.Description).HasMaxLength(4000);
+            entity.Property(x => x.TagsCsv).HasMaxLength(512);
+            entity.Property(x => x.CoverFileName).HasMaxLength(128);
+            entity.HasIndex(x => x.UserId);
+            entity.HasIndex(x => x.CreatedAtUtc);
+            entity.HasMany(x => x.Chapters)
+                .WithOne(x => x.Story)
+                .HasForeignKey(x => x.StoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<StoryChapterEntity>(entity =>
+        {
+            entity.ToTable("story_chapters");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Text).IsRequired();
+            entity.HasIndex(x => new { x.StoryId, x.Index }).IsUnique();
+        });
+
+        modelBuilder.Entity<CreativeCommentEntity>(entity =>
+        {
+            entity.ToTable("creative_comments");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Section).HasMaxLength(16).IsRequired();
+            entity.Property(x => x.Text).HasMaxLength(2000).IsRequired();
+            entity.HasIndex(x => new { x.Section, x.ItemId, x.CreatedAtUtc });
         });
     }
 }

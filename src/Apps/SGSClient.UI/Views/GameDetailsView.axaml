@@ -62,7 +62,7 @@
                         Command="{Binding ToggleWishlistCommand}"
                         IsVisible="{Binding CanToggleWishlist}"
                         Padding="14,12"/>
-                <Button Content="{Binding LaunchLabel}"
+                <Button Content="{loc:Tr Key='Graj'}"
                         Click="Launch_OnClick"
                         IsVisible="{Binding ShowLibraryActions}"
                         IsEnabled="{Binding CanLaunch}"
@@ -162,8 +162,7 @@
               <Button Content="{loc:Tr Key='Szczegóły'}" Tag="Details" Click="Tab_OnClick" Padding="14,8"
                       FontWeight="SemiBold"/>
               <Button Content="{loc:Tr Key='Recenzje'}" Tag="Reviews" Click="Tab_OnClick" Padding="14,8"/>
-              <Button Content="{loc:Tr Key='Osiągnięcia'}" Tag="Achievements" Click="Tab_OnClick" Padding="14,8"
-                      IsVisible="{Binding HasAchievementsTabButton}"/>
+              <Button Content="{loc:Tr Key='Osiągnięcia'}" Tag="Achievements" Click="Tab_OnClick" Padding="14,8"/>
               <Button Content="{loc:Tr Key='Więcej'}" Tag="More" Click="Tab_OnClick" Padding="14,8"/>
             </StackPanel>
             <Border Height="1" Background="#33FFFFFF"/>

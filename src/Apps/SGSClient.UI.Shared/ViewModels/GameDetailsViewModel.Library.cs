@@ -199,7 +199,6 @@ public partial class GameDetailsViewModel
     {
         ShowLibraryActions = true;
         ShowStoreActions = false;
-        LaunchLabel = Loc.T(item.IsDocument ? "Otwórz" : "Graj");
         CanLaunch = !IsDlc
             && item.InstallState == InstallState.Installed
             && !string.IsNullOrWhiteSpace(item.ExecutablePath);

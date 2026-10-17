@@ -44,6 +44,9 @@
           <SelectorBarItem Tag="games" Text="{loc:Tr Key='Katalog'}" Icon="Library" IsSelected="True" />
           <SelectorBarItem Tag="featured" Text="{loc:Tr Key='Wyróżnione'}" Icon="Favorite" />
           <SelectorBarItem Tag="users" Text="{loc:Tr Key='Użytkownicy'}" Icon="People" />
+          <SelectorBarItem Tag="art" Text="{loc:Tr Key='Grafiki'}" Icon="Pictures" />
+          <SelectorBarItem Tag="music" Text="{loc:Tr Key='Muzyka'}" Icon="Audio" />
+          <SelectorBarItem Tag="stories" Text="{loc:Tr Key='Opowiadania'}" Icon="Read" />
         </SelectorBar>
       </StackPanel>
       <Button Grid.Column="1" Click="Refresh_Click" VerticalAlignment="Top"
@@ -53,6 +56,11 @@
           <TextBlock Text="{loc:Tr Key='Odśwież'}" />
         </StackPanel>
       </Button>
+    </Grid>
+
+    <!-- Grafiki / Muzyka / Opowiadania: shared works editor in admin mode -->
+    <Grid Grid.Row="1" Margin="28,0,28,0" Visibility="{Binding IsWorksTab, Converter={StaticResource BoolToVis}}">
+      <local:CreativeWorksEditor DataContext="{Binding CurrentWorks}" />
     </Grid>
 
     <!-- Katalog: master-detail -->

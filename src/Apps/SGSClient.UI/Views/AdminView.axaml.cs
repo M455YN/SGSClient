@@ -76,6 +76,10 @@ public partial class AdminView : UserControl
         if (DataContext is AdminViewModel vm)
         {
             await vm.LoadCommand.ExecuteAsync(null);
+            if (vm.CurrentWorks is { } works)
+            {
+                await works.LoadAsync();
+            }
         }
     }
 

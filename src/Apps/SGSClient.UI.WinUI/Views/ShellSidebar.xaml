@@ -210,7 +210,7 @@
                             VerticalAlignment="Center">
                   <Button FontFamily="Segoe Fluent Icons" Content="&#xE768;"
                           Tag="{x:Bind}" Click="Play_Click" Padding="8"
-                          ToolTipService.ToolTip="{x:Bind LaunchLabel}"
+                          ToolTipService.ToolTip="Uruchom"
                           IsEnabled="{x:Bind CanLaunch}" />
                   <Button FontFamily="Segoe Fluent Icons" Content="&#xE712;"
                           Tag="{x:Bind}" Click="More_Click" Padding="8"

@@ -128,9 +128,11 @@ public partial class App : Application
             sp.GetService<IGameUploadClient>(),
             sp.GetService<IAuthSession>(),
             sp.GetService<ISgsApiService>()));
-        services.AddTransient(sp => new ContentPublishViewModel(
-            sp.GetService<IGamePackagePacker>(),
-            sp.GetService<IGameUploadClient>(),
+        services.AddTransient(sp => new AddMediaViewModel(
+            sp.GetService<ISgsApiService>(),
+            sp.GetService<IAuthSession>()));
+        services.AddTransient(sp => new AddStoryViewModel(
+            sp.GetService<ISgsApiService>(),
             sp.GetService<IAuthSession>()));
         services.AddTransient(sp =>
         {
@@ -194,7 +196,8 @@ public partial class App : Application
             sp.GetRequiredService<WishlistViewModel>(),
             sp.GetRequiredService<CreativeViewModel>(),
             sp.GetRequiredService<PublishViewModel>(),
-            sp.GetRequiredService<ContentPublishViewModel>(),
+            sp.GetRequiredService<AddMediaViewModel>(),
+            sp.GetRequiredService<AddStoryViewModel>(),
             sp.GetRequiredService<StudioViewModel>(),
             sp.GetRequiredService<AdminViewModel>(),
             sp.GetRequiredService<SettingsViewModel>(),

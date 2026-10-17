@@ -38,19 +38,6 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
             return GameLaunchResult.NotFound();
         }
 
-        if (request.OpenAsDocument)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo { FileName = exe, UseShellExecute = true })?.Dispose();
-                return GameLaunchResult.Ok();
-            }
-            catch
-            {
-                return GameLaunchResult.Failed(Loc.T("Nie udało się otworzyć pliku."));
-            }
-        }
-
         if (IsRunning(request.GameId) || IsExeTracked(exe) || IsExeRunningOnOs(exe))
         {
             return GameLaunchResult.AlreadyRunning(title);

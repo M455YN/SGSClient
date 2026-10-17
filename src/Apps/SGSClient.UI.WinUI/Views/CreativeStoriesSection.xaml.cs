@@ -24,6 +24,7 @@ public sealed partial class CreativeStoriesSection : UserControl
         set
         {
             _viewModel = value;
+            CommentsControl.ViewModel = value?.Comments;
             if (value is not null)
             {
                 value.PropertyChanged += (_, _) => RefreshUi();
@@ -68,6 +69,7 @@ public sealed partial class CreativeStoriesSection : UserControl
 
         var vm = _viewModel;
         StatusText.Text = vm.StatusText;
+        BusyRing.IsActive = vm.IsBusy;
         BrowsePanel.Visibility = vm.IsReading ? Visibility.Collapsed : Visibility.Visible;
         ReaderPanel.Visibility = vm.IsReading ? Visibility.Visible : Visibility.Collapsed;
 

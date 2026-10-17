@@ -12,11 +12,11 @@
 
     <StackPanel Spacing="12">
       <TextBlock Text="{loc:Tr Key='Twórczość'}" Style="{StaticResource TitleTextBlockStyle}" />
-      <StackPanel x:Name="SectionPanel" Orientation="Horizontal" Spacing="8">
-        <RadioButton Tag="Art" Content="{loc:Tr Key='Grafika'}" GroupName="CreativeSection" Checked="Section_Checked" />
-        <RadioButton Tag="Music" Content="{loc:Tr Key='Muzyka'}" GroupName="CreativeSection" Checked="Section_Checked" />
-        <RadioButton Tag="Stories" Content="{loc:Tr Key='Opowiadania'}" GroupName="CreativeSection" Checked="Section_Checked" />
-      </StackPanel>
+      <SelectorBar x:Name="SectionBar" SelectionChanged="Section_SelectionChanged">
+        <SelectorBarItem Tag="Art" Text="{loc:Tr Key='Grafika'}" Icon="Pictures" IsSelected="True" />
+        <SelectorBarItem Tag="Music" Text="{loc:Tr Key='Muzyka'}" Icon="Audio" />
+        <SelectorBarItem Tag="Stories" Text="{loc:Tr Key='Opowiadania'}" Icon="Library" />
+      </SelectorBar>
     </StackPanel>
 
     <Grid Grid.Row="1">

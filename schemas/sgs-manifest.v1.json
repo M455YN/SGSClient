@@ -31,8 +31,8 @@
         },
         "kind": {
           "type": ["string", "null"],
-          "enum": ["game", "dlc", "app", "book", "music", "art", null],
-          "description": "Catalog kind. Use dlc with parentSymbol for downloadable content; book, music and art are opened rather than run and require platform any."
+          "enum": ["game", "dlc", "app", null],
+          "description": "Catalog kind. Use dlc with parentSymbol for downloadable content; app for programs."
         },
         "parentSymbol": {
           "type": ["string", "null"],
@@ -207,7 +207,7 @@
         },
         "platform": {
           "type": "string",
-          "enum": ["windows", "linux", "macos", "any"]
+          "enum": ["windows", "linux", "macos"]
         },
         "architecture": {
           "type": ["string", "null"],

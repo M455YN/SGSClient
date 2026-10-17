@@ -37,6 +37,18 @@ public sealed partial class StudioPage : Page
         base.OnNavigatedTo(e);
         await ViewModel.LoadAsync();
         SyncPublishedToggle();
+        if (ViewModel.CurrentWorks is { } works)
+        {
+            await works.LoadAsync();
+        }
+    }
+
+    private void Section_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
+    {
+        if (sender.SelectedItem?.Tag is string tag)
+        {
+            ViewModel.Section = tag;
+        }
     }
 
     private void SyncPublishedToggle()
@@ -46,8 +58,14 @@ public sealed partial class StudioPage : Page
         _syncingToggle = false;
     }
 
-    private async void Refresh_Click(object sender, RoutedEventArgs e) =>
+    private async void Refresh_Click(object sender, RoutedEventArgs e)
+    {
         await ViewModel.LoadCommand.ExecuteAsync(null);
+        if (ViewModel.CurrentWorks is { } works)
+        {
+            await works.LoadAsync();
+        }
+    }
 
     private void AddGame_Click(object sender, RoutedEventArgs e) => ViewModel.AddGameCommand.Execute(null);
 
@@ -140,8 +158,14 @@ public sealed partial class StudioPage : Page
     private void AddApp_Click(object sender, RoutedEventArgs e) =>
         App.MainWindow?.NavigateTo(typeof(PublishPage), "@app", "Studio");
 
-    private void AddOther_Click(object sender, RoutedEventArgs e) =>
-        App.MainWindow?.NavigateTo(typeof(ContentPublishPage), "book", "Studio");
+    private void AddArt_Click(object sender, RoutedEventArgs e) =>
+        App.MainWindow?.NavigateTo(typeof(AddMediaPage), "art", "Studio");
+
+    private void AddMusic_Click(object sender, RoutedEventArgs e) =>
+        App.MainWindow?.NavigateTo(typeof(AddMediaPage), "music", "Studio");
+
+    private void AddStory_Click(object sender, RoutedEventArgs e) =>
+        App.MainWindow?.NavigateTo(typeof(AddStoryPage), selectTag: "Studio");
 
     private void NavigateAddDlc(string parentSymbol) =>
         App.MainWindow?.NavigateTo(typeof(PublishPage), parentSymbol, "Studio");

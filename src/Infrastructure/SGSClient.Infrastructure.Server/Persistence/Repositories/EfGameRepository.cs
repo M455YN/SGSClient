@@ -99,18 +99,26 @@ public sealed class EfGameRepository(
                 .ThenBy(g => g.Title)
         };
 
-        return await ordered
+        var published = await ordered
             .Select(GameProjections.ToDto(includeDlcs: false))
             .ToListAsync(cancellationToken);
+        await AttachOwnerNamesAsync(published, cancellationToken);
+        return published;
     }
 
     public async Task<GameDto?> GetPublishedGameByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await db.Games
+        var game = await db.Games
             .AsNoTracking()
             .Where(g => g.Id == id && !g.DraftP)
             .Select(GameProjections.ToDto(includeDlcs: true))
             .FirstOrDefaultAsync(cancellationToken);
+        if (game is not null)
+        {
+            await AttachOwnerNamesAsync([game], cancellationToken);
+        }
+
+        return game;
     }
 
     public async Task<IReadOnlyList<GameDlcDto>> GetPublishedDlcsAsync(
@@ -663,6 +671,29 @@ public sealed class EfGameRepository(
             }
 
             game.UserId = ownerUserId;
+        }
+    }
+
+    /// <summary>Public catalog: author display name only, never the e-mail address.</summary>
+    private async Task AttachOwnerNamesAsync(IReadOnlyList<GameDto> games, CancellationToken cancellationToken)
+    {
+        var userIds = games.Select(g => g.UserId).Distinct().ToList();
+        if (userIds.Count == 0)
+        {
+            return;
+        }
+
+        var names = await db.Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.DisplayName })
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
+        foreach (var game in games)
+        {
+            if (names.TryGetValue(game.UserId, out var name))
+            {
+                game.OwnerDisplayName = name;
+            }
         }
     }
 

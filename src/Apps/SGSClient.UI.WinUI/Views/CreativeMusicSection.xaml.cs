@@ -61,6 +61,7 @@ public sealed partial class CreativeMusicSection : UserControl
         set
         {
             _viewModel = value;
+            CommentsControl.ViewModel = value?.Comments;
             if (value is not null)
             {
                 value.PropertyChanged += (_, args) =>
@@ -88,6 +89,9 @@ public sealed partial class CreativeMusicSection : UserControl
         }
 
         StatusText.Text = _viewModel.StatusText;
+        BusyRing.IsActive = _viewModel.IsBusy;
+        CommentsPanel.Visibility = _viewModel.IsCommentsOpen ? Visibility.Visible : Visibility.Collapsed;
+        CommentsTrackTitle.Text = _viewModel.CommentsTitle;
         NowPlayingTitle.Text = _viewModel.NowPlayingTitle;
         NowPlayingAuthor.Text = _viewModel.NowPlayingAuthor;
         PlayPauseIcon.Glyph = _viewModel.IsPlaying ? "" : "";
@@ -169,6 +173,16 @@ public sealed partial class CreativeMusicSection : UserControl
             _viewModel?.PlayCommand.Execute(item);
         }
     }
+
+    private void Comments_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: CreativeItem item })
+        {
+            _viewModel?.ToggleCommentsCommand.Execute(item);
+        }
+    }
+
+    private void CloseComments_Click(object sender, RoutedEventArgs e) => _viewModel?.ToggleCommentsCommand.Execute(null);
 
     private void PlayPause_Click(object sender, RoutedEventArgs e) => _viewModel?.TogglePlayCommand.Execute(null);
 

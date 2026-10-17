@@ -39,6 +39,12 @@
                        Command="{Binding SelectTabCommand}" CommandParameter="featured"/>
           <RadioButton Content="{loc:Tr Key='Użytkownicy'}" GroupName="AdminTab" IsChecked="{Binding IsUsersTab, Mode=OneWay}"
                        Command="{Binding SelectTabCommand}" CommandParameter="users"/>
+          <RadioButton Content="{loc:Tr Key='Grafiki'}" GroupName="AdminTab"
+                       Command="{Binding SelectTabCommand}" CommandParameter="art"/>
+          <RadioButton Content="{loc:Tr Key='Muzyka'}" GroupName="AdminTab"
+                       Command="{Binding SelectTabCommand}" CommandParameter="music"/>
+          <RadioButton Content="{loc:Tr Key='Opowiadania'}" GroupName="AdminTab"
+                       Command="{Binding SelectTabCommand}" CommandParameter="stories"/>
         </StackPanel>
       </StackPanel>
       <Button Grid.Column="1" Content="{loc:Tr Key='Odśwież'}" Click="Refresh_OnClick" Padding="12,6" VerticalAlignment="Top"/>
@@ -52,6 +58,11 @@
                  VerticalAlignment="Center"
                  TextWrapping="Wrap"
                  MaxWidth="420"/>
+
+      <!-- Grafiki / Muzyka / Opowiadania: shared works editor in admin mode -->
+      <Panel IsVisible="{Binding IsWorksTab}">
+        <views:CreativeWorksEditor DataContext="{Binding CurrentWorks}"/>
+      </Panel>
 
       <!-- Katalog: master-detail -->
       <Grid IsVisible="{Binding ShowGames}" ColumnDefinitions="360,*">
