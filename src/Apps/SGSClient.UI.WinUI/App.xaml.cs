@@ -29,6 +29,7 @@ public partial class App : Application
         {
             LogStartupFailure("UnhandledException", e.Exception);
             e.Handled = true;
+            ShowErrorDialog(e.Exception);
         };
         InitializeComponent();
     }
@@ -264,6 +265,61 @@ public partial class App : Application
         }
     }
 
+    private static bool _errorDialogOpen;
+
+    /// <summary>Shows the unhandled exception (full details, copyable) instead of failing silently.</summary>
+    private static void ShowErrorDialog(Exception? ex)
+    {
+        var window = MainWindow;
+        if (ex is null || window?.Content?.XamlRoot is not { } xamlRoot || _errorDialogOpen)
+        {
+            return;
+        }
+
+        window.DispatcherQueue.TryEnqueue(async () =>
+        {
+            _errorDialogOpen = true;
+            try
+            {
+                var details = ex.ToString();
+                var dialog = new Microsoft.UI.Xaml.Controls.ContentDialog
+                {
+                    Title = Loc.T("Wystąpił nieoczekiwany błąd"),
+                    Content = new Microsoft.UI.Xaml.Controls.ScrollViewer
+                    {
+                        MaxHeight = 420,
+                        Content = new Microsoft.UI.Xaml.Controls.TextBlock
+                        {
+                            Text = details,
+                            FontFamily = new FontFamily("Consolas"),
+                            FontSize = 12,
+                            TextWrapping = TextWrapping.Wrap,
+                            IsTextSelectionEnabled = true
+                        }
+                    },
+                    PrimaryButtonText = Loc.T("Kopiuj"),
+                    CloseButtonText = Loc.T("Zamknij"),
+                    DefaultButton = Microsoft.UI.Xaml.Controls.ContentDialogButton.Close,
+                    XamlRoot = xamlRoot
+                };
+                if (await dialog.ShowAsync() == Microsoft.UI.Xaml.Controls.ContentDialogResult.Primary)
+                {
+                    var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+                    package.SetText(details);
+                    Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+                }
+            }
+            catch
+            {
+                // another dialog is already open; the error is in startup-error.log
+            }
+            finally
+            {
+                _errorDialogOpen = false;
+            }
+        });
+    }
+
     private static void LogStartupFailure(string source, Exception? ex)
     {
         try
@@ -273,7 +329,7 @@ public partial class App : Application
                 "SGSClient");
             Directory.CreateDirectory(dir);
             var path = Path.Combine(dir, "startup-error.log");
-            File.WriteAllText(path, $"[{DateTimeOffset.Now:O}] {source}\n{ex}\n");
+            File.AppendAllText(path, $"[{DateTimeOffset.Now:O}] {source}\n{ex}\n\n");
         }
         catch
         {
