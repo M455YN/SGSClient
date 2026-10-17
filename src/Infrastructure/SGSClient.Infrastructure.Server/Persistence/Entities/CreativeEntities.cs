@@ -5,10 +5,11 @@ namespace SGSClient.Infrastructure.Server.Persistence.Entities;
 /// <summary>Fields shared by the three owner-published content kinds, used by the common list filter.</summary>
 public interface ICreativeEntity
 {
+    int Id { get; }
     int UserId { get; }
-    string Title { get; }
-    string? Description { get; }
-    string? TagsCsv { get; }
+    string Title { get; set; }
+    string? Description { get; set; }
+    string? TagsCsv { get; set; }
     DateTimeOffset CreatedAtUtc { get; }
 }
 

@@ -74,12 +74,7 @@ public sealed partial class AddMediaViewModel(ISgsApiService? api, IAuthSession?
         RefreshAuthHint();
     }
 
-    public void RefreshAuthHint() =>
-        AuthHint = auth?.IsAvailable != true
-            ? Loc.T("Logowanie jest wyłączone — publikacja nastąpi bez konta.")
-            : auth.IsLoggedIn
-                ? $"Zalogowano jako {auth.CurrentUser?.DisplayName ?? "gracz"}."
-                : Loc.T("Zaloguj się w Profilu przed publikacją.");
+    public void RefreshAuthHint() => AuthHint = AuthHints.For(auth);
 
     public void AddFiles(IEnumerable<string> paths)
     {

@@ -86,11 +86,23 @@ public sealed class CreativeItem
 }
 
 /// <summary>Loads one kind of content (art, music or stories) from its own endpoint.</summary>
-public abstract partial class CreativeSectionViewModel(ISgsApiService? api, string apiBaseUrl)
+public abstract partial class CreativeSectionViewModel(ISgsApiService? api, string apiBaseUrl, string section)
     : ObservableObject
 {
     protected string ApiBaseUrl { get; } = apiBaseUrl;
     protected ISgsApiService? Api { get; } = api;
+
+    /// <summary>Comments of the item that is open in this section.</summary>
+    public CreativeCommentsViewModel Comments { get; } = new(api, section, apiBaseUrl);
+
+    public bool IsLoaded { get; private set; }
+
+    /// <summary>Called once after <see cref="Items"/> has been filled by a load.</summary>
+    protected virtual void OnLoaded()
+    {
+    }
+
+    public Task EnsureLoadedAsync() => IsLoaded ? Task.CompletedTask : LoadAsync();
 
     public ObservableCollection<CreativeItem> Items { get; } = [];
 
@@ -126,6 +138,8 @@ public abstract partial class CreativeSectionViewModel(ISgsApiService? api, stri
                 Items.Add(item);
             }
 
+            IsLoaded = true;
+            OnLoaded();
             HasItems = Items.Count > 0;
             StatusText = HasItems ? string.Empty : Loc.T("Nic tu jeszcze nie ma.");
         }
@@ -172,7 +186,7 @@ public sealed partial class CreativeViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowArt));
         OnPropertyChanged(nameof(ShowMusic));
         OnPropertyChanged(nameof(ShowStories));
-        _ = CurrentSection.LoadAsync();
+        _ = CurrentSection.EnsureLoadedAsync();
     }
 
     private CreativeSectionViewModel CurrentSection => SelectedSection switch

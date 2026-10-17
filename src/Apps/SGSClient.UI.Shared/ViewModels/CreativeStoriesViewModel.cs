@@ -18,12 +18,10 @@ public sealed class StoryChapter
 
 /// <summary>Wattpad-like story browser with an in-app chapter reader.</summary>
 public sealed partial class CreativeStoriesViewModel(ISgsApiService? api, string apiBaseUrl)
-    : CreativeSectionViewModel(api, apiBaseUrl)
+    : CreativeSectionViewModel(api, apiBaseUrl, "stories")
 {
     private readonly Dictionary<int, int> _lastChapterByItem = [];
     private CreativeItem? _readingItem;
-
-    public CreativeCommentsViewModel Comments { get; } = new(api, "stories", apiBaseUrl);
 
     [ObservableProperty] public partial bool IsReading { get; set; }
     [ObservableProperty] public partial string ReaderTitle { get; set; } = string.Empty;

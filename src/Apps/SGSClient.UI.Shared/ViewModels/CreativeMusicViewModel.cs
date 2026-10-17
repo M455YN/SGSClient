@@ -8,10 +8,8 @@ namespace SGSClient.UI.ViewModels;
 
 /// <summary>"Muzyka" section: track list plus a simple play queue. The view does the actual playback.</summary>
 public sealed partial class CreativeMusicViewModel(ISgsApiService? api, string apiBaseUrl)
-    : CreativeSectionViewModel(api, apiBaseUrl)
+    : CreativeSectionViewModel(api, apiBaseUrl, "music")
 {
-    public CreativeCommentsViewModel Comments { get; } = new(api, "music", apiBaseUrl);
-
     /// <summary>Track whose comments are shown below the list, or null when the panel is closed.</summary>
     [ObservableProperty] public partial CreativeItem? CommentsItem { get; set; }
 
