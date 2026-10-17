@@ -106,6 +106,10 @@
             <ComboBox ItemsSource="{Binding PlatformOptions}"
                       SelectedIndex="{Binding SelectedPlatformIndex, Mode=TwoWay}"
                       HorizontalAlignment="Stretch"/>
+            <TextBlock Text="{loc:Tr Key='Typ treści'}" FontWeight="SemiBold" FontSize="13" Margin="0,6,0,0"/>
+            <ComboBox ItemsSource="{Binding KindOptions}"
+                      SelectedIndex="{Binding SelectedKindIndex, Mode=TwoWay}"
+                      HorizontalAlignment="Stretch"/>
           </StackPanel>
 
           <StackPanel Grid.Column="4" Spacing="6">

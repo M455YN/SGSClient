@@ -19,16 +19,22 @@ public sealed partial class PublishPage : Page
         ArchitectureCombo.ItemsSource = ViewModel.ArchitectureOptions;
         ParentSymbolCombo.ItemsSource = ViewModel.ParentGameOptions;
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
-        TitleText.Text = ViewModel.Title;
         RefreshUi();
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        if (e.Parameter is string parentSymbol && !string.IsNullOrWhiteSpace(parentSymbol))
+        if (e.Parameter is string parameter && !string.IsNullOrWhiteSpace(parameter))
         {
-            ViewModel.PrepareForDlc(parentSymbol);
+            // Reserved "@" modes can't collide with kebab-case parent symbols.
+            switch (parameter)
+            {
+                case "@game": ViewModel.PrepareForNewGame(); break;
+                case "@app": ViewModel.PrepareForApp(); break;
+                case "@dlc": ViewModel.PrepareForDlc(string.Empty); break;
+                default: ViewModel.PrepareForDlc(parameter); break;
+            }
         }
 
         ViewModel.RefreshAuthHint();
@@ -38,6 +44,7 @@ public sealed partial class PublishPage : Page
 
     private void RefreshUi()
     {
+        TitleText.Text = ViewModel.Title;
         AuthHintText.Text = ViewModel.AuthHint;
         FolderText.Text = string.IsNullOrWhiteSpace(ViewModel.SelectedFolder)
             ? Loc.T("Nie wybrano folderu.")
@@ -56,34 +63,10 @@ public sealed partial class PublishPage : Page
         ParentSymbolPanel.Visibility = ViewModel.ShowParentField ? Visibility.Visible : Visibility.Collapsed;
         ParentSymbolCombo.ItemsSource = ViewModel.ParentGameOptions;
 
-        if (KindGameRadio.IsChecked != !ViewModel.IsDlc)
-        {
-            KindGameRadio.IsChecked = !ViewModel.IsDlc;
-        }
-
-        if (KindDlcRadio.IsChecked != ViewModel.IsDlc)
-        {
-            KindDlcRadio.IsChecked = ViewModel.IsDlc;
-        }
-
         if (ViewModel.HasManifestForm)
         {
             PushFormFromViewModel();
         }
-    }
-
-    private void ContentKind_Changed(object sender, RoutedEventArgs e)
-    {
-        if (KindDlcRadio.IsChecked == true)
-        {
-            ViewModel.IsDlc = true;
-        }
-        else if (KindGameRadio.IsChecked == true)
-        {
-            ViewModel.IsDlc = false;
-        }
-
-        ParentSymbolPanel.Visibility = ViewModel.ShowParentField ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void PushFormFromViewModel()
@@ -178,7 +161,6 @@ public sealed partial class PublishPage : Page
 
     private void PullFormIntoViewModel()
     {
-        ViewModel.IsDlc = KindDlcRadio.IsChecked == true;
         ViewModel.ParentSymbol = ParentSymbolCombo.Text?.Trim()
             ?? ParentSymbolCombo.SelectedItem as string
             ?? string.Empty;

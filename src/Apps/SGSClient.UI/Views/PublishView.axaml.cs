@@ -30,39 +30,8 @@ public partial class PublishView : UserControl
             if (DataContext is PublishViewModel vm)
             {
                 vm.RefreshAuthHint();
-                SyncKindRadios(vm);
-                vm.PropertyChanged += (_, args) =>
-                {
-                    if (args.PropertyName is nameof(PublishViewModel.IsDlc)
-                        or nameof(PublishViewModel.ShowParentField))
-                    {
-                        SyncKindRadios(vm);
-                    }
-                };
             }
         };
-    }
-
-    private void SyncKindRadios(PublishViewModel vm)
-    {
-        KindGameRadio.IsChecked = !vm.IsDlc;
-        KindDlcRadio.IsChecked = vm.IsDlc;
-    }
-
-    private void KindGame_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is PublishViewModel vm)
-        {
-            vm.IsDlc = false;
-        }
-    }
-
-    private void KindDlc_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is PublishViewModel vm)
-        {
-            vm.IsDlc = true;
-        }
     }
 
     private async void PickFolder_OnClick(object? sender, RoutedEventArgs e)

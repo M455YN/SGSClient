@@ -1,0 +1,58 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.CreativeArtSection"
+             x:DataType="vm:CreativeArtViewModel">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <TextBox Grid.Row="0" MaxWidth="360" HorizontalAlignment="Left" Margin="0,0,0,12"
+             Watermark="{loc:Tr Key='Szukaj grafik…'}" Text="{Binding SearchText}"
+             KeyDown="SearchBox_OnKeyDown"/>
+
+    <ScrollViewer Grid.Row="1">
+      <ItemsControl ItemsSource="{Binding Items}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:CreativeItem">
+            <Border Width="220" Height="220" Margin="0,0,12,12" CornerRadius="8" ClipToBounds="True"
+                    Background="#2B2B2B" Cursor="Hand" Tag="{Binding}"
+                    PointerPressed="Tile_OnPointerPressed">
+              <Grid>
+                <TextBlock Text="{Binding TileLabel}" FontSize="48" FontWeight="Bold" Opacity="0.3"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Image Source="{Binding CoverUrl}" Stretch="UniformToFill"/>
+                <Border VerticalAlignment="Bottom" Background="#B3000000" Padding="10,6">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                    <TextBlock Text="{Binding Author}" Opacity="0.7" FontSize="12"
+                               TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <TextBlock Grid.Row="2" Text="{Binding StatusText}" Opacity="0.75" TextWrapping="Wrap" Margin="0,12,0,0"/>
+
+    <Border Grid.RowSpan="3" Background="#E6101010" Padding="32" IsVisible="{Binding IsLightboxOpen}">
+      <Grid RowDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+        <Image Grid.Row="0" Source="{Binding SelectedItem.FileUrl}" Stretch="Uniform" Margin="0,0,0,12"/>
+        <TextBlock Grid.Row="1" Text="{Binding SelectedItem.Title}" FontSize="22" FontWeight="SemiBold"/>
+        <TextBlock Grid.Row="2" Text="{Binding SelectedItem.Author}" Opacity="0.7"/>
+        <TextBlock Grid.Row="3" Text="{Binding SelectedItem.Description}" TextWrapping="Wrap" MaxHeight="120" Margin="0,8,0,0"/>
+        <TextBlock Grid.Row="4" Text="{Binding SelectedTagsText}" Opacity="0.6" Margin="0,4,0,0"/>
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+          <Button Content="{loc:Tr Key='Pobierz'}" Classes="accent" Command="{Binding DownloadCommand}"/>
+          <Button Content="{loc:Tr Key='Zamknij'}" Command="{Binding CloseCommand}"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

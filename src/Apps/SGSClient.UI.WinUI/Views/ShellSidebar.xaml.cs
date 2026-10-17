@@ -31,6 +31,7 @@ public sealed partial class ShellSidebar : UserControl
                 or nameof(ShellSidebarViewModel.InstalledHeader)
                 or nameof(ShellSidebarViewModel.IsPaneOpen)
                 or nameof(ShellSidebarViewModel.IsWishlistSelected)
+                or nameof(ShellSidebarViewModel.IsCreativeSelected)
                 or nameof(ShellSidebarViewModel.IsDownloadsSelected)
                 or null)
             {
@@ -63,6 +64,7 @@ public sealed partial class ShellSidebar : UserControl
         SetLabelVisibility(NavLibraryLabel, expanded);
         SetLabelVisibility(NavDownloadsLabel, expanded);
         SetLabelVisibility(NavWishlistLabel, expanded);
+        SetLabelVisibility(NavCreativeLabel, expanded);
         SetLabelVisibility(NavPublishLabel, expanded);
         SetLabelVisibility(NavStudioLabel, expanded);
         SetLabelVisibility(NavAdminLabel, expanded);
@@ -75,6 +77,7 @@ public sealed partial class ShellSidebar : UserControl
         ApplyCompactChrome(NavLibrary, expanded, isProfile: false);
         ApplyCompactChrome(NavDownloads, expanded, isProfile: false);
         ApplyCompactChrome(NavWishlist, expanded, isProfile: false);
+        ApplyCompactChrome(NavCreative, expanded, isProfile: false);
         ApplyCompactChrome(NavPublish, expanded, isProfile: false);
         ApplyCompactChrome(NavStudio, expanded, isProfile: false);
         ApplyCompactChrome(NavAdmin, expanded, isProfile: false);
@@ -127,6 +130,7 @@ public sealed partial class ShellSidebar : UserControl
         HighlightNav(NavLibrary, ViewModel.IsLibrarySelected);
         HighlightNav(NavDownloads, ViewModel.IsDownloadsSelected);
         HighlightNav(NavWishlist, ViewModel.IsWishlistSelected);
+        HighlightNav(NavCreative, ViewModel.IsCreativeSelected);
         HighlightNav(NavPublish, ViewModel.IsPublishSelected);
         HighlightNav(NavStudio, ViewModel.IsStudioSelected);
         HighlightNav(NavAdmin, ViewModel.IsAdminSelected);

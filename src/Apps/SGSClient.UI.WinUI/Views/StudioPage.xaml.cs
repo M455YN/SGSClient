@@ -132,7 +132,16 @@ public sealed partial class StudioPage : Page
     }
 
     private void NavigateAddGame() =>
-        App.MainWindow?.NavigateTo(typeof(PublishPage), parameter: null, selectTag: "Studio");
+        App.MainWindow?.NavigateTo(typeof(PublishPage), "@game", "Studio");
+
+    private void AddNewDlc_Click(object sender, RoutedEventArgs e) =>
+        App.MainWindow?.NavigateTo(typeof(PublishPage), "@dlc", "Studio");
+
+    private void AddApp_Click(object sender, RoutedEventArgs e) =>
+        App.MainWindow?.NavigateTo(typeof(PublishPage), "@app", "Studio");
+
+    private void AddOther_Click(object sender, RoutedEventArgs e) =>
+        App.MainWindow?.NavigateTo(typeof(ContentPublishPage), "book", "Studio");
 
     private void NavigateAddDlc(string parentSymbol) =>
         App.MainWindow?.NavigateTo(typeof(PublishPage), parentSymbol, "Studio");

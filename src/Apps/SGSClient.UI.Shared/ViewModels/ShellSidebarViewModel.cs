@@ -111,6 +111,7 @@ public partial class ShellSidebarViewModel : ObservableObject
     public bool IsLibrarySelected => SelectedNavTag == "Library";
     public bool IsDownloadsSelected => SelectedNavTag == "Downloads";
     public bool IsWishlistSelected => SelectedNavTag == "Wishlist";
+    public bool IsCreativeSelected => SelectedNavTag == "Creative";
     public bool IsPublishSelected => SelectedNavTag == "Publish";
     public bool IsStudioSelected => SelectedNavTag is "Studio" or "Publish";
     public bool IsAdminSelected => SelectedNavTag == "Admin";
@@ -124,6 +125,7 @@ public partial class ShellSidebarViewModel : ObservableObject
         OnPropertyChanged(nameof(IsLibrarySelected));
         OnPropertyChanged(nameof(IsDownloadsSelected));
         OnPropertyChanged(nameof(IsWishlistSelected));
+        OnPropertyChanged(nameof(IsCreativeSelected));
         OnPropertyChanged(nameof(IsPublishSelected));
         OnPropertyChanged(nameof(IsStudioSelected));
         OnPropertyChanged(nameof(IsAdminSelected));
@@ -315,7 +317,8 @@ public partial class ShellSidebarViewModel : ObservableObject
             {
                 GameId = item.GameId,
                 Title = item.Title,
-                ExecutablePath = item.ExecutablePath
+                ExecutablePath = item.ExecutablePath,
+                OpenAsDocument = item.IsDocument
             });
             _ = result;
             await LoadInstalledAsync();
@@ -355,6 +358,8 @@ public sealed class SidebarInstalledGame
     public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
     public string StateText { get; init; } = string.Empty;
     public bool CanLaunch { get; init; }
+    public bool IsDocument { get; init; }
+    public string LaunchLabel => Loc.T(IsDocument ? "Otwórz" : "Uruchom");
     public DateTimeOffset? LastPlayedUtc { get; init; }
     public string TileLabel { get; init; } = string.Empty;
 
@@ -382,6 +387,7 @@ public sealed class SidebarInstalledGame
             ExecutablePath = item.ExecutablePath,
             CoverImageUrl = cover,
             CanLaunch = canLaunch,
+            IsDocument = item.IsDocument,
             LastPlayedUtc = item.LastPlayedUtc,
             StateText = canLaunch ? Loc.T("Gotowa do uruchomienia") : Loc.T("Brak pliku wykonywalnego"),
             TileLabel = string.IsNullOrWhiteSpace(item.Symbol)

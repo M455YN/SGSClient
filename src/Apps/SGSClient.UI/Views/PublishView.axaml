@@ -26,16 +26,6 @@
         <StackPanel Spacing="14">
           <TextBlock Text="{loc:Tr Key='2. Dane gry w sklepie'}" FontSize="18" FontWeight="SemiBold"/>
 
-          <StackPanel Spacing="4">
-            <TextBlock Text="{loc:Tr Key='Typ treści'}" Opacity="0.55" FontSize="12"/>
-            <StackPanel Orientation="Horizontal" Spacing="16">
-              <RadioButton x:Name="KindGameRadio" Content="{loc:Tr Key='Gra'}" GroupName="ContentKind"
-                           IsChecked="True" Click="KindGame_OnClick"/>
-              <RadioButton x:Name="KindDlcRadio" Content="DLC" GroupName="ContentKind"
-                           Click="KindDlc_OnClick"/>
-            </StackPanel>
-          </StackPanel>
-
           <StackPanel Spacing="4" IsVisible="{Binding ShowParentField}">
             <TextBlock Text="{loc:Tr Key='Symbol gry bazowej'}" Opacity="0.55" FontSize="12"/>
             <ComboBox ItemsSource="{Binding ParentGameOptions}"

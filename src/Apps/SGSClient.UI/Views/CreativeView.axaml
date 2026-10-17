@@ -1,0 +1,23 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             xmlns:views="using:SGSClient.UI.Views"
+             x:Class="SGSClient.UI.Views.CreativeView"
+             x:DataType="vm:CreativeViewModel">
+  <Grid Margin="28,24,28,0" RowDefinitions="Auto,*">
+    <StackPanel Spacing="12">
+      <TextBlock Text="{loc:Tr Key='Twórczość'}" FontSize="28" FontWeight="SemiBold"/>
+      <StackPanel x:Name="SectionPanel" Orientation="Horizontal" Spacing="8">
+        <RadioButton Tag="Art" Content="{loc:Tr Key='Grafika'}" GroupName="CreativeSection" Click="Section_OnClick"/>
+        <RadioButton Tag="Music" Content="{loc:Tr Key='Muzyka'}" GroupName="CreativeSection" Click="Section_OnClick"/>
+        <RadioButton Tag="Stories" Content="{loc:Tr Key='Opowiadania'}" GroupName="CreativeSection" Click="Section_OnClick"/>
+      </StackPanel>
+    </StackPanel>
+
+    <Panel Grid.Row="1">
+      <views:CreativeArtSection x:Name="ArtSection" DataContext="{Binding Art}" IsVisible="True"/>
+      <views:CreativeMusicSection x:Name="MusicSection" DataContext="{Binding Music}" IsVisible="False"/>
+      <views:CreativeStoriesSection x:Name="StoriesSection" DataContext="{Binding Stories}" IsVisible="False"/>
+    </Panel>
+  </Grid>
+</UserControl>

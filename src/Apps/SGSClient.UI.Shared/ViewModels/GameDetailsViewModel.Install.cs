@@ -33,7 +33,8 @@ public partial class GameDetailsViewModel
             {
                 GameId = _libraryItem.GameId,
                 Title = Title,
-                ExecutablePath = _libraryItem.ExecutablePath
+                ExecutablePath = _libraryItem.ExecutablePath,
+                OpenAsDocument = _libraryItem.IsDocument
             });
             StatusText = result.Message;
             await RefreshPlaytimeAsync(_libraryItem.GameId);

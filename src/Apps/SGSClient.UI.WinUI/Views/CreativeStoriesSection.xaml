@@ -1,0 +1,82 @@
+<UserControl xmlns:loc="using:SGSClient.UI.WinUI.Localization"
+    xmlns:local="using:SGSClient.UI.WinUI.Views"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    x:Class="SGSClient.UI.WinUI.Views.CreativeStoriesSection"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <UserControl.Resources>
+    <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+
+    <DataTemplate x:Key="StoryCardTemplate">
+      <Button Click="Card_Click" Padding="0" Margin="0,0,14,14" Width="170" Height="300"
+              VerticalAlignment="Top" Background="Transparent" BorderThickness="0"
+              HorizontalContentAlignment="Stretch" VerticalContentAlignment="Top">
+        <StackPanel Spacing="6">
+          <Grid Height="150" Background="#2B2B2B">
+            <TextBlock Text="{Binding TileLabel}" FontSize="28" FontWeight="Bold" Opacity="0.3"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="{Binding HasCover, Converter={StaticResource InverseBoolToVis}}" />
+            <Image Source="{Binding CoverUrl}" Stretch="UniformToFill"
+                   Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+          </Grid>
+          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2"
+                     TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding Author}" Opacity="0.6" FontSize="12" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding Description}" FontSize="12" Opacity="0.8" TextWrapping="Wrap"
+                     MaxLines="3" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+      </Button>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <Grid>
+    <!-- Browse: search, status and the card grid -->
+    <ScrollViewer x:Name="BrowsePanel">
+      <StackPanel Spacing="12" Margin="0,0,0,8">
+        <TextBox x:Name="SearchBox" PlaceholderText="{loc:Tr Key='Szukaj opowiadań…'}"
+                 MaxWidth="420" HorizontalAlignment="Left" KeyDown="SearchBox_KeyDown" />
+        <TextBlock x:Name="StatusText" Opacity="0.75" TextWrapping="Wrap" />
+        <controls:ItemsRepeater x:Name="ItemsList" ItemTemplate="{StaticResource StoryCardTemplate}">
+          <controls:ItemsRepeater.Layout>
+            <controls:UniformGridLayout MinItemWidth="184" MinItemHeight="314"
+                                        MinRowSpacing="0" MinColumnSpacing="0" />
+          </controls:ItemsRepeater.Layout>
+        </controls:ItemsRepeater>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Reader: back button, chapter picker and the chapter text -->
+    <Grid x:Name="ReaderPanel" Visibility="Collapsed" Margin="0,0,0,8">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <StackPanel Grid.Row="0" Spacing="10" MaxWidth="720" HorizontalAlignment="Left">
+        <Button Content="{loc:Tr Key='← Wróć'}" Click="Back_Click" Padding="14,8" />
+        <TextBlock x:Name="ReaderTitleText" FontSize="24" FontWeight="SemiBold" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,12,0,0"
+                  MaxWidth="720" HorizontalAlignment="Left">
+        <Button x:Name="PrevButton" Content="{loc:Tr Key='Poprzedni rozdział'}" Click="Prev_Click" Padding="14,8" />
+        <ComboBox x:Name="ChapterPicker" MinWidth="260" VerticalAlignment="Center"
+                  SelectionChanged="ChapterPicker_SelectionChanged" />
+        <Button x:Name="NextButton" Content="{loc:Tr Key='Następny rozdział'}" Click="Next_Click" Padding="14,8" />
+      </StackPanel>
+
+      <TextBlock x:Name="ReaderStatusText" Grid.Row="2" Opacity="0.75" TextWrapping="Wrap"
+                 MaxWidth="720" HorizontalAlignment="Left" Margin="0,12,0,0" />
+
+      <ScrollViewer x:Name="ReaderScroll" Grid.Row="3" Margin="0,12,0,0">
+        <TextBlock x:Name="ChapterTextBlock" FontSize="17" LineHeight="28" TextWrapping="Wrap"
+                   IsTextSelectionEnabled="True" MaxWidth="720" HorizontalAlignment="Left"
+                   Margin="0,0,18,24" />
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</UserControl>

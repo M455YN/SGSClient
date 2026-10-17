@@ -35,6 +35,7 @@ public sealed class GamesController(
         [FromQuery] GamePlatform? platform,
         [FromQuery] GameFeatures? features,
         [FromQuery] string? tag,
+        [FromQuery] GameContentKind? kind,
         [FromQuery] GameReleaseStatus? releaseStatus,
         [FromQuery] bool? featured,
         [FromQuery] string? sort,
@@ -49,6 +50,7 @@ public sealed class GamesController(
             Platform = platform,
             Features = features,
             Tag = tag,
+            Kind = kind,
             ReleaseStatus = releaseStatus,
             Featured = featured,
             Sort = sort
@@ -730,6 +732,58 @@ public sealed class GamesController(
         }
 
         return PhysicalFile(path, "application/zip", fileName);
+    }
+
+    /// <summary>
+    /// Streams the main file of a published book, track or artwork so the client can show, play or read it in place.
+    /// The file is extracted from the package once and served with range support (seeking in audio).
+    /// </summary>
+    [HttpGet("{id:int}/file")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ViewFile(int id, CancellationToken cancellationToken)
+    {
+        var game = await games.GetPublishedGameByIdAsync(id, cancellationToken);
+        var build = game?.Builds.FirstOrDefault(b => b.IsDefault) ?? game?.Builds.FirstOrDefault();
+        if (game is null
+            || build is null
+            || game.Kind is not (GameContentKind.Book or GameContentKind.Music or GameContentKind.Art)
+            || !SgsPackageRules.IsSafeStorageSegment(game.Symbol)
+            || !SgsPackageRules.TryNormalizeEntryPath(build.ExeName, out var entryPath, out _))
+        {
+            return NotFound();
+        }
+
+        var root = Path.GetFullPath(storageOptions.Value.StoragePath);
+        var zipName = Path.GetFileName(build.ZipLink);
+        var zipPath = Path.GetFullPath(Path.Combine(root, game.Symbol, build.CurrentVersion, zipName));
+        var viewPath = Path.GetFullPath(Path.Combine(root, game.Symbol, build.CurrentVersion, "_view", entryPath));
+        if (!zipPath.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+            || !viewPath.StartsWith(root, StringComparison.OrdinalIgnoreCase)
+            || !System.IO.File.Exists(zipPath))
+        {
+            return NotFound();
+        }
+
+        if (!System.IO.File.Exists(viewPath))
+        {
+            using var archive = System.IO.Compression.ZipFile.OpenRead(zipPath);
+            var entry = archive.GetEntry(entryPath);
+            if (entry is null)
+            {
+                return NotFound();
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(viewPath)!);
+            var temp = viewPath + $".{Guid.NewGuid():N}.tmp";
+            System.IO.Compression.ZipFileExtensions.ExtractToFile(entry, temp, overwrite: true);
+            System.IO.File.Move(temp, viewPath, overwrite: true);
+        }
+
+        new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider()
+            .TryGetContentType(viewPath, out var contentType);
+        return PhysicalFile(viewPath, contentType ?? "application/octet-stream", enableRangeProcessing: true);
     }
 
     [HttpGet("media/{symbol}/{fileName}")]

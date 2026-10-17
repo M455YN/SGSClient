@@ -60,11 +60,22 @@ public partial class GamesViewModel : ObservableObject
         FeatureFilters.SelectionChanged += OnFilterChanged;
     }
 
+    private static readonly GameContentKind[] FilterKinds =
+        [GameContentKind.Game, GameContentKind.App, GameContentKind.Book, GameContentKind.Music, GameContentKind.Art];
+
     private static readonly GamePlatform[] FilterPlatforms = [GamePlatform.Windows, GamePlatform.Linux, GamePlatform.MacOS];
 
     public TaxonomySelection GenreFilters { get; }
     public TaxonomySelection EngineFilters { get; }
     public TaxonomySelection FeatureFilters { get; }
+
+    public IReadOnlyList<string> KindOptions { get; } =
+        [Loc.T("Dowolny"), Loc.T("Gry"), Loc.T("Programy"), Loc.T("Książki"), Loc.T("Muzyka"), Loc.T("Grafika")];
+
+    [ObservableProperty]
+    public partial int SelectedKindIndex { get; set; }
+
+    partial void OnSelectedKindIndexChanged(int value) => OnFilterChanged(this, EventArgs.Empty);
 
     public IReadOnlyList<string> PlatformOptions { get; } = [Loc.T("Dowolna"), "Windows", "Linux", "macOS"];
     public IReadOnlyList<string> ReleaseStatusFilterOptions { get; } =
@@ -110,6 +121,7 @@ public partial class GamesViewModel : ObservableObject
             + (EngineFilters.SelectedSymbols.Count > 0 ? 1 : 0)
             + (FeatureFilters.SelectedSymbols.Count > 0 ? 1 : 0)
             + (SelectedPlatformIndex > 0 ? 1 : 0)
+            + (SelectedKindIndex > 0 ? 1 : 0)
             + (SelectedStatusIndex > 0 ? 1 : 0);
         HasActiveFilters = ActiveFilterCount > 0;
         _ = DebouncedReloadAsync();
@@ -299,6 +311,11 @@ public partial class GamesViewModel : ObservableObject
             q = q.Where(g => g.Builds.Any(b => b.Platform == platform));
         }
 
+        if (query.Kind is { } kind)
+        {
+            q = q.Where(g => g.Kind == kind);
+        }
+
         if (query.Features is { } features && features != GameFeatures.None)
         {
             q = q.Where(g => (g.Features & features) == features);
@@ -324,6 +341,7 @@ public partial class GamesViewModel : ObservableObject
         EngineFilters.Set(null);
         FeatureFilters.Set(null);
         SelectedPlatformIndex = 0;
+        SelectedKindIndex = 0;
         SelectedStatusIndex = 0;
     }
 
@@ -477,6 +495,7 @@ public partial class GamesViewModel : ObservableObject
             Genres = GenreFilters.SelectedSymbols.Count == 0 ? null : GenreFilters.SelectedSymbols,
             Engines = EngineFilters.SelectedSymbols.Count == 0 ? null : EngineFilters.SelectedSymbols,
             Platform = SelectedPlatformIndex is > 0 and <= 3 ? FilterPlatforms[SelectedPlatformIndex - 1] : null,
+            Kind = SelectedKindIndex is > 0 and <= 5 ? FilterKinds[SelectedKindIndex - 1] : null,
             Features = BuildFeatureFlags(),
             ReleaseStatus = SelectedStatusIndex > 0
                 ? GameStoreLabels.ReleaseStatusFromIndex(SelectedStatusIndex - 1)
@@ -743,6 +762,7 @@ public partial class GameListItem : ObservableObject
             GamePlatform.Windows => "Windows",
             GamePlatform.Linux => "Linux",
             GamePlatform.MacOS => "macOS",
+            GamePlatform.Any => Loc.T("Dowolna"),
             _ => platform.ToString()
         };
 

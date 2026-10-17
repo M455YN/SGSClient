@@ -353,6 +353,7 @@ public sealed partial class MainWindow : Window
             "Library" => typeof(LibraryPage),
             "Downloads" => typeof(DownloadsPage),
             "Wishlist" => typeof(WishlistPage),
+            "Creative" => typeof(CreativePage),
             "Publish" => typeof(PublishPage),
             "Studio" => typeof(StudioPage),
             "Admin" => typeof(AdminPage),

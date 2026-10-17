@@ -37,6 +37,31 @@ public sealed class SgsPackageRulesTests
         Assert.True(result.IsValid, string.Join("; ", result.Errors));
     }
 
+    [Theory]
+    [InlineData("book", true)]
+    [InlineData("music", true)]
+    [InlineData("art", true)]
+    [InlineData("game", false)]
+    [InlineData("app", false)]
+    public void ValidateManifest_PlatformAny_OnlyForContentKinds(string kind, bool valid)
+    {
+        var manifest = new SgsPackageManifest
+        {
+            Game = new SgsPackageGameInfo { Title = "Story", Symbol = "story", Kind = kind },
+            Build = new SgsPackageBuildInfo { Version = "1.0.0", Platform = "any", Executable = "files/story.epub" }
+        };
+
+        Assert.Equal(valid, SgsPackageRules.ValidateManifest(manifest).IsValid);
+    }
+
+    [Theory]
+    [InlineData("app", "app")]
+    [InlineData("Book", "book")]
+    [InlineData("2", null)]
+    [InlineData("movie", null)]
+    public void NormalizeContentKind_AcceptsKnownKindsOnly(string input, string? expected) =>
+        Assert.Equal(expected, SgsPackageRules.NormalizeContentKind(input));
+
     private static SgsPackageManifest MakeManifest(Action<SgsPackageGameInfo> configure)
     {
         var manifest = new SgsPackageManifest

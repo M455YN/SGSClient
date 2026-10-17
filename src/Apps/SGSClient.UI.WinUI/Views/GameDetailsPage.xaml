@@ -151,7 +151,7 @@
             <StackPanel Orientation="Horizontal" Spacing="4">
               <Button Content="{loc:Tr Key='Szczegóły'}" Tag="Details" Click="Tab_Click" Padding="14,8" FontWeight="SemiBold" />
               <Button Content="{loc:Tr Key='Recenzje'}" Tag="Reviews" Click="Tab_Click" Padding="14,8" />
-              <Button Content="{loc:Tr Key='Osiągnięcia'}" Tag="Achievements" Click="Tab_Click" Padding="14,8" />
+              <Button x:Name="AchievementsTabButton" Content="{loc:Tr Key='Osiągnięcia'}" Tag="Achievements" Click="Tab_Click" Padding="14,8" />
               <Button Content="{loc:Tr Key='Więcej'}" Tag="More" Click="Tab_Click" Padding="14,8" />
             </StackPanel>
             <Border Height="1" Background="#33FFFFFF" />
