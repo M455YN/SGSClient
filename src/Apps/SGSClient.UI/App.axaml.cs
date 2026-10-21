@@ -285,7 +285,7 @@ public partial class App : Application
         }
 
         var menu = new NativeMenu();
-        menu.Opening += (_, _) =>
+        void Rebuild()
         {
             menu.Items.Clear();
             var games = vm.Sidebar.InstalledGames.Where(g => g.CanLaunch)
@@ -308,7 +308,11 @@ public partial class App : Application
             menu.Items.Add(Item(Loc.T("Ustawienia"), () => ShowAndNavigate("Settings")));
             menu.Items.Add(new NativeMenuItemSeparator());
             menu.Items.Add(Item(Loc.T("Wyjdź z SGSClient"), ExitApplication));
-        };
+        }
+
+        // Pre-populated: with the window hidden the menu can show before Opening has filled it.
+        Rebuild();
+        menu.Opening += (_, _) => Rebuild();
 
         var tray = new TrayIcon
         {
