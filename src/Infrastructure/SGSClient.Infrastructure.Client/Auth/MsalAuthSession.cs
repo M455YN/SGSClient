@@ -101,12 +101,11 @@ public sealed class MsalAuthSession : IAuthSession
                 await _msal.RemoveAsync(account).ConfigureAwait(false);
             }
 
-            var request = _msal.AcquireTokenInteractive(_settings.Scopes);
+            // ForceLogin: otherwise the system browser's B2C SSO cookie silently signs in the previous account.
+            var request = _msal.AcquireTokenInteractive(_settings.Scopes).WithPrompt(Prompt.ForceLogin);
             if (signUp)
             {
-                request = request
-                    .WithB2CAuthority(_settings.SignUpAuthority)
-                    .WithPrompt(Prompt.ForceLogin);
+                request = request.WithB2CAuthority(_settings.SignUpAuthority);
             }
 
             if (parentWindowHandle != 0)
