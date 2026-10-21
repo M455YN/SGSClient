@@ -1,5 +1,6 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:SGSClient.UI.Converters"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.LibraryView"
              x:DataType="vm:LibraryViewModel">
@@ -41,7 +42,7 @@
                     <TextBlock Text="{Binding TileLabel}" FontWeight="SemiBold" FontSize="12"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsVisible="{Binding !HasCover}" Opacity="0.7"/>
-                    <Image Source="{Binding CoverImageUrl}" Stretch="Uniform"
+                    <Image conv:ImageUrl.Source="{Binding CoverImageUrl}" Stretch="Uniform"
                            IsVisible="{Binding HasCover}"/>
                   </Panel>
                 </Border>
@@ -87,12 +88,12 @@
                         <TextBlock Text="{Binding TileLabel}" FontSize="32" FontWeight="SemiBold" Opacity="0.35"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    IsVisible="{Binding !HasPoster}"/>
-                        <Image Source="{Binding PosterImageUrl}" Stretch="UniformToFill"
+                        <Image conv:ImageUrl.Source="{Binding PosterImageUrl}" Stretch="UniformToFill"
                                IsVisible="{Binding HasPoster}"/>
                         <Panel VerticalAlignment="Bottom" ClipToBounds="True">
                           <Canvas IsHitTestVisible="False" IsVisible="{Binding HasPoster}">
                             <Image Canvas.Bottom="0" Width="168" Height="268" Stretch="UniformToFill"
-                                   Source="{Binding PosterImageUrl}">
+                                   conv:ImageUrl.Source="{Binding PosterImageUrl}">
                               <Image.Effect>
                                 <BlurEffect Radius="18"/>
                               </Image.Effect>
@@ -143,12 +144,12 @@
                       <TextBlock Text="{Binding TileLabel}" FontSize="26" FontWeight="SemiBold" Opacity="0.35"
                                  HorizontalAlignment="Center" VerticalAlignment="Center"
                                  IsVisible="{Binding !HasPoster}"/>
-                      <Image Source="{Binding PosterImageUrl}" Stretch="UniformToFill"
+                      <Image conv:ImageUrl.Source="{Binding PosterImageUrl}" Stretch="UniformToFill"
                              IsVisible="{Binding HasPoster}"/>
                       <Panel VerticalAlignment="Bottom" ClipToBounds="True">
                         <Canvas IsHitTestVisible="False" IsVisible="{Binding HasPoster}">
                           <Image Canvas.Bottom="0" Width="132" Height="198" Stretch="UniformToFill"
-                                 Source="{Binding PosterImageUrl}">
+                                 conv:ImageUrl.Source="{Binding PosterImageUrl}">
                             <Image.Effect>
                               <BlurEffect Radius="16"/>
                             </Image.Effect>

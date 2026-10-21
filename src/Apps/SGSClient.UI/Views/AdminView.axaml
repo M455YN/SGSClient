@@ -1,6 +1,7 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:views="using:SGSClient.UI.Views"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:SGSClient.UI.Converters"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.AdminView"
              x:DataType="vm:AdminViewModel">
@@ -96,7 +97,7 @@
                         <TextBlock Text="{Binding TileLabel}" FontSize="10" FontWeight="SemiBold" Opacity="0.7"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    IsVisible="{Binding !HasCover}"/>
-                        <Image Source="{Binding CoverImageUrl}" Stretch="Uniform"
+                        <Image conv:ImageUrl.Source="{Binding CoverImageUrl}" Stretch="Uniform"
                                IsVisible="{Binding HasCover}"/>
                       </Panel>
                     </Border>
@@ -145,7 +146,7 @@
                     <TextBlock Text="{Binding SelectedGame.TileLabel}" FontSize="42" FontWeight="Bold"
                                Opacity="0.2" HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsVisible="{Binding !SelectedGame.HasHeaderArt}"/>
-                    <Image Source="{Binding SelectedGame.HeaderImageUrl}" Stretch="UniformToFill"
+                    <Image conv:ImageUrl.Source="{Binding SelectedGame.HeaderImageUrl}" Stretch="UniformToFill"
                            IsVisible="{Binding SelectedGame.HasHeaderArt}"/>
                     <StackPanel VerticalAlignment="Bottom" Margin="16,12" Spacing="2">
                       <TextBlock Text="{Binding SelectedGame.Title}" FontSize="22" FontWeight="SemiBold"/>
@@ -288,7 +289,7 @@
               <Border Classes="card">
                 <Grid ColumnDefinitions="120,*" ColumnSpacing="16">
                   <Border Height="160" Width="120" CornerRadius="6" Background="#1AFFFFFF">
-                    <Image Source="{Binding SelectedGame.OwnCoverImageUrl}" Stretch="UniformToFill"/>
+                    <Image conv:ImageUrl.Source="{Binding SelectedGame.OwnCoverImageUrl}" Stretch="UniformToFill"/>
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="{loc:Tr Key='Miniaturka'}" FontWeight="SemiBold"/>
@@ -304,7 +305,7 @@
               <Border Classes="card">
                 <Grid ColumnDefinitions="280,*" ColumnSpacing="16">
                   <Border Width="240" Height="112" CornerRadius="6" Background="#1AFFFFFF" ClipToBounds="True">
-                    <Image Source="{Binding SelectedGame.OwnHeaderImageUrl}" Stretch="UniformToFill"/>
+                    <Image conv:ImageUrl.Source="{Binding SelectedGame.OwnHeaderImageUrl}" Stretch="UniformToFill"/>
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="{loc:Tr Key='Okładka pozioma'}" FontWeight="SemiBold"/>
@@ -320,7 +321,7 @@
               <Border Classes="card">
                 <Grid ColumnDefinitions="140,*" ColumnSpacing="16">
                   <Border Height="140" Width="140" CornerRadius="6" Background="#1AFFFFFF">
-                    <Image Source="{Binding SelectedGame.OwnLogoImageUrl}" Stretch="Uniform"/>
+                    <Image conv:ImageUrl.Source="{Binding SelectedGame.OwnLogoImageUrl}" Stretch="Uniform"/>
                   </Border>
                   <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="{loc:Tr Key='Logo (kwadratowe)'}" FontWeight="SemiBold"/>
@@ -472,7 +473,7 @@
                           <TextBlock Text="{Binding TileLabel}" FontSize="10" FontWeight="SemiBold" Opacity="0.7"
                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                      IsVisible="{Binding !HasCover}"/>
-                          <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
+                          <Image conv:ImageUrl.Source="{Binding CoverImageUrl}" Stretch="UniformToFill" IsVisible="{Binding HasCover}"/>
                         </Panel>
                       </Border>
                       <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
@@ -503,7 +504,7 @@
                 <TextBlock Text="{Binding HeroPreview.TileLabel}" FontSize="56" FontWeight="SemiBold" Opacity="0.16"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            IsVisible="{Binding !HeroPreview.HasHeaderArt}"/>
-                <Image Source="{Binding HeroPreview.HeaderImageUrl}" Stretch="UniformToFill"
+                <Image conv:ImageUrl.Source="{Binding HeroPreview.HeaderImageUrl}" Stretch="UniformToFill"
                        IsVisible="{Binding HeroPreview.HasHeaderArt}"/>
                 <Border VerticalAlignment="Bottom">
                   <Border.Background>

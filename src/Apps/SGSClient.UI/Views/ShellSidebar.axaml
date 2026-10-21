@@ -1,5 +1,6 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:SGSClient.UI.Converters"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="SGSClient.UI.Views.ShellSidebar"
@@ -43,7 +44,7 @@
                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <Border x:Name="AvatarBorder" CornerRadius="16" ClipToBounds="True"
                         IsVisible="{Binding HasAvatar}">
-                  <Image x:Name="AvatarImage" Source="{Binding ProfileAvatarUrl}"
+                  <Image x:Name="AvatarImage" conv:ImageUrl.Source="{Binding ProfileAvatarUrl}"
                          Stretch="UniformToFill" Width="32" Height="32" />
                 </Border>
               </Panel>
@@ -161,7 +162,7 @@
                       <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center"
                                  VerticalAlignment="Center" FontSize="10" FontWeight="SemiBold"
                                  Opacity="0.7" IsVisible="{Binding !HasCover}" />
-                      <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                      <Image conv:ImageUrl.Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                              IsVisible="{Binding HasCover}" />
                     </Panel>
                   </Border>
