@@ -35,7 +35,7 @@
                   Margin="0,12,12,12"
                   CornerRadius="8"
                   ClipToBounds="True"
-                  Background="{DynamicResource LayerFillColorDefaultBrush}"
+                  Background="{DynamicResource SolidBackgroundFillColorSecondaryBrush}"
                   BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                   BorderThickness="1"
                   BoxShadow="0 8 24 0 #40000000">
