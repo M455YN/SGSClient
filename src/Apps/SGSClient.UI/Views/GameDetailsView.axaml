@@ -1,5 +1,6 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:SGSClient.UI.Converters"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.GameDetailsView"
              x:DataType="vm:GameDetailsViewModel">
@@ -116,7 +117,7 @@
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsVisible="{Binding !HasCover}"/>
                     <Image x:Name="CoverImage"
-                           Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                           conv:ImageUrl.Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                            IsVisible="{Binding HasCover}"/>
                     <Panel x:Name="IntroHost" IsVisible="False" />
                     <Border x:Name="PlayOverlay"
@@ -146,7 +147,7 @@
                       <Panel>
                         <TextBlock Text="{Binding Label}" FontSize="10" Opacity="0.85"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"
+                        <Image conv:ImageUrl.Source="{Binding ImageUrl}" Stretch="UniformToFill"
                                IsVisible="{Binding IsImage}"/>
                       </Panel>
                     </Border>
@@ -320,7 +321,7 @@
                             BorderBrush="#22FFFFFF" BorderThickness="1">
                       <Grid ColumnDefinitions="56,*,Auto" ColumnSpacing="12">
                         <Border Width="56" Height="56" CornerRadius="8" Background="#1AFFFFFF" ClipToBounds="True">
-                          <Image Source="{Binding IconUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+                          <Image conv:ImageUrl.Source="{Binding IconUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
@@ -370,7 +371,7 @@
                   Padding="18,10" VerticalAlignment="Center" Margin="8,0" Classes="subtle"/>
           <Panel Grid.Column="1">
             <Image x:Name="MediaPreviewImage"
-                   Source="{Binding MediaPreviewUrl}" Stretch="Uniform"
+                   conv:ImageUrl.Source="{Binding MediaPreviewUrl}" Stretch="Uniform"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
                    Cursor="Hand"
                    IsVisible="{Binding !MediaPreviewIsVideo}"

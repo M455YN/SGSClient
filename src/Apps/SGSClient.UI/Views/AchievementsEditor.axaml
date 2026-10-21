@@ -1,5 +1,6 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:SGSClient.UI.Converters"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.AchievementsEditor"
              x:DataType="vm:AchievementsEditorViewModel">
@@ -49,7 +50,7 @@
               </Grid>
               <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="8">
                 <Border Width="48" Height="48" CornerRadius="6" Background="#1AFFFFFF" ClipToBounds="True">
-                  <Image Source="{Binding IconPreviewUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+                  <Image conv:ImageUrl.Source="{Binding IconPreviewUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
                 </Border>
                 <TextBox Grid.Column="1" VerticalAlignment="Center" PlaceholderText="{loc:Tr Key='Adres ikony (URL)'}"
                          Text="{Binding EditIconUrl, Mode=TwoWay}"/>

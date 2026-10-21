@@ -1,5 +1,6 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:SGSClient.UI.Converters"
              xmlns:vm="using:SGSClient.UI.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="SGSClient.UI.Views.HomeView"
@@ -64,7 +65,7 @@
           <TextBlock Text="{Binding TileLabel}" FontSize="28" FontWeight="SemiBold" Opacity="0.28"
                      HorizontalAlignment="Center" VerticalAlignment="Center"
                      IsVisible="{Binding !HasCover}"/>
-          <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+          <Image conv:ImageUrl.Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                  IsVisible="{Binding HasCover}"/>
           <Border VerticalAlignment="Bottom" Padding="12,10"
                   Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}">
@@ -89,7 +90,7 @@
             <TextBlock Text="{Binding TileLabel}" FontSize="28" FontWeight="SemiBold" Opacity="0.28"
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        IsVisible="{Binding !HasCover}"/>
-            <Image Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+            <Image conv:ImageUrl.Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
                    IsVisible="{Binding HasCover}"/>
           </Panel>
           <Border Grid.Row="1" Padding="12,10" Height="80"
@@ -106,7 +107,7 @@
   </UserControl.Resources>
 
   <Panel>
-    <Image Source="{Binding Hero.CoverImageUrl}" Stretch="UniformToFill"
+    <Image conv:ImageUrl.Source="{Binding Hero.CoverImageUrl}" Stretch="UniformToFill"
            IsVisible="{Binding HasHero}" Opacity="0.55" IsHitTestVisible="False">
       <Image.Effect>
         <BlurEffect Radius="48"/>
@@ -174,7 +175,7 @@
                   <TextBlock Text="{Binding Hero.TileLabel}" FontSize="72" FontWeight="SemiBold" Opacity="0.16"
                              HorizontalAlignment="Center" VerticalAlignment="Center"
                              IsVisible="{Binding !Hero.HasCover}"/>
-                  <Image Source="{Binding Hero.CoverImageUrl}" Stretch="UniformToFill"
+                  <Image conv:ImageUrl.Source="{Binding Hero.CoverImageUrl}" Stretch="UniformToFill"
                          IsVisible="{Binding Hero.HasCover}"/>
                   <Border VerticalAlignment="Bottom" Height="120">
                     <Border.Background>
@@ -197,51 +198,51 @@
                       <Border CornerRadius="2" ClipToBounds="True"
                               Background="{DynamicResource ControlFillColorDefaultBrush}"
                               IsVisible="{Binding Hero.ShotLayout1}">
-                        <Image Source="{Binding Hero.Shot1}" Stretch="UniformToFill"/>
+                        <Image conv:ImageUrl.Source="{Binding Hero.Shot1}" Stretch="UniformToFill"/>
                       </Border>
                       <Grid ColumnDefinitions="*,*" ColumnSpacing="6"
                             IsVisible="{Binding Hero.ShotLayout2}">
                         <Border CornerRadius="2" ClipToBounds="True"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                          <Image Source="{Binding Hero.Shot1}" Stretch="UniformToFill"/>
+                          <Image conv:ImageUrl.Source="{Binding Hero.Shot1}" Stretch="UniformToFill"/>
                         </Border>
                         <Border Grid.Column="1" CornerRadius="2" ClipToBounds="True"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                          <Image Source="{Binding Hero.Shot2}" Stretch="UniformToFill"/>
+                          <Image conv:ImageUrl.Source="{Binding Hero.Shot2}" Stretch="UniformToFill"/>
                         </Border>
                       </Grid>
                       <Grid ColumnDefinitions="*,*" RowDefinitions="*,*" ColumnSpacing="6" RowSpacing="6"
                             IsVisible="{Binding Hero.ShotLayout3}">
                         <Border CornerRadius="2" ClipToBounds="True"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                          <Image Source="{Binding Hero.Shot1}" Stretch="UniformToFill"/>
+                          <Image conv:ImageUrl.Source="{Binding Hero.Shot1}" Stretch="UniformToFill"/>
                         </Border>
                         <Border Grid.Column="1" CornerRadius="2" ClipToBounds="True"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                          <Image Source="{Binding Hero.Shot2}" Stretch="UniformToFill"/>
+                          <Image conv:ImageUrl.Source="{Binding Hero.Shot2}" Stretch="UniformToFill"/>
                         </Border>
                         <Border Grid.Row="1" Grid.ColumnSpan="2" CornerRadius="2" ClipToBounds="True"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                          <Image Source="{Binding Hero.Shot3}" Stretch="UniformToFill"/>
+                          <Image conv:ImageUrl.Source="{Binding Hero.Shot3}" Stretch="UniformToFill"/>
                         </Border>
                       </Grid>
                       <Grid ColumnDefinitions="*,*" RowDefinitions="*,*" ColumnSpacing="6" RowSpacing="6"
                             IsVisible="{Binding Hero.ShotLayout4}">
                         <Border CornerRadius="2" ClipToBounds="True"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                          <Image Source="{Binding Hero.Shot1}" Stretch="UniformToFill"/>
+                          <Image conv:ImageUrl.Source="{Binding Hero.Shot1}" Stretch="UniformToFill"/>
                         </Border>
                         <Border Grid.Column="1" CornerRadius="2" ClipToBounds="True"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                          <Image Source="{Binding Hero.Shot2}" Stretch="UniformToFill"/>
+                          <Image conv:ImageUrl.Source="{Binding Hero.Shot2}" Stretch="UniformToFill"/>
                         </Border>
                         <Border Grid.Row="1" CornerRadius="2" ClipToBounds="True"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                          <Image Source="{Binding Hero.Shot3}" Stretch="UniformToFill"/>
+                          <Image conv:ImageUrl.Source="{Binding Hero.Shot3}" Stretch="UniformToFill"/>
                         </Border>
                         <Border Grid.Row="1" Grid.Column="1" CornerRadius="2" ClipToBounds="True"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                          <Image Source="{Binding Hero.Shot4}" Stretch="UniformToFill"/>
+                          <Image conv:ImageUrl.Source="{Binding Hero.Shot4}" Stretch="UniformToFill"/>
                         </Border>
                       </Grid>
                     </Panel>

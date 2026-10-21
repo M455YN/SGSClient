@@ -210,7 +210,7 @@
                   <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
                     <Border Width="40" Height="40" CornerRadius="4" ClipToBounds="True"
                             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-                      <Image Source="{Binding CoverPreviewUri}" Stretch="UniformToFill"/>
+                      <Image conv:ImageUrl.Source="{Binding CoverPreviewUri}" Stretch="UniformToFill"/>
                     </Border>
                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center"
                                TextWrapping="Wrap"/>
