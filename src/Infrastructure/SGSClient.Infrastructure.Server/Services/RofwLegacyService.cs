@@ -63,12 +63,14 @@ public sealed class RofwLegacyService(IConfiguration configuration) : IRofwLegac
             """
             UPDATE Players
             SET Achievements = @value
-            WHERE Id = @playerId;
+            WHERE Id = @playerId
+              AND (@onlyIfLonger = 0 OR LEN(@value) > LEN(ISNULL(Achievements, '')));
             """,
             cmd =>
             {
                 cmd.Parameters.AddWithValue("@value", request.NewValue);
                 cmd.Parameters.AddWithValue("@playerId", request.PlayerId);
+                cmd.Parameters.AddWithValue("@onlyIfLonger", request.OnlyIfLonger);
             },
             cancellationToken);
 
@@ -151,8 +153,8 @@ public sealed class RofwLegacyService(IConfiguration configuration) : IRofwLegac
             reader.IsDBNull(1) ? "" : reader.GetString(1),
             reader.IsDBNull(2) ? "" : reader.GetString(2),
             reader.IsDBNull(3) ? "" : reader.GetString(3),
-            reader.GetInt32(4),
-            reader.GetInt32(5),
+            reader.IsDBNull(4) ? 0 : reader.GetInt32(4),
+            reader.IsDBNull(5) ? 0 : reader.GetInt32(5),
             reader.IsDBNull(6) ? "" : reader.GetString(6),
             reader.IsDBNull(7) ? "" : reader.GetString(7));
     }
@@ -188,6 +190,221 @@ public sealed class RofwLegacyService(IConfiguration configuration) : IRofwLegac
                 cmd.Parameters.AddWithValue("@playerId", request.PlayerId);
             },
             cancellationToken);
+
+    public async Task<RofwRankingResponse> GetRankingAsync(
+        int offset,
+        int take,
+        int playerId,
+        CancellationToken cancellationToken = default)
+    {
+        offset = Math.Max(0, offset);
+        take = take <= 0 ? 7 : Math.Min(take, 100);
+
+        await using var connection = Open();
+        await connection.OpenAsync(cancellationToken);
+
+        var ids = new List<int>();
+        await using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = """
+                SELECT Id
+                FROM Players
+                ORDER BY LP DESC
+                OFFSET @offset ROWS FETCH NEXT @take ROWS ONLY;
+                """;
+            cmd.Parameters.AddWithValue("@offset", offset);
+            cmd.Parameters.AddWithValue("@take", take);
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                ids.Add(reader.GetInt32(0));
+            }
+        }
+
+        var position = -1;
+        if (playerId > 0)
+        {
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText = """
+                WITH RankedPlayers AS (
+                    SELECT Id, ROW_NUMBER() OVER (ORDER BY LP DESC) AS Position
+                    FROM Players
+                )
+                SELECT Position
+                FROM RankedPlayers
+                WHERE Id = @playerId;
+                """;
+            cmd.Parameters.AddWithValue("@playerId", playerId);
+            var result = await cmd.ExecuteScalarAsync(cancellationToken);
+            if (result is not null && result != DBNull.Value)
+            {
+                position = Convert.ToInt32(result);
+            }
+        }
+
+        var bestName = "";
+        var bestWin = 0;
+        await using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = """
+                SELECT TOP 1 p.Name, s.Win
+                FROM Stats s
+                JOIN Players p ON s.PlayerId = p.Id
+                ORDER BY s.Round DESC;
+                """;
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                bestName = reader.IsDBNull(0) ? "" : reader.GetString(0);
+                bestWin = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
+            }
+        }
+
+        return new RofwRankingResponse(ids, position, bestName, bestWin);
+    }
+
+    public async Task<RofwPlayerCardResponse?> GetPlayerCardAsync(
+        int playerId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = Open();
+        await using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            SELECT
+              p.Id
+            , p.Name
+            , p.Face
+            , p.LP
+            , (SELECT ROUND(AVG(CAST(s.Win AS float)), 1)
+               FROM Stats s
+               WHERE s.PlayerId = p.Id AND (s.Round - s.Win != 0 OR s.Lose = 3)) AS AvgWin
+            , (SELECT TOP 1 s.Fraction
+               FROM Stats s
+               WHERE s.PlayerId = p.Id
+               GROUP BY s.Fraction
+               ORDER BY COUNT(*) DESC) AS Fraction
+            FROM Players p
+            WHERE p.Id = @playerId;
+            """;
+        cmd.Parameters.AddWithValue("@playerId", playerId);
+        await connection.OpenAsync(cancellationToken);
+        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        return new RofwPlayerCardResponse(
+            reader.GetInt32(0),
+            reader.IsDBNull(1) ? "" : reader.GetString(1),
+            reader.IsDBNull(2) ? 0 : Convert.ToInt32(reader.GetValue(2)),
+            reader.IsDBNull(4) ? 0 : Convert.ToDouble(reader.GetValue(4)),
+            reader.IsDBNull(3) ? 0 : Convert.ToInt32(reader.GetValue(3)),
+            reader.IsDBNull(5) ? "00000" : reader.GetString(5));
+    }
+
+    public async Task<RofwOpponentsResponse> GetOpponentsAsync(
+        RofwOpponentsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var rounds = Math.Clamp(request.Rounds, 0, 40);
+        var items = new List<RofwOpponent>(rounds);
+
+        await using var connection = Open();
+        await connection.OpenAsync(cancellationToken);
+
+        for (var round = 0; round < rounds; round++)
+        {
+            // Nazwa tabeli pochodzi tylko z AutoTable (stała lista), nigdy wprost z requestu.
+            var table = AutoTable(request.LP, round, request.Ranked);
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText = request.Ranked
+                ? $"""
+                    SELECT TOP 1 Id, Version, Name, FaceId, LP, PlayerId, Comp, Round
+                    FROM (
+                        SELECT TOP 15 *
+                        FROM {table}
+                        WHERE Round = @round
+                          AND Name != @playerName
+                          AND PlayerId != @playerId
+                        ORDER BY ABS(LP - @lp)
+                    ) AS Top15Diff
+                    ORDER BY NEWID();
+                    """
+                : $"""
+                    SELECT TOP 1 Id, Version, Name, FaceId, LP, PlayerId, Comp, Round
+                    FROM {table}
+                    WHERE Round = @round
+                      AND Name != @playerName
+                      AND PlayerId != @playerId
+                    ORDER BY NEWID();
+                    """;
+            cmd.Parameters.AddWithValue("@round", round);
+            cmd.Parameters.AddWithValue("@playerName", request.PlayerName ?? "");
+            cmd.Parameters.AddWithValue("@playerId", request.PlayerId);
+            cmd.Parameters.AddWithValue("@lp", request.LP);
+
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                items.Add(new RofwOpponent(
+                    true,
+                    Convert.ToInt32(reader["Id"]),
+                    reader["Version"]?.ToString() ?? "",
+                    reader["Name"]?.ToString() ?? "",
+                    Convert.ToInt32(reader["FaceId"]),
+                    Convert.ToInt32(reader["LP"]),
+                    Convert.ToInt32(reader["PlayerId"]),
+                    reader["Comp"]?.ToString() ?? "",
+                    Convert.ToInt32(reader["Round"])));
+            }
+            else
+            {
+                items.Add(new RofwOpponent(false, 0, "", "", 0, 0, 0, "", round));
+            }
+        }
+
+        return new RofwOpponentsResponse(items);
+    }
+
+    public Task AddGhostAsync(RofwAddGhostRequest request, CancellationToken cancellationToken = default) =>
+        ExecuteAsync(
+            $"""
+            INSERT INTO {AutoTable(request.LP, request.CurrentRound, request.Ranked)}
+                (Version, Name, FaceId, Date, LP, PlayerId, Comp, Round)
+            VALUES (@version, @name, @faceId, @date, @lp, @playerId, @comp, @round);
+            """,
+            cmd =>
+            {
+                cmd.Parameters.AddWithValue("@version", request.Version ?? "");
+                cmd.Parameters.AddWithValue("@name", request.Name ?? "");
+                cmd.Parameters.AddWithValue("@faceId", request.FaceId);
+                cmd.Parameters.AddWithValue("@date", DateTime.Now);
+                cmd.Parameters.AddWithValue("@lp", request.Ranked ? request.LP : 0);
+                cmd.Parameters.AddWithValue("@playerId", request.PlayerId);
+                cmd.Parameters.AddWithValue("@comp", request.Comp ?? "");
+                cmd.Parameters.AddWithValue("@round", request.CurrentRound - 1);
+            },
+            cancellationToken);
+
+    /// <summary>Ta sama logika co EnemyManager.GetAutoName w grze.</summary>
+    private static string AutoTable(int lp, int round, bool ranked)
+    {
+        if (!ranked)
+        {
+            return round < 6 ? "AutoNormalLow" : "AutoNormalHigh";
+        }
+
+        return (lp / 300) switch
+        {
+            0 => "AutoBronze",
+            1 => "AutoSilver",
+            2 => "AutoGold",
+            3 => "AutoDiament",
+            4 => "AutoRubin",
+            _ => "AutoSigma",
+        };
+    }
 
     private SqlConnection Open()
     {
