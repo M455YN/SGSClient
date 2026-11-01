@@ -12,6 +12,9 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
     public Task<UserProfileDto?> GetMeAsync(CancellationToken cancellationToken = default) =>
         SendAsync<UserProfileDto>(HttpMethod.Get, "api/me", body: null, cancellationToken);
 
+    public Task<UserProfileDto?> GetMeWithIdTokenAsync(string idToken, CancellationToken cancellationToken = default) =>
+        SendCoreAsync<UserProfileDto>(HttpMethod.Get, "api/me", body: null, idToken, cancellationToken);
+
     public Task<UserProfileDto?> UpdateMeAsync(UpdateProfileRequestDto request, CancellationToken cancellationToken = default) =>
         SendAsync<UserProfileDto>(HttpMethod.Patch, "api/me", request, cancellationToken);
 

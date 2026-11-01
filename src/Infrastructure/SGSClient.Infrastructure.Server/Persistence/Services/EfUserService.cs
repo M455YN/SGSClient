@@ -98,11 +98,6 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
             }
         }
 
-        if (request.Email is not null)
-        {
-            user.Email = EmailClaimHelper.Normalize(request.Email);
-        }
-
         if (request.Bio is not null)
         {
             user.Bio = string.IsNullOrWhiteSpace(request.Bio) ? null : request.Bio.Trim();
