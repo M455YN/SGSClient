@@ -26,6 +26,8 @@ services:
       AzureAd__SigninPolicy: ${SGS_AZUREAD_SIGNIN_POLICY:-B2C_1_SGSClient_SignInUp}
       AzureAd__PasswordResetPolicy: ${SGS_AZUREAD_PASSWORD_RESET_POLICY:-B2C_1_SGSClient_PassRESET}
       AzureAd__ApiAudience: ${SGS_AZUREAD_API_AUDIENCE:-}
+      # 32+ random chars. Signs achievement tokens handed to running games; empty = random per start.
+      Achievements__SigningKey: ${SGS_ACHIEVEMENTS_SIGNING_KEY:-}
     volumes:
       - ${SGS_GAMES_VOLUME:-sgs_games}:/data/sgs/games
     extra_hosts:
