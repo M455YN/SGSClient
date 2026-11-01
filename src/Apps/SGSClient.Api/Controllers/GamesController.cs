@@ -1,8 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using SGSClient.Core.Auth;
+using SGSClient.Api.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -645,30 +644,8 @@ public sealed class GamesController(
             new { errors = new[] { "Twoje konto nie ma roli twórcy. Poproś administratora o nadanie uprawnień." } });
     }
 
-    private async Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken)
-    {
-        var azure = azureOptions.Value;
-        if (!azure.IsConfigured)
-        {
-            return 1;
-        }
-
-        if (User.Identity?.IsAuthenticated != true)
-        {
-            return null;
-        }
-
-        var sub = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(sub))
-        {
-            return null;
-        }
-
-        var displayName = User.FindFirstValue("name") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Player";
-        var email = EmailClaimHelper.FromPrincipal(User);
-        var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatarUrl: null, cancellationToken);
-        return profile.Id;
-    }
+    private Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken) =>
+        users.ResolveUserIdAsync(User, azureOptions.Value, cancellationToken);
 
     [HttpGet("packages/{symbol}/{version}/{fileName}")]
     [AllowAnonymous]

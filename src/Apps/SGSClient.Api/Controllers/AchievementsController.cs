@@ -1,7 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using SGSClient.Api.Auth;
 using SGSClient.Core.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
@@ -317,28 +317,6 @@ public sealed class AchievementsController(
             && adminAuth.IsAdmin(User, profile.Email ?? EmailClaimHelper.FromPrincipal(User), profile.Role);
     }
 
-    // Same identity resolution as MeController / GamesController (AzureAd disabled = local user 1).
-    private async Task<int?> ResolveUserIdAsync(CancellationToken cancellationToken)
-    {
-        if (!azureOptions.Value.IsConfigured)
-        {
-            return 1;
-        }
-
-        if (User.Identity?.IsAuthenticated != true)
-        {
-            return null;
-        }
-
-        var sub = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(sub))
-        {
-            return null;
-        }
-
-        var displayName = User.FindFirstValue("name") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Player";
-        var email = EmailClaimHelper.FromPrincipal(User);
-        var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatarUrl: null, cancellationToken);
-        return profile.Id;
-    }
+    private Task<int?> ResolveUserIdAsync(CancellationToken cancellationToken) =>
+        users.ResolveUserIdAsync(User, azureOptions.Value, cancellationToken);
 }
