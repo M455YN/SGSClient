@@ -699,6 +699,7 @@ public partial class AccountViewModel : ObservableObject
             }
 
             var items = await library.GetAllAsync();
+            await SyncArtworkAsync(scope.ServiceProvider.GetService<ISgsApiService>(), items, library);
             if (playtime is not null)
             {
                 await playtime.SyncFromServerAsync();
@@ -709,11 +710,43 @@ public partial class AccountViewModel : ObservableObject
                          .OrderByDescending(x => x.LastPlayedUtc ?? DateTimeOffset.MinValue)
                          .Take(9))
             {
-                RecentGames.Add(new RecentGameItem(item.Title, item.Symbol, item.LastPlayedUtc, item.TotalPlayTimeSeconds, item.GameId));
+                RecentGames.Add(new RecentGameItem(
+                    item.Title,
+                    item.Symbol,
+                    item.LastPlayedUtc,
+                    item.TotalPlayTimeSeconds,
+                    item.GameId,
+                    SidebarInstalledGame.FromModel(item, _apiBaseUrl).CoverImageUrl));
             }
         }
         catch
         {
+        }
+    }
+
+    /// <summary>Fills missing local tile art from the store catalog (same rule as the sidebar).</summary>
+    private static async Task SyncArtworkAsync(ISgsApiService? api, IReadOnlyList<GameLibraryItem> items, ILocalLibraryStore store)
+    {
+        if (api is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var byId = (await api.GetGamesAsync()).ToDictionary(g => g.Id);
+            foreach (var item in items)
+            {
+                if (byId.TryGetValue(item.GameId, out var game)
+                    && item.ApplyStoreArtwork(game.CoverUrl, game.LogoUrl, game.HeaderUrl))
+                {
+                    await store.UpsertAsync(item);
+                }
+            }
+        }
+        catch
+        {
+            // offline: keep whatever art the library already has
         }
     }
 
@@ -773,9 +806,12 @@ public sealed class RecentGameItem(
     string symbol,
     DateTimeOffset? lastPlayedUtc,
     long playtimeSeconds = 0,
-    int gameId = 0)
+    int gameId = 0,
+    string? coverImageUrl = null)
 {
     public int GameId { get; } = gameId;
+    public string? CoverImageUrl { get; } = coverImageUrl;
+    public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
     public string Title { get; } = title;
     public string TileLabel { get; } = string.IsNullOrWhiteSpace(symbol)
         ? title[..Math.Min(2, title.Length)].ToUpperInvariant()

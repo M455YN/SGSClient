@@ -56,6 +56,9 @@ public partial class StudioView : UserControl
         _wiredVm = vm;
         vm.SetAddGameHandler(() => GetMain()?.NavigateToPublish());
         vm.SetAddDlcHandler(symbol => GetMain()?.NavigateToPublish(symbol));
+        vm.SetAddVersionHandler(id => GetMain()?.NavigateToPublish(versionOfGameId: id));
+        vm.SetSaveFileHandler((name, content) =>
+            AvaloniaStoragePicker.SaveTextFileAsync(TopLevel.GetTopLevel(this), name, content));
         vm.SetConfirmDeleteHandler(ConfirmDeleteAsync);
         vm.SetPickImageHandler(() => AvaloniaStoragePicker.PickSingleFileAsync(
             TopLevel.GetTopLevel(this), ImageFiles, Loc.T("Wybierz obraz")));

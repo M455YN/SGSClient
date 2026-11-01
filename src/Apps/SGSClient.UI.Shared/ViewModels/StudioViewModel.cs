@@ -17,6 +17,8 @@ public partial class StudioViewModel : ObservableObject
     private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
     private Action? _addGame;
+    private Action<int>? _addVersion;
+    private Func<string, string, Task<string?>>? _saveFile;
     private Action<string>? _addDlc;
     private Func<StudioContentItem, Task<bool>>? _confirmDelete;
     private Func<Task<string?>>? _pickImage;
@@ -117,6 +119,8 @@ public partial class StudioViewModel : ObservableObject
     public bool IsAchievementsTab => SelectedTab == "achievements";
 
     public void SetAddGameHandler(Action add) => _addGame = add;
+    public void SetAddVersionHandler(Action<int> add) => _addVersion = add;
+    public void SetSaveFileHandler(Func<string, string, Task<string?>> save) => _saveFile = save;
     public void SetAddDlcHandler(Action<string> add) => _addDlc = add;
     public void SetConfirmDeleteHandler(Func<StudioContentItem, Task<bool>> confirm) => _confirmDelete = confirm;
     public void SetPickImageHandler(Func<Task<string?>> pick)
@@ -345,7 +349,29 @@ public partial class StudioViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void AddVersion() => _addGame?.Invoke();
+    private void AddVersion()
+    {
+        if (SelectedGame is not null && _addVersion is not null)
+        {
+            _addVersion(SelectedGame.Id);
+        }
+        else
+        {
+            _addGame?.Invoke();
+        }
+    }
+
+    [RelayCommand]
+    private async Task DownloadManifestAsync()
+    {
+        if (SelectedGame is null || _api is null || _saveFile is null)
+        {
+            return;
+        }
+
+        StatusText = await GameManifestSource.SaveAsync(_api, SelectedGame.Id, asAdmin: false, _saveFile)
+                     ?? StatusText;
+    }
 
     [RelayCommand]
     private async Task SaveStoreAsync()

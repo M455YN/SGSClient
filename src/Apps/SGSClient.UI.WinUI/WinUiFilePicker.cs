@@ -68,6 +68,27 @@ internal static class WinUiFilePicker
             .ToArray();
     }
 
+    /// <summary>Returns the saved file's path; null when cancelled.</summary>
+    public static async Task<string?> SaveTextFileAsync(Window window, string suggestedName, string content)
+    {
+        var extension = Path.GetExtension(suggestedName);
+        var picker = new FileSavePicker(window.AppWindow.Id)
+        {
+            SuggestedFileName = Path.GetFileNameWithoutExtension(suggestedName),
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary
+        };
+        picker.FileTypeChoices.Add(extension.TrimStart('.').ToUpperInvariant(), [extension]);
+
+        var result = await picker.PickSaveFileAsync();
+        if (string.IsNullOrWhiteSpace(result?.Path))
+        {
+            return null;
+        }
+
+        await File.WriteAllTextAsync(result.Path, content, new System.Text.UTF8Encoding(false));
+        return result.Path;
+    }
+
     public static async Task<string?> PickFolderAsync(
         Window window,
         string? commitLabel = null,

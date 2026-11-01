@@ -91,6 +91,14 @@ Media are optional at upload — you can add them later in Creator panel → **M
 
 Media są opcjonalne przy uploadzie — możesz je potem dodać w Panelu twórcy (zakładka **Multimedia**). Wymiary: [Grafika sklepowa](store-art.md).
 
+When you publish a new version of an existing game, artwork is kept unless the package replaces it: cover, header, logo and intro are overwritten only if the manifest lists them, and screenshots are replaced only if the manifest lists at least one (then the whole set is replaced).
+
+You don't have to retype the manifest for every version: in Creator panel / Admin, **Download manifest** saves `sgs-manifest.json` built from the published game (details, genres, tags, current version and exe; media and achievements are left out). **Publish a new version** also fills the form from the published game when the chosen folder has no manifest — you only enter the new version number and release notes.
+
+Nie musisz przepisywać manifestu przy każdej wersji: w Panelu twórcy / Adminie **Pobierz manifest** zapisuje `sgs-manifest.json` zbudowany z opublikowanej gry (dane, gatunki, tagi, obecna wersja i exe; bez multimediów i osiągnięć). **Opublikuj nową wersję** sama uzupełnia formularz z opublikowanej gry, gdy wybrany folder nie ma manifestu — wpisujesz tylko nowy numer wersji i opis zmian.
+
+Przy nowej wersji istniejącej gry grafiki zostają, dopóki paczka ich nie zastąpi: okładka, nagłówek, logo i intro są nadpisywane tylko gdy są w manifeście, a zrzuty ekranu tylko gdy manifest zawiera co najmniej jeden (wtedy cały zestaw jest podmieniany).
+
 Full sample manifest: [`schemas/examples/demo-runner.sgs-manifest.json`](../../schemas/examples/demo-runner.sgs-manifest.json).
 
 Ready-made folder + ZIP template (placeholder exe + labeled store art): [`schemas/examples/sample-game/`](../../schemas/examples/sample-game/) / [`sample-game-package.zip`](../../schemas/examples/sample-game-package.zip).

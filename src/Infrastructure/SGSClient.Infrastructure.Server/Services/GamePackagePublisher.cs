@@ -202,7 +202,8 @@ public sealed class GamePackagePublisher(
                     game.IntroUrl = mediaResult.IntroUrl;
                 }
 
-                if (game.Screenshots.Count > 0)
+                // Paczka bez screenshotów zachowuje dotychczasowe.
+                if (mediaResult.Screenshots.Count > 0 && game.Screenshots.Count > 0)
                 {
                     db.GameScreenshots.RemoveRange(game.Screenshots);
                     game.Screenshots.Clear();

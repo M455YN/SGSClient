@@ -7,6 +7,7 @@
 
   <Page.Resources>
     <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <local:InverseBoolToVisibilityConverter x:Key="BoolToVisInv" />
   </Page.Resources>
 
   <Grid>
@@ -152,8 +153,13 @@
                         <ColumnDefinition Width="Auto" />
                       </Grid.ColumnDefinitions>
                       <Border Width="48" Height="48" CornerRadius="4" Background="#333">
-                        <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   FontWeight="SemiBold" FontSize="12" />
+                        <Grid>
+                          <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     FontWeight="SemiBold" FontSize="12"
+                                     Visibility="{Binding HasCover, Converter={StaticResource BoolToVisInv}}" />
+                          <Image Stretch="UniformToFill" Source="{Binding CoverImageUrl}"
+                                 Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
                       </Border>
                       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
@@ -181,8 +187,13 @@
                   <DataTemplate>
                     <Border Width="88" Height="88" CornerRadius="6" Background="#2B2B2B" Margin="4"
                             ToolTipService.ToolTip="{Binding Title}">
-                      <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                 FontWeight="Bold" FontSize="14" />
+                      <Grid>
+                        <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontWeight="Bold" FontSize="14"
+                                   Visibility="{Binding HasCover, Converter={StaticResource BoolToVisInv}}" />
+                        <Image Stretch="UniformToFill" Source="{Binding CoverImageUrl}"
+                               Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                      </Grid>
                     </Border>
                   </DataTemplate>
                 </GridView.ItemTemplate>

@@ -55,7 +55,9 @@ public partial class AdminView : UserControl
         }
 
         _wiredVm = vm;
-        vm.SetAddVersionHandler(() => GetMain()?.NavigateToPublish(selectTag: "Admin"));
+        vm.SetAddVersionHandler(id => GetMain()?.NavigateToPublish(selectTag: "Admin", versionOfGameId: id));
+        vm.SetSaveFileHandler((name, content) =>
+            AvaloniaStoragePicker.SaveTextFileAsync(TopLevel.GetTopLevel(this), name, content));
         vm.SetAddDlcHandler(symbol => GetMain()?.NavigateToPublish(symbol, "Admin"));
         vm.SetConfirmDeleteHandler(ConfirmDeleteAsync);
         vm.SetPickImageHandler(() => AvaloniaStoragePicker.PickSingleFileAsync(

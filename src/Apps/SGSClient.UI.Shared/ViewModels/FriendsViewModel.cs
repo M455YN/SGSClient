@@ -17,6 +17,7 @@ public partial class FriendsViewModel : ObservableObject
     private readonly IUiTimer? _chatPollTimer;
     private readonly IUiDispatcher? _dispatcher;
     private int? _activeChatPeerId;
+    private Dictionary<int, LobbyDto> _friendLobbies = [];
     private bool _realtimeWired;
 
     public FriendsViewModel(
@@ -293,6 +294,16 @@ public partial class FriendsViewModel : ObservableObject
             {
                 StatusText = Loc.T("Nie udało się pobrać znajomych. Zaloguj się ponownie.");
                 return;
+            }
+
+            // Before ApplyOverview: the rows are plain objects, so lobby info must be set before they are shown.
+            try
+            {
+                _friendLobbies = (await _userApi.GetFriendLobbiesAsync()).ToDictionary(l => l.HostUserId);
+            }
+            catch
+            {
+                _friendLobbies = [];
             }
 
             ApplyOverview(overview);
@@ -710,9 +721,23 @@ public partial class FriendsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task JoinLobbyAsync(SocialPersonItem? person)
+    {
+        if (person?.Lobby is { } lobby)
+        {
+            await LobbyJoin.RequestAsync(lobby.GameId, lobby.Code);
+        }
+    }
+
     private void ApplyOverview(SocialOverviewDto overview)
     {
         Replace(Friends, overview.Friends);
+        foreach (var friend in Friends)
+        {
+            friend.Lobby = _friendLobbies.GetValueOrDefault(friend.UserId);
+        }
+
         Replace(Incoming, overview.Incoming);
         Replace(Outgoing, overview.Outgoing);
         Replace(Following, overview.Following);
@@ -876,6 +901,14 @@ public sealed class SocialPersonItem
     public bool ShowFollow => !IsFollowing && FriendRelation == FriendRelation.None;
     public bool ShowUnfollow => IsFollowing && FriendRelation != FriendRelation.Friends;
     public bool ShowMessage => FriendRelation == FriendRelation.Friends;
+
+    /// <summary>Open lobby this friend hosts; set before the row is shown.</summary>
+    public LobbyDto? Lobby { get; set; }
+
+    public bool HasLobby => Lobby is not null;
+    public string JoinLabel => Lobby is { } l
+        ? Loc.F("Dołącz · {0} {1}/{2}", l.GameTitle ?? "SGS", l.Players, l.MaxPlayers)
+        : string.Empty;
     public bool HasActions => ShowAddFriend || ShowAccept || ShowRemoveFriend;
 
     public bool Matches(string query) =>

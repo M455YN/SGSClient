@@ -1,6 +1,7 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
+             xmlns:conv="using:SGSClient.UI.Converters"
              x:Class="SGSClient.UI.Views.AccountView"
              x:DataType="vm:AccountViewModel">
   <Panel>
@@ -132,8 +133,12 @@
                   <DataTemplate x:DataType="vm:RecentGameItem">
                     <Grid ColumnDefinitions="48,*,Auto" Margin="0,0,0,10" ColumnSpacing="12">
                       <Border Width="48" Height="48" CornerRadius="4" Background="#333">
-                        <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   FontWeight="SemiBold" FontSize="12"/>
+                        <Panel>
+                          <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     FontWeight="SemiBold" FontSize="12" IsVisible="{Binding !HasCover}"/>
+                          <Image conv:ImageUrl.Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                                 IsVisible="{Binding HasCover}"/>
+                        </Panel>
                       </Border>
                       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
@@ -169,8 +174,12 @@
                   <DataTemplate x:DataType="vm:RecentGameItem">
                     <Border Margin="4" Height="88" CornerRadius="6" Background="#2B2B2B"
                             ToolTip.Tip="{Binding Title}">
-                      <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                 FontWeight="Bold" FontSize="14"/>
+                      <Panel>
+                        <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontWeight="Bold" FontSize="14" IsVisible="{Binding !HasCover}"/>
+                        <Image conv:ImageUrl.Source="{Binding CoverImageUrl}" Stretch="UniformToFill"
+                               IsVisible="{Binding HasCover}"/>
+                      </Panel>
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>

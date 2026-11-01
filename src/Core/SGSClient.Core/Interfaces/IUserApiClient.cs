@@ -58,6 +58,9 @@ public interface IUserApiClient
 
     Task<IReadOnlyList<ChatThreadDto>> GetChatThreadsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>Open lobbies with a free slot that friends host.</summary>
+    Task<IReadOnlyList<LobbyDto>> GetFriendLobbiesAsync(CancellationToken cancellationToken = default);
+
     Task<ChatConversationDto?> GetChatConversationAsync(int peerUserId, CancellationToken cancellationToken = default);
 
     Task<(ChatMessageDto? Message, string? Error)> SendChatMessageAsync(

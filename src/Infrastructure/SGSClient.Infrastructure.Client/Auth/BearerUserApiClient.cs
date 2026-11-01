@@ -226,6 +226,10 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         return list ?? [];
     }
 
+    public async Task<IReadOnlyList<LobbyDto>> GetFriendLobbiesAsync(CancellationToken cancellationToken = default) =>
+        await SendAsync<List<LobbyDto>>(HttpMethod.Get, "api/me/lobbies/friends", body: null, cancellationToken)
+            .ConfigureAwait(false) ?? [];
+
     public Task<ChatConversationDto?> GetChatConversationAsync(int peerUserId, CancellationToken cancellationToken = default) =>
         SendAsync<ChatConversationDto>(HttpMethod.Get, $"api/me/chat/{peerUserId}", body: null, cancellationToken);
 

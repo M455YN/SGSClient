@@ -293,9 +293,17 @@ public partial class MainWindowViewModel : ViewModelBase
         Sidebar.SelectNav(_contentNavTag);
     }
 
-    public void NavigateToPublish(string? parentSymbol = null, string selectTag = "Studio", string? kind = null)
+    public void NavigateToPublish(
+        string? parentSymbol = null,
+        string selectTag = "Studio",
+        string? kind = null,
+        int? versionOfGameId = null)
     {
-        if (kind == "app")
+        if (versionOfGameId is { } gameId)
+        {
+            _publish.PrepareForNewVersion(gameId, asAdmin: selectTag == "Admin");
+        }
+        else if (kind == "app")
         {
             _publish.PrepareForApp();
         }

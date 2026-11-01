@@ -85,6 +85,14 @@ public partial class FriendsView : UserControl
         }
     }
 
+    private async void JoinLobby_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is FriendsViewModel vm && sender is Control { Tag: SocialPersonItem person })
+        {
+            await vm.JoinLobbyCommand.ExecuteAsync(person);
+        }
+    }
+
     private async void Message_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is FriendsViewModel vm && sender is Control { Tag: SocialPersonItem person })

@@ -213,6 +213,14 @@ public sealed partial class FriendsPage : Page
         RefreshUi();
     }
 
+    private async void JoinLobby_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is SocialPersonItem person)
+        {
+            await ViewModel.JoinLobbyCommand.ExecuteAsync(person);
+        }
+    }
+
     private async void Message_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is SocialPersonItem person)

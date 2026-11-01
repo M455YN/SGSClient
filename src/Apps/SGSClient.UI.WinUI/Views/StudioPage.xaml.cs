@@ -20,6 +20,11 @@ public sealed partial class StudioPage : Page
         DataContext = ViewModel;
         ViewModel.SetAddGameHandler(NavigateAddGame);
         ViewModel.SetAddDlcHandler(NavigateAddDlc);
+        ViewModel.SetAddVersionHandler(id =>
+            App.MainWindow?.NavigateTo(typeof(PublishPage), PublishPage.VersionParameter(id, asAdmin: false), "Studio"));
+        ViewModel.SetSaveFileHandler((name, content) => App.MainWindow is null
+            ? Task.FromResult<string?>(null)
+            : WinUiFilePicker.SaveTextFileAsync(App.MainWindow, name, content));
         ViewModel.SetConfirmDeleteHandler(ConfirmDeleteAsync);
         ViewModel.SetPickImageHandler(() => PickFileAsync([".png", ".jpg", ".jpeg", ".webp", ".gif"]));
         ViewModel.SetPickVideoHandler(() => PickFileAsync([".mp4", ".webm"]));
@@ -70,6 +75,9 @@ public sealed partial class StudioPage : Page
     private void AddGame_Click(object sender, RoutedEventArgs e) => ViewModel.AddGameCommand.Execute(null);
 
     private void AddVersion_Click(object sender, RoutedEventArgs e) => ViewModel.AddVersionCommand.Execute(null);
+
+    private async void DownloadManifest_Click(object sender, RoutedEventArgs e) =>
+        await ViewModel.DownloadManifestCommand.ExecuteAsync(null);
 
     private void AddDlc_Click(object sender, RoutedEventArgs e) => ViewModel.AddDlcCommand.Execute(ViewModel.SelectedGame);
 

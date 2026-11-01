@@ -16,6 +16,8 @@ public partial class PublishViewModel : ObservableObject
     private readonly IAuthSession? _auth;
     private readonly ISgsApiService? _api;
     private string? _packedZipPath;
+    private int? _versionOfGameId;
+    private bool _versionAsAdmin;
     private SgsPackageHints? _packageHints;
     private string? _studioName;
     private string? _websiteUrl;
@@ -138,6 +140,24 @@ public partial class PublishViewModel : ObservableObject
         IsBusy = true;
         try
         {
+            if (_versionOfGameId is { } gameId
+                && _api is not null
+                && !File.Exists(Path.Combine(folder, SgsPackageManifest.FileName)))
+            {
+                var fromCatalog = await GameManifestSource.LoadAsync(_api, gameId, _versionAsAdmin);
+                if (fromCatalog is not null)
+                {
+                    var previousVersion = fromCatalog.Build.Version;
+                    ApplyManifestToForm(fromCatalog);
+                    BuildVersion = string.Empty;
+                    HasManifestForm = true;
+                    StatusText = Loc.F(
+                        "Folder nie ma manifestu — uzupełniono dane z opublikowanej gry. Podaj nowy numer wersji (obecna: {0}).",
+                        previousVersion);
+                    return;
+                }
+            }
+
             var loaded = await _packer.LoadManifestAsync(folder);
             if (!loaded.Success || loaded.Manifest is null)
             {
@@ -171,8 +191,17 @@ public partial class PublishViewModel : ObservableObject
         _ = LoadParentOptionsAsync();
     }
 
+    public void PrepareForNewVersion(int gameId, bool asAdmin)
+    {
+        PrepareForNewGame();
+        _versionOfGameId = gameId;
+        _versionAsAdmin = asAdmin;
+        StatusText = Loc.T("Nowa wersja: wybierz folder z grą. Jeśli nie ma w nim manifestu, dane uzupełnią się z opublikowanej gry.");
+    }
+
     public void PrepareForDlc(string parentSymbol)
     {
+        _versionOfGameId = null;
         Kind = "dlc";
         ParentSymbol = parentSymbol?.Trim() ?? string.Empty;
         StatusText = string.IsNullOrWhiteSpace(ParentSymbol)
@@ -183,6 +212,7 @@ public partial class PublishViewModel : ObservableObject
 
     public void PrepareForNewGame()
     {
+        _versionOfGameId = null;
         Kind = "game";
         ParentSymbol = string.Empty;
         StatusText = Loc.T("Wybierz folder z grą (musi zawierać sgs-manifest.json).");
@@ -190,6 +220,7 @@ public partial class PublishViewModel : ObservableObject
 
     public void PrepareForApp()
     {
+        _versionOfGameId = null;
         Kind = "app";
         ParentSymbol = string.Empty;
         StatusText = Loc.T("Wybierz folder z programem (musi zawierać sgs-manifest.json).");

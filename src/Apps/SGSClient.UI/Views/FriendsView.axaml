@@ -57,6 +57,8 @@
           </StackPanel>
         </Button>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <Button Content="{Binding JoinLabel}" Tag="{Binding}" Click="JoinLobby_OnClick" Classes="accent compact"
+                  IsVisible="{Binding HasLobby}"/>
           <Button Content="{loc:Tr Key='Napisz'}" Tag="{Binding}" Click="Message_OnClick" Classes="compact"
                   IsVisible="{Binding ShowMessage}"/>
           <Button Content="{loc:Tr Key='Akceptuj'}" Tag="{Binding}" Click="Accept_OnClick" Classes="accent compact"
