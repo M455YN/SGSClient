@@ -16,7 +16,7 @@ public partial class FriendsViewModel : ObservableObject
     private readonly SocialRealtimeService? _realtime;
     private readonly IUiTimer? _chatPollTimer;
     private readonly IUiDispatcher? _dispatcher;
-    private int? _activeChatPeerId;
+    private Func<ChatModalViewModel, Task>? _showChat;
     private Dictionary<int, LobbyDto> _friendLobbies = [];
     private bool _realtimeWired;
 
@@ -71,24 +71,11 @@ public partial class FriendsViewModel : ObservableObject
         };
     }
 
-    private void OnRealtimeMessage(ChatMessageDto message)
-    {
-        void Apply()
-        {
-            if (_activeChatPeerId is int peer
-                && (message.SenderUserId == peer || message.RecipientUserId == peer))
-            {
-                if (ChatMessages.All(m => m.Id != message.Id))
-                {
-                    ChatMessages.Add(ChatMessageItem.FromDto(message));
-                }
-            }
+    /// <summary>The view shows the conversation in a dialog and completes when it is closed.</summary>
+    public void SetShowChatHandler(Func<ChatModalViewModel, Task> show) => _showChat = show;
 
-            _ = LoadChatThreadsAsync();
-        }
-
-        RunOnUi(Apply);
-    }
+    // An open conversation dialog handles its own messages; this only keeps the thread list fresh.
+    private void OnRealtimeMessage(ChatMessageDto message) => RunOnUi(() => _ = LoadChatThreadsAsync());
 
     private void RunOnUi(Action action)
     {
@@ -113,7 +100,6 @@ public partial class FriendsViewModel : ObservableObject
     public ObservableCollection<ProfileCommentItem> ProfileComments { get; } = [];
     public ObservableCollection<AchievementSummaryItem> ProfileAchievements { get; } = [];
     public ObservableCollection<ChatThreadItem> ChatThreads { get; } = [];
-    public ObservableCollection<ChatMessageItem> ChatMessages { get; } = [];
 
     [ObservableProperty]
     public partial string SelectedTab { get; set; } = "Friends";
@@ -167,16 +153,7 @@ public partial class FriendsViewModel : ObservableObject
     public partial ChatThreadItem? SelectedChatThread { get; set; }
 
     [ObservableProperty]
-    public partial string ChatDraft { get; set; } = string.Empty;
-
-    [ObservableProperty]
     public partial string ChatStatus { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string ChatPeerTitle { get; set; } = Loc.T("Wybierz rozmowę");
-
-    [ObservableProperty]
-    public partial bool HasActiveChat { get; set; }
 
     public bool ShowFriendsTab => SelectedTab == "Friends" && ViewedProfile is null;
     public bool ShowRequestsTab => SelectedTab == "Requests" && ViewedProfile is null;
@@ -190,8 +167,7 @@ public partial class FriendsViewModel : ObservableObject
     public bool ShowEmptyFollowing => ShowFollowingTab && Following.Count == 0;
     public bool ShowEmptyFollowers => ShowFollowersTab && Followers.Count == 0;
     public bool ShowEmptySearch => ShowSearchTab && SearchResults.Count == 0 && !IsBusy;
-    public bool ShowEmptyChat => ShowChatTab && ChatThreads.Count == 0 && !HasActiveChat;
-    public bool ShowChatConversation => ShowChatTab && HasActiveChat;
+    public bool ShowEmptyChat => ShowChatTab && ChatThreads.Count == 0;
     public bool HasIncoming => Incoming.Count > 0;
     public bool HasOutgoing => Outgoing.Count > 0;
     public bool ShowFriendsGroups => ShowFriendsTab && Friends.Count > 0;
@@ -258,12 +234,6 @@ public partial class FriendsViewModel : ObservableObject
     }
 
     partial void OnViewedProfileChanged(SocialPersonItem? value) => NotifyLists();
-
-    partial void OnHasActiveChatChanged(bool value)
-    {
-        OnPropertyChanged(nameof(ShowEmptyChat));
-        OnPropertyChanged(nameof(ShowChatConversation));
-    }
 
     partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ShowEmptySearch));
 
@@ -463,10 +433,7 @@ public partial class FriendsViewModel : ObservableObject
             return;
         }
 
-        var person = ViewedProfile;
-        CloseProfile();
-        SelectedTab = "Chat";
-        await OpenChatWithAsync(person);
+        await OpenChatWithAsync(ViewedProfile);
     }
 
     [RelayCommand]
@@ -525,35 +492,7 @@ public partial class FriendsViewModel : ObservableObject
             return;
         }
 
-        SelectedTab = "Chat";
         await OpenChatWithPeerIdAsync(person.UserId, person.Title);
-    }
-
-    [RelayCommand]
-    private async Task SendChatMessageAsync()
-    {
-        if (_userApi is null || _activeChatPeerId is not int peerId)
-        {
-            return;
-        }
-
-        var text = ChatDraft.Trim();
-        if (text.Length == 0)
-        {
-            return;
-        }
-
-        ChatDraft = string.Empty;
-        var (message, error) = await _userApi.SendChatMessageAsync(peerId, text);
-        if (message is null)
-        {
-            ChatStatus = error ?? Loc.T("Nie wysłano.");
-            return;
-        }
-
-        ChatMessages.Add(ChatMessageItem.FromDto(message));
-        ChatStatus = string.Empty;
-        await LoadChatThreadsAsync();
     }
 
     [RelayCommand]
@@ -578,69 +517,22 @@ public partial class FriendsViewModel : ObservableObject
 
     private async Task OpenChatWithPeerIdAsync(int peerUserId, string title)
     {
-        if (_userApi is null)
+        if (_userApi is null || _showChat is null)
         {
             return;
         }
 
-        _activeChatPeerId = peerUserId;
-        HasActiveChat = true;
-        ChatPeerTitle = title;
-        SelectedChatThread = ChatThreads.FirstOrDefault(t => t.PeerUserId == peerUserId);
-        ChatStatus = Loc.T("Ładowanie…");
-        await RefreshConversationAsync(peerUserId);
-        await EnsureChatRealtimeOrPollAsync();
-        OnPropertyChanged(nameof(ShowEmptyChat));
-        OnPropertyChanged(nameof(ShowChatConversation));
-    }
-
-    private async Task RefreshConversationAsync(int peerUserId)
-    {
-        if (_userApi is null)
-        {
-            return;
-        }
-
-        try
-        {
-            var convo = await _userApi.GetChatConversationAsync(peerUserId);
-            ChatMessages.Clear();
-            if (convo is null)
-            {
-                ChatStatus = Loc.T("Nie udało się wczytać rozmowy (tylko znajomi).");
-                return;
-            }
-
-            ChatPeerTitle = string.IsNullOrWhiteSpace(convo.Peer.PlayerTag)
-                ? convo.Peer.DisplayName
-                : convo.Peer.PlayerTag!;
-            foreach (var m in convo.Messages)
-            {
-                ChatMessages.Add(ChatMessageItem.FromDto(m));
-            }
-
-            ChatStatus = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            ChatStatus = ex.Message;
-        }
+        using var chat = new ChatModalViewModel(_userApi, _realtime, _dispatcher, peerUserId, title);
+        _ = chat.LoadAsync();
+        await _showChat(chat);
+        await LoadChatThreadsAsync(); // reading clears unread counts
     }
 
     private async Task PollChatAsync()
     {
-        if (!ShowChatTab || _activeChatPeerId is not int peerId)
+        if (ShowChatTab)
         {
-            return;
-        }
-
-        try
-        {
-            await RefreshConversationAsync(peerId);
-        }
-        catch
-        {
-            // ignore poll errors
+            await LoadChatThreadsAsync();
         }
     }
 
@@ -799,7 +691,6 @@ public partial class FriendsViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowProfileView));
         OnPropertyChanged(nameof(ShowMainList));
         OnPropertyChanged(nameof(ShowEmptyChat));
-        OnPropertyChanged(nameof(ShowChatConversation));
         OnPropertyChanged(nameof(HasIncoming));
         OnPropertyChanged(nameof(HasOutgoing));
         OnPropertyChanged(nameof(RequestsTabLabel));

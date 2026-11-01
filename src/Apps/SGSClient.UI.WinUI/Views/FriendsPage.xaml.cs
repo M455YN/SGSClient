@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SGSClient.Core.Localization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -19,6 +20,21 @@ public sealed partial class FriendsPage : Page
         ViewModel = App.Services.GetRequiredService<FriendsViewModel>();
         InitializeComponent();
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
+        ViewModel.SetShowChatHandler(ShowChatAsync);
+    }
+
+    private async Task ShowChatAsync(ChatModalViewModel chat)
+    {
+        var dialog = new ContentDialog
+        {
+            Content = new ChatModal { DataContext = chat },
+            CloseButtonText = Loc.T("Zamknij"),
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = XamlRoot
+        };
+        dialog.Resources["ContentDialogMaxWidth"] = 560d;
+        dialog.Resources["ContentDialogMaxHeight"] = 720d;
+        await dialog.ShowAsync();
     }
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -73,13 +89,6 @@ public sealed partial class FriendsPage : Page
         ChatStatusText.Text = ViewModel.ChatStatus;
         EmptyChatText.Visibility = ViewModel.ShowEmptyChat ? Visibility.Visible : Visibility.Collapsed;
         ChatThreadsList.ItemsSource = ViewModel.ChatThreads;
-        ChatConversationPanel.Visibility = ViewModel.ShowChatConversation ? Visibility.Visible : Visibility.Collapsed;
-        ChatPeerTitleText.Text = ViewModel.ChatPeerTitle;
-        ChatMessagesList.ItemsSource = ViewModel.ChatMessages;
-        if (ChatDraftBox.FocusState == FocusState.Unfocused)
-        {
-            ChatDraftBox.Text = ViewModel.ChatDraft;
-        }
 
         EmptyFriendsText.Visibility = ViewModel.ShowEmptyFriends ? Visibility.Visible : Visibility.Collapsed;
         IncomingExpander.Visibility = ViewModel.ShowFriendsTab && ViewModel.HasIncoming
@@ -237,31 +246,6 @@ public sealed partial class FriendsPage : Page
             await ViewModel.OpenChatThreadCommand.ExecuteAsync(thread);
             RefreshUi();
         }
-    }
-
-    private void ChatDraftBox_TextChanged(object sender, TextChangedEventArgs e) =>
-        ViewModel.ChatDraft = ChatDraftBox.Text ?? string.Empty;
-
-    private async void SendChat_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.ChatDraft = ChatDraftBox.Text ?? string.Empty;
-        await ViewModel.SendChatMessageCommand.ExecuteAsync(null);
-        ChatDraftBox.Text = ViewModel.ChatDraft;
-        RefreshUi();
-    }
-
-    private async void ChatDraft_KeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        if (e.Key != VirtualKey.Enter)
-        {
-            return;
-        }
-
-        ViewModel.ChatDraft = ChatDraftBox.Text ?? string.Empty;
-        await ViewModel.SendChatMessageCommand.ExecuteAsync(null);
-        ChatDraftBox.Text = ViewModel.ChatDraft;
-        e.Handled = true;
-        RefreshUi();
     }
 
     private async void AddFriend_Click(object sender, RoutedEventArgs e)

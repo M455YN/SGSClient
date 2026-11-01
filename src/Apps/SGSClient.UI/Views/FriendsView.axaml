@@ -176,7 +176,7 @@
         </StackPanel>
 
         <!-- Chat -->
-        <Grid IsVisible="{Binding ShowChatTab}" ColumnDefinitions="140,*" ColumnSpacing="10" MinHeight="320">
+        <Grid IsVisible="{Binding ShowChatTab}" MinHeight="320">
           <StackPanel Spacing="6">
             <TextBlock Text="{loc:Tr Key='Rozmowy'}" FontWeight="SemiBold"/>
             <TextBlock Text="{Binding ChatStatus}" FontSize="11" Opacity="0.65" TextWrapping="Wrap"/>
@@ -197,28 +197,6 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-          </StackPanel>
-          <StackPanel Grid.Column="1" Spacing="8" IsVisible="{Binding ShowChatConversation}">
-            <TextBlock Text="{Binding ChatPeerTitle}" FontWeight="SemiBold" FontSize="16"/>
-            <ScrollViewer MaxHeight="240" HorizontalScrollBarVisibility="Disabled">
-              <ItemsControl ItemsSource="{Binding ChatMessages}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:ChatMessageItem">
-                    <Border Margin="0,0,0,6" Padding="10,8" CornerRadius="8"
-                            Background="#22FFFFFF" HorizontalAlignment="Left" MaxWidth="280">
-                      <StackPanel Spacing="2">
-                        <TextBlock Text="{Binding Meta}" FontSize="10" Opacity="0.55"/>
-                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
-                      </StackPanel>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-              <TextBox Text="{Binding ChatDraft}" PlaceholderText="{loc:Tr Key='Wiadomość…'}" KeyDown="ChatDraft_OnKeyDown"/>
-              <Button Grid.Column="1" Content="{loc:Tr Key='Wyślij'}" Classes="accent" Click="SendChat_OnClick"/>
-            </Grid>
           </StackPanel>
         </Grid>
 

@@ -129,17 +129,6 @@
       </Button>
     </DataTemplate>
 
-    <DataTemplate x:Key="ChatMessageTemplate" x:DataType="vm:ChatMessageItem">
-      <Border Margin="0,0,0,6" Padding="10,8" CornerRadius="8" MaxWidth="280"
-              HorizontalAlignment="Left"
-              Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-        <StackPanel Spacing="2">
-          <TextBlock Text="{Binding Meta}" Style="{StaticResource CaptionTextBlockStyle}"
-                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="10" />
-          <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-    </DataTemplate>
   </Page.Resources>
 
   <Grid Padding="16,12,12,12" RowSpacing="8">
@@ -237,22 +226,6 @@
             <TextBlock x:Name="EmptyChatText" Text="{loc:Tr Key='Brak rozmów.'}" Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             <ItemsControl x:Name="ChatThreadsList" ItemTemplate="{StaticResource ChatThreadTemplate}" />
-          </StackPanel>
-          <StackPanel x:Name="ChatConversationPanel" Grid.Column="1" Spacing="8" Visibility="Collapsed">
-            <TextBlock x:Name="ChatPeerTitleText" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="16" />
-            <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
-              <ItemsControl x:Name="ChatMessagesList" ItemTemplate="{StaticResource ChatMessageTemplate}" />
-            </ScrollViewer>
-            <Grid ColumnSpacing="8">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-              </Grid.ColumnDefinitions>
-              <TextBox x:Name="ChatDraftBox" PlaceholderText="{loc:Tr Key='Wiadomość…'}"
-                       KeyDown="ChatDraft_KeyDown" TextChanged="ChatDraftBox_TextChanged" />
-              <Button Grid.Column="1" Content="{loc:Tr Key='Wyślij'}" Style="{StaticResource AccentButtonStyle}"
-                      Click="SendChat_Click" />
-            </Grid>
           </StackPanel>
         </Grid>
 
