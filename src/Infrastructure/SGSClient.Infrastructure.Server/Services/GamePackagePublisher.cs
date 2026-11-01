@@ -59,6 +59,17 @@ public sealed class GamePackagePublisher(
                 return GamePackagePublishResult.Fail(manifestCheck.Errors);
             }
 
+            // Must run before anything is written: the files below replace the owner's package and media.
+            var existingOwnerId = await db.Games.AsNoTracking()
+                .Where(g => g.Symbol == manifest.Game.Symbol)
+                .Select(g => (int?)g.UserId)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (existingOwnerId is not null && !allowOverwriteForeignGame && existingOwnerId != ownerUserId && ownerUserId > 0)
+            {
+                return GamePackagePublishResult.Fail(
+                    "Ta gra należy do innego autora. Nie możesz nadpisać cudzej paczki.");
+            }
+
             SgsPackageRules.TryParsePlatform(manifest.Build.Platform, out var platform);
             SgsPackageRules.TryNormalizeEntryPath(manifest.Build.Executable, out var exePath, out _);
 
@@ -147,12 +158,6 @@ public sealed class GamePackagePublisher(
             }
             else
             {
-                if (!allowOverwriteForeignGame && game.UserId != ownerUserId && ownerUserId > 0)
-                {
-                    return GamePackagePublishResult.Fail(
-                        "Ta gra należy do innego autora. Nie możesz nadpisać cudzej paczki.");
-                }
-
                 if (game.Kind != contentKind)
                 {
                     return GamePackagePublishResult.Fail(
