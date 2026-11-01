@@ -22,6 +22,8 @@ Na stronie gry albo w **Bibliotece** wybierz **Zainstaluj** (przy wielu wersjach
 
 ## Gdzie co jest
 
+![Ekran główny klienta po zalogowaniu](../assets/screenshots/ekran-glowny.png)
+
 | Pozycja w menu | Co tam jest |
 |---|---|
 | **Home** | Start: sekcje **Kontynuuj**, **Nowe w sklepie**, **Wyróżnione** i **Gotowe do instalacji** |

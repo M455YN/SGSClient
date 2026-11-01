@@ -4,6 +4,8 @@
 
 W **Sklepie** przeglądasz katalog. Możesz szukać po nazwie, studiu lub tagu (**Wyszukaj gry, studia i tagi**), filtrować (**Filtry**) i sortować (**Sortuj według**).
 
+![Sklep z katalogiem gier](../assets/screenshots/sklep.png)
+
 Strona gry zawiera:
 
 - **Opis** i **Szczegóły**: gatunek, silnik, platforma, etap premiery, wersja, typ treści
@@ -14,7 +16,11 @@ Strona gry zawiera:
 
 ## Biblioteka
 
-**Biblioteka** pokazuje gry, które masz. Gra może być:
+**Biblioteka** pokazuje gry, które masz.
+
+![Biblioteka z zainstalowanymi grami](../assets/screenshots/biblioteka.png)
+
+Gra może być:
 
 - **w bibliotece, niezainstalowana** — kliknij **Zainstaluj**
 - **zainstalowana** — kliknij **Graj**
@@ -33,6 +39,8 @@ Gry instalują się w folderze bibliotek. Dodaj inny dysk w **Ustawienia → Bib
 ## Lista życzeń
 
 Dodawaj gry ze **Sklepu** do **Listy życzeń**. Osobna pozycja w menu pokazuje wszystkie zapisane gry.
+
+![Pusta lista życzeń z podpowiedzią](../assets/screenshots/lista-zyczen.png)
 
 ## Czas gry
 

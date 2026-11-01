@@ -2,6 +2,8 @@
 
 Sekcja **Twórczość** to miejsce na prace, które nie są grami: grafiki, utwory muzyczne i opowiadania. Każdy zalogowany użytkownik może publikować własne prace i komentować cudze. Publikowanie gier to osobna ścieżka: [Publikowanie gier](../creators/how-to-publish.md).
 
+![Sekcja Twórczość z zakładkami Grafika, Muzyka i Opowiadania](../assets/screenshots/tworczosc.png)
+
 ## Co możesz dodać
 
 | Typ | Pliki | Limit pliku | Dodatkowo |

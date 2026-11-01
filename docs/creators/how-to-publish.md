@@ -1,45 +1,39 @@
-# How to publish a game / Jak opublikować grę
+# Jak opublikować grę
 
-You need a **creator** role (or higher). In the client open **Creator panel** — that is where you ship the first version and later builds. The separate **Publish** nav item is hidden.
+Potrzebujesz konta z rolą **Twórca** (lub wyższą). W kliencie wejdź w **Panel twórcy**. Stamtąd publikujesz pierwszą wersję i kolejne buildy. Osobna pozycja **Publikuj** w menu jest ukryta.
 
-Potrzebujesz konta z rolą **twórca** (lub wyższą). W kliencie wejdź w **Panel twórcy** — stamtąd publikujesz pierwszą wersję i kolejne buildy. Osobna pozycja „Publikuj” w menu jest ukryta.
+![Panel twórcy w kliencie](../assets/screenshots/panel-tworcy.png)
 
-## 1. Game folder / Przygotuj folder gry
+## 1. Przygotuj folder gry
 
-Put the game files and the manifest in the **folder root** (the same layout is zipped):
-
-Na dysku złóż katalog z plikami gry i manifestem w **korzeniu** folderu (ten sam układ trafia do ZIP):
+Umieść pliki gry i manifest w **korzeniu** folderu. Ten sam układ trafia do ZIP:
 
 ```text
-my-game/
+moja-gra/
   sgs-manifest.json
-  bin/MyGame.exe
+  bin/MojaGra.exe
   data/...
   media/cover.png
   media/header.png
 ```
 
-Media filenames can differ as long as manifest paths match. Paths must be relative, use `/`, no `..`.
+Nazwy plików mediów mogą być inne, byle ścieżki w manifeście się zgadzały. Ścieżki mają być względne, z ukośnikiem `/`, bez `..`.
 
-Nazwy plików mediów mogą być inne, byle ścieżki w manifeście się zgadzały. Ścieżki tylko względne, ze slashem `/`, bez `..`.
+## 2. Wypełnij `sgs-manifest.json`
 
-## 2. Fill in `sgs-manifest.json` / Wypełnij manifest
-
-Required: `schemaVersion` (currently `1`), `game.title`, `game.symbol`, `build.version`, `build.platform`, `build.executable`.
-
-Wymagane: `schemaVersion` (obecnie `1`), `game.title`, `game.symbol`, `build.version`, `build.platform`, `build.executable`.
+Wymagane pola: `schemaVersion` (obecnie `1`), `game.title`, `game.symbol`, `build.version`, `build.platform`, `build.executable`.
 
 ```json
 {
   "schemaVersion": 1,
   "game": {
-    "title": "My Game",
-    "symbol": "my-game",
+    "title": "Moja gra",
+    "symbol": "moja-gra",
     "kind": "game",
-    "description": "Short store-page description.",
+    "description": "Krótki opis na stronę sklepu.",
     "genre": "indie",
     "engine": "unity",
-    "studioName": "My Studio",
+    "studioName": "Moje studio",
     "websiteUrl": "https://example.com",
     "discordUrl": "https://discord.gg/example",
     "supportUrl": "https://example.com/support",
@@ -64,74 +58,60 @@ Wymagane: `schemaVersion` (obecnie `1`), `game.title`, `game.symbol`, `build.ver
     "version": "1.0.0",
     "platform": "windows",
     "architecture": "x64",
-    "executable": "bin/MyGame.exe",
+    "executable": "bin/MojaGra.exe",
     "isDefault": true
   }
 }
 ```
 
-| Field / Pole | Rule / Zasada |
-|--------------|----------------|
-| `symbol` | Stable kebab-case slug: `a-z`, `0-9`, hyphens; 2–64 chars. Do not change after first publish. / Stały slug; nie zmieniaj po pierwszej publikacji. |
-| `kind` | `game` or `dlc`. DLC needs `parentSymbol` of the base game. / `game` albo `dlc`. DLC wymaga `parentSymbol`. |
-| `version` | SemVer, e.g. `1.0.0` or `1.0.0-beta.1` |
+| Pole | Zasada |
+|------|--------|
+| `symbol` | Stały slug w stylu kebab-case: `a-z`, `0-9`, myślniki; 2–64 znaki. Nie zmieniaj go po pierwszej publikacji. |
+| `kind` | `game` albo `dlc`. DLC wymaga `parentSymbol` gry bazowej. |
+| `version` | SemVer, np. `1.0.0` lub `1.0.0-beta.1` |
 | `platform` | `windows`, `linux`, `macos` |
 | `architecture` | `x64`, `x86`, `arm64` |
-| `executable` | Entry file inside the ZIP; on Windows usually `.exe` / Plik startowy w ZIP; na Windowsie zwykle `.exe` |
+| `executable` | Plik startowy w ZIP; na Windowsie zwykle `.exe` |
 | `genre` | `action`, `adventure`, `rpg`, `strategy`, `simulation`, `sports`, `racing`, `puzzle`, `horror`, `indie`, `platformer`, `shooter`, `fps`, `tps`, `fighting`, `stealth`, `survival`, `sandbox`, `open-world`, `roguelike`, `roguelite`, `metroidvania`, `visual-novel`, `card`, `turn-based`, `mmo`, `moba`, `battle-royale`, `tower-defense`, `idle`, `casual`, `party`, `rhythm`, `educational`, `narrative`, `walking-sim`, `vr`, `other` |
 | `engine` | `unity`, `unreal`, `godot`, `cryengine`, `gamemaker`, `construct`, `rpgmaker`, `renpy`, `defold`, `monogame`, `fna`, `stride`, `bevy`, `libgdx`, `love2d`, `phaser`, `cocos`, `solar2d`, `clickteam-fusion`, `source`, `source2`, `idtech`, `frostbite`, `creation-engine`, `red-engine`, `anvil`, `snowdrop`, `o3de`, `raylib`, `pygame`, `sdl`, `html5`, `roblox`, `custom`, `other` |
-| `studioName` / `websiteUrl` / `discordUrl` / `supportUrl` | Optional store links (URLs must be `http://` or `https://`) |
+| `studioName`, `websiteUrl`, `discordUrl`, `supportUrl` | Opcjonalne linki do sklepu (muszą zaczynać się od `http://` lub `https://`) |
 | `releaseStatus` | `announced`, `earlyAccess`, `released`, `demo` |
-| `releaseDate` | ISO date, e.g. `2024-06-15` |
+| `releaseDate` | Data ISO, np. `2024-06-15` |
 | `ageRating` | `unrated`, `pegi3`, `pegi7`, `pegi12`, `pegi16`, `pegi18` |
-| `features` | `singleplayer`, `multiplayer`, `coop`, `controller`, `cloud`, `achievements`, `modding`, `vr` (`achievements` is also set automatically once you define achievements: see [Achievements](achievements.md)) |
-| `languages` / `tags` | Arrays of strings (same as Creator panel CSV fields) |
+| `features` | `singleplayer`, `multiplayer`, `coop`, `controller`, `cloud`, `achievements`, `modding`, `vr` (`achievements` ustawia się też automatycznie po zdefiniowaniu osiągnięć, patrz [Osiągnięcia](achievements.md)) |
+| `languages`, `tags` | Tablice tekstów (te same pola co w Panelu twórcy) |
 
-Media are optional at upload — you can add them later in Creator panel → **Media**. Sizes: [Store art](store-art.md).
+Media są opcjonalne przy wysyłce. Możesz dodać je później w **Panel twórcy → Multimedia**. Wymiary znajdziesz w [Grafice sklepowej](store-art.md).
 
-Media są opcjonalne przy uploadzie — możesz je potem dodać w Panelu twórcy (zakładka **Multimedia**). Wymiary: [Grafika sklepowa](store-art.md).
+Przy nowej wersji istniejącej gry grafiki zostają, dopóki paczka ich nie zastąpi. Okładka, nagłówek, logo i intro są nadpisywane tylko wtedy, gdy są w manifeście. Zrzuty ekranu są podmieniane tylko wtedy, gdy manifest zawiera co najmniej jeden. Wtedy cały zestaw jest wymieniany.
 
-When you publish a new version of an existing game, artwork is kept unless the package replaces it: cover, header, logo and intro are overwritten only if the manifest lists them, and screenshots are replaced only if the manifest lists at least one (then the whole set is replaced).
+Nie musisz przepisywać manifestu przy każdej wersji. Przycisk **Pobierz manifest** w **Panelu twórcy** lub w **Adminie** zapisuje `sgs-manifest.json` zbudowany z opublikowanej gry: dane, gatunki, tagi, obecną wersję i exe. Bez multimediów i osiągnięć. **Opublikuj nową wersję** też wypełnia formularz z opublikowanej gry, gdy wybrany folder nie ma manifestu. Wpisujesz tylko numer nowej wersji i opis zmian.
 
-You don't have to retype the manifest for every version: in Creator panel / Admin, **Download manifest** saves `sgs-manifest.json` built from the published game (details, genres, tags, current version and exe; media and achievements are left out). **Publish a new version** also fills the form from the published game when the chosen folder has no manifest — you only enter the new version number and release notes.
+Pełny przykład manifestu: [`demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json).
 
-Nie musisz przepisywać manifestu przy każdej wersji: w Panelu twórcy / Adminie **Pobierz manifest** zapisuje `sgs-manifest.json` zbudowany z opublikowanej gry (dane, gatunki, tagi, obecna wersja i exe; bez multimediów i osiągnięć). **Opublikuj nową wersję** sama uzupełnia formularz z opublikowanej gry, gdy wybrany folder nie ma manifestu — wpisujesz tylko nowy numer wersji i opis zmian.
+Gotowy folder i ZIP jako szablon (atrapa exe i opisane grafiki): [`sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game) i [`sample-game-package.zip`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/sample-game-package.zip).
 
-Przy nowej wersji istniejącej gry grafiki zostają, dopóki paczka ich nie zastąpi: okładka, nagłówek, logo i intro są nadpisywane tylko gdy są w manifeście, a zrzuty ekranu tylko gdy manifest zawiera co najmniej jeden (wtedy cały zestaw jest podmieniany).
+## 3. Wyślij z klienta
 
-Full sample manifest: [`schemas/examples/demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json).
+1. Zaloguj się w **Profilu**.
+2. Otwórz **Panel twórcy** i wybierz nową grę albo nową wersję.
+3. Wskaż folder, w którym leży `sgs-manifest.json`.
+4. Sprawdź tytuł, symbol, multimedia i ścieżkę exe.
+5. Spakuj i wyślij.
 
-Ready-made folder + ZIP template (placeholder exe + labeled store art): [`schemas/examples/sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game) / [`sample-game-package.zip`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/sample-game-package.zip).
+Klient buduje ZIP i wysyła go na `POST /api/Games/uploads`. Serwer sprawdza manifest jeszcze raz.
 
-Gotowy folder + ZIP szablon (atrapa exe + opisane grafiki): [`schemas/examples/sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game) / [`sample-game-package.zip`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/sample-game-package.zip).
+Nowa gra zaczyna jako **szkic** i nie jest widoczna w sklepie. W przeglądzie Panelu twórcy włącz **W sklepie**, gdy strona i grafika są gotowe.
 
-## 3. Upload from the client / Wyślij z klienta
+## Limity paczki (v1)
 
-1. Sign in under **Profile**. / Zaloguj się w **Profilu**.
-2. Open **Creator panel** → publish a new game / new version. / Otwórz **Panel twórcy** → nowa gra / nowa wersja.
-3. Pick the folder that contains `sgs-manifest.json`. / Wskaż folder z manifestem.
-4. Check title, symbol, media, and exe path. / Sprawdź tytuł, symbol, media i ścieżkę exe.
-5. Pack and upload. / Przygotuj paczkę i wyślij.
-
-The client builds a ZIP and posts to `POST /api/Games/uploads`. The server validates the manifest again.
-
-Klient pakuje ZIP i wysyła na `POST /api/Games/uploads`. Serwer jeszcze raz sprawdza manifest.
-
-A new game starts as a **draft** (hidden from the store). In Creator panel overview turn on **In store** when the page and art are ready.
-
-Nowa gra startuje jako **szkic** (niewidoczna w sklepie). W przeglądzie Panelu twórcy włącz **W sklepie**, gdy strona i grafika są gotowe.
-
-## Package limits (v1) / Limity paczki (v1)
-
-| Limit | Value / Wartość |
-|-------|-----------------|
+| Limit | Wartość |
+|-------|---------|
 | ZIP | 2 GB |
-| Uncompressed / Rozpakowane | 4 GB |
-| Archive entries / Pliki | 20 000 |
-| Path depth / Głębokość | 12 |
-| Single media file / Jeden plik media | 80 MB |
-| Screenshots / Zrzuty | 12 |
+| Rozpakowane | 4 GB |
+| Liczba plików w archiwum | 20 000 |
+| Głębokość ścieżki | 12 |
+| Jeden plik multimedialny | 80 MB |
+| Zrzuty ekranu | 12 |
 
-The server rejects absolute paths, `..`, and an exe that does not match the platform.
-
-Serwer odrzuca ścieżki absolutne, `..` oraz exe niezgodne z platformą.
+Serwer odrzuca ścieżki bezwzględne, ścieżki z `..` oraz exe niezgodne z platformą.
