@@ -1,8 +1,8 @@
 # Creator docs / Dokumentacja dla twórców
 
-How to publish a game on SGS.
+How to publish a game on SGS. Full wiki: [../README.md](../README.md).
 
-Jak publikować gry w SGS.
+Jak publikować gry w SGS. Pełna wiki: [../README.md](../README.md).
 
 | Page | Topic |
 |------|--------|
