@@ -37,7 +37,7 @@ Ta strona opisuje, jak gra łączy się z SGS. Potrzebujesz tylko protokołu HTT
 ## Dokumentacja
 
 - [Most lokalny](bridge.md): zmienne, nagłówki, kolejka offline, kody odpowiedzi
-- [Referencja API](api-reference.md): wszystkie endpointy według obszaru
+- [Referencja API](api-reference.md): najważniejsze endpointy do integracji (sklep i SDK gry)
 - [Osiągnięcia](../creators/achievements.md): definicje, endpointy, przykłady w Unity, Godot i Unreal
 - [Lobby i zaproszenia](../creators/lobbies.md): hostowanie, dołączanie, zaproszenia
 - [Schemat manifestu](https://github.com/M455YN/SGSClient/blob/master/schemas/sgs-manifest.v1.json)
