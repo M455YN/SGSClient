@@ -83,6 +83,13 @@ if (azureAd.IsConfigured)
 }
 else
 {
+    // Without Azure AD every caller is local user 1 with admin rights: development only.
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException(
+            "AzureAd is not configured. Set AzureAd:Enabled=true, AzureAd:ClientId, AzureAd:TenantName and AzureAd:SigninPolicy.");
+    }
+
     // Always register a default scheme so AuthorizationMiddleware Challenge does not 500
     // when AzureAd is disabled (see MeController / [Authorize] without JwtBearer).
     builder.Services
