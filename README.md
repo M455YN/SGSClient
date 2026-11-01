@@ -76,3 +76,7 @@ dotnet publish src/Apps/SGSClient.UI.WinUI -c Release -r win-x64 -p:PublishProfi
 ```
 
 API image and compose files: `deploy/`.
+
+## Documentation
+
+Wiki for players, creators and game developers: [`docs/README.md`](docs/README.md).
