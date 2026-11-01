@@ -1,5 +1,5 @@
 [project]
-site_name = "SGS: dokumentacja"
+site_name = "SGSClient: dokumentacja"
 site_description = "Klient SGS, publikowanie gier i integracja z platformą"
 site_url = "https://m455yn.github.io/SGSClient/"
 repo_url = "https://github.com/M455YN/SGSClient"
