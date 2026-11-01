@@ -1,65 +1,65 @@
 # SGSClient
 
-.NET 10 game store / library client and catalog API. Two desktop shells (Avalonia, WinUI 3) share ViewModels in `SGSClient.UI.Shared`. UI copy is Polish.
+Klient sklepu i biblioteki gier oraz API katalogu, oparte na .NET 10. Dwie powłoki desktopowe (Avalonia, WinUI 3) współdzielą ViewModele w `SGSClient.UI.Shared`. Interfejs jest po polsku.
 
 ```
-desktop  →  HTTPS  →  SGSClient.Api  →  SQL Server (catalog, users)
+desktop  →  HTTPS  →  SGSClient.Api  →  SQL Server (katalog, użytkownicy)
                 ↘  SQLite (%LocalAppData%/SGSClient/library.db)
 ```
 
-`SGSClient.Core` has **no** project references into Apps or Infrastructure (DIP). Shared UI is `net10.0` and must not reference Avalonia or WinUI.
+`SGSClient.Core` **nie** ma referencji projektowych do Apps ani Infrastructure (DIP). Wspólny UI jest w `net10.0` i nie może odwoływać się do Avalonia ani WinUI.
 
-## Solution
+## Solucja
 
-| Path | Role |
-|------|------|
-| `src/Apps/SGSClient.UI` | Avalonia (`net10.0`) — Windows / Linux / macOS |
+| Ścieżka | Rola |
+|---------|------|
+| `src/Apps/SGSClient.UI` | Avalonia (`net10.0`): Windows, Linux, macOS |
 | `src/Apps/SGSClient.UI.WinUI` | WinUI 3 (`net10.0-windows10.0.22621.0`), MSIX |
-| `src/Apps/SGSClient.UI.Shared` | Shared ViewModels; URL-only media |
-| `src/Apps/SGSClient.Api` | ASP.NET Core — JWT, catalog, uploads, admin |
-| `src/Apps/SGSClient.Server` | Worker / backend |
-| `src/Core/SGSClient.Core` | DTOs, install helpers, `sgs-manifest` + `SgsPackageRules` |
-| `src/Infrastructure/...Client` | SQLite, MSAL, launch, pack/upload |
+| `src/Apps/SGSClient.UI.Shared` | Wspólne ViewModele; multimedia tylko przez URL |
+| `src/Apps/SGSClient.Api` | ASP.NET Core: JWT, katalog, wysyłki, administracja |
+| `src/Apps/SGSClient.Server` | Worker i backend |
+| `src/Core/SGSClient.Core` | DTO, helpery instalacji, `sgs-manifest` i `SgsPackageRules` |
+| `src/Infrastructure/...Client` | SQLite, MSAL, uruchamianie, pakowanie i wysyłka |
 | `src/Infrastructure/...Server` | SQL Server EF |
-| `schemas/` | Manifest JSON Schema + example |
+| `schemas/` | Schemat JSON manifestu i przykład |
 | `tests/` | xUnit |
 
-Entry: `SGSClient.slnx`.
+Punkt wejścia: `SGSClient.slnx`.
 
-Views and file pickers stay per shell. Shared VMs live in `SGSClient.UI.ViewModels`. Covers are resolved URLs (`InstallPathHelper.TryResolveDownloadUrl`).
+Widoki i wybieracze plików zostają w każdej powłoce osobno. Wspólne ViewModele są w `SGSClient.UI.ViewModels`. Okładki to rozwiązane adresy URL (`InstallPathHelper.TryResolveDownloadUrl`).
 
-## Package contract
+## Kontrakt paczki
 
-Upload ZIP **must** contain `sgs-manifest.json` at the archive root. Schema: [`schemas/sgs-manifest.v1.json`](schemas/sgs-manifest.v1.json). Example: [`schemas/examples/demo-runner.sgs-manifest.json`](schemas/examples/demo-runner.sgs-manifest.json). Rules: `src/Core/SGSClient.Core/Packaging/`. Client preflight: `SgsPackageRules.ValidateManifest`. Upload: `POST /api/Games/uploads`.
+ZIP do wysyłki **musi** zawierać `sgs-manifest.json` w korzeniu archiwum. Schemat: [`schemas/sgs-manifest.v1.json`](schemas/sgs-manifest.v1.json). Przykład: [`schemas/examples/demo-runner.sgs-manifest.json`](schemas/examples/demo-runner.sgs-manifest.json). Reguły: `src/Core/SGSClient.Core/Packaging/`. Sprawdzenie po stronie klienta: `SgsPackageRules.ValidateManifest`. Wysyłka: `POST /api/Games/uploads`.
 
-**v1 limits:** ZIP ≤ 2 GB, uncompressed ≤ 4 GB, ≤ 20k entries, depth ≤ 12, no `..` / absolute paths, executable matches platform.
+**Limity v1:** ZIP ≤ 2 GB, rozpakowany ≤ 4 GB, ≤ 20 tys. wpisów, głębokość ≤ 12, bez `..` i ścieżek bezwzględnych, plik wykonywalny zgodny z platformą.
 
-Two stored art files (do not merge on the server):
+Dwa zapisywane pliki grafik (nie łączyć ich na serwerze):
 
-| Slot | Manifest / DTO | Used for |
-|------|----------------|----------|
-| Thumbnail | `media.cover` → `CoverUrl` | lists, library posters |
-| Landscape | `media.header` → `HeaderUrl` | title page, hero |
-| Square logo | `media.logo` → `LogoUrl` | sidebar tiles |
+| Slot | Manifest / DTO | Użycie |
+|------|----------------|--------|
+| Miniaturka | `media.cover` → `CoverUrl` | listy, plakaty w bibliotece |
+| Okładka pozioma | `media.header` → `HeaderUrl` | strona tytułowa, hero |
+| Logo kwadratowe | `media.logo` → `LogoUrl` | kafelki w pasku bocznym |
 
-`ThumbnailUrl` / `LandscapeUrl` / `SquareLogoUrl` are client fallbacks.
+`ThumbnailUrl`, `LandscapeUrl` i `SquareLogoUrl` to zapasowe pola klienta.
 
-Empty databases seed **Demo Runner** and **Sky Arena** with real ZIP packages under `Games:StoragePath` (claim → install → play works without publishing first).
+Puste bazy zasiewają **Demo Runner** i **Sky Arena** prawdziwymi paczkami ZIP w `Games:StoragePath`. Dzięki temu cykl „odbierz → zainstaluj → graj” działa bez wcześniejszej publikacji.
 
-## Data
+## Dane
 
-| Store | Engine | Data |
-|-------|--------|------|
-| Server | SQL Server + EF Core | `games`, `game_builds`, `users` |
-| Client | SQLite + EF Core | install registry, playtime |
+| Magazyn | Silnik | Dane |
+|---------|--------|------|
+| Serwer | SQL Server + EF Core | `games`, `game_builds`, `users` |
+| Klient | SQLite + EF Core | rejestr instalacji, czas gry |
 
-Client DB: `%LocalAppData%/SGSClient/library.db`. API migrates and seeds on startup (`GET /api/games`).
+Baza klienta: `%LocalAppData%/SGSClient/library.db`. API migruje i zasiewa dane przy starcie (`GET /api/games`).
 
-Auth: MSAL public client + Azure AD B2C. API validates JWT and upserts `users` on `GET /api/me`. Desktop does not query SQL for identity. See `appsettings.example.json` (`AzureAd`, `Api:BaseUrl`).
+Uwierzytelnianie: publiczny klient MSAL + Azure AD B2C. API waliduje JWT i zapisuje `users` przy `GET /api/me`. Aplikacja desktopowa nie pyta SQL o tożsamość. Przykładowa konfiguracja: `appsettings.example.json` (`AzureAd`, `Api:BaseUrl`), w `src/Apps/SGSClient.Api/`.
 
-## Build
+## Budowanie
 
-Requires [.NET 10 SDK](https://dotnet.microsoft.com/download). SQL Server for Api. Windows App SDK for WinUI.
+Wymagany jest [.NET 10 SDK](https://dotnet.microsoft.com/download). API potrzebuje SQL Server, a WinUI potrzebuje Windows App SDK.
 
 ```bash
 dotnet build SGSClient.slnx
@@ -68,15 +68,15 @@ dotnet run --project src/Apps/SGSClient.Api
 dotnet run --project src/Apps/SGSClient.UI
 ```
 
-Local API: launch profile **Local API** (`SGS_Api__BaseUrl=https://localhost:7142/`). Production profile uses `Api:BaseUrl` from config. Multi-startup: `SGSClient.slnLaunch`.
+Lokalne API: profil uruchomienia **Local API** (`SGS_Api__BaseUrl=https://localhost:7142/`). Profil produkcyjny używa `Api:BaseUrl` z konfiguracji. Uruchamianie wielu projektów: `SGSClient.slnLaunch`.
 
 ```bash
 dotnet publish src/Apps/SGSClient.UI -c Release -r win-x64 --self-contained true
 dotnet publish src/Apps/SGSClient.UI.WinUI -c Release -r win-x64 -p:PublishProfile=msix-x64 -p:Platform=x64
 ```
 
-API image and compose files: `deploy/`.
+Obraz API i pliki compose: `deploy/`.
 
-## Documentation
+## Dokumentacja
 
-Wiki for players, creators and game developers: [`docs/README.md`](docs/README.md).
+Wiki dla graczy, twórców i deweloperów gier: [`docs/README.md`](docs/README.md).
