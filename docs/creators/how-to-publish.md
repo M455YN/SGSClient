@@ -99,11 +99,11 @@ Nie musisz przepisywać manifestu przy każdej wersji: w Panelu twórcy / Admini
 
 Przy nowej wersji istniejącej gry grafiki zostają, dopóki paczka ich nie zastąpi: okładka, nagłówek, logo i intro są nadpisywane tylko gdy są w manifeście, a zrzuty ekranu tylko gdy manifest zawiera co najmniej jeden (wtedy cały zestaw jest podmieniany).
 
-Full sample manifest: [`schemas/examples/demo-runner.sgs-manifest.json`](../../schemas/examples/demo-runner.sgs-manifest.json).
+Full sample manifest: [`schemas/examples/demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json).
 
-Ready-made folder + ZIP template (placeholder exe + labeled store art): [`schemas/examples/sample-game/`](../../schemas/examples/sample-game/) / [`sample-game-package.zip`](../../schemas/examples/sample-game-package.zip).
+Ready-made folder + ZIP template (placeholder exe + labeled store art): [`schemas/examples/sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game) / [`sample-game-package.zip`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/sample-game-package.zip).
 
-Gotowy folder + ZIP szablon (atrapa exe + opisane grafiki): [`schemas/examples/sample-game/`](../../schemas/examples/sample-game/) / [`sample-game-package.zip`](../../schemas/examples/sample-game-package.zip).
+Gotowy folder + ZIP szablon (atrapa exe + opisane grafiki): [`schemas/examples/sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game) / [`sample-game-package.zip`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/sample-game-package.zip).
 
 ## 3. Upload from the client / Wyślij z klienta
 

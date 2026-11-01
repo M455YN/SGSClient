@@ -87,3 +87,6 @@ schemas/examples/
 
 # Dev publish output
 dist/
+
+# Zensical docs build output
+/site/
