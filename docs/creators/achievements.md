@@ -36,7 +36,7 @@ Do 500 osiągnięć na grę. Usunięcie tylko je dezaktywuje: gracze zachowują 
 ]
 ```
 
-Absent `achievements` leaves the game's achievements untouched. A present array — even an empty one — **replaces** them on publish, so the manifest wins over the panel. See [`schemas/examples/demo-runner.sgs-manifest.json`](../../schemas/examples/demo-runner.sgs-manifest.json).
+Absent `achievements` leaves the game's achievements untouched. A present array — even an empty one — **replaces** them on publish, so the manifest wins over the panel. See [`schemas/examples/demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json).
 
 Brak `achievements` zostawia osiągnięcia gry bez zmian. Obecna tablica — nawet pusta — **zastępuje** je przy publikacji, więc manifest wygrywa z panelem.
 

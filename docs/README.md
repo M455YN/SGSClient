@@ -23,8 +23,8 @@ Dokumentacja klienta SGS i platformy. Wybierz, kim jesteś:
 - [Integracja z SGS](developers/README.md): most lokalny, zmienne środowiskowe, kontrakt z grą
 - [Osiągnięcia](creators/achievements.md) i [Lobby i zaproszenia](creators/lobbies.md)
 - [Referencja API](developers/api-reference.md)
-- [Schemat manifestu](../schemas/sgs-manifest.v1.json)
+- [Schemat manifestu](https://github.com/M455YN/SGSClient/blob/master/schemas/sgs-manifest.v1.json)
 
 ## Dla operatorów
 
-- [Wdrożenie](../deploy/) (Docker, Portainer, nginx)
+- [Wdrożenie](https://github.com/M455YN/SGSClient/tree/master/deploy) (Docker, Portainer, nginx)

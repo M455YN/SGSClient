@@ -13,7 +13,7 @@ Jak publikować gry w SGS. Pełna wiki: [../README.md](../README.md).
 
 Schema and sample package / Schemat i przykład paczki:
 
-- [`schemas/sgs-manifest.v1.json`](../../schemas/sgs-manifest.v1.json)
-- [`schemas/examples/demo-runner.sgs-manifest.json`](../../schemas/examples/demo-runner.sgs-manifest.json)
-- **Ready-to-unzip template** / **Gotowy szablon:** [`schemas/examples/sample-game-package.zip`](../../schemas/examples/sample-game-package.zip) (folder: [`sample-game/`](../../schemas/examples/sample-game/))
-- **Per-game catalog templates (DB exe/version)** / **Szablony per gra (exe/wersja z bazy):** [`schemas/examples/catalog-templates/`](../../schemas/examples/catalog-templates/) · ZIP: [`catalog-template-zips/`](../../schemas/examples/catalog-template-zips/)
+- [`schemas/sgs-manifest.v1.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/sgs-manifest.v1.json)
+- [`schemas/examples/demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json)
+- **Ready-to-unzip template** / **Gotowy szablon:** [`schemas/examples/sample-game-package.zip`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/sample-game-package.zip) (folder: [`sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game))
+- **Per-game catalog templates (DB exe/version)** / **Szablony per gra (exe/wersja z bazy):** [`schemas/examples/catalog-templates/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/catalog-templates) · ZIP: [`catalog-template-zips/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/catalog-template-zips)

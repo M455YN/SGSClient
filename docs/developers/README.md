@@ -40,4 +40,4 @@ Ta strona opisuje, jak gra łączy się z SGS. Potrzebujesz tylko protokołu HTT
 - [Referencja API](api-reference.md): wszystkie endpointy według obszaru
 - [Osiągnięcia](../creators/achievements.md): definicje, endpointy, przykłady w Unity, Godot i Unreal
 - [Lobby i zaproszenia](../creators/lobbies.md): hostowanie, dołączanie, zaproszenia
-- [Schemat manifestu](../../schemas/sgs-manifest.v1.json)
+- [Schemat manifestu](https://github.com/M455YN/SGSClient/blob/master/schemas/sgs-manifest.v1.json)
