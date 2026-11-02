@@ -15,9 +15,9 @@ public sealed class ClientUserSettingsStore : IClientUserSettingsStore
 
     private readonly string _settingsPath;
 
-    public ClientUserSettingsStore()
+    public ClientUserSettingsStore(string? dataRoot = null)
     {
-        var root = Path.GetDirectoryName(DependencyInjection.GetDefaultLibraryDbPath()) ?? string.Empty;
+        var root = dataRoot ?? Path.GetDirectoryName(DependencyInjection.GetDefaultLibraryDbPath()) ?? string.Empty;
         _settingsPath = Path.Combine(root, "client-settings.json");
     }
 
