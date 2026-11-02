@@ -20,4 +20,7 @@ public sealed class ClientUserSettings
 
     /// <summary>"system", "pl" or "en". Takes effect after restart.</summary>
     public string Language { get; set; } = "system";
+
+    /// <summary>When true, closing the main window hides it to the tray instead of quitting.</summary>
+    public bool CloseToTray { get; set; } = true;
 }

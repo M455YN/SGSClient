@@ -17,7 +17,7 @@ public sealed partial class DownloadsPage : Page
         InitializeComponent();
         ViewModel.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(DownloadsViewModel.DownloadMaxKbps))
+            if (e.PropertyName == nameof(DownloadsViewModel.DownloadMaxMbps))
             {
                 SyncBandwidthBox();
             }
@@ -42,7 +42,7 @@ public sealed partial class DownloadsPage : Page
         _suppressBandwidth = true;
         try
         {
-            BandwidthBox.Value = ViewModel.DownloadMaxKbps;
+            BandwidthBox.Value = ViewModel.DownloadMaxMbps;
         }
         finally
         {
@@ -66,7 +66,7 @@ public sealed partial class DownloadsPage : Page
             return;
         }
 
-        ViewModel.DownloadMaxKbps = (int)Math.Max(0, args.NewValue);
+        ViewModel.DownloadMaxMbps = args.NewValue;
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e)

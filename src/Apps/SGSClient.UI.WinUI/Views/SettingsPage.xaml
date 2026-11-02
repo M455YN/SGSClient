@@ -2,86 +2,198 @@
     x:Class="SGSClient.UI.WinUI.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Page.Resources>
+    <Style x:Key="SettingsRow" TargetType="Border">
+      <Setter Property="Padding" Value="0,14" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+    </Style>
+    <Style x:Key="PageTitle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="22" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+    <Style x:Key="Description" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <Style x:Key="RowValue" TargetType="TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="MaxWidth" Value="320" />
+      <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+  </Page.Resources>
 
-  <ScrollViewer>
-    <StackPanel Margin="28,24,28,32" Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
-      <TextBlock x:Name="TitleText" FontSize="28" FontWeight="SemiBold" />
-
-      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="14">
-          <TextBlock Text="{loc:Tr Key='Wygląd i język'}" FontSize="18" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Motyw'}" />
-              <TextBlock Text="{loc:Tr Key='Kolory interfejsu aplikacji.'}" Opacity="0.55" FontSize="12" TextWrapping="Wrap" />
+  <Grid ColumnDefinitions="220,*">
+    <Border BorderThickness="0,0,1,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+      <Grid RowDefinitions="Auto,*" Margin="8,24,8,8">
+        <TextBlock x:Name="TitleText" FontSize="22" FontWeight="SemiBold" Margin="12,0,12,12" />
+        <ListView x:Name="PageList" Grid.Row="1" SelectionMode="Single" SelectionChanged="PageList_SelectionChanged">
+          <ListViewItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <FontIcon Glyph="&#xE790;" FontSize="16" />
+              <TextBlock Text="{loc:Tr Key='Wygląd i język'}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
             </StackPanel>
-            <ComboBox x:Name="ThemeBox" Grid.Column="1" MinWidth="180" SelectionChanged="ThemeBox_SelectionChanged" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Język'}" />
-              <TextBlock Text="{loc:Tr Key='Język interfejsu.'}" Opacity="0.55" FontSize="12" TextWrapping="Wrap" />
+          </ListViewItem>
+          <ListViewItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <FontIcon Glyph="&#xE713;" FontSize="16" />
+              <TextBlock Text="{loc:Tr Key='Ogólne'}" VerticalAlignment="Center" />
             </StackPanel>
-            <ComboBox x:Name="LanguageBox" Grid.Column="1" MinWidth="180" SelectionChanged="LanguageBox_SelectionChanged" />
-          </Grid>
-          <TextBlock x:Name="LanguageHintText" Opacity="0.55" FontSize="12" TextWrapping="Wrap" Visibility="Collapsed" />
-        </StackPanel>
-      </Border>
+          </ListViewItem>
+          <ListViewItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <FontIcon Glyph="&#xE8F1;" FontSize="16" />
+              <TextBlock Text="{loc:Tr Key='Biblioteka'}" VerticalAlignment="Center" />
+            </StackPanel>
+          </ListViewItem>
+          <ListViewItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <FontIcon Glyph="&#xE896;" FontSize="16" />
+              <TextBlock Text="{loc:Tr Key='Pobrania'}" VerticalAlignment="Center" />
+            </StackPanel>
+          </ListViewItem>
+          <ListViewItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <FontIcon Glyph="&#xE77B;" FontSize="16" />
+              <TextBlock Text="{loc:Tr Key='Konto i sklep'}" VerticalAlignment="Center" />
+            </StackPanel>
+          </ListViewItem>
+          <ListViewItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <FontIcon Glyph="&#xE946;" FontSize="16" />
+              <TextBlock Text="{loc:Tr Key='O aplikacji'}" VerticalAlignment="Center" />
+            </StackPanel>
+          </ListViewItem>
+        </ListView>
+      </Grid>
+    </Border>
 
-      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="14">
-          <TextBlock Text="{loc:Tr Key='Biblioteka'}" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock x:Name="LibrarySummaryText" Opacity="0.8" TextWrapping="Wrap" />
-          <ListView x:Name="LibraryFoldersList" MinHeight="120" SelectionMode="Single">
-            <ListView.ItemTemplate>
-              <DataTemplate>
-                <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap" />
-              </DataTemplate>
-            </ListView.ItemTemplate>
-          </ListView>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button x:Name="AddLibraryFolderButton" Content="{loc:Tr Key='Dodaj folder…'}" Click="AddLibraryFolder_Click" Padding="14,8" />
-            <Button x:Name="RemoveLibraryFolderButton" Content="{loc:Tr Key='Usuń z listy'}" Click="RemoveLibraryFolder_Click" Padding="14,8" />
-            <Button Content="{loc:Tr Key='Otwórz folder'}" Click="OpenLibraryFolder_Click" Padding="14,8" />
-            <Button x:Name="RescanLibraryButton" Content="{loc:Tr Key='Skanuj ponownie'}" Click="RescanLibrary_Click" Padding="14,8" />
+    <Grid Grid.Column="1" RowDefinitions="*,Auto">
+      <ScrollViewer x:Name="PageScroller">
+        <Grid Margin="28,24,28,24">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MaxWidth="720" />
+          </Grid.ColumnDefinitions>
+          <StackPanel x:Name="AppearancePage">
+            <TextBlock Style="{StaticResource PageTitle}" Text="{loc:Tr Key='Wygląd i język'}" />
+            <Border Style="{StaticResource SettingsRow}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Motyw'}" />
+                  <TextBlock Style="{StaticResource Description}" Text="{loc:Tr Key='Kolory interfejsu aplikacji.'}" />
+                </StackPanel>
+                <ComboBox x:Name="ThemeBox" Grid.Column="1" MinWidth="180" SelectionChanged="ThemeBox_SelectionChanged" />
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource SettingsRow}">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                  <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Tr Key='Język'}" />
+                    <TextBlock Style="{StaticResource Description}" Text="{loc:Tr Key='Język interfejsu.'}" />
+                  </StackPanel>
+                  <ComboBox x:Name="LanguageBox" Grid.Column="1" MinWidth="180" SelectionChanged="LanguageBox_SelectionChanged" />
+                </Grid>
+                <TextBlock x:Name="LanguageHintText" Style="{StaticResource Description}" Visibility="Collapsed" />
+              </StackPanel>
+            </Border>
           </StackPanel>
-        </StackPanel>
-      </Border>
 
-      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="14">
-          <TextBlock Text="{loc:Tr Key='Konto i sklep'}" FontSize="18" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Konto'}" />
-            </StackPanel>
-            <TextBlock x:Name="AccountStatusText" Grid.Column="1" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" />
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Serwer sklepu'}" />
-            </StackPanel>
-            <TextBlock x:Name="StoreStatusText" Grid.Column="1" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" />
-          </Grid>
-        </StackPanel>
-      </Border>
+          <StackPanel x:Name="GeneralPage" Visibility="Collapsed">
+            <TextBlock Style="{StaticResource PageTitle}" Text="{loc:Tr Key='Ogólne'}" />
+            <Border Style="{StaticResource SettingsRow}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Chowaj do zasobnika przy zamykaniu'}" />
+                  <TextBlock Style="{StaticResource Description}" Text="{loc:Tr Key='Po wyłączeniu zamknięcie okna kończy działanie klienta.'}" />
+                </StackPanel>
+                <ToggleSwitch x:Name="CloseToTraySwitch" Grid.Column="1" MinWidth="0" OnContent="" OffContent=""
+                              Toggled="CloseToTraySwitch_Toggled" />
+              </Grid>
+            </Border>
+          </StackPanel>
 
-      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="14">
-          <TextBlock Text="{loc:Tr Key='O aplikacji'}" FontSize="18" FontWeight="SemiBold" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Wersja'}" />
+          <StackPanel x:Name="LibraryPage" Visibility="Collapsed" Spacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Style="{StaticResource PageTitle}" Text="{loc:Tr Key='Biblioteka'}" />
+              <TextBlock x:Name="LibrarySummaryText" Style="{StaticResource Description}" />
             </StackPanel>
-            <TextBlock x:Name="AboutText" Grid.Column="1" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" />
-          </Grid>
-          <TextBlock Text="Szyr Game Studio" Opacity="0.55" FontSize="12" />
-          <Button Content="{loc:Tr Key='Wyłącz klient'}" HorizontalAlignment="Left" Padding="14,8"
-                  Click="ExitClient_Click" />
-        </StackPanel>
-      </Border>
+            <ListView x:Name="LibraryFoldersList" MinHeight="120" SelectionMode="Single">
+              <ListView.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap" />
+                </DataTemplate>
+              </ListView.ItemTemplate>
+            </ListView>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button x:Name="AddLibraryFolderButton" Content="{loc:Tr Key='Dodaj folder…'}" Click="AddLibraryFolder_Click" Padding="14,8" />
+              <Button x:Name="RemoveLibraryFolderButton" Content="{loc:Tr Key='Usuń z listy'}" Click="RemoveLibraryFolder_Click" Padding="14,8" />
+              <Button Content="{loc:Tr Key='Otwórz folder'}" Click="OpenLibraryFolder_Click" Padding="14,8" />
+              <Button x:Name="RescanLibraryButton" Content="{loc:Tr Key='Skanuj ponownie'}" Click="RescanLibrary_Click" Padding="14,8" />
+            </StackPanel>
+          </StackPanel>
 
-      <TextBlock x:Name="StatusText" Opacity="0.7" FontSize="13" TextWrapping="Wrap" />
-    </StackPanel>
-  </ScrollViewer>
+          <StackPanel x:Name="DownloadsPage" Visibility="Collapsed">
+            <TextBlock Style="{StaticResource PageTitle}" Text="{loc:Tr Key='Pobrania'}" />
+            <Border Style="{StaticResource SettingsRow}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Limit pobierania'}" />
+                  <TextBlock Style="{StaticResource Description}" Text="{loc:Tr Key='Prędkość w MB/s. 0 oznacza brak limitu (domyślnie).'}" />
+                </StackPanel>
+                <NumberBox x:Name="BandwidthBox" Grid.Column="1" Width="180" Minimum="0" Maximum="1000"
+                           SpinButtonPlacementMode="Inline" ValueChanged="BandwidthBox_ValueChanged" />
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource SettingsRow}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Aktualizuj automatycznie'}" />
+                  <TextBlock Style="{StaticResource Description}" Text="{loc:Tr Key='Sprawdza aktualizacje zainstalowanych gier przy uruchomieniu klienta.'}" />
+                </StackPanel>
+                <ToggleSwitch x:Name="AutoUpdateSwitch" Grid.Column="1" MinWidth="0" OnContent="" OffContent=""
+                              Toggled="AutoUpdateSwitch_Toggled" />
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <StackPanel x:Name="AccountPage" Visibility="Collapsed">
+            <TextBlock Style="{StaticResource PageTitle}" Text="{loc:Tr Key='Konto i sklep'}" />
+            <Border Style="{StaticResource SettingsRow}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <TextBlock Text="{loc:Tr Key='Konto'}" VerticalAlignment="Center" />
+                <TextBlock x:Name="AccountStatusText" Grid.Column="1" Style="{StaticResource RowValue}" />
+              </Grid>
+            </Border>
+            <Border Style="{StaticResource SettingsRow}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <TextBlock Text="{loc:Tr Key='Serwer sklepu'}" VerticalAlignment="Center" />
+                <TextBlock x:Name="StoreStatusText" Grid.Column="1" Style="{StaticResource RowValue}" />
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <StackPanel x:Name="AboutPage" Visibility="Collapsed">
+            <TextBlock Style="{StaticResource PageTitle}" Text="{loc:Tr Key='O aplikacji'}" />
+            <Border Style="{StaticResource SettingsRow}">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Wersja'}" />
+                  <TextBlock Style="{StaticResource Description}" Text="Szyr Game Studio" />
+                </StackPanel>
+                <TextBlock x:Name="AboutText" Grid.Column="1" Style="{StaticResource RowValue}" />
+              </Grid>
+            </Border>
+            <Button Content="{loc:Tr Key='Wyłącz klient'}" HorizontalAlignment="Left" Padding="14,8" Margin="0,14,0,0"
+                    Click="ExitClient_Click" />
+          </StackPanel>
+        </Grid>
+      </ScrollViewer>
+
+      <TextBlock x:Name="StatusText" Grid.Row="1" Opacity="0.7" FontSize="13" TextWrapping="Wrap" Margin="28,0,28,12" />
+    </Grid>
+  </Grid>
 </Page>

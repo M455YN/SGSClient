@@ -64,7 +64,15 @@ public sealed partial class MainWindow : Window
             }
 
             e.Cancel = true;
-            AppWindow.Hide();
+            if (App.Services.GetService<IClientUserSettingsStore>()?.Load().CloseToTray ?? true)
+            {
+                AppWindow.Hide();
+            }
+            else
+            {
+                // Po bieżącym Closing: ExitApplication sam zamyka okno.
+                DispatcherQueue.TryEnqueue(ExitApplication);
+            }
         };
     }
 
