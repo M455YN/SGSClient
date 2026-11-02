@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Net.NetworkInformation;
 using Microsoft.Extensions.Options;
 using SGSClient.Core.Configuration;
@@ -11,6 +12,7 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
     private readonly HttpClient _http;
     private readonly object _gate = new();
     private bool _isOnline = true;
+    private bool _isMaintenance;
     private CancellationTokenSource? _loopCts;
 
     public NetworkStatusService(IOptions<ApiClientSettings> apiOptions, IHttpClientFactory? httpFactory = null)
@@ -27,6 +29,17 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
             lock (_gate)
             {
                 return _isOnline;
+            }
+        }
+    }
+
+    public bool IsMaintenance
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _isMaintenance;
             }
         }
     }
@@ -77,6 +90,7 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
     private async Task ProbeOnceAsync(CancellationToken cancellationToken)
     {
         var online = NetworkInterface.GetIsNetworkAvailable();
+        var maintenance = false;
         if (online)
         {
             try
@@ -92,6 +106,7 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
                         .ConfigureAwait(false);
                     online = response.IsSuccessStatusCode
                         || (int)response.StatusCode is >= 400 and < 500;
+                    maintenance = online && await ReadMaintenanceAsync(baseUrl, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch
@@ -100,21 +115,39 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
             }
         }
 
-        SetOnline(online);
+        SetStatus(online, maintenance);
     }
 
-    private void SetOnline(bool online)
+    private async Task<bool> ReadMaintenanceAsync(string baseUrl, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var health = await _http.GetFromJsonAsync<HealthResponse>($"{baseUrl}/health", cancellationToken)
+                .ConfigureAwait(false);
+            return health?.Maintenance == true;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
+
+    private void SetStatus(bool online, bool maintenance)
     {
         bool changed;
         lock (_gate)
         {
-            changed = _isOnline != online;
+            changed = _isOnline != online || _isMaintenance != maintenance;
             _isOnline = online;
+            _isMaintenance = maintenance;
         }
 
-        if (changed)
+        // Raised on every probe during maintenance so the banner picks up a sign-in made after it appeared.
+        if (changed || maintenance)
         {
             Changed?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    private sealed record HealthResponse(bool Maintenance);
 }

@@ -18,12 +18,20 @@
 
   <Panel>
     <Grid RowDefinitions="Auto,*,Auto" IsVisible="{Binding !ShowLoginGate}">
-      <Border IsVisible="{Binding IsOffline}"
-              Background="#CC8B0000"
-              Padding="12,8">
-        <TextBlock Text="{loc:Tr Key='Tryb offline — pokazujemy zapisane dane'}"
-                   Foreground="White" FontSize="13" HorizontalAlignment="Center"/>
-      </Border>
+      <StackPanel>
+        <Border IsVisible="{Binding IsOffline}"
+                Background="#CC8B0000"
+                Padding="12,8">
+          <TextBlock Text="{loc:Tr Key='Tryb offline — pokazujemy zapisane dane'}"
+                     Foreground="White" FontSize="13" HorizontalAlignment="Center"/>
+        </Border>
+        <Border IsVisible="{Binding IsMaintenance}"
+                Background="#CCB45309"
+                Padding="12,8">
+          <TextBlock Text="{Binding MaintenanceText}"
+                     Foreground="White" FontSize="13" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+        </Border>
+      </StackPanel>
       <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
         <views:ShellSidebar x:Name="Sidebar" Grid.Column="0"
                             DataContext="{Binding Sidebar}" />

@@ -20,6 +20,8 @@ services:
       Games__PublicBaseUrl: /api/games/packages
       Games__MediaPublicBaseUrl: /api/games/media
       Games__RetentionCount: ${SGS_RETENTION_COUNT:-3}
+      # true = only game downloads work; super admins keep full access.
+      Maintenance__Enabled: ${SGS_MAINTENANCE_ENABLED:-false}
       AzureAd__Enabled: ${SGS_AZUREAD_ENABLED:-true}
       AzureAd__ClientId: ${SGS_AZUREAD_CLIENT_ID:-}
       AzureAd__TenantName: ${SGS_AZUREAD_TENANT:-}

@@ -206,7 +206,8 @@ public partial class App : Application
             sp.GetRequiredService<FriendsViewModel>(),
             sp.GetRequiredService<ShellSidebarViewModel>(),
             sp.GetRequiredService<LoginGateViewModel>(),
-            sp.GetService<INetworkStatusService>()));
+            sp.GetService<INetworkStatusService>(),
+            sp.GetService<IAuthSession>()));
 
         Services = services.BuildServiceProvider();
 

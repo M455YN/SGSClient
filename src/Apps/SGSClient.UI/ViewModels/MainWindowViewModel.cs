@@ -65,7 +65,8 @@ public partial class MainWindowViewModel : ViewModelBase
         FriendsViewModel friends,
         ShellSidebarViewModel sidebar,
         LoginGateViewModel loginGate,
-        INetworkStatusService? network = null)
+        INetworkStatusService? network = null,
+        IAuthSession? auth = null)
     {
         _home = home;
         _games = games;
@@ -90,8 +91,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (_network is not null)
         {
-            IsOffline = !_network.IsOnline;
-            _network.Changed += (_, _) => IsOffline = !_network.IsOnline;
+            void RefreshBanners()
+            {
+                IsOffline = !_network.IsOnline;
+                IsMaintenance = _network.IsMaintenance;
+                MaintenanceText = MaintenanceNotice.Text(auth);
+            }
+
+            RefreshBanners();
+            _network.Changed += (_, _) => RefreshBanners();
         }
 
         _games.SetOpenDetailsHandler(id => OpenGameDetails(id, "Games"));
@@ -145,6 +153,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _isOffline;
+
+    [ObservableProperty]
+    private bool _isMaintenance;
+
+    [ObservableProperty]
+    private string _maintenanceText = string.Empty;
 
     private string _detailsReturnTag = "Games";
     private string _contentNavTag = "Home";
