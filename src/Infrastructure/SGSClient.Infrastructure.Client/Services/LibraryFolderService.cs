@@ -10,10 +10,9 @@ public sealed class LibraryFoldersStore : ILibraryFoldersStore
 {
     private readonly string _registryPath;
 
-    public LibraryFoldersStore()
+    public LibraryFoldersStore(string dataRoot)
     {
-        var root = Path.GetDirectoryName(DependencyInjection.GetDefaultLibraryDbPath()) ?? string.Empty;
-        _registryPath = Path.Combine(root, SgsLibraryFoldersRegistry.FileName);
+        _registryPath = Path.Combine(dataRoot, SgsLibraryFoldersRegistry.FileName);
     }
 
     public SgsLibraryFoldersRegistry Load()
