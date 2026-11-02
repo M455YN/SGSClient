@@ -150,7 +150,8 @@ public partial class App : Application
             sp.GetRequiredService<ILibraryFolderService>(),
             sp.GetService<IAuthSession>(),
             sp.GetService<IClientUserSettingsStore>(),
-            sp.GetService<IThemeApplier>()));
+            sp.GetService<IThemeApplier>(),
+            sp.GetRequiredService<DownloadsViewModel>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),

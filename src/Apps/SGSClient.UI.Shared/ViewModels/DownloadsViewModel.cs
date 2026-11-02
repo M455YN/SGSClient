@@ -78,7 +78,22 @@ public partial class DownloadsViewModel : ObservableObject
     private int _activeDownloadCount;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DownloadMaxMbps))]
     private int _downloadMaxKbps;
+
+    /// <summary>The limit as shown to the user; GameInstallService counts 1 MB/s as 1024 KB/s.</summary>
+    public double DownloadMaxMbps
+    {
+        get => Math.Round(DownloadMaxKbps / 1024.0, 2);
+        set
+        {
+            // Pole odsyła zaokrągloną wartość; bez tej kontroli samo wyświetlenie zmieniałoby zapisany limit.
+            if (value != DownloadMaxMbps)
+            {
+                DownloadMaxKbps = (int)Math.Round(Math.Max(0, value) * 1024);
+            }
+        }
+    }
 
     partial void OnDownloadMaxKbpsChanged(int value)
     {

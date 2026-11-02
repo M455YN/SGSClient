@@ -20,7 +20,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IClientUserSettingsStore? _userSettings;
     private readonly IThemeApplier? _themes;
     private readonly string _accountStatusFallback;
-    private readonly bool _loaded;
+    private bool _loaded;
 
     private static readonly string[] ThemeValues = ["system", "light", "dark"];
     private static readonly string[] LanguageValues = ["system", "pl", "en"];
@@ -44,8 +44,10 @@ public partial class SettingsViewModel : ObservableObject
         ILibraryFolderService libraryFolders,
         IAuthSession? auth = null,
         IClientUserSettingsStore? userSettings = null,
-        IThemeApplier? themes = null)
+        IThemeApplier? themes = null,
+        DownloadsViewModel? downloads = null)
     {
+        Downloads = downloads;
         _scopes = scopes;
         _libraryFolders = libraryFolders;
         _auth = auth;
@@ -77,7 +79,49 @@ public partial class SettingsViewModel : ObservableObject
         var saved = _userSettings?.Load() ?? new ClientUserSettings();
         SelectedThemeIndex = Math.Max(0, Array.IndexOf(ThemeValues, saved.Theme));
         SelectedLanguageIndex = Math.Max(0, Array.IndexOf(LanguageValues, saved.Language));
+        RefreshPreferences();
         _loaded = true;
+    }
+
+    /// <summary>Re-reads values other screens can change; AutoUpdateEnabled is also edited in game properties.</summary>
+    public void RefreshPreferences()
+    {
+        if (_userSettings is null)
+        {
+            return;
+        }
+
+        var wasLoaded = _loaded;
+        _loaded = false;
+        var saved = _userSettings.Load();
+        AutoUpdateEnabled = saved.AutoUpdateEnabled;
+        CloseToTray = saved.CloseToTray;
+        _loaded = wasLoaded;
+    }
+
+    /// <summary>Shared with the Downloads screen so both edit one value (null at design time).</summary>
+    public DownloadsViewModel? Downloads { get; }
+
+    [ObservableProperty]
+    public partial bool AutoUpdateEnabled { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool CloseToTray { get; set; } = true;
+
+    partial void OnAutoUpdateEnabledChanged(bool value)
+    {
+        if (_loaded)
+        {
+            _ = SavePreferencesAsync();
+        }
+    }
+
+    partial void OnCloseToTrayChanged(bool value)
+    {
+        if (_loaded)
+        {
+            _ = SavePreferencesAsync();
+        }
     }
 
     public string Title { get; }
@@ -132,6 +176,8 @@ public partial class SettingsViewModel : ObservableObject
             var settings = _userSettings.Load();
             settings.Theme = ThemeValues[Math.Clamp(SelectedThemeIndex, 0, ThemeValues.Length - 1)];
             settings.Language = LanguageValues[Math.Clamp(SelectedLanguageIndex, 0, LanguageValues.Length - 1)];
+            settings.AutoUpdateEnabled = AutoUpdateEnabled;
+            settings.CloseToTray = CloseToTray;
             await _userSettings.SaveAsync(settings);
         }
         catch (Exception ex)

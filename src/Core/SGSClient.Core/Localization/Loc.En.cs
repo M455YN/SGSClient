@@ -5,7 +5,7 @@ public static partial class Loc
 {
     private static readonly Dictionary<string, string> English = new()
     {
-        ["0 = bez limitu"] = "0 = unlimited",
+        ["0 = bez limitu"] = "0 = no limit",
         ["0 ZAINSTALOWANYCH"] = "0 INSTALLED",
         ["1. Folder gry"] = "1. Game folder",
         ["2. Dane gry w sklepie"] = "2. Store details",
@@ -355,7 +355,7 @@ public static partial class Loc
         ["Krótki opis widoczny w sklepie"] = "Short description shown in the store",
         ["Kwadratowe logo na małe kafelki (np. lista zainstalowanych w sidebarze). Zalecane 512×512."] = "Square logo for small tiles (e.g. the installed list in the sidebar). Recommended 512×512.",
         ["LISTA ŻYCZEŃ"] = "WISHLIST",
-        ["Limit pasma (KB/s):"] = "Bandwidth limit (KB/s):",
+        ["Limit pobierania (MB/s):"] = "Download limit (MB/s):",
         ["Lista języków jest za długa (max {0} znaków po złączeniu)."] = "The language list is too long (max {0} characters combined).",
         ["Lista tagów jest za długa (max {0} znaków po złączeniu)."] = "The tag list is too long (max {0} characters combined).",
         ["Lista życzeń"] = "Wishlist",
@@ -554,6 +554,11 @@ public static partial class Loc
         ["Offline — zapisany katalog z {0:g}"] = "Offline — saved catalog from {0:g}",
         ["Offline — zapisany katalog z {0:g} ({1})"] = "Offline — saved catalog from {0:g} ({1})",
         ["Ogólne"] = "General",
+        ["Chowaj do zasobnika przy zamykaniu"] = "Hide to tray on close",
+        ["Po wyłączeniu zamknięcie okna kończy działanie klienta."] = "When off, closing the window quits the client.",
+        ["Sprawdza aktualizacje zainstalowanych gier przy uruchomieniu klienta."] = "Checks installed games for updates when the client starts.",
+        ["Limit pobierania"] = "Download limit",
+        ["Prędkość w MB/s. 0 oznacza brak limitu (domyślnie)."] = "Speed in MB/s. 0 means no limit (default).",
         ["Okładka pozioma"] = "Landscape header",
         ["Okładka pozioma (920 × 430)"] = "Landscape header (920 × 430)",
         ["Opis jest za długi."] = "The description is too long.",

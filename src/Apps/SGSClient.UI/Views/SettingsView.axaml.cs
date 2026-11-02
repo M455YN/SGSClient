@@ -11,11 +11,14 @@ public partial class SettingsView : UserControl
     public SettingsView()
     {
         InitializeComponent();
+        // Subskrypcja po InitializeComponent: AlwaysSelected wybiera pierwszy element już przy ładowaniu XAML.
+        PageList.SelectionChanged += (_, _) => ShowPage(PageList.SelectedIndex);
         AttachedToVisualTree += (_, _) =>
         {
             if (DataContext is SettingsViewModel vm)
             {
                 vm.RefreshAccountStatus();
+                vm.RefreshPreferences();
             }
         };
         DataContextChanged += (_, _) =>
@@ -23,8 +26,20 @@ public partial class SettingsView : UserControl
             if (DataContext is SettingsViewModel vm)
             {
                 vm.RefreshAccountStatus();
+                vm.RefreshPreferences();
             }
         };
+    }
+
+    private void ShowPage(int index)
+    {
+        AppearancePage.IsVisible = index == 0;
+        GeneralPage.IsVisible = index == 1;
+        LibraryPage.IsVisible = index == 2;
+        DownloadsPage.IsVisible = index == 3;
+        AccountPage.IsVisible = index == 4;
+        AboutPage.IsVisible = index == 5;
+        PageScroller.Offset = default;
     }
 
     private void ExitClient_OnClick(object? sender, RoutedEventArgs e) => App.ExitApplication();

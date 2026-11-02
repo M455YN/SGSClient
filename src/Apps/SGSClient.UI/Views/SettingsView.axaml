@@ -1,93 +1,207 @@
 <UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SGSClient.UI.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="SGSClient.UI.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
-  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-    <StackPanel Margin="28,24,28,32" Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
-      <TextBlock Text="{Binding Title}" FontSize="28" FontWeight="SemiBold"/>
+  <UserControl.Styles>
+    <Style Selector="Border.row">
+      <Setter Property="Padding" Value="0,14"/>
+      <Setter Property="BorderThickness" Value="0,0,0,1"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource DividerStrokeColorDefaultBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.pageTitle">
+      <Setter Property="FontSize" Value="22"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+    <Style Selector="TextBlock.description">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+    </Style>
+    <Style Selector="TextBlock.value">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="MaxWidth" Value="320"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+    </Style>
+  </UserControl.Styles>
 
-      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="14">
-          <TextBlock Text="{loc:Tr Key='Wygląd i język'}" FontSize="18" FontWeight="SemiBold"/>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Motyw'}"/>
-              <TextBlock Text="{loc:Tr Key='Kolory interfejsu aplikacji.'}" Opacity="0.55" FontSize="12" TextWrapping="Wrap"/>
+  <Grid ColumnDefinitions="220,*">
+    <Border BorderThickness="0,0,1,0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}">
+      <DockPanel Margin="8,24,8,8">
+        <TextBlock DockPanel.Dock="Top" Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" Margin="12,0,12,12"/>
+        <ListBox x:Name="PageList" SelectionMode="AlwaysSelected" Background="Transparent">
+          <ListBoxItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="ColorBackground" FontSize="16"/>
+              <TextBlock Text="{loc:Tr Key='Wygląd i język'}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
             </StackPanel>
-            <ComboBox Grid.Column="1" ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding SelectedThemeIndex}" MinWidth="180"/>
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Język'}"/>
-              <TextBlock Text="{loc:Tr Key='Język interfejsu.'}" Opacity="0.55" FontSize="12" TextWrapping="Wrap"/>
+          </ListBoxItem>
+          <ListBoxItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Settings" FontSize="16"/>
+              <TextBlock Text="{loc:Tr Key='Ogólne'}" VerticalAlignment="Center"/>
             </StackPanel>
-            <ComboBox Grid.Column="1" ItemsSource="{Binding LanguageOptions}" SelectedIndex="{Binding SelectedLanguageIndex}" MinWidth="180"/>
-          </Grid>
-          <TextBlock Text="{Binding LanguageHint}" Opacity="0.55" FontSize="12" TextWrapping="Wrap"
-                     IsVisible="{Binding LanguageHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-        </StackPanel>
-      </Border>
+          </ListBoxItem>
+          <ListBoxItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Library" FontSize="16"/>
+              <TextBlock Text="{loc:Tr Key='Biblioteka'}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </ListBoxItem>
+          <ListBoxItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Download" FontSize="16"/>
+              <TextBlock Text="{loc:Tr Key='Pobrania'}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </ListBoxItem>
+          <ListBoxItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Contact" FontSize="16"/>
+              <TextBlock Text="{loc:Tr Key='Konto i sklep'}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </ListBoxItem>
+          <ListBoxItem>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="Help" FontSize="16"/>
+              <TextBlock Text="{loc:Tr Key='O aplikacji'}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </ListBoxItem>
+        </ListBox>
+      </DockPanel>
+    </Border>
 
-      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="14">
-          <TextBlock Text="{loc:Tr Key='Biblioteka'}" FontSize="18" FontWeight="SemiBold"/>
-          <TextBlock Text="{Binding LibrarySummary}" Opacity="0.8" TextWrapping="Wrap"/>
-          <ListBox ItemsSource="{Binding LibraryFolders}"
-                   SelectedItem="{Binding SelectedLibraryFolder}"
-                   MinHeight="80">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:LibraryFolderDisplayItem">
-                <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap"/>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-          <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Content="{loc:Tr Key='Dodaj folder…'}" Click="AddLibraryFolder_OnClick"
-                    IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
-            <Button Content="{loc:Tr Key='Usuń z listy'}" Click="RemoveLibraryFolder_OnClick"
-                    IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
-            <Button Content="{loc:Tr Key='Otwórz folder'}" Click="OpenLibraryFolder_OnClick" Padding="14,8"/>
-            <Button Content="{loc:Tr Key='Skanuj ponownie'}" Click="RescanLibrary_OnClick"
-                    IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
+    <Grid Grid.Column="1" RowDefinitions="*,Auto">
+      <ScrollViewer x:Name="PageScroller" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="28,24,28,24">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MaxWidth="720"/>
+          </Grid.ColumnDefinitions>
+          <StackPanel x:Name="AppearancePage">
+            <TextBlock Classes="pageTitle" Text="{loc:Tr Key='Wygląd i język'}"/>
+            <Border Classes="row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Motyw'}"/>
+                  <TextBlock Classes="description" Text="{loc:Tr Key='Kolory interfejsu aplikacji.'}"/>
+                </StackPanel>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding SelectedThemeIndex}" MinWidth="180"/>
+              </Grid>
+            </Border>
+            <Border Classes="row">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                  <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Tr Key='Język'}"/>
+                    <TextBlock Classes="description" Text="{loc:Tr Key='Język interfejsu.'}"/>
+                  </StackPanel>
+                  <ComboBox Grid.Column="1" ItemsSource="{Binding LanguageOptions}" SelectedIndex="{Binding SelectedLanguageIndex}" MinWidth="180"/>
+                </Grid>
+                <TextBlock Classes="description" Text="{Binding LanguageHint}"
+                           IsVisible="{Binding LanguageHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+              </StackPanel>
+            </Border>
           </StackPanel>
-        </StackPanel>
-      </Border>
 
-      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="14">
-          <TextBlock Text="{loc:Tr Key='Konto i sklep'}" FontSize="18" FontWeight="SemiBold"/>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Konto'}"/>
-            </StackPanel>
-            <TextBlock Grid.Column="1" Text="{Binding AccountStatus}" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"/>
-          </Grid>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Serwer sklepu'}"/>
-            </StackPanel>
-            <TextBlock Grid.Column="1" Text="{Binding StoreStatus}" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"/>
-          </Grid>
-        </StackPanel>
-      </Border>
+          <StackPanel x:Name="GeneralPage" IsVisible="False">
+            <TextBlock Classes="pageTitle" Text="{loc:Tr Key='Ogólne'}"/>
+            <Border Classes="row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Chowaj do zasobnika przy zamykaniu'}"/>
+                  <TextBlock Classes="description" Text="{loc:Tr Key='Po wyłączeniu zamknięcie okna kończy działanie klienta.'}"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding CloseToTray}" OnContent="" OffContent=""/>
+              </Grid>
+            </Border>
+          </StackPanel>
 
-      <Border Padding="18" CornerRadius="10" Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-        <StackPanel Spacing="14">
-          <TextBlock Text="{loc:Tr Key='O aplikacji'}" FontSize="18" FontWeight="SemiBold"/>
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-            <StackPanel Spacing="2" VerticalAlignment="Center">
-              <TextBlock Text="{loc:Tr Key='Wersja'}"/>
+          <StackPanel x:Name="LibraryPage" IsVisible="False" Spacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Classes="pageTitle" Text="{loc:Tr Key='Biblioteka'}"/>
+              <TextBlock Classes="description" Text="{Binding LibrarySummary}"/>
             </StackPanel>
-            <TextBlock Grid.Column="1" Text="{Binding AboutText}" Opacity="0.85" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320"/>
-          </Grid>
-          <TextBlock Text="Szyr Game Studio" Opacity="0.55" FontSize="12"/>
-          <Button Content="{loc:Tr Key='Wyłącz klient'}" HorizontalAlignment="Left" Padding="14,8"
-                  Click="ExitClient_OnClick"/>
-        </StackPanel>
-      </Border>
+            <ListBox ItemsSource="{Binding LibraryFolders}"
+                     SelectedItem="{Binding SelectedLibraryFolder}"
+                     MinHeight="80">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:LibraryFolderDisplayItem">
+                  <TextBlock Text="{Binding DisplayText}" TextWrapping="Wrap"/>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <WrapPanel ItemSpacing="10" LineSpacing="10">
+              <Button Content="{loc:Tr Key='Dodaj folder…'}" Click="AddLibraryFolder_OnClick"
+                      IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
+              <Button Content="{loc:Tr Key='Usuń z listy'}" Click="RemoveLibraryFolder_OnClick"
+                      IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
+              <Button Content="{loc:Tr Key='Otwórz folder'}" Click="OpenLibraryFolder_OnClick" Padding="14,8"/>
+              <Button Content="{loc:Tr Key='Skanuj ponownie'}" Click="RescanLibrary_OnClick"
+                      IsEnabled="{Binding !IsBusy}" Padding="14,8"/>
+            </WrapPanel>
+          </StackPanel>
 
-      <TextBlock Text="{Binding StatusText}" Opacity="0.7" FontSize="13" TextWrapping="Wrap"/>
-    </StackPanel>
-  </ScrollViewer>
+          <StackPanel x:Name="DownloadsPage" IsVisible="False">
+            <TextBlock Classes="pageTitle" Text="{loc:Tr Key='Pobrania'}"/>
+            <Border Classes="row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Limit pobierania'}"/>
+                  <TextBlock Classes="description" Text="{loc:Tr Key='Prędkość w MB/s. 0 oznacza brak limitu (domyślnie).'}"/>
+                </StackPanel>
+                <NumericUpDown Grid.Column="1" Width="180" Minimum="0" Maximum="1000" FormatString="0.##"
+                               Value="{Binding Downloads.DownloadMaxMbps}"/>
+              </Grid>
+            </Border>
+            <Border Classes="row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Aktualizuj automatycznie'}"/>
+                  <TextBlock Classes="description" Text="{loc:Tr Key='Sprawdza aktualizacje zainstalowanych gier przy uruchomieniu klienta.'}"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoUpdateEnabled}" OnContent="" OffContent=""/>
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <StackPanel x:Name="AccountPage" IsVisible="False">
+            <TextBlock Classes="pageTitle" Text="{loc:Tr Key='Konto i sklep'}"/>
+            <Border Classes="row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <TextBlock Text="{loc:Tr Key='Konto'}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Classes="value" Text="{Binding AccountStatus}"/>
+              </Grid>
+            </Border>
+            <Border Classes="row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <TextBlock Text="{loc:Tr Key='Serwer sklepu'}" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Classes="value" Text="{Binding StoreStatus}"/>
+              </Grid>
+            </Border>
+          </StackPanel>
+
+          <StackPanel x:Name="AboutPage" IsVisible="False">
+            <TextBlock Classes="pageTitle" Text="{loc:Tr Key='O aplikacji'}"/>
+            <Border Classes="row">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Wersja'}"/>
+                  <TextBlock Classes="description" Text="Szyr Game Studio"/>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Classes="value" Text="{Binding AboutText}"/>
+              </Grid>
+            </Border>
+            <Button Content="{loc:Tr Key='Wyłącz klient'}" HorizontalAlignment="Left" Padding="14,8" Margin="0,14,0,0"
+                    Click="ExitClient_OnClick"/>
+          </StackPanel>
+        </Grid>
+      </ScrollViewer>
+
+      <!-- Poza stronami, bo wynik skanu/dodania folderu ma być widoczny bez przewijania. -->
+      <TextBlock Grid.Row="1" Text="{Binding StatusText}" Opacity="0.7" FontSize="13" TextWrapping="Wrap" Margin="28,0,28,12"
+                 IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+    </Grid>
+  </Grid>
 </UserControl>
