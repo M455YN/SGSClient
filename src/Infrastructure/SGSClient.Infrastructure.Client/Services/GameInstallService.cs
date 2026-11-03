@@ -142,7 +142,8 @@ public sealed class GameInstallService(
             await SgsInstallRecordWriter.WriteAsync(item, libraryRoot, exeName, cancellationToken)
                 .ConfigureAwait(false);
 
-            DesktopShortcutHelper.CreateForGame(item.Title, executablePath, installDir);
+            await DesktopShortcutHelper.CreateForGameAsync(
+                item.Title, executablePath, installDir, http, game.SquareLogoUrl, _apiBaseUrl);
 
             progress?.Report(InstallProgress.Of(InstallPhase.Completed, 1, Loc.T("Zainstalowano.")));
             return GameInstallResult.Ok(item);

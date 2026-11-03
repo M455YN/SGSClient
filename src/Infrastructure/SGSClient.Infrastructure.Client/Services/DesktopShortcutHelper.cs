@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -9,6 +10,33 @@ namespace SGSClient.Infrastructure.Client.Services;
 /// </summary>
 internal static class DesktopShortcutHelper
 {
+    /// <summary>
+    /// Downloads the game image from <paramref name="imageUrl"/>, converts it to .ico,
+    /// saves it next to the exe, and creates a shortcut using that icon.
+    /// </summary>
+    public static async Task CreateForGameAsync(
+        string title,
+        string executablePath,
+        string workingDirectory,
+        HttpClient http,
+        string? imageUrl,
+        string? apiBaseUrl)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        string? icoPath = null;
+        try
+        {
+            icoPath = await TryDownloadIconAsync(http, imageUrl, apiBaseUrl, workingDirectory);
+        }
+        catch
+        {
+            // fall through — create shortcut without custom icon
+        }
+
+        CreateForGame(title, executablePath, workingDirectory, icoPath);
+    }
+
     public static void CreateForGame(string title, string executablePath, string workingDirectory, string? iconPath = null)
     {
         if (!OperatingSystem.IsWindows()) return;
@@ -46,6 +74,78 @@ internal static class DesktopShortcutHelper
         {
             // best-effort
         }
+    }
+
+    private static async Task<string?> TryDownloadIconAsync(
+        HttpClient http, string? imageUrl, string? apiBaseUrl, string installDir)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl)) return null;
+
+        var url = imageUrl;
+        if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(apiBaseUrl))
+        {
+            url = apiBaseUrl.TrimEnd('/') + "/" + url.TrimStart('/');
+        }
+
+        if (!url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return null;
+
+        using var response = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+        if (!response.IsSuccessStatusCode) return null;
+
+        var imageBytes = await response.Content.ReadAsByteArrayAsync();
+        if (imageBytes.Length < 8) return null;
+
+        var pngBytes = imageBytes;
+        if (!IsPng(pngBytes))
+        {
+            // JPG or other format — skip custom icon, .lnk will use the exe icon
+            return null;
+        }
+
+        var icoPath = Path.Combine(installDir, "game.ico");
+        var icoBytes = WrapPngAsIco(pngBytes);
+        await File.WriteAllBytesAsync(icoPath, icoBytes);
+        return icoPath;
+    }
+
+    private static bool IsPng(byte[] data) =>
+        data.Length >= 8
+        && data[0] == 0x89 && data[1] == 0x50 && data[2] == 0x4E && data[3] == 0x47;
+
+    /// <summary>
+    /// Wraps a PNG image as a single-frame .ico file.
+    /// Windows Vista+ supports PNG-compressed icons natively.
+    /// </summary>
+    private static byte[] WrapPngAsIco(byte[] pngData)
+    {
+        // ICO header: 6 bytes + 1 entry (16 bytes) + PNG data
+        var ico = new byte[6 + 16 + pngData.Length];
+        // Reserved
+        ico[0] = 0; ico[1] = 0;
+        // Type: 1 = icon
+        BinaryPrimitives.WriteUInt16LittleEndian(ico.AsSpan(2), 1);
+        // Count: 1 image
+        BinaryPrimitives.WriteUInt16LittleEndian(ico.AsSpan(4), 1);
+
+        // ICONDIRENTRY (16 bytes)
+        // Width, Height: 0 = 256px (PNG icons are typically 256x256 or get scaled)
+        ico[6] = 0;
+        ico[7] = 0;
+        // Color palette count
+        ico[8] = 0;
+        // Reserved
+        ico[9] = 0;
+        // Color planes
+        BinaryPrimitives.WriteUInt16LittleEndian(ico.AsSpan(10), 1);
+        // Bits per pixel (32 for RGBA PNG)
+        BinaryPrimitives.WriteUInt16LittleEndian(ico.AsSpan(12), 32);
+        // Size of PNG data
+        BinaryPrimitives.WriteUInt32LittleEndian(ico.AsSpan(14), (uint)pngData.Length);
+        // Offset of PNG data (6 header + 16 entry = 22)
+        BinaryPrimitives.WriteUInt32LittleEndian(ico.AsSpan(18), 22);
+
+        pngData.CopyTo(ico, 22);
+        return ico;
     }
 
     private static string SanitizeFileName(string name)
