@@ -246,7 +246,7 @@ public partial class ShellSidebarViewModel : ObservableObject
 
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            var items = await library.GetAllAsync();
+            var items = await library.GetOwnedAsync();
             await SyncArtworkAsync(items, library);
 
             InstalledGames.Clear();
@@ -316,7 +316,7 @@ public partial class ShellSidebarViewModel : ObservableObject
             {
                 using var scope = _scopes.CreateScope();
                 var library = scope.ServiceProvider.GetService<ILocalLibraryStore>();
-                var item = library is null ? null : await library.GetByGameIdAsync(gameId);
+                var item = library is null ? null : (await library.GetOwnedAsync()).FirstOrDefault(x => x.GameId == gameId);
                 if (item is { InstallState: InstallState.Installed } && !string.IsNullOrWhiteSpace(item.ExecutablePath))
                 {
                     var result = await _launcher.LaunchAsync(new GameLaunchRequest

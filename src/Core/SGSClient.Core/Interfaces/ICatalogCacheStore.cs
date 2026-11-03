@@ -11,4 +11,13 @@ public interface ICatalogCacheStore
 
     Task<(IReadOnlyList<SGSClient.Core.DTOs.GameDto> Games, DateTimeOffset? SavedAtUtc)> LoadWishlistAsync(
         CancellationToken cancellationToken = default);
+
+    Task SaveAccountLibraryAsync(
+        string accountSub,
+        IReadOnlyList<SGSClient.Core.DTOs.GameDto> games,
+        CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<SGSClient.Core.DTOs.GameDto> Games, DateTimeOffset? SavedAtUtc)> LoadAccountLibraryAsync(
+        string accountSub,
+        CancellationToken cancellationToken = default);
 }

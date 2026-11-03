@@ -171,6 +171,9 @@ public partial class HomeViewModel : ObservableObject
     [RelayCommand]
     private void SelectSlide(int index) => ShowSlide(index);
 
+    /// <summary>The page can load behind the login gate, before it is known whose library to show.</summary>
+    public async Task ReloadLibraryAsync() => ApplyLibrary(await LoadLibraryAsync());
+
     public async Task EnsureLoadedAsync()
     {
         if (IsBusy)
@@ -416,7 +419,7 @@ public partial class HomeViewModel : ObservableObject
         {
             using var scope = _scopes.CreateScope();
             var store = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            var items = await store.GetAllAsync();
+            var items = await store.GetOwnedAsync();
             var playtime = scope.ServiceProvider.GetService<IPlaytimeStore>();
             if (playtime is not null)
             {

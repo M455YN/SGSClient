@@ -267,7 +267,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
             return;
         }
 
-        var items = await library.GetAllAsync(cancellationToken).ConfigureAwait(false);
+        var items = await library.GetOwnedAsync(cancellationToken).ConfigureAwait(false);
         foreach (var item in items.Where(x => x.InstallState == InstallState.Installed))
         {
             cancellationToken.ThrowIfCancellationRequested();

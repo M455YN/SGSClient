@@ -146,6 +146,9 @@ public sealed class HttpSgsApiService(
     public Task<IReadOnlyList<GameDto>> GetMyLibraryAsync(CancellationToken cancellationToken = default) =>
         SendListAsync<GameDto>("api/me/library", cancellationToken);
 
+    public async Task<IReadOnlyList<GameDto>?> TryGetMyLibraryAsync(CancellationToken cancellationToken = default) =>
+        await SendJsonAsync<List<GameDto>>(HttpMethod.Get, "api/me/library", body: null, cancellationToken).ConfigureAwait(false);
+
     public Task<GameDto?> ClaimGameAsync(int gameId, CancellationToken cancellationToken = default) =>
         SendJsonAsync<GameDto>(HttpMethod.Post, $"api/me/library/{gameId}", null, cancellationToken);
 

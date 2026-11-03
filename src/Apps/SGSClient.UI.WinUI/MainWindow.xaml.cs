@@ -264,6 +264,9 @@ public sealed partial class MainWindow : Window
     private void FriendsStatusButton_OnClick(object sender, RoutedEventArgs e) =>
         NavigateByTagPublic("Friends");
 
+    public Task ReloadHomeLibraryAsync() =>
+        ContentFrame.Content is HomePage home ? home.ViewModel.ReloadLibraryAsync() : Task.CompletedTask;
+
     public void RefreshSidebar()
     {
         Sidebar.ViewModel.RefreshProfile();

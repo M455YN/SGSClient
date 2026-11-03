@@ -99,6 +99,9 @@ public class InstallQueueServiceTests
         public Task<IReadOnlyList<GameLibraryItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<GameLibraryItem>>(Items.Values.ToList());
 
+        public Task<IReadOnlyList<GameLibraryItem>> GetOwnedAsync(CancellationToken cancellationToken = default) =>
+            GetAllAsync(cancellationToken);
+
         public Task<GameLibraryItem?> GetByGameIdAsync(int gameId, CancellationToken cancellationToken = default) =>
             Task.FromResult(Items.GetValueOrDefault(gameId));
 
