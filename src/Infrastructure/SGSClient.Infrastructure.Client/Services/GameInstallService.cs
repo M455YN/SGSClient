@@ -142,6 +142,8 @@ public sealed class GameInstallService(
             await SgsInstallRecordWriter.WriteAsync(item, libraryRoot, exeName, cancellationToken)
                 .ConfigureAwait(false);
 
+            DesktopShortcutHelper.CreateForGame(item.Title, executablePath, installDir);
+
             progress?.Report(InstallProgress.Of(InstallPhase.Completed, 1, Loc.T("Zainstalowano.")));
             return GameInstallResult.Ok(item);
         }
@@ -183,6 +185,8 @@ public sealed class GameInstallService(
                 TryDeleteVersionFolderIfEmpty(libraryRoot, item.Symbol, item.InstalledVersion);
                 SgsInstallRecordWriter.TryDeleteCentralManifest(libraryRoot, item.GameId, item.BuildId);
             }
+
+            DesktopShortcutHelper.RemoveForGame(item.Title);
 
             item.InstallState = InstallState.NotInstalled;
             item.InstallPath = null;
