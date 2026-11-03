@@ -81,6 +81,7 @@ public sealed class GamePackagePublisher(
             Directory.CreateDirectory(absoluteDir);
             var absoluteZip = Path.Combine(absoluteDir, fileName);
 
+            WrapExecutableWithStub(tempZip, exePath, storage.LauncherStubPath);
             File.Copy(tempZip, absoluteZip, overwrite: true);
 
             var publicBase = storage.PublicBaseUrl.TrimEnd('/');
@@ -577,6 +578,52 @@ public sealed class GamePackagePublisher(
 
         var url = $"{mediaBase}/{symbol}/{safeName}".Replace('\\', '/');
         return (true, url, null);
+    }
+
+    /// <summary>
+    /// Renames the game exe inside the ZIP to .sgs-payload and injects the launcher stub in its place.
+    /// </summary>
+    private static void WrapExecutableWithStub(string zipPath, string exeEntryPath, string? stubPath)
+    {
+        if (string.IsNullOrWhiteSpace(stubPath) || !File.Exists(stubPath))
+        {
+            return;
+        }
+
+        var payloadEntry = Path.ChangeExtension(exeEntryPath, ".sgs-payload");
+        var stubBytes = File.ReadAllBytes(stubPath);
+
+        using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Update);
+
+        var original = archive.Entries.FirstOrDefault(e =>
+            string.Equals(e.FullName.Replace('\\', '/'), exeEntryPath, StringComparison.OrdinalIgnoreCase));
+        if (original is null)
+        {
+            return;
+        }
+
+        // Read original exe bytes, remove it, write as payload.
+        byte[] originalBytes;
+        using (var stream = original.Open())
+        using (var ms = new MemoryStream())
+        {
+            stream.CopyTo(ms);
+            originalBytes = ms.ToArray();
+        }
+
+        original.Delete();
+
+        var payload = archive.CreateEntry(payloadEntry, CompressionLevel.Optimal);
+        using (var dest = payload.Open())
+        {
+            dest.Write(originalBytes);
+        }
+
+        var stub = archive.CreateEntry(exeEntryPath, CompressionLevel.Optimal);
+        using (var dest = stub.Open())
+        {
+            dest.Write(stubBytes);
+        }
     }
 
     private static ZipInspectResult InspectZip(string zipPath)

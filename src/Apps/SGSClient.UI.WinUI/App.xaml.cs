@@ -18,6 +18,7 @@ public partial class App : Application
     public static IServiceProvider Services { get; private set; } = null!;
     public static MainWindow? MainWindow { get; private set; }
 
+    private static Mutex? _runningMutex;
     private SimpleSplashScreen? _splash;
 
     public App()
@@ -54,6 +55,7 @@ public partial class App : Application
 
     private void LaunchCore()
     {
+        _runningMutex = new Mutex(true, SGSClient.Core.SgsClientConstants.RunningMutexName, out _);
         var userSettings = new ClientUserSettingsStore().Load();
         Loc.Initialize(userSettings.Language);
 
@@ -241,6 +243,11 @@ public partial class App : Application
         }
 
         MainWindow?.RefreshSidebar();
+        if (MainWindow is not null)
+        {
+            await MainWindow.ReloadHomeLibraryAsync();
+        }
+
         var library = Services.GetService<LibraryViewModel>();
         if (library is not null)
         {
