@@ -19,6 +19,7 @@ public partial class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
 
+    private static Mutex? _runningMutex;
     private static Action? _exit;
 
     /// <summary>Really quits: closing the window only hides it to the tray.</summary>
@@ -61,6 +62,8 @@ public partial class App : Application
 
     private void StartClient()
     {
+        _runningMutex = new Mutex(true, SGSClient.Core.SgsClientConstants.RunningMutexName, out _);
+
         var userSettings = new ClientUserSettingsStore().Load();
         Loc.Initialize(userSettings.Language);
         RequestedThemeVariant = AvaloniaThemeApplier.ToVariant(userSettings.Theme);

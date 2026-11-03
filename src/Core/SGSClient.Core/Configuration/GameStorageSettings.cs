@@ -15,4 +15,10 @@ public sealed class GameStorageSettings
 
     /// <summary>Public base URL for cover/intro/screenshots (e.g. /api/games/media).</summary>
     public string MediaPublicBaseUrl { get; set; } = "/api/games/media";
+
+    /// <summary>
+    /// Path to the pre-built launcher stub exe. When set, the publish pipeline wraps
+    /// the game executable so it can only be launched through SGSClient.
+    /// </summary>
+    public string? LauncherStubPath { get; set; }
 }
