@@ -6,13 +6,13 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="SzyrGameStudio.SGSClient"
-    Publisher="CN=SzyrGameStudio"
+    Name="17212DEVMASSYN.SGSClient"
+    Publisher="CN=B5A74391-DF3D-4F92-B9DB-36657C9E25E9"
     Version="4.0.0.0" />
 
   <Properties>
     <DisplayName>SGSClient</DisplayName>
-    <PublisherDisplayName>Szyr Game Studio</PublisherDisplayName>
+    <PublisherDisplayName>M455YN</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
