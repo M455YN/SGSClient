@@ -14,6 +14,9 @@ public interface ISgsApiService
     Task<IReadOnlyList<GameDlcDto>> GetGameDlcsAsync(int gameId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<GameDto>> GetMyGamesAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<GameDto>> GetMyLibraryAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Like <see cref="GetMyLibraryAsync"/>, but null when the request failed, so an empty library stays distinguishable.</summary>
+    Task<IReadOnlyList<GameDto>?> TryGetMyLibraryAsync(CancellationToken cancellationToken = default);
     Task<GameDto?> ClaimGameAsync(int gameId, CancellationToken cancellationToken = default);
     Task<bool> RemoveFromLibraryAsync(int gameId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<GameDto>> GetWishlistAsync(CancellationToken cancellationToken = default);

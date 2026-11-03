@@ -698,7 +698,7 @@ public partial class AccountViewModel : ObservableObject
                 return;
             }
 
-            var items = await library.GetAllAsync();
+            var items = await library.GetOwnedAsync();
             await SyncArtworkAsync(scope.ServiceProvider.GetService<ISgsApiService>(), items, library);
             if (playtime is not null)
             {

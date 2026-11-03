@@ -8,7 +8,11 @@ using SGSClient.Infrastructure.Client.Persistence.Entities;
 
 namespace SGSClient.Infrastructure.Client.Services;
 
-public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibraryStore
+public sealed class LocalLibraryService(
+    SgsClientDbContext db,
+    IAuthSession? auth = null,
+    ISgsApiService? api = null,
+    ICatalogCacheStore? cache = null) : ILocalLibraryStore
 {
     public async Task<IReadOnlyList<GameLibraryItem>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -18,6 +22,63 @@ public sealed class LocalLibraryService(SgsClientDbContext db) : ILocalLibrarySt
             .ToListAsync(cancellationToken);
 
         return entities.Select(ToModel).ToList();
+    }
+
+    public async Task<IReadOnlyList<GameLibraryItem>> GetOwnedAsync(CancellationToken cancellationToken = default)
+    {
+        var all = await GetAllAsync(cancellationToken);
+        var owned = await GetOwnedGameIdsAsync(cancellationToken);
+        return owned is null ? all : all.Where(x => owned.Contains(x.GameId)).ToList();
+    }
+
+    /// <summary>Null when installs are not tied to an account (sign-in not configured, or nothing known yet).</summary>
+    private async Task<HashSet<int>?> GetOwnedGameIdsAsync(CancellationToken cancellationToken)
+    {
+        if (auth is not { IsAvailable: true } || api is null)
+        {
+            return null;
+        }
+
+        if (!auth.IsLoggedIn || auth.CurrentUser is not { } user)
+        {
+            return [];
+        }
+
+        var remote = await api.TryGetMyLibraryAsync(cancellationToken);
+        if (remote is not null)
+        {
+            await TrySaveAccountLibraryAsync(user.AzureSub, remote, cancellationToken);
+            return remote.Select(g => g.Id).ToHashSet();
+        }
+
+        if (cache is null)
+        {
+            return null;
+        }
+
+        // shortcut: an account with no saved list sees every install while the API is unreachable, so offline play keeps working.
+        var saved = await cache.LoadAccountLibraryAsync(user.AzureSub, cancellationToken);
+        return saved.SavedAtUtc is null ? null : saved.Games.Select(g => g.Id).ToHashSet();
+    }
+
+    private async Task TrySaveAccountLibraryAsync(
+        string accountSub,
+        IReadOnlyList<SGSClient.Core.DTOs.GameDto> games,
+        CancellationToken cancellationToken)
+    {
+        if (cache is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await cache.SaveAccountLibraryAsync(accountSub, games, cancellationToken);
+        }
+        catch
+        {
+            // cache write is best-effort
+        }
     }
 
     public async Task<GameLibraryItem?> GetByGameIdAsync(int gameId, CancellationToken cancellationToken = default)

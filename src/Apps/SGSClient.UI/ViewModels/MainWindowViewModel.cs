@@ -434,6 +434,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         await Sidebar.LoadInstalledAsync();
+        await _home.ReloadLibraryAsync();
         await _library.LoadAsync();
         await _library.CheckUpdatesOnStartupAsync();
         await Sidebar.Notifications.StartAsync();

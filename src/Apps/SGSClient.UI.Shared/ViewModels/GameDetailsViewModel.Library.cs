@@ -54,7 +54,7 @@ public partial class GameDetailsViewModel
 
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            await library.UpsertAsync(new GameLibraryItem
+            await library.UpsertClaimedAsync(new GameLibraryItem
             {
                 GameId = GameId,
                 BuildId = preferred.BuildId,
@@ -180,7 +180,7 @@ public partial class GameDetailsViewModel
         {
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            _libraryItem = await library.GetByGameIdAsync(gameId);
+            _libraryItem = (await library.GetOwnedAsync()).FirstOrDefault(x => x.GameId == gameId);
             InLibrary = _libraryItem is not null;
             if (_libraryItem is not null)
             {
