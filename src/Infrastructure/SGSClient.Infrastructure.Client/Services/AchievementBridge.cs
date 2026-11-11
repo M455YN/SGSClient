@@ -270,6 +270,14 @@ public sealed class AchievementBridge : IDisposable
                 return;
             }
 
+            if (segments is ["api", "sdk", "stats", var statKey]
+                && request.HttpMethod == "POST"
+                && AchievementRules.NormalizeKey(statKey) is { } stat)
+            {
+                await RelayStatAsync(context, gameId, stat, cancellationToken);
+                return;
+            }
+
             if (segments is not ["api", "sdk", "achievements", ..])
             {
                 await RespondAsync(context, HttpStatusCode.NotFound, Error("Nieznany adres."));
@@ -360,6 +368,54 @@ public sealed class AchievementBridge : IDisposable
             JsonSerializer.Serialize(
                 new { key, progress = value ?? 0, target = (int?)null, unlocked = false, justUnlocked = false, queued = true },
                 Web));
+    }
+
+    private async Task RelayStatAsync(
+        HttpListenerContext context,
+        int gameId,
+        string key,
+        CancellationToken cancellationToken)
+    {
+        if (context.Request.ContentLength64 > 1024)
+        {
+            await RespondAsync(context, HttpStatusCode.RequestEntityTooLarge, Error("Treść jest za duża."));
+            return;
+        }
+
+        double? value = null;
+        try
+        {
+            using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
+            value = JsonSerializer.Deserialize<SetStatRequest>(await reader.ReadToEndAsync(cancellationToken), Web)?.Value;
+        }
+        catch (JsonException)
+        {
+        }
+
+        if (value is not double v || !double.IsFinite(v))
+        {
+            await RespondAsync(context, HttpStatusCode.BadRequest, Error("Podaj wartość statystyki: {\"value\": 5}."));
+            return;
+        }
+
+        var call = new QueuedCall(_auth.CurrentUser?.Id, gameId, key, null, v);
+        var (status, responseBody) = await SendAsync(call, cancellationToken);
+        if (status is { } code && IsDefinitive(code))
+        {
+            await RespondAsync(context, code, responseBody);
+            if ((int)code < 300)
+            {
+                _ = FlushAsync(cancellationToken);
+            }
+
+            return;
+        }
+
+        Enqueue(call);
+        await RespondAsync(
+            context,
+            HttpStatusCode.Accepted,
+            JsonSerializer.Serialize(new { key, value = v, achievements = Array.Empty<object>(), queued = true }, Web));
     }
 
     private async Task RelayListAsync(HttpListenerContext context, int gameId, CancellationToken cancellationToken)
@@ -509,9 +565,15 @@ public sealed class AchievementBridge : IDisposable
         {
             using var request = new HttpRequestMessage(
                 HttpMethod.Post,
-                $"{_apiBase}api/me/games/{call.GameId}/achievements/{call.Key}/{(call.Value is null ? "unlock" : "progress")}");
+                call.Stat is not null
+                    ? $"{_apiBase}api/me/games/{call.GameId}/stats/{call.Key}"
+                    : $"{_apiBase}api/me/games/{call.GameId}/achievements/{call.Key}/{(call.Value is null ? "unlock" : "progress")}");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            if (call.Value is int value)
+            if (call.Stat is double stat)
+            {
+                request.Content = JsonContent.Create(new SetStatRequest { Value = stat });
+            }
+            else if (call.Value is int value)
             {
                 request.Content = JsonContent.Create(new SetAchievementProgressRequest { Value = value });
             }
@@ -551,10 +613,15 @@ public sealed class AchievementBridge : IDisposable
         {
             var index = _queue.FindIndex(c =>
                 c.UserId == call.UserId && c.GameId == call.GameId && c.Key == call.Key
-                && (c.Value is null) == (call.Value is null));
+                && (c.Value is null) == (call.Value is null) && (c.Stat is null) == (call.Stat is null));
             if (index < 0)
             {
                 _queue.Add(call);
+            }
+            else if (call.Stat is not null)
+            {
+                // A stat write is absolute: the latest value wins.
+                _queue[index] = call;
             }
             else if (call.Value is int value)
             {
@@ -622,5 +689,6 @@ public sealed class AchievementBridge : IDisposable
         context.Response.Close();
     }
 
-    private sealed record QueuedCall(int? UserId, int GameId, string Key, int? Value);
+    /// <summary><see cref="Stat"/> set = a stat write; otherwise unlock (Value null) or progress.</summary>
+    private sealed record QueuedCall(int? UserId, int GameId, string Key, int? Value, double? Stat = null);
 }

@@ -5,7 +5,7 @@ Gra uruchomiona z klienta SGS nie łączy się z API bezpośrednio. Łączy się
 ## Dlaczego most
 
 - **Brak wygasających tokenów.** Most podpisuje wywołania logowaniem gracza, więc długa sesja nie traci uprawnień.
-- **Tryb offline.** Odblokowania i postęp trafiają do pliku kolejki (`%LocalAppData%/SGSClient/achievement-queue.json`) i są wysyłane co minutę albo po powrocie sieci. Kolejka przeżywa restart klienta.
+- **Tryb offline.** Odblokowania, postęp i zapisy statystyk (`api/sdk/stats/{key}`; z kolejnych zapisów jednej statystyki zostaje ostatni) trafiają do pliku kolejki (`%LocalAppData%/SGSClient/achievement-queue.json`) i są wysyłane co minutę albo po powrocie sieci. Kolejka przeżywa restart klienta.
 - **Ta sama ścieżka co w API.** Endpointy mostu używają tych samych adresów co `api/sdk/…`, więc kod pisany pod most działa też bez klienta, pod warunkiem innego tokenu (patrz niżej).
 
 ## Nagłówki i CORS
@@ -26,7 +26,7 @@ Most przekazuje bez zmian odpowiedzi API `200`, `400`, `403` i `404`. Dodatkowo 
 |---|---|---|
 | `200` | Przyjęte | Pokaż własny komunikat, jeśli `justUnlocked` to `true` |
 | `202` | Przyjęte do kolejki, bo gracz jest offline; pole `"queued": true` | Traktuj jak sukces |
-| `400` | Zły kształt danych, np. `progress` na osiągnięciu jednorazowym | Napraw wywołanie; nie ponawiaj |
+| `400` | Zły kształt danych, np. `progress` na osiągnięciu jednorazowym albo statystyka łamiąca zakres, `maxChange` lub `incrementOnly` | Napraw wywołanie; nie ponawiaj |
 | `401` | Brak lub zły token | Sprawdź, czy wysyłasz `X-SGS-Token` z `SGS_ACHIEVEMENTS_TOKEN` |
 | `403` | Gracz nie ma gry w bibliotece | Nie ponawiaj |
 | `404` | Nieznany lub nieaktywny klucz | Sprawdź klucz w manifeście |

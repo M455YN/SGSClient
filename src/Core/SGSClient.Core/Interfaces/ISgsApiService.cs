@@ -102,9 +102,15 @@ public interface ISgsApiService
         int gameId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<GameStatDefinitionDto>> GetStatDefinitionsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Saves the achievements; <paramref name="stats"/> (when not null) replaces the game's stats in the same call.</summary>
     Task<(IReadOnlyList<AchievementDefinitionDto>? Items, string? Error)> SyncAchievementDefinitionsAsync(
         int gameId,
         IReadOnlyList<AchievementDefinitionDto> items,
+        IReadOnlyList<GameStatDefinitionDto>? stats = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>Unlocks an achievement on the signed-in account, so a creator can test the flow.</summary>
@@ -115,11 +121,12 @@ public interface ISgsApiService
 
     Task<bool> ResetMyAchievementProgressAsync(int gameId, CancellationToken cancellationToken = default);
 
-    /// <summary>Uploads an image as the icon of a saved achievement; returns the updated definition.</summary>
+    /// <summary>Uploads the achieved (or <paramref name="locked"/>: unachieved) icon of a saved achievement.</summary>
     Task<(AchievementDefinitionDto? Item, string? Error)> UploadAchievementIconAsync(
         int gameId,
         string key,
         string localFilePath,
+        bool locked = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>Player view with the signed-in user's progress; <paramref name="language"/> picks translations.</summary>

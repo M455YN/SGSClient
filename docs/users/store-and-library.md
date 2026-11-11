@@ -10,9 +10,11 @@ Strona gry zawiera:
 
 - **Opis** i **Szczegóły**: gatunek, silnik, platforma, etap premiery, wersja, typ treści
 - **Wymagania sprzętowe**, jeśli twórca je podał
-- **Osiągnięcia**, jeśli gra je ma (patrz [Znajomi, czat i profil](social.md))
+- **Osiągnięcia**, jeśli gra je ma: ikona (szara albo przyciemniona, dopóki osiągnięcie jest zablokowane), pasek postępu dla liczników, data odblokowania i procent graczy, którzy je zdobyli. Ukryte osiągnięcia pokazują się jako „Ukryte osiągnięcie”, dopóki ich nie odblokujesz (patrz też [Znajomi, czat i profil](social.md))
 - **Recenzje**: polecasz lub nie polecasz (**Polecam** / **Nie polecam**) i piszesz recenzję. Żeby napisać recenzję, musisz mieć grę w bibliotece. Treść recenzji ma co najmniej 10 znaków.
 - **Dodaj do biblioteki** albo **Lista życzeń**
+
+![Osiągnięcia na stronie gry](../assets/screenshots/osiagniecia-gracz.png)
 
 ## Biblioteka
 

@@ -26,7 +26,16 @@ public interface IAchievementService
         bool isAdmin = false,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Upserts by key and deactivates keys that are not in the request.</summary>
+    Task<IReadOnlyList<GameStatDefinitionDto>> GetStatDefinitionsAsync(
+        int gameId,
+        int ownerUserId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Upserts by key and deactivates keys that are not in the request; the same for stats when
+    /// <see cref="SyncGameAchievementsRequest.Stats"/> is set.
+    /// </summary>
     Task<IReadOnlyList<AchievementDefinitionDto>> SyncDefinitionsAsync(
         int gameId,
         int ownerUserId,
@@ -34,7 +43,7 @@ public interface IAchievementService
         bool isAdmin = false,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Stores an uploaded image as the icon of an existing achievement.</summary>
+    /// <summary>Stores an uploaded image as the achieved (or, with <paramref name="locked"/>, unachieved) icon.</summary>
     Task<AchievementDefinitionDto> SetIconAsync(
         int gameId,
         int ownerUserId,
@@ -42,6 +51,7 @@ public interface IAchievementService
         Stream content,
         string fileName,
         bool isAdmin = false,
+        bool locked = false,
         CancellationToken cancellationToken = default);
 
     Task<AchievementUpdateResultDto> UnlockAsync(
@@ -58,6 +68,17 @@ public interface IAchievementService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Sets a stat (absolute value, checked against its type, range, max change and increment-only) and
+    /// moves every achievement linked to it, unlocking those whose target the value reaches.
+    /// </summary>
+    Task<StatUpdateResultDto> SetStatAsync(
+        int userId,
+        int gameId,
+        string key,
+        double value,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Per game: unlocked of total. <paramref name="includeLocked"/> adds the library games with no unlock
     /// yet (the player's own view only).
     /// </summary>
@@ -66,7 +87,7 @@ public interface IAchievementService
         bool includeLocked = false,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Clears the caller's own progress for the game, so a creator can retest.</summary>
+    /// <summary>Clears the caller's own achievements and stats for the game, so a creator can retest.</summary>
     Task ResetProgressAsync(
         int gameId,
         int ownerUserId,

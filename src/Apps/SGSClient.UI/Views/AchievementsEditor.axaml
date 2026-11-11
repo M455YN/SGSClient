@@ -4,6 +4,8 @@
              xmlns:vm="using:SGSClient.UI.ViewModels"
              x:Class="SGSClient.UI.Views.AchievementsEditor"
              x:DataType="vm:AchievementsEditorViewModel">
+  <!-- Steamworks-style admin: an achievements table (each one edited in a dialog and saved at once)
+       and a stats table edited in place. -->
   <UserControl.Styles>
     <Style Selector="Border.card">
       <Setter Property="CornerRadius" Value="8"/>
@@ -12,85 +14,220 @@
       <Setter Property="BorderBrush" Value="#22FFFFFF"/>
       <Setter Property="BorderThickness" Value="1"/>
     </Style>
+    <Style Selector="Border.row">
+      <Setter Property="Padding" Value="4,8"/>
+      <Setter Property="BorderBrush" Value="#22FFFFFF"/>
+      <Setter Property="BorderThickness" Value="0,1,0,0"/>
+    </Style>
+    <Style Selector="Border.form">
+      <Setter Property="Padding" Value="12"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Background" Value="#0DFFFFFF"/>
+    </Style>
+    <Style Selector="Border.icon">
+      <Setter Property="Width" Value="64"/>
+      <Setter Property="Height" Value="64"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Background" Value="#1AFFFFFF"/>
+      <Setter Property="ClipToBounds" Value="True"/>
+      <Setter Property="VerticalAlignment" Value="Top"/>
+    </Style>
     <Style Selector="TextBlock.caption">
       <Setter Property="FontSize" Value="12"/>
       <Setter Property="Opacity" Value="0.6"/>
     </Style>
+    <Style Selector="TextBlock.head">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Opacity" Value="0.7"/>
+      <Setter Property="VerticalAlignment" Value="Bottom"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style Selector="Button.icon">
+      <Setter Property="Padding" Value="8,4"/>
+      <Setter Property="MinWidth" Value="34"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.form TextBlock.label">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.7"/>
+      <Setter Property="Margin" Value="0,0,0,2"/>
+    </Style>
   </UserControl.Styles>
 
   <StackPanel Spacing="12">
+    <!-- ===== Achievements ===== -->
     <Border Classes="card">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <StackPanel Spacing="2" VerticalAlignment="Center">
           <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" FontWeight="SemiBold"/>
           <TextBlock Text="{Binding Summary}" Classes="caption"/>
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-          <Button Content="{loc:Tr Key='Dodaj osiągnięcie'}" Command="{Binding AddCommand}"/>
-          <Button Content="{loc:Tr Key='Odśwież'}" Command="{Binding ReloadCommand}"/>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+          <Button Content="{loc:Tr Key='Nowe osiągnięcie'}" Classes="accent" Click="New_OnClick"/>
+          <Button Classes="icon" Content="⟳" Command="{Binding ReloadCommand}" ToolTip.Tip="{loc:Tr Key='Odśwież'}"/>
         </StackPanel>
       </Grid>
     </Border>
 
-    <ItemsControl ItemsSource="{Binding Items}">
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="vm:StudioAchievementItem">
-          <Border Classes="card" Margin="0,0,0,8" Padding="12">
-            <StackPanel Spacing="8">
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <TextBox PlaceholderText="{loc:Tr Key='Klucz (stały identyfikator)'}" Text="{Binding EditKey, Mode=TwoWay}"
-                         IsEnabled="{Binding IsKeyEditable}"/>
-                <TextBox Grid.Column="1" PlaceholderText="{loc:Tr Key='Tytuł'}" Text="{Binding EditTitle, Mode=TwoWay}"/>
-              </Grid>
-              <TextBox PlaceholderText="{loc:Tr Key='Opis'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
-                       Text="{Binding EditDescription, Mode=TwoWay}"/>
-              <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                <TextBox PlaceholderText="{loc:Tr Key='Tytuł (angielski)'}" Text="{Binding EditTitleEn, Mode=TwoWay}"/>
-                <TextBox Grid.Column="1" PlaceholderText="{loc:Tr Key='Opis (angielski)'}" Text="{Binding EditDescriptionEn, Mode=TwoWay}"/>
-              </Grid>
-              <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="8">
-                <Border Width="48" Height="48" CornerRadius="6" Background="#1AFFFFFF" ClipToBounds="True">
-                  <Image conv:ImageUrl.Source="{Binding IconPreviewUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
-                </Border>
-                <TextBox Grid.Column="1" VerticalAlignment="Center" PlaceholderText="{loc:Tr Key='Adres ikony (URL)'}"
-                         Text="{Binding EditIconUrl, Mode=TwoWay}"/>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                  <Button Content="{loc:Tr Key='Wgraj ikonę'}" Tag="{Binding}" Click="PickIcon_OnClick"/>
-                  <Button Content="{loc:Tr Key='Usuń ikonę'}" Tag="{Binding}" Click="ClearIcon_OnClick"/>
+    <Border Classes="card" Padding="12">
+      <StackPanel Spacing="4">
+        <Grid ColumnDefinitions="32,170,*,60,64,64,130,164" ColumnSpacing="10" Margin="4,0,4,6">
+          <TextBlock Text="ID" Classes="head"/>
+          <TextBlock Grid.Column="1" Text="{loc:Tr Key='API name'}" Classes="head"/>
+          <TextBlock Grid.Column="2" Text="{loc:Tr Key='Nazwa / opis'}" Classes="head"/>
+          <TextBlock Grid.Column="3" Text="{loc:Tr Key='Ukryte?'}" Classes="head"/>
+          <TextBlock Grid.Column="4" Text="{loc:Tr Key='Ikona zdobyta'}" Classes="head"/>
+          <TextBlock Grid.Column="5" Text="{loc:Tr Key='Ikona niezdobyta'}" Classes="head"/>
+          <TextBlock Grid.Column="6" Text="{loc:Tr Key='Postęp'}" Classes="head"/>
+        </Grid>
+
+        <!-- empty state -->
+        <StackPanel Spacing="8" Margin="4,16" HorizontalAlignment="Center" IsVisible="{Binding !HasItems}">
+          <TextBlock Text="{loc:Tr Key='Ta gra nie ma jeszcze osiągnięć.'}" HorizontalAlignment="Center" Opacity="0.7"/>
+          <Button Content="{loc:Tr Key='Dodaj pierwsze osiągnięcie'}" HorizontalAlignment="Center" Click="New_OnClick"/>
+        </StackPanel>
+
+        <ItemsControl ItemsSource="{Binding Items}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StudioAchievementItem">
+              <Border Classes="row">
+                <Grid ColumnDefinitions="32,170,*,60,64,64,130,164" ColumnSpacing="10">
+                  <TextBlock Text="{Binding RowId}" Opacity="0.7"/>
+                  <SelectableTextBlock Grid.Column="1" Text="{Binding EditKey}" FontFamily="Consolas,Menlo,monospace"
+                                       FontSize="12" TextWrapping="Wrap"/>
+                  <StackPanel Grid.Column="2" Spacing="2">
+                    <TextBlock Text="{Binding DisplayTitle}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding EditDescription}" Opacity="0.75" FontSize="12" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding StatsText}" Classes="caption"/>
+                  </StackPanel>
+                  <TextBlock Grid.Column="3" Text="{Binding HiddenText}"/>
+                  <Border Grid.Column="4" Classes="icon">
+                    <Image conv:ImageUrl.Source="{Binding IconPreviewUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+                  </Border>
+                  <Border Grid.Column="5" Classes="icon">
+                    <Image conv:ImageUrl.Source="{Binding LockedColumnUrl}" Stretch="UniformToFill"
+                           Opacity="{Binding LockedColumnOpacity}" IsVisible="{Binding HasLockedColumnIcon}"/>
+                  </Border>
+                  <TextBlock Grid.Column="6" Text="{Binding ProgressText}" FontSize="12" TextWrapping="Wrap"/>
+                  <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <Button Classes="icon" Content="▲" Tag="{Binding}" Click="MoveUp_OnClick" ToolTip.Tip="{loc:Tr Key='Przenieś wyżej'}"/>
+                    <Button Classes="icon" Content="▼" Tag="{Binding}" Click="MoveDown_OnClick" ToolTip.Tip="{loc:Tr Key='Przenieś niżej'}"/>
+                    <Button Classes="icon" Content="✎" Tag="{Binding}" Click="Edit_OnClick" ToolTip.Tip="{loc:Tr Key='Edytuj'}"/>
+                    <Button Classes="icon" Content="🗑" Tag="{Binding}" Click="Delete_OnClick" ToolTip.Tip="{loc:Tr Key='Usuń'}"/>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <!-- ===== Stats ===== -->
+    <Border Classes="card" Padding="12">
+      <StackPanel Spacing="4">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="4,0,4,8">
+          <StackPanel Spacing="2">
+            <TextBlock Text="{loc:Tr Key='Statystyki'}" FontWeight="SemiBold"/>
+            <TextBlock Text="{loc:Tr Key='Liczby zapisywane przez grę dla każdego gracza. Osiągnięcie z rodzajem „Postęp ze statystyki” pokazuje jej wartość jako postęp i odblokowuje się po osiągnięciu celu.'}"
+                       Classes="caption" TextWrapping="Wrap"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+            <Button Content="{loc:Tr Key='Nowa statystyka'}" Command="{Binding AddStatCommand}"/>
+            <Button Content="{loc:Tr Key='Zapisz statystyki'}" Classes="accent" Command="{Binding SaveCommand}"/>
+          </StackPanel>
+        </Grid>
+        <Grid ColumnDefinitions="32,170,64,*,140,80,80,88" ColumnSpacing="10" Margin="4,0,4,6" IsVisible="{Binding HasStats}">
+          <TextBlock Text="ID" Classes="head"/>
+          <TextBlock Grid.Column="1" Text="{loc:Tr Key='API name'}" Classes="head"/>
+          <TextBlock Grid.Column="2" Text="{loc:Tr Key='Typ'}" Classes="head"/>
+          <TextBlock Grid.Column="3" Text="{loc:Tr Key='Nazwa wyświetlana'}" Classes="head"/>
+          <TextBlock Grid.Column="4" Text="{loc:Tr Key='Zakres'}" Classes="head"/>
+          <TextBlock Grid.Column="5" Text="{loc:Tr Key='Domyślna'}" Classes="head"/>
+          <TextBlock Grid.Column="6" Text="{loc:Tr Key='Tylko rośnie'}" Classes="head"/>
+        </Grid>
+
+        <ItemsControl ItemsSource="{Binding Stats}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StudioStatItem">
+              <Border Classes="row">
+                <StackPanel Spacing="10">
+                  <Grid ColumnDefinitions="32,170,64,*,140,80,80,88" ColumnSpacing="10">
+                    <TextBlock Text="{Binding RowId}" Opacity="0.7"/>
+                    <SelectableTextBlock Grid.Column="1" Text="{Binding EditKey}" FontFamily="Consolas,Menlo,monospace"
+                                         FontSize="12" TextWrapping="Wrap"/>
+                    <TextBlock Grid.Column="2" Text="{Binding TypeText}" FontSize="12"/>
+                    <TextBlock Grid.Column="3" Text="{Binding EditDisplayName}" TextWrapping="Wrap"/>
+                    <TextBlock Grid.Column="4" Text="{Binding RangeText}" FontSize="12"/>
+                    <TextBlock Grid.Column="5" Text="{Binding EditDefault}" FontSize="12"/>
+                    <TextBlock Grid.Column="6" Text="{Binding IncrementOnlyText}" FontSize="12"/>
+                    <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                      <Button Classes="icon" Content="✎" Tag="{Binding}" Click="ToggleStat_OnClick" ToolTip.Tip="{loc:Tr Key='Edytuj'}"/>
+                      <Button Classes="icon" Content="🗑" Tag="{Binding}" Click="RemoveStat_OnClick" ToolTip.Tip="{loc:Tr Key='Usuń'}"/>
+                    </StackPanel>
+                  </Grid>
+
+                  <Border Classes="form" IsVisible="{Binding IsEditing}">
+                    <StackPanel Spacing="8">
+                      <Grid ColumnDefinitions="*,*,120" ColumnSpacing="8">
+                        <StackPanel>
+                          <TextBlock Classes="label" Text="{loc:Tr Key='API name (np. NUM_GAMES)'}"/>
+                          <TextBox Text="{Binding EditKey, Mode=TwoWay}" IsEnabled="{Binding IsKeyEditable}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                          <TextBlock Classes="label" Text="{loc:Tr Key='Nazwa wyświetlana'}"/>
+                          <TextBox Text="{Binding EditDisplayName, Mode=TwoWay}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                          <TextBlock Classes="label" Text="{loc:Tr Key='Typ'}"/>
+                          <ComboBox HorizontalAlignment="Stretch" SelectedIndex="{Binding EditTypeIndex, Mode=TwoWay}">
+                            <ComboBoxItem Content="INT"/>
+                            <ComboBoxItem Content="FLOAT"/>
+                          </ComboBox>
+                        </StackPanel>
+                      </Grid>
+                      <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                        <StackPanel>
+                          <TextBlock Classes="label" Text="{loc:Tr Key='Minimum (puste = brak)'}"/>
+                          <TextBox Text="{Binding EditMin, Mode=TwoWay}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                          <TextBlock Classes="label" Text="{loc:Tr Key='Maksimum (puste = brak)'}"/>
+                          <TextBox Text="{Binding EditMax, Mode=TwoWay}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                          <TextBlock Classes="label" Text="{loc:Tr Key='Wartość domyślna'}"/>
+                          <TextBox Text="{Binding EditDefault, Mode=TwoWay}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="3">
+                          <TextBlock Classes="label" Text="{loc:Tr Key='Maks. zmiana na wywołanie'}"/>
+                          <TextBox Text="{Binding EditMaxChange, Mode=TwoWay}"/>
+                        </StackPanel>
+                      </Grid>
+                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <CheckBox Content="{loc:Tr Key='Tylko rośnie (increment only)'}" IsChecked="{Binding EditIncrementOnly, Mode=TwoWay}"/>
+                        <Button Grid.Column="1" Content="{loc:Tr Key='Gotowe'}" Tag="{Binding}" Click="ToggleStat_OnClick"/>
+                      </Grid>
+                    </StackPanel>
+                  </Border>
                 </StackPanel>
-              </Grid>
-              <Grid ColumnDefinitions="110,*" ColumnSpacing="8">
-                <TextBox PlaceholderText="{loc:Tr Key='Punkty'}" Text="{Binding EditPoints, Mode=TwoWay}"/>
-                <TextBox Grid.Column="1" PlaceholderText="{loc:Tr Key='Cel licznika (puste = jednorazowe)'}"
-                         Text="{Binding EditTarget, Mode=TwoWay}"/>
-              </Grid>
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                  <CheckBox Content="{loc:Tr Key='Ukryte do odblokowania'}" IsChecked="{Binding EditHidden, Mode=TwoWay}"/>
-                  <TextBlock Text="{Binding StatsText}" Classes="caption" VerticalAlignment="Center"/>
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                  <Button Content="▲" Tag="{Binding}" Click="MoveUp_OnClick"/>
-                  <Button Content="▼" Tag="{Binding}" Click="MoveDown_OnClick"/>
-                  <Button Content="{loc:Tr Key='Testowo odblokuj'}" Tag="{Binding}" Click="TestUnlock_OnClick"/>
-                  <Button Content="{loc:Tr Key='Usuń'}" Tag="{Binding}" Click="Remove_OnClick"/>
-                </StackPanel>
-              </Grid>
-            </StackPanel>
-          </Border>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
 
     <StackPanel Orientation="Horizontal" Spacing="8">
-      <Button Content="{loc:Tr Key='Zapisz osiągnięcia'}" Classes="accent" Command="{Binding SaveCommand}" Padding="16,8"/>
-      <Button Content="{loc:Tr Key='Wyzeruj mój postęp'}" Command="{Binding ResetProgressCommand}" Padding="14,8"/>
+      <Button Content="{loc:Tr Key='Wyzeruj mój postęp'}" Command="{Binding ResetProgressCommand}" Padding="14,8"
+              ToolTip.Tip="{loc:Tr Key='Czyści Twoje osiągnięcia i statystyki w tej grze, żeby przetestować je od nowa.'}"/>
     </StackPanel>
 
     <Border Classes="card">
       <StackPanel Spacing="6">
         <TextBlock Text="{loc:Tr Key='Integracja z grą'}" FontWeight="SemiBold"/>
-        <TextBlock Text="{Binding Help}" Classes="caption" TextWrapping="Wrap"/>
+        <SelectableTextBlock Text="{Binding Help}" FontSize="12" Opacity="0.6" TextWrapping="Wrap"/>
       </StackPanel>
     </Border>
   </StackPanel>

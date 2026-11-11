@@ -172,7 +172,10 @@ public partial class PublishViewModel : ObservableObject
 
             ApplyManifestToForm(loaded.Manifest, preferExistingDlc: keepKind == "dlc");
             HasManifestForm = true;
-            StatusText = Loc.T("Uzupełnij lub popraw dane gry, potem przygotuj paczkę.");
+            StatusText = loaded.Manifest.Achievements is { } achievements
+                // The manifest wins on publish, so say it before the creator's panel edits disappear.
+                ? Loc.F("Uzupełnij lub popraw dane gry, potem przygotuj paczkę. Uwaga: manifest zawiera osiągnięcia ({0}) — po publikacji zastąpią listę z Panelu twórcy.", achievements.Count)
+                : Loc.T("Uzupełnij lub popraw dane gry, potem przygotuj paczkę.");
         }
         catch (Exception ex)
         {

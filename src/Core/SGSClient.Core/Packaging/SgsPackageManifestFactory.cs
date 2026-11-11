@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SGSClient.Core.Achievements;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
 
@@ -9,7 +10,8 @@ public static class SgsPackageManifestFactory
 {
     /// <summary>
     /// Catalog fields plus the default build. Media and achievements are left out on purpose:
-    /// a republish keeps the current ones unless the manifest lists new files.
+    /// a republish keeps the current ones unless the manifest lists new files. The "download manifest"
+    /// action adds achievements with <see cref="ToPackageAchievement"/>.
     /// </summary>
     public static SgsPackageManifest FromGame(GameDto game)
     {
@@ -48,6 +50,44 @@ public static class SgsPackageManifestFactory
                 IsDefault = true
             }
         };
+    }
+
+    /// <summary>
+    /// The manifest entry for a stored achievement. Uploaded icons map to their file in the game folder
+    /// (<see cref="LocalIconPath"/>); external http(s) icons stay URLs.
+    /// </summary>
+    public static SgsPackageAchievement ToPackageAchievement(AchievementDefinitionDto definition) => new()
+    {
+        Key = definition.Key,
+        Title = definition.Title,
+        Description = string.IsNullOrEmpty(definition.Description) ? null : definition.Description,
+        Icon = LocalIconPath(definition.Key, definition.IconUrl, locked: false) ?? definition.IconUrl,
+        LockedIcon = LocalIconPath(definition.Key, definition.LockedIconUrl, locked: true) ?? definition.LockedIconUrl,
+        Stat = definition.StatKey,
+        Points = definition.Points,
+        Hidden = definition.Hidden,
+        Target = definition.Target,
+        Translations = definition.Translations is null ? null : new Dictionary<string, AchievementTextDto>(definition.Translations)
+    };
+
+    /// <summary>
+    /// "sdk_sgs/achievements/{key}[_locked]{ext}" for an icon uploaded to SGS (an app-relative URL);
+    /// null for no icon or an external http(s) one.
+    /// </summary>
+    public static string? LocalIconPath(string key, string? iconUrl, bool locked)
+    {
+        if (string.IsNullOrWhiteSpace(iconUrl) || SgsPackageAchievement.IsUrl(iconUrl))
+        {
+            return null;
+        }
+
+        var extension = Path.GetExtension(iconUrl.Split('?', '#')[0]).ToLowerInvariant();
+        if (!SgsPackageRules.AllowedImageExtensions.Contains(extension))
+        {
+            extension = ".png";
+        }
+
+        return $"{AchievementRules.IconFolder}/{key}{(locked ? "_locked" : string.Empty)}{extension}";
     }
 
     public static string ToJson(SgsPackageManifest manifest) =>

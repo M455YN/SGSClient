@@ -85,7 +85,7 @@ Media są opcjonalne przy wysyłce. Możesz dodać je później w **Panel twórc
 
 Przy nowej wersji istniejącej gry grafiki zostają, dopóki paczka ich nie zastąpi. Okładka, nagłówek, logo i intro są nadpisywane tylko wtedy, gdy są w manifeście. Zrzuty ekranu są podmieniane tylko wtedy, gdy manifest zawiera co najmniej jeden. Wtedy cały zestaw jest wymieniany.
 
-Nie musisz przepisywać manifestu przy każdej wersji. Przycisk **Pobierz manifest** w **Panelu twórcy** lub w **Adminie** zapisuje `sgs-manifest.json` zbudowany z opublikowanej gry: dane, gatunki, tagi, obecną wersję i exe. Bez multimediów i osiągnięć. **Opublikuj nową wersję** też wypełnia formularz z opublikowanej gry, gdy wybrany folder nie ma manifestu. Wpisujesz tylko numer nowej wersji i opis zmian.
+Nie musisz przepisywać manifestu przy każdej wersji. Przycisk **Pobierz manifest** w **Panelu twórcy** lub w **Adminie** zapisuje `sgs-manifest.json` zbudowany z opublikowanej gry: dane, gatunki, tagi, obecną wersję i exe oraz osiągnięcia i statystyki (wgrane ikony osiągnięć trafiają obok do `sdk_sgs/achievements/`, patrz [Osiągnięcia](achievements.md)). Bez multimediów sklepu. **Opublikuj nową wersję** też wypełnia formularz z opublikowanej gry, gdy wybrany folder nie ma manifestu. Wpisujesz tylko numer nowej wersji i opis zmian.
 
 Pełny przykład manifestu: [`demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json).
 

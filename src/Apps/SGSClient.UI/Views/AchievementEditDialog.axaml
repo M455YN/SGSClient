@@ -1,0 +1,174 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:SGSClient.UI.Converters"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.AchievementEditDialog"
+             x:DataType="vm:StudioAchievementItem">
+  <!-- Body of the add / edit achievement dialog; DataContext = the working copy from BeginEdit. -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.label">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.75"/>
+      <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.6"/>
+    </Style>
+    <Style Selector="Border.tile">
+      <Setter Property="Width" Value="80"/>
+      <Setter Property="Height" Value="80"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Background" Value="#1AFFFFFF"/>
+      <Setter Property="ClipToBounds" Value="True"/>
+    </Style>
+    <Style Selector="Border.preview">
+      <Setter Property="Padding" Value="10"/>
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Background" Value="#12FFFFFF"/>
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer MaxHeight="620" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
+    <Grid ColumnDefinitions="*,250" ColumnSpacing="24" Width="800">
+      <StackPanel Spacing="14">
+        <Border Padding="10,8" CornerRadius="6" Background="#33E8A33D" BorderBrush="#88E8A33D" BorderThickness="1"
+                IsVisible="{Binding HasValidationError}">
+          <TextBlock Text="{Binding ValidationError}" TextWrapping="Wrap"/>
+        </Border>
+
+        <StackPanel>
+          <TextBlock Classes="label" Text="{loc:Tr Key='Nazwa wyświetlana'}"/>
+          <TextBox Text="{Binding EditTitle, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='np. Pogromca bossa'}"/>
+        </StackPanel>
+        <StackPanel>
+          <TextBlock Classes="label" Text="{loc:Tr Key='Opis'}"/>
+          <TextBox Text="{Binding EditDescription, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='np. Pokonaj pierwszego bossa.'}"
+                   AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64"/>
+        </StackPanel>
+        <StackPanel>
+          <TextBlock Classes="label" Text="{loc:Tr Key='API name'}"/>
+          <TextBox Text="{Binding EditKey, Mode=TwoWay}" FontFamily="Consolas,Menlo,monospace" IsEnabled="{Binding IsKeyEditable}"/>
+          <TextBlock Classes="caption" Margin="0,4,0,0" TextWrapping="Wrap"
+                     Text="{loc:Tr Key='Tworzy się z nazwy. Tego identyfikatora używa kod gry; po zapisaniu nie można go zmienić.'}"/>
+        </StackPanel>
+
+        <StackPanel Spacing="4">
+          <TextBlock Classes="label" Text="{loc:Tr Key='Jak gra je odblokowuje?'}"/>
+          <RadioButton GroupName="AchievementKind" IsChecked="{Binding IsOneShotKind, Mode=TwoWay}"
+                       Content="{loc:Tr Key='Jednorazowo — gra wywołuje „unlock”'}"/>
+          <RadioButton GroupName="AchievementKind" IsChecked="{Binding IsCounterKind, Mode=TwoWay}"
+                       Content="{loc:Tr Key='Licznikiem — gra wysyła postęp, np. 37 / 100'}"/>
+          <RadioButton GroupName="AchievementKind" IsChecked="{Binding IsStatKindChecked, Mode=TwoWay}"
+                       Content="{loc:Tr Key='Ze statystyki — odblokuje się samo po osiągnięciu progu'}"/>
+        </StackPanel>
+
+        <Grid ColumnDefinitions="160,*" ColumnSpacing="12" IsVisible="{Binding ShowsTarget}">
+          <StackPanel>
+            <TextBlock Classes="label" Text="{loc:Tr Key='Cel'}"/>
+            <TextBox Text="{Binding EditTarget, Mode=TwoWay}" PlaceholderText="100"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" IsVisible="{Binding IsStatKind}">
+            <TextBlock Classes="label" Text="{loc:Tr Key='Statystyka'}"/>
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding AvailableStats}"
+                      SelectedItem="{Binding EditStatKey, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='Wybierz statystykę'}"/>
+          </StackPanel>
+        </Grid>
+
+        <Grid ColumnDefinitions="160,*" ColumnSpacing="12">
+          <StackPanel>
+            <TextBlock Classes="label" Text="{loc:Tr Key='Punkty'}"/>
+            <TextBox Text="{Binding EditPoints, Mode=TwoWay}"/>
+          </StackPanel>
+          <CheckBox Grid.Column="1" VerticalAlignment="Bottom" IsChecked="{Binding EditHidden, Mode=TwoWay}"
+                    Content="{loc:Tr Key='Ukryte do odblokowania (spoiler)'}"/>
+        </Grid>
+
+        <!-- Icons: uploaded like the game's media, stored in <game>/sdk_sgs/achievements -->
+        <StackPanel Spacing="12">
+          <Grid ColumnDefinitions="80,*" ColumnSpacing="12">
+            <Border Classes="tile">
+              <Image conv:ImageUrl.Source="{Binding IconPreviewUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+              <TextBlock Text="{loc:Tr Key='Ikona zdobyta'}" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Kolorowa, kwadratowa. Zalecane 256 × 256.'}" Classes="caption" TextWrapping="Wrap"/>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="{loc:Tr Key='Wybierz plik'}" Click="PickIcon_OnClick"/>
+                <Button Content="{loc:Tr Key='Usuń'}" Click="ClearIcon_OnClick"/>
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+          <Grid ColumnDefinitions="80,*" ColumnSpacing="12">
+            <Border Classes="tile">
+              <Image conv:ImageUrl.Source="{Binding LockedColumnUrl}" Stretch="UniformToFill"
+                     Opacity="{Binding LockedColumnOpacity}" IsVisible="{Binding HasLockedColumnIcon}"/>
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+              <TextBlock Text="{loc:Tr Key='Ikona niezdobyta'}" FontWeight="SemiBold"/>
+              <TextBlock Text="{loc:Tr Key='Zwykle w odcieniach szarości. Bez niej gracze widzą przyciemnioną ikonę zdobytą.'}"
+                         Classes="caption" TextWrapping="Wrap"/>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Content="{loc:Tr Key='Wybierz plik'}" Click="PickLockedIcon_OnClick"/>
+                <Button Content="◐" Click="Greyscale_OnClick" IsEnabled="{Binding HasIcon}"
+                        ToolTip.Tip="{loc:Tr Key='Utwórz szarą wersję ikony zdobytej'}"/>
+                <Button Content="🗑" Click="ClearLockedIcon_OnClick" ToolTip.Tip="{loc:Tr Key='Usuń'}"/>
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+
+        <Expander Header="{loc:Tr Key='Tłumaczenie angielskie (opcjonalnie)'}" HorizontalAlignment="Stretch">
+          <StackPanel Spacing="8">
+            <StackPanel>
+              <TextBlock Classes="label" Text="{loc:Tr Key='Tytuł (angielski)'}"/>
+              <TextBox Text="{Binding EditTitleEn, Mode=TwoWay}"/>
+            </StackPanel>
+            <StackPanel>
+              <TextBlock Classes="label" Text="{loc:Tr Key='Opis (angielski)'}"/>
+              <TextBox Text="{Binding EditDescriptionEn, Mode=TwoWay}"/>
+            </StackPanel>
+          </StackPanel>
+        </Expander>
+
+        <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsSaved}">
+          <Button Content="{loc:Tr Key='Testowo odblokuj'}" Click="TestUnlock_OnClick"/>
+          <TextBlock Text="{Binding StatsText}" Opacity="0.6" VerticalAlignment="Center"/>
+        </StackPanel>
+      </StackPanel>
+
+      <!-- how players will see it -->
+      <StackPanel Grid.Column="1" Spacing="10">
+        <TextBlock Text="{loc:Tr Key='Tak zobaczą to gracze'}" FontWeight="SemiBold"/>
+        <TextBlock Text="{loc:Tr Key='Zablokowane'}" Classes="caption"/>
+        <Border Classes="preview">
+          <Grid ColumnDefinitions="48,*" ColumnSpacing="10">
+            <Border Width="48" Height="48" CornerRadius="4" Background="#1AFFFFFF" ClipToBounds="True" VerticalAlignment="Top">
+              <Image conv:ImageUrl.Source="{Binding PreviewLockedIconUrl}" Stretch="UniformToFill"
+                     Opacity="{Binding LockedColumnOpacity}" IsVisible="{Binding HasPreviewLockedIcon}"/>
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="{Binding PreviewLockedTitle}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding PreviewLockedDescription}" FontSize="12" Opacity="0.75" TextWrapping="Wrap"/>
+              <ProgressBar Value="0" Maximum="{Binding PreviewProgressMax}" Height="4" Margin="0,6,0,0"
+                           IsVisible="{Binding ShowPreviewProgress}"/>
+              <TextBlock Text="{Binding PreviewProgressText}" Classes="caption" IsVisible="{Binding ShowPreviewProgress}"/>
+            </StackPanel>
+          </Grid>
+        </Border>
+        <TextBlock Text="{loc:Tr Key='Odblokowane'}" Classes="caption"/>
+        <Border Classes="preview">
+          <Grid ColumnDefinitions="48,*" ColumnSpacing="10">
+            <Border Width="48" Height="48" CornerRadius="4" Background="#1AFFFFFF" ClipToBounds="True" VerticalAlignment="Top">
+              <Image conv:ImageUrl.Source="{Binding IconPreviewUrl}" Stretch="UniformToFill" IsVisible="{Binding HasIcon}"/>
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="{Binding DisplayTitle}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding EditDescription}" FontSize="12" Opacity="0.75" TextWrapping="Wrap"/>
+            </StackPanel>
+          </Grid>
+        </Border>
+      </StackPanel>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

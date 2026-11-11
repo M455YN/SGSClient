@@ -521,15 +521,21 @@ public sealed class HttpSgsApiService(
         CancellationToken cancellationToken = default) =>
         SendListAsync<AchievementDefinitionDto>($"api/games/{gameId}/studio/achievements", cancellationToken);
 
+    public Task<IReadOnlyList<GameStatDefinitionDto>> GetStatDefinitionsAsync(
+        int gameId,
+        CancellationToken cancellationToken = default) =>
+        SendListAsync<GameStatDefinitionDto>($"api/games/{gameId}/studio/stats", cancellationToken);
+
     public async Task<(IReadOnlyList<AchievementDefinitionDto>? Items, string? Error)> SyncAchievementDefinitionsAsync(
         int gameId,
         IReadOnlyList<AchievementDefinitionDto> items,
+        IReadOnlyList<GameStatDefinitionDto>? stats = null,
         CancellationToken cancellationToken = default)
     {
         var (list, error) = await SendWithErrorAsync<List<AchievementDefinitionDto>>(
             HttpMethod.Put,
             $"api/games/{gameId}/studio/achievements",
-            new SyncGameAchievementsRequest { Items = items },
+            new SyncGameAchievementsRequest { Items = items, Stats = stats },
             cancellationToken).ConfigureAwait(false);
         return (list, error);
     }
@@ -551,6 +557,7 @@ public sealed class HttpSgsApiService(
         int gameId,
         string key,
         string localFilePath,
+        bool locked = false,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(localFilePath) || !File.Exists(localFilePath))
@@ -567,7 +574,7 @@ public sealed class HttpSgsApiService(
             };
             using var request = new HttpRequestMessage(
                 HttpMethod.Put,
-                $"api/games/{gameId}/studio/achievements/{Uri.EscapeDataString(key)}/icon")
+                $"api/games/{gameId}/studio/achievements/{Uri.EscapeDataString(key)}/icon" + (locked ? "?locked=true" : string.Empty))
             { Content = content };
             using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)

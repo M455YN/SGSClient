@@ -66,14 +66,17 @@ public sealed class GamePackagePacker : IGamePackagePacker
         }
         else
         {
-            // Preserve package include/exclude hints from disk when the UI only edits catalog fields.
-            if (manifest.Package is null && File.Exists(manifestPath))
+            // Preserve what the UI form does not edit (package hints, achievements, stats) from the file on disk;
+            // otherwise rewriting the manifest below would silently drop them.
+            if ((manifest.Package is null || manifest.Achievements is null) && File.Exists(manifestPath))
             {
                 await using var stream = File.OpenRead(manifestPath);
                 var (existing, _) = await SgsPackageManifestSerializer.TryDeserializeAsync(stream, cancellationToken);
-                if (existing?.Package is not null)
+                manifest.Package ??= existing?.Package;
+                if (manifest.Achievements is null && existing?.Achievements is not null)
                 {
-                    manifest.Package = existing.Package;
+                    manifest.Achievements = existing.Achievements;
+                    manifest.Stats = existing.Stats;
                 }
             }
 

@@ -227,9 +227,15 @@ public class GameInstallServiceTests
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<AchievementDefinitionDto>>([]);
 
+        public Task<IReadOnlyList<GameStatDefinitionDto>> GetStatDefinitionsAsync(
+            int gameId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<GameStatDefinitionDto>>([]);
+
         public Task<(IReadOnlyList<AchievementDefinitionDto>? Items, string? Error)> SyncAchievementDefinitionsAsync(
             int gameId,
             IReadOnlyList<AchievementDefinitionDto> items,
+            IReadOnlyList<GameStatDefinitionDto>? stats = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<AchievementDefinitionDto>? Items, string? Error)>((null, null));
 
@@ -246,6 +252,7 @@ public class GameInstallServiceTests
             int gameId,
             string key,
             string localFilePath,
+            bool locked = false,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(AchievementDefinitionDto? Item, string? Error)>((null, null));
 
