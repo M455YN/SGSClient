@@ -436,7 +436,7 @@ public partial class AdminViewModel : ObservableObject
             return;
         }
 
-        StatusText = await GameManifestSource.SaveAsync(_api, SelectedGame.Id, asAdmin: true, _saveFile)
+        StatusText = await GameManifestSource.SaveAsync(_api, SelectedGame.Id, asAdmin: true, _saveFile, _apiBaseUrl)
                      ?? StatusText;
     }
 

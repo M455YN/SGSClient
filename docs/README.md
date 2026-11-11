@@ -21,7 +21,7 @@ Dokumentacja klienta SGS i platformy. Wybierz, kim jesteś:
 
 - [Publikowanie gier](creators/how-to-publish.md) i [Grafika sklepowa](creators/store-art.md)
 - [Integracja z SGS](developers/README.md): most lokalny, zmienne środowiskowe, kontrakt z grą
-- [Osiągnięcia](creators/achievements.md) i [Lobby i zaproszenia](creators/lobbies.md)
+- [Osiągnięcia i statystyki](creators/achievements.md) i [Lobby i zaproszenia](creators/lobbies.md)
 - [Referencja API](developers/api-reference.md)
 - [Schemat manifestu](https://github.com/M455YN/SGSClient/blob/master/schemas/sgs-manifest.v1.json)
 

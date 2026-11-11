@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using SGSClient.Core.Achievements;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -158,15 +159,23 @@ public sealed class GameMediaService(
             content,
             fileName,
             SgsPackageRules.AllowedImageExtensions,
-            preferredStem: $"achievement_{key}",
-            cancellationToken);
+            preferredStem: key,
+            cancellationToken,
+            subfolder: AchievementRules.IconFolder);
         // Only files this method wrote: an external icon URL must never map onto cover.png and friends.
-        if (previousUrl is not null
-            && !string.Equals(previousUrl, saved.Url, StringComparison.OrdinalIgnoreCase)
-            && previousUrl.StartsWith(storageOptions.Value.MediaPublicBaseUrl.TrimEnd('/') + "/", StringComparison.OrdinalIgnoreCase)
-            && Path.GetFileName(previousUrl).StartsWith("achievement_", StringComparison.Ordinal))
+        var mediaBase = storageOptions.Value.MediaPublicBaseUrl.TrimEnd('/');
+        if (previousUrl is not null && !string.Equals(previousUrl, saved.Url, StringComparison.OrdinalIgnoreCase))
         {
-            TryDeleteMediaFile(symbol, previousUrl, sourcePath: null);
+            if (previousUrl.StartsWith($"{mediaBase}/{symbol}/{AchievementRules.IconFolder}/", StringComparison.OrdinalIgnoreCase))
+            {
+                TryDeleteMediaFile(symbol, previousUrl, sourcePath: null, subfolder: AchievementRules.IconFolder);
+            }
+            else if (previousUrl.StartsWith(mediaBase + "/", StringComparison.OrdinalIgnoreCase)
+                && Path.GetFileName(previousUrl).StartsWith("achievement_", StringComparison.Ordinal))
+            {
+                // Icons uploaded before the sdk_sgs/achievements folder existed.
+                TryDeleteMediaFile(symbol, previousUrl, sourcePath: null);
+            }
         }
 
         return saved.Url;
@@ -253,7 +262,8 @@ public sealed class GameMediaService(
         string fileName,
         HashSet<string> allowedExtensions,
         string preferredStem,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? subfolder = null)
     {
         var ext = Path.GetExtension(fileName);
         if (string.IsNullOrWhiteSpace(ext) || !allowedExtensions.Contains(ext))
@@ -271,7 +281,7 @@ public sealed class GameMediaService(
         }
 
         var storage = storageOptions.Value;
-        var mediaRoot = Path.Combine(storage.StoragePath, symbol, "media");
+        var mediaRoot = MediaRoot(symbol, subfolder);
         Directory.CreateDirectory(mediaRoot);
 
         var safeName = $"{preferredStem}{ext.ToLowerInvariant()}";
@@ -289,16 +299,23 @@ public sealed class GameMediaService(
         }
 
         var mediaBase = storage.MediaPublicBaseUrl.TrimEnd('/');
-        var url = $"{mediaBase}/{symbol}/{safeName}".Replace('\\', '/');
+        var url = (subfolder is null
+            ? $"{mediaBase}/{symbol}/{safeName}"
+            : $"{mediaBase}/{symbol}/{subfolder}/{safeName}").Replace('\\', '/');
         return (url, safeName);
     }
 
-    private void TryDeleteMediaFile(string symbol, string? url, string? sourcePath)
+    /// <summary><c>{symbol}/media</c>, or <c>{symbol}/{subfolder}</c> (e.g. sdk_sgs/achievements).</summary>
+    private string MediaRoot(string symbol, string? subfolder) =>
+        subfolder is null
+            ? Path.Combine(storageOptions.Value.StoragePath, symbol, "media")
+            : Path.Combine([storageOptions.Value.StoragePath, symbol, .. subfolder.Split('/')]);
+
+    private void TryDeleteMediaFile(string symbol, string? url, string? sourcePath, string? subfolder = null)
     {
         try
         {
-            var storage = storageOptions.Value;
-            var mediaRoot = Path.GetFullPath(Path.Combine(storage.StoragePath, symbol, "media"));
+            var mediaRoot = Path.GetFullPath(MediaRoot(symbol, subfolder));
             string? fileName = sourcePath;
             if (string.IsNullOrWhiteSpace(fileName) && !string.IsNullOrWhiteSpace(url))
             {

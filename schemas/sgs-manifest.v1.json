@@ -260,16 +260,26 @@
         "properties": {
           "key": {
             "type": "string",
-            "pattern": "^[a-z0-9_-]{1,64}$",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
             "maxLength": 64,
-            "description": "Stable id used by game code. Never rename it: a new key is a new achievement."
+            "description": "API name used by game code, e.g. ACH_WIN_ONE_GAME (matched case-insensitively, stored lowercase). Never rename it: a new key is a new achievement."
           },
           "title": { "type": "string", "minLength": 1, "maxLength": 128 },
           "description": { "type": ["string", "null"], "maxLength": 512 },
           "icon": {
             "type": ["string", "null"],
             "maxLength": 260,
-            "description": "Relative path of an image inside the ZIP (png, jpg, webp, gif), or an http(s) URL."
+            "description": "Achieved icon: relative path of an image inside the ZIP (png, jpg, webp, gif), or an http(s) URL."
+          },
+          "lockedIcon": {
+            "type": ["string", "null"],
+            "maxLength": 260,
+            "description": "Unachieved icon (usually greyscale), same forms as icon. Omit to show the achieved icon dimmed."
+          },
+          "stat": {
+            "type": ["string", "null"],
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "description": "API name of a stat declared in 'stats'. The stat's value is the progress; the achievement unlocks when it reaches 'target'."
           },
           "points": { "type": "integer", "minimum": 0, "maximum": 1000, "default": 0 },
           "hidden": {
@@ -281,7 +291,7 @@
             "type": ["integer", "null"],
             "minimum": 2,
             "maximum": 1000000,
-            "description": "Counter target. Omit for a one-shot achievement."
+            "description": "Counter target (or stat threshold when 'stat' is set). Omit for a one-shot achievement."
           },
           "translations": {
             "type": ["object", "null"],
@@ -297,6 +307,26 @@
               }
             }
           }
+        }
+      }
+    },
+    "stats": {
+      "type": ["array", "null"],
+      "maxItems": 100,
+      "description": "Stat definitions, applied together with 'achievements' (ignored without it). Omit to leave the game's stats untouched.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key"],
+        "properties": {
+          "key": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$", "description": "API name used by game code, e.g. NUM_GAMES." },
+          "displayName": { "type": "string", "maxLength": 128 },
+          "type": { "enum": ["Int", "Float", "int", "float", 0, 1], "default": "Int" },
+          "minValue": { "type": ["number", "null"] },
+          "maxValue": { "type": ["number", "null"] },
+          "defaultValue": { "type": "number", "default": 0 },
+          "maxChange": { "type": ["number", "null"], "exclusiveMinimum": 0, "description": "Largest change one call may make." },
+          "incrementOnly": { "type": "boolean", "default": false }
         }
       }
     }

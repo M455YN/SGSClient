@@ -369,7 +369,7 @@ public partial class StudioViewModel : ObservableObject
             return;
         }
 
-        StatusText = await GameManifestSource.SaveAsync(_api, SelectedGame.Id, asAdmin: false, _saveFile)
+        StatusText = await GameManifestSource.SaveAsync(_api, SelectedGame.Id, asAdmin: false, _saveFile, _apiBaseUrl)
                      ?? StatusText;
     }
 

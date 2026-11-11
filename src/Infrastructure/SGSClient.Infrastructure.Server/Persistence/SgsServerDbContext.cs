@@ -26,6 +26,8 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
     public DbSet<UserNotificationEntity> UserNotifications => Set<UserNotificationEntity>();
     public DbSet<GameAchievementEntity> GameAchievements => Set<GameAchievementEntity>();
     public DbSet<UserGameAchievementEntity> UserGameAchievements => Set<UserGameAchievementEntity>();
+    public DbSet<GameStatEntity> GameStats => Set<GameStatEntity>();
+    public DbSet<UserGameStatEntity> UserGameStats => Set<UserGameStatEntity>();
     public DbSet<ArtworkEntity> Artworks => Set<ArtworkEntity>();
     public DbSet<TrackEntity> Tracks => Set<TrackEntity>();
     public DbSet<StoryEntity> Stories => Set<StoryEntity>();
@@ -255,6 +257,8 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.Property(x => x.Title).HasMaxLength(128).IsRequired();
             entity.Property(x => x.Description).HasMaxLength(512).IsRequired();
             entity.Property(x => x.IconUrl).HasMaxLength(2048);
+            entity.Property(x => x.LockedIconUrl).HasMaxLength(2048);
+            entity.Property(x => x.StatKey).HasMaxLength(64);
             entity.HasIndex(x => new { x.GameId, x.Key }).IsUnique();
 
             entity.HasOne(x => x.Game)
@@ -278,6 +282,39 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.HasOne(x => x.Achievement)
                 .WithMany()
                 .HasForeignKey(x => x.AchievementId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GameStatEntity>(entity =>
+        {
+            entity.ToTable("game_stats");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Id).UseIdentityColumn();
+            entity.Property(x => x.Key).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.DisplayName).HasMaxLength(128).IsRequired();
+            entity.Property(x => x.Type).HasConversion<int>();
+            entity.HasIndex(x => new { x.GameId, x.Key }).IsUnique();
+
+            entity.HasOne(x => x.Game)
+                .WithMany()
+                .HasForeignKey(x => x.GameId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserGameStatEntity>(entity =>
+        {
+            entity.ToTable("user_game_stats");
+            entity.HasKey(x => new { x.UserId, x.StatId });
+            entity.HasIndex(x => x.StatId);
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Stat)
+                .WithMany()
+                .HasForeignKey(x => x.StatId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using SGSClient.Core.Achievements;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -95,6 +96,12 @@ public sealed class GamePackagePublisher(
             if (!mediaResult.Success)
             {
                 return GamePackagePublishResult.Fail(mediaResult.Errors);
+            }
+
+            using (var archive = ZipFile.OpenRead(tempZip))
+            {
+                // Icons dropped into sdk_sgs/achievements/ need no "icon" entry in the manifest.
+                SgsPackageRules.ApplyAchievementIconConvention(manifest, archive.Entries.Select(e => e.FullName));
             }
 
             var (iconUrls, iconError) = ExtractAchievementIcons(tempZip, manifest, storage);
@@ -283,16 +290,19 @@ public sealed class GamePackagePublisher(
 
             if (manifest.Achievements is not null)
             {
-                // The manifest was validated up front, so this cannot fail on content.
+                string? ResolveIcon(string? icon) =>
+                    SgsPackageAchievement.IsUrl(icon) ? icon : icon is null ? null : iconUrls.GetValueOrDefault(icon);
+
+                // The manifest was validated up front (stats included), so this cannot fail on content.
                 await achievements.SyncDefinitionsAsync(
                     game.Id,
                     ownerUserId,
                     new SyncGameAchievementsRequest
                     {
                         Items = manifest.Achievements
-                            .Select(a => a.ToDefinition(
-                                a.IconIsUrl ? a.Icon : a.Icon is null ? null : iconUrls.GetValueOrDefault(a.Icon)))
-                            .ToList()
+                            .Select(a => a.ToDefinition(ResolveIcon(a.Icon), ResolveIcon(a.LockedIcon)))
+                            .ToList(),
+                        Stats = manifest.Stats?.ToList()
                     },
                     isAdmin: allowOverwriteForeignGame,
                     cancellationToken);
@@ -519,7 +529,8 @@ public sealed class GamePackagePublisher(
             return (urls, null);
         }
 
-        var mediaRoot = Path.Combine(storage.StoragePath, manifest.Game.Symbol, "media");
+        // Same folder as icons uploaded in the Creator panel: {symbol}/sdk_sgs/achievements.
+        var mediaRoot = Path.Combine([storage.StoragePath, manifest.Game.Symbol, .. AchievementRules.IconFolder.Split('/')]);
         Directory.CreateDirectory(mediaRoot);
         var mediaBase = storage.MediaPublicBaseUrl.TrimEnd('/');
 
@@ -528,7 +539,7 @@ public sealed class GamePackagePublisher(
             using var archive = ZipFile.OpenRead(zipPath);
             foreach (var path in paths)
             {
-                var extracted = ExtractOne(archive, path, mediaRoot, mediaBase, manifest.Game.Symbol);
+                var extracted = ExtractOne(archive, path, mediaRoot, mediaBase, $"{manifest.Game.Symbol}/{AchievementRules.IconFolder}");
                 if (!extracted.Success)
                 {
                     return (null, extracted.Error);
