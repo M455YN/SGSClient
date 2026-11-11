@@ -18,6 +18,7 @@ public sealed partial class UserProfilePage : Page, ILoadingPage
     {
         ViewModel = App.Services.GetRequiredService<UserProfileViewModel>();
         InitializeComponent();
+        CenteredColumn.Attach(this, ContentColumn, 1280);
         DataContext = ViewModel;
         ViewModel.SetShowChatHandler(ShowChatAsync);
         ViewModel.PropertyChanged += (_, e) =>

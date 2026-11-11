@@ -103,7 +103,7 @@
                   <ui:FASymbolIcon Symbol="MapPin" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                   <TextBlock Classes="caption" Text="{Binding Location}" VerticalAlignment="Center"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasMemberSince}">
                   <ui:FASymbolIcon Symbol="Calendar" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                   <TextBlock Classes="caption" Text="{Binding MemberSinceText}" VerticalAlignment="Center"/>
                 </StackPanel>

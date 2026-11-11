@@ -94,7 +94,7 @@
     </StackPanel>
 
     <ScrollViewer x:Name="ProfileScroll" Visibility="Collapsed">
-      <StackPanel MaxWidth="1280" Padding="28,24,28,40" Spacing="16">
+      <StackPanel x:Name="ContentColumn" Padding="28,24,28,40" Spacing="16">
 
         <!-- Hero: banner art, avatar, name, bio, actions -->
         <!-- Fixed height: the banner art would otherwise size the hero to the image. -->

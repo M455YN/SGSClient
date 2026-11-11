@@ -87,7 +87,7 @@ public partial class AccountViewModel : ObservableObject
     public partial string TotalPlaytimeText { get; set; } = string.Empty;
 
     /// <summary>"12 godz. łącznie" next to the activity header; empty without games.</summary>
-    public string TotalPlaytimeSummary => OwnedGamesCount == 0 || string.IsNullOrEmpty(TotalPlaytimeText)
+    public string TotalPlaytimeSummary => OwnedGamesCount == 0 || TotalPlaytimeText is "" or "—"
         ? string.Empty
         : Loc.F("{0} łącznie", TotalPlaytimeText);
     [ObservableProperty] public partial int AchievementsUnlocked { get; set; }
@@ -747,7 +747,7 @@ public partial class AccountViewModel : ObservableObject
     {
         RecentGames.Clear();
         OwnedGamesCount = 0;
-        TotalPlaytimeText = PlaytimeFormat.ToPolish(0);
+        TotalPlaytimeText = PlaytimeFormat.ToPolishOrDash(0);
         BannerImageUrl = string.Empty;
         if (_scopes is null)
         {
@@ -773,7 +773,7 @@ public partial class AccountViewModel : ObservableObject
             }
 
             OwnedGamesCount = items.Count;
-            TotalPlaytimeText = PlaytimeFormat.ToPolish(items.Sum(i => i.TotalPlayTimeSeconds));
+            TotalPlaytimeText = PlaytimeFormat.ToPolishOrDash(items.Sum(i => i.TotalPlayTimeSeconds));
             var achievements = Achievements.ToDictionary(a => a.GameId);
             foreach (var item in items
                          .OrderByDescending(x => x.LastPlayedUtc ?? DateTimeOffset.MinValue)
