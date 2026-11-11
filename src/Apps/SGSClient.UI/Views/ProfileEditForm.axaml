@@ -1,0 +1,53 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.ProfileEditForm"
+             x:DataType="vm:AccountViewModel">
+  <ScrollViewer MaxHeight="560" HorizontalScrollBarVisibility="Disabled" Padding="0,0,12,0">
+    <StackPanel Spacing="16" Width="440">
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+        <Border Width="72" Height="72" CornerRadius="36" ClipToBounds="True"
+                Background="{DynamicResource AccentFillColorDefaultBrush}">
+          <Panel>
+            <TextBlock Text="{Binding AvatarInitials}" FontSize="24" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                       IsVisible="{Binding !HasAvatar}"/>
+            <Image x:Name="EditAvatarImage" Stretch="UniformToFill" IsVisible="{Binding HasAvatar}"/>
+          </Panel>
+        </Border>
+        <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="{loc:Tr Key='Zmień zdjęcie'}" Click="ChangeAvatar_OnClick"/>
+            <Button Content="{loc:Tr Key='Usuń'}" Click="ClearAvatar_OnClick"/>
+          </StackPanel>
+          <TextBlock Text="{Binding ProfileActionStatus}" FontSize="12" Opacity="0.7" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Grid>
+      <StackPanel Spacing="6">
+        <TextBlock Text="{loc:Tr Key='Nazwa wyświetlana'}" FontSize="12" Opacity="0.7"/>
+        <TextBox Text="{Binding EditDisplayName}"/>
+      </StackPanel>
+      <StackPanel Spacing="6">
+        <TextBlock Text="{loc:Tr Key='Tag gracza'}" FontSize="12" Opacity="0.7"/>
+        <TextBox Text="{Binding EditPlayerTag}" PlaceholderText="np. m455yn"/>
+      </StackPanel>
+      <StackPanel Spacing="6">
+        <TextBlock Text="{loc:Tr Key='Biografia'}" FontSize="12" Opacity="0.7"/>
+        <TextBox Text="{Binding EditBio}" AcceptsReturn="True" TextWrapping="Wrap" Height="110"/>
+      </StackPanel>
+      <StackPanel Spacing="6">
+        <TextBlock Text="{loc:Tr Key='Lokalizacja'}" FontSize="12" Opacity="0.7"/>
+        <TextBox Text="{Binding EditLocation}"/>
+      </StackPanel>
+      <ToggleSwitch IsChecked="{Binding EditHideAchievements, Mode=TwoWay}"
+                    Content="{loc:Tr Key='Ukryj moje osiągnięcia przed innymi graczami'}"/>
+      <ToggleSwitch IsChecked="{Binding EditHideGameActivity, Mode=TwoWay}"
+                    Content="{loc:Tr Key='Ukryj moje gry i czas gry przed innymi graczami'}"/>
+      <Border x:Name="ErrorPanel" IsVisible="False" CornerRadius="4" Padding="12,8"
+              Background="{DynamicResource SystemFillColorCriticalBackgroundBrush}">
+        <TextBlock x:Name="ErrorText" TextWrapping="Wrap"/>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

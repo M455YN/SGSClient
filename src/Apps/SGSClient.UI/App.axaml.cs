@@ -177,6 +177,11 @@ public partial class App : Application
             sp.GetService<IAuthSession>(),
             sp.GetService<SocialRealtimeService>(),
             sp.GetService<IUiDispatcher>()));
+        services.AddTransient(sp => new UserProfileViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<SocialRealtimeService>(),
+            sp.GetService<IUiDispatcher>(),
+            configuration));
         services.AddSingleton(sp => new NotificationsViewModel(
             sp.GetService<IUserApiClient>(),
             sp.GetService<IAuthSession>(),
@@ -210,7 +215,8 @@ public partial class App : Application
             sp.GetRequiredService<ShellSidebarViewModel>(),
             sp.GetRequiredService<LoginGateViewModel>(),
             sp.GetService<INetworkStatusService>(),
-            sp.GetService<IAuthSession>()));
+            sp.GetService<IAuthSession>(),
+            () => sp.GetRequiredService<UserProfileViewModel>()));
 
         Services = services.BuildServiceProvider();
 

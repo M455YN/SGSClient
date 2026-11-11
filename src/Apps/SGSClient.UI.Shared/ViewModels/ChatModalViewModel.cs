@@ -114,11 +114,40 @@ public sealed partial class ChatModalViewModel : ObservableObject, IDisposable
         Status = string.Empty;
     }
 
+    /// <summary>
+    /// Messages pushed while the window was open were seen but not marked read on the server;
+    /// re-reading the conversation marks them. Call once the window closes.
+    /// </summary>
+    public async Task MarkLiveMessagesReadAsync()
+    {
+        if (_api is null || !_receivedLive)
+        {
+            return;
+        }
+
+        _receivedLive = false;
+        try
+        {
+            await _api.GetChatConversationAsync(PeerUserId);
+        }
+        catch
+        {
+            // Best effort: the thread just keeps its unread badge until the next open.
+        }
+    }
+
+    private bool _receivedLive;
+
     private void OnRealtimeMessage(ChatMessageDto message)
     {
         if (message.SenderUserId != PeerUserId && message.RecipientUserId != PeerUserId)
         {
             return;
+        }
+
+        if (message.SenderUserId == PeerUserId)
+        {
+            _receivedLive = true;
         }
 
         if (_ui is null)
@@ -136,7 +165,7 @@ public sealed partial class ChatModalViewModel : ObservableObject, IDisposable
     {
         if (Messages.All(m => m.Id != message.Id))
         {
-            Messages.Add(ChatMessageItem.FromDto(message));
+            Messages.Add(ChatMessageItem.FromDto(message, isMine: message.SenderUserId != PeerUserId));
         }
     }
 }

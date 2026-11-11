@@ -131,6 +131,11 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
             user.HideAchievements = hide;
         }
 
+        if (request.HideGameActivity is bool hideGames)
+        {
+            user.HideGameActivity = hideGames;
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return Map(user);
     }
@@ -262,6 +267,7 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
         Location = user.Location,
         PlayerTag = user.PlayerTag,
         HideAchievements = user.HideAchievements,
+        HideGameActivity = user.HideGameActivity,
         Role = adminAuth.ResolveRole(user.Role, user.Email),
         CreatedAtUtc = user.CreatedAtUtc,
         LastLoginUtc = user.LastLoginUtc

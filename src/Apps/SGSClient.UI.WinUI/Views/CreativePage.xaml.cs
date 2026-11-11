@@ -6,7 +6,7 @@ using SGSClient.UI.ViewModels;
 
 namespace SGSClient.UI.WinUI.Views;
 
-public sealed partial class CreativePage : Page
+public sealed partial class CreativePage : Page, ILoadingPage
 {
     private bool _syncing;
 
@@ -23,9 +23,16 @@ public sealed partial class CreativePage : Page
         RefreshUi();
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    public Task Ready { get; private set; } = Task.CompletedTask;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        Ready = LoadForNavigationAsync(e);
+    }
+
+    private async Task LoadForNavigationAsync(NavigationEventArgs e)
+    {
         await ViewModel.LoadAsync();
     }
 

@@ -23,6 +23,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly FriendsViewModel _friends;
     private readonly LoginGateViewModel _loginGate;
     private readonly INetworkStatusService? _network;
+    private readonly IAuthSession? _auth;
+    private readonly Func<UserProfileViewModel>? _userProfileFactory;
     private string _friendsTab = "Friends";
 
     public MainWindowViewModel()
@@ -66,8 +68,11 @@ public partial class MainWindowViewModel : ViewModelBase
         ShellSidebarViewModel sidebar,
         LoginGateViewModel loginGate,
         INetworkStatusService? network = null,
-        IAuthSession? auth = null)
+        IAuthSession? auth = null,
+        Func<UserProfileViewModel>? userProfileFactory = null)
     {
+        _auth = auth;
+        _userProfileFactory = userProfileFactory;
         _home = home;
         _games = games;
         _gameDetails = gameDetails;
@@ -125,6 +130,7 @@ public partial class MainWindowViewModel : ViewModelBase
             _ = Sidebar.Notifications.StopAsync();
         });
         _loginGate.SetOnAuthenticated(EnterAuthenticatedShellAsync);
+        _friends.SetOpenFullProfileHandler(OpenUserProfile);
         Sidebar.SelectNav("Home");
     }
 
@@ -160,13 +166,56 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _maintenanceText = string.Empty;
 
+    /// <summary>True while the page just opened is still loading its data; the shell covers it.</summary>
+    [ObservableProperty]
+    private bool _isPageLoading;
+
+    private static readonly TimeSpan PageLoadTimeout = TimeSpan.FromSeconds(20);
+    private int _pageLoadVersion;
+
+    /// <summary>Covers the page until <paramref name="load"/> finishes; only the latest navigation counts.</summary>
+    private async void TrackPageLoad(Task load)
+    {
+        var version = ++_pageLoadVersion;
+        if (load.IsCompleted)
+        {
+            IsPageLoading = false;
+            return;
+        }
+
+        IsPageLoading = true;
+        await Task.WhenAny(load, Task.Delay(PageLoadTimeout));
+        if (version == _pageLoadVersion)
+        {
+            IsPageLoading = false;
+        }
+    }
+
     private string _detailsReturnTag = "Games";
     private string _contentNavTag = "Home";
+
+    /// <summary>Switching pages mid-upload would break the upload; keep the user on the upload screen.</summary>
+    private bool BlockedByUpload()
+    {
+        var busy = CurrentPage switch
+        {
+            PublishViewModel p => p.IsBusy,
+            AddMediaViewModel m => m.IsBusy,
+            AddStoryViewModel s => s.IsBusy,
+            _ => false
+        };
+        if (busy)
+        {
+            Sidebar.SelectNav(SelectedNavTag); // revert the highlight the click already moved
+        }
+
+        return busy;
+    }
 
     [RelayCommand]
     private void Navigate(string? tag)
     {
-        if (string.IsNullOrWhiteSpace(tag))
+        if (string.IsNullOrWhiteSpace(tag) || (tag != "Friends" && BlockedByUpload()))
         {
             return;
         }
@@ -190,7 +239,7 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectedNavTag = "Games";
             Sidebar.SelectNav("Games");
             CurrentPage = _games;
-            _ = _games.LoadAsync();
+            TrackPageLoad(_games.LoadAsync());
             return;
         }
 
@@ -212,6 +261,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CloseSocial();
         SelectedNavTag = tag;
         Sidebar.SelectNav(tag);
+        TrackPageLoad(Task.CompletedTask);
         CurrentPage = tag switch
         {
             "Games" => _games,
@@ -234,7 +284,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (tag == "Library")
         {
-            _ = _library.LoadAsync();
+            TrackPageLoad(_library.LoadAsync());
             _ = Sidebar.LoadInstalledAsync();
         }
 
@@ -245,12 +295,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (tag == "Wishlist")
         {
-            _ = _wishlist.LoadAsync();
+            TrackPageLoad(_wishlist.LoadAsync());
         }
 
         if (tag == "Creative")
         {
-            _ = _creative.LoadAsync();
+            TrackPageLoad(_creative.LoadAsync());
         }
 
         if (tag is "Home")
@@ -260,12 +310,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (tag == "Studio")
         {
-            _ = _studio.LoadAsync();
+            TrackPageLoad(_studio.LoadAsync());
         }
 
         if (tag == "Admin")
         {
-            _ = _admin.LoadAsync();
+            TrackPageLoad(_admin.LoadAsync());
         }
 
         if (tag == "Account")
@@ -313,6 +363,11 @@ public partial class MainWindowViewModel : ViewModelBase
         string? kind = null,
         int? versionOfGameId = null)
     {
+        if (BlockedByUpload())
+        {
+            return;
+        }
+
         if (versionOfGameId is { } gameId)
         {
             _publish.PrepareForNewVersion(gameId, asAdmin: selectTag == "Admin");
@@ -334,18 +389,29 @@ public partial class MainWindowViewModel : ViewModelBase
         CloseSocial();
         SelectedNavTag = selectTag;
         Sidebar.SelectNav(selectTag);
+        TrackPageLoad(Task.CompletedTask);
         CurrentPage = _publish;
         _publish.RefreshAuthHint();
     }
 
     public void NavigateToAddMedia(string kind, string selectTag = "Studio")
     {
+        if (BlockedByUpload())
+        {
+            return;
+        }
+
         _addMedia.PrepareFor(kind);
         ShowAddScreen(_addMedia, selectTag);
     }
 
     public void NavigateToAddStory(string selectTag = "Studio")
     {
+        if (BlockedByUpload())
+        {
+            return;
+        }
+
         _addStory.Prepare();
         ShowAddScreen(_addStory, selectTag);
     }
@@ -356,13 +422,44 @@ public partial class MainWindowViewModel : ViewModelBase
         CloseSocial();
         SelectedNavTag = selectTag;
         Sidebar.SelectNav(selectTag);
+        TrackPageLoad(Task.CompletedTask);
         CurrentPage = page;
     }
 
     private void NavigateFromHome(string tag) => Navigate(tag);
 
+    /// <summary>Full-page profile of a player; the signed-in user's own id opens the Account page.</summary>
+    public void OpenUserProfile(int userId)
+    {
+        if (userId <= 0 || _userProfileFactory is null)
+        {
+            return;
+        }
+
+        if (userId == _auth?.CurrentUser?.Id)
+        {
+            Navigate("Account");
+            return;
+        }
+
+        if (BlockedByUpload())
+        {
+            return;
+        }
+
+        CloseSocial();
+        var profile = _userProfileFactory();
+        CurrentPage = profile;
+        TrackPageLoad(profile.LoadAsync(userId));
+    }
+
     public void OpenGameDetails(int gameId, string returnTag = "Games")
     {
+        if (BlockedByUpload())
+        {
+            return;
+        }
+
         _detailsReturnTag = string.IsNullOrWhiteSpace(returnTag) ? "Games" : returnTag;
         SelectedNavTag = _detailsReturnTag switch
         {
@@ -373,10 +470,10 @@ public partial class MainWindowViewModel : ViewModelBase
         };
         Sidebar.SelectNav(SelectedNavTag);
         CurrentPage = _gameDetails;
-        _ = _gameDetails.LoadAsync(
+        TrackPageLoad(_gameDetails.LoadAsync(
             gameId,
             fromLibrary: _detailsReturnTag is "Library" or "Downloads",
-            returnTag: _detailsReturnTag);
+            returnTag: _detailsReturnTag));
     }
 
     public void CloseGameDetails()
@@ -394,7 +491,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (tag == "Library")
         {
-            _ = _library.LoadAsync();
+            TrackPageLoad(_library.LoadAsync());
             _ = Sidebar.LoadInstalledAsync();
         }
         else if (tag == "Downloads")
@@ -403,11 +500,11 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         else if (tag == "Wishlist")
         {
-            _ = _wishlist.LoadAsync();
+            TrackPageLoad(_wishlist.LoadAsync());
         }
         else
         {
-            _ = _games.EnsureLoadedAsync();
+            TrackPageLoad(_games.EnsureLoadedAsync());
         }
     }
 

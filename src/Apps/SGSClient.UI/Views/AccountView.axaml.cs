@@ -1,6 +1,7 @@
 using SGSClient.Core.Localization;
 using System.ComponentModel;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
@@ -130,7 +131,113 @@ public partial class AccountView : UserControl
             return;
         }
 
-        await Dispatcher.UIThread.InvokeAsync(() => AvatarImage.Source = bitmap);
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            AvatarImage.Source = bitmap;
+            _avatarBitmap = bitmap;
+            _editForm?.SetAvatar(bitmap);
+        });
+    }
+
+    private Bitmap? _avatarBitmap;
+    private ProfileEditForm? _editForm;
+
+    private async void EditButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not AccountViewModel vm)
+        {
+            return;
+        }
+
+        vm.BeginEditCommand.Execute(null);
+        var form = new ProfileEditForm { DataContext = vm };
+        form.SetAvatar(_avatarBitmap);
+        form.AvatarChanged += RefreshSidebar;
+        _editForm = form;
+
+        var dialog = new FluentAvalonia.UI.Controls.FAContentDialog
+        {
+            Title = Loc.T("Edytuj profil"),
+            Content = form,
+            PrimaryButtonText = Loc.T("Zapisz"),
+            CloseButtonText = Loc.T("Anuluj"),
+            DefaultButton = FluentAvalonia.UI.Controls.FAContentDialogButton.Primary
+        };
+        dialog.PrimaryButtonClick += async (_, args) =>
+        {
+            var deferral = args.GetDeferral();
+            try
+            {
+                await vm.SaveProfileCommand.ExecuteAsync(null);
+
+                // A failed save leaves the editor open with the reason in AccountStatus.
+                if (vm.IsEditing)
+                {
+                    args.Cancel = true;
+                    form.ShowError(vm.AccountStatus);
+                }
+            }
+            catch (Exception ex)
+            {
+                args.Cancel = true;
+                form.ShowError(ex.Message);
+            }
+            finally
+            {
+                deferral.Complete();
+            }
+        };
+
+        await dialog.ShowAsync(TopLevel.GetTopLevel(this));
+        _editForm = null;
+        if (vm.IsEditing)
+        {
+            vm.CancelEditCommand.Execute(null);
+        }
+
+        RefreshSidebar();
+    }
+
+    private MainWindowViewModel? Main => TopLevel.GetTopLevel(this)?.DataContext as MainWindowViewModel;
+
+    private void OpenLibrary_OnClick(object? sender, RoutedEventArgs e) => Main?.NavigateCommand.Execute("Library");
+
+    private void OpenStore_OnClick(object? sender, RoutedEventArgs e) => Main?.NavigateCommand.Execute("Games");
+
+    private void OpenGame_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { Tag: RecentGameItem { GameId: > 0 } item })
+        {
+            Main?.OpenGameDetails(item.GameId, "Library");
+        }
+    }
+
+    private void OpenFriendProfile_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { Tag: SocialPersonItem person })
+        {
+            Main?.OpenUserProfile(person.UserId);
+        }
+    }
+
+    private void OpenAuthor_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { Tag: ProfileCommentItem comment })
+        {
+            Main?.OpenUserProfile(comment.AuthorUserId);
+        }
+    }
+
+    private void FindFriends_OnClick(object? sender, RoutedEventArgs e) =>
+        (DataContext as AccountViewModel)?.OpenFriendsCommand.Execute("Search");
+
+    private async void CopyTag_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is AccountViewModel { PlayerTagDisplay.Length: > 0 } vm
+            && TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
+        {
+            await clipboard.SetTextAsync(vm.PlayerTagDisplay);
+        }
     }
 
     private void BindWindowHandle()
@@ -156,86 +263,6 @@ public partial class AccountView : UserControl
         if (DataContext is AccountViewModel vm)
         {
             await vm.LogoutCommand.ExecuteAsync(null);
-            RefreshSidebar();
-        }
-    }
-
-    private void EditButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is AccountViewModel vm)
-        {
-            vm.BeginEditCommand.Execute(null);
-        }
-    }
-
-    private void CancelEditButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is AccountViewModel vm)
-        {
-            vm.CancelEditCommand.Execute(null);
-        }
-    }
-
-    private async void SaveButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is AccountViewModel vm)
-        {
-            await vm.SaveProfileCommand.ExecuteAsync(null);
-            RefreshSidebar();
-        }
-    }
-
-    private async void ChangeAvatar_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is not AccountViewModel vm)
-        {
-            return;
-        }
-
-        var top = TopLevel.GetTopLevel(this);
-        if (top is null)
-        {
-            return;
-        }
-
-        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = Loc.T("Wybierz zdjęcie profilowe"),
-            AllowMultiple = false,
-            FileTypeFilter =
-            [
-                new FilePickerFileType(Loc.T("Obrazy"))
-                {
-                    Patterns = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif"]
-                }
-            ]
-        });
-
-        var file = files.FirstOrDefault();
-        if (file is null)
-        {
-            return;
-        }
-
-        var path = file.TryGetLocalPath();
-        if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-        {
-            await vm.UploadAvatarFromPathAsync(path);
-        }
-        else
-        {
-            await using var stream = await file.OpenReadAsync();
-            await vm.UploadAvatarFromStreamAsync(stream, file.Name ?? "avatar.png");
-        }
-
-        RefreshSidebar();
-    }
-
-    private async void ClearAvatar_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is AccountViewModel vm)
-        {
-            await vm.ClearAvatarCommand.ExecuteAsync(null);
             RefreshSidebar();
         }
     }

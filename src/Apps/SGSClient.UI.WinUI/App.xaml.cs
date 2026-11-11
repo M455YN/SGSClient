@@ -168,6 +168,11 @@ public partial class App : Application
             sp.GetService<IAuthSession>(),
             sp.GetService<SocialRealtimeService>(),
             sp.GetService<IUiDispatcher>()));
+        services.AddTransient(sp => new UserProfileViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<SocialRealtimeService>(),
+            sp.GetService<IUiDispatcher>(),
+            configuration));
         services.AddSingleton(sp => new NotificationsViewModel(
             sp.GetService<IUserApiClient>(),
             sp.GetService<IAuthSession>(),

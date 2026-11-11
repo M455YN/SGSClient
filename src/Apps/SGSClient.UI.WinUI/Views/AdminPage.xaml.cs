@@ -7,7 +7,7 @@ using SGSClient.UI.ViewModels;
 
 namespace SGSClient.UI.WinUI.Views;
 
-public sealed partial class AdminPage : Page
+public sealed partial class AdminPage : Page, ILoadingPage
 {
     private bool _syncingToggles;
 
@@ -31,9 +31,16 @@ public sealed partial class AdminPage : Page
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    public Task Ready { get; private set; } = Task.CompletedTask;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        Ready = LoadForNavigationAsync(e);
+    }
+
+    private async Task LoadForNavigationAsync(NavigationEventArgs e)
+    {
         await ViewModel.LoadAsync();
         RefreshUi();
     }
