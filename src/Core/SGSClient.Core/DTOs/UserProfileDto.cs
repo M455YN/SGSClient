@@ -16,6 +16,9 @@ public sealed class UserProfileDto
     /// <summary>Privacy: other players do not see this user's achievements on the public profile.</summary>
     public bool HideAchievements { get; init; }
 
+    /// <summary>Privacy: other players do not see this user's games and playtime on the public profile.</summary>
+    public bool HideGameActivity { get; init; }
+
     public DateTimeOffset CreatedAtUtc { get; init; }
     public DateTimeOffset? LastLoginUtc { get; init; }
     public UserRole Role { get; init; }

@@ -75,15 +75,21 @@ public sealed class EfChatService(SgsServerDbContext db, INotificationService no
             .FirstOrDefaultAsync(u => u.Id == peerUserId, cancellationToken)
             ?? throw new KeyNotFoundException("Nie znaleziono użytkownika.");
 
+        // Newest 200, shown oldest first.
         var rows = await db.DirectMessages
             .Where(m => (m.SenderUserId == userId && m.RecipientUserId == peerUserId)
                         || (m.SenderUserId == peerUserId && m.RecipientUserId == userId))
-            .OrderBy(m => m.CreatedAtUtc)
+            .OrderByDescending(m => m.CreatedAtUtc)
+            .ThenByDescending(m => m.Id)
             .Take(200)
             .ToListAsync(cancellationToken);
+        rows.Reverse();
 
+        // Also older ones past the 200 shown, or the thread's unread count never drops to zero.
         var now = DateTimeOffset.UtcNow;
-        var unread = rows.Where(m => m.RecipientUserId == userId && m.ReadAtUtc is null).ToList();
+        var unread = await db.DirectMessages
+            .Where(m => m.SenderUserId == peerUserId && m.RecipientUserId == userId && m.ReadAtUtc == null)
+            .ToListAsync(cancellationToken);
         foreach (var m in unread)
         {
             m.ReadAtUtc = now;

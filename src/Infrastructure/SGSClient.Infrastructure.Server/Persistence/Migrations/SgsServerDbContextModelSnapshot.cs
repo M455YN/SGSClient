@@ -803,6 +803,9 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<bool>("HideAchievements")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("HideGameActivity")
+                        .HasColumnType("bit");
+
                     b.Property<DateTimeOffset?>("LastLoginUtc")
                         .HasColumnType("datetimeoffset");
 

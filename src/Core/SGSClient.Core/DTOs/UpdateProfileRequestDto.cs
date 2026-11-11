@@ -10,4 +10,7 @@ public sealed class UpdateProfileRequestDto
 
     /// <summary>null = leave the privacy setting as it is.</summary>
     public bool? HideAchievements { get; init; }
+
+    /// <summary>null = leave the privacy setting as it is.</summary>
+    public bool? HideGameActivity { get; init; }
 }

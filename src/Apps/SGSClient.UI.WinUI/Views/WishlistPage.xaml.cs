@@ -6,7 +6,7 @@ using SGSClient.UI.ViewModels;
 
 namespace SGSClient.UI.WinUI.Views;
 
-public sealed partial class WishlistPage : Page
+public sealed partial class WishlistPage : Page, ILoadingPage
 {
     public WishlistViewModel ViewModel { get; }
 
@@ -19,9 +19,16 @@ public sealed partial class WishlistPage : Page
         RefreshUi();
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    public Task Ready { get; private set; } = Task.CompletedTask;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        Ready = LoadForNavigationAsync(e);
+    }
+
+    private async Task LoadForNavigationAsync(NavigationEventArgs e)
+    {
         await ViewModel.LoadAsync();
         RefreshUi();
     }

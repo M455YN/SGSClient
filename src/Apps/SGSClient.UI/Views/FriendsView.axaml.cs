@@ -67,43 +67,11 @@ public partial class FriendsView : UserControl
         }
     }
 
-    private async void OpenProfile_OnClick(object? sender, RoutedEventArgs e)
+    private void OpenProfile_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is FriendsViewModel vm && sender is Control { Tag: SocialPersonItem person })
         {
-            await vm.OpenProfileCommand.ExecuteAsync(person);
-        }
-    }
-
-    private void CloseProfile_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm)
-        {
-            vm.CloseProfileCommand.Execute(null);
-        }
-    }
-
-    private async void PostComment_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm)
-        {
-            await vm.PostProfileCommentCommand.ExecuteAsync(null);
-        }
-    }
-
-    private async void DeleteComment_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm && sender is Control { Tag: ProfileCommentItem comment })
-        {
-            await vm.DeleteProfileCommentCommand.ExecuteAsync(comment);
-        }
-    }
-
-    private async void MessageFromProfile_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm)
-        {
-            await vm.MessageFromProfileCommand.ExecuteAsync(null);
+            vm.OpenProfileCommand.Execute(person);
         }
     }
 

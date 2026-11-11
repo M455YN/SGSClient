@@ -23,4 +23,7 @@ public sealed class UserEntity
 
     /// <summary>When true, other players see no achievements on this user's public profile.</summary>
     public bool HideAchievements { get; set; }
+
+    /// <summary>When true, other players see no games or playtime on this user's public profile.</summary>
+    public bool HideGameActivity { get; set; }
 }

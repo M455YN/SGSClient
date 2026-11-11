@@ -63,6 +63,27 @@ public sealed class ChatModalViewModelTests
         Assert.Empty(vm.Messages);
     }
 
+    [Fact]
+    public async Task Ownership_ComesFromTheSender_NotFromTheDtosIsMine()
+    {
+        // The hub pushes the sender's DTO (IsMine = true) to the recipient as well.
+        var api = FakeApi.Create();
+        api.Conversation = new ChatConversationDto
+        {
+            Peer = Peer(),
+            Messages =
+            [
+                new() { Id = 1, SenderUserId = 7, RecipientUserId = 1, Text = "od Eris", IsMine = true },
+                new() { Id = 2, SenderUserId = 1, RecipientUserId = 7, Text = "ode mnie", IsMine = false }
+            ]
+        };
+        var vm = new ChatModalViewModel(api.Proxy, null, null, 7, "Eris");
+
+        await vm.LoadAsync();
+
+        Assert.Equal([false, true], vm.Messages.Select(m => m.IsMine));
+    }
+
     private static SocialUserDto Peer() => new() { Id = 7, DisplayName = "Eris Smith", PlayerTag = "eris" };
 
     private static ChatMessageDto Message(long id, string text) =>

@@ -37,6 +37,28 @@
                             DataContext="{Binding Sidebar}" />
         <Grid Grid.Column="1">
           <ContentControl Content="{Binding CurrentPage}" Margin="0"/>
+
+          <!-- Covers the page until its data is loaded (IsPageLoading). -->
+          <Border IsVisible="{Binding IsPageLoading}"
+                  Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                  AutomationProperties.Name="{loc:Tr Key='Wczytywanie…'}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+              <Image Source="/Assets/Login/sgs-logo.png" Width="72" Height="72">
+                <Image.Styles>
+                  <Style Selector="Image">
+                    <Style.Animations>
+                      <Animation Duration="0:0:1.8" IterationCount="INFINITE" Easing="SineEaseInOut">
+                        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                        <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.45"/></KeyFrame>
+                        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1"/></KeyFrame>
+                      </Animation>
+                    </Style.Animations>
+                  </Style>
+                </Image.Styles>
+              </Image>
+              <ProgressBar IsIndeterminate="True" Width="120" HorizontalAlignment="Center"/>
+            </StackPanel>
+          </Border>
           <Border IsVisible="{Binding IsSocialOpen}"
                   Width="360"
                   HorizontalAlignment="Right"

@@ -47,7 +47,6 @@ public sealed partial class FriendsPage : Page
     private void RefreshUi()
     {
         StatusText.Text = ViewModel.StatusText;
-        StatusText.Visibility = ViewModel.ShowProfileView ? Visibility.Collapsed : Visibility.Visible;
 
         if (SearchBox.FocusState == FocusState.Unfocused)
         {
@@ -65,26 +64,12 @@ public sealed partial class FriendsPage : Page
                 : TabFriends;
         _syncingTabs = false;
 
-        ProfilePanel.Visibility = ViewModel.ShowProfileView ? Visibility.Visible : Visibility.Collapsed;
         ChatPanel.Visibility = ViewModel.ShowChatTab ? Visibility.Visible : Visibility.Collapsed;
         FriendsPanel.Visibility = ViewModel.ShowFriendsTab ? Visibility.Visible : Visibility.Collapsed;
         RequestsPanel.Visibility = ViewModel.ShowRequestsTab ? Visibility.Visible : Visibility.Collapsed;
         FollowingPanel.Visibility = ViewModel.ShowFollowingTab ? Visibility.Visible : Visibility.Collapsed;
         FollowersPanel.Visibility = ViewModel.ShowFollowersTab ? Visibility.Visible : Visibility.Collapsed;
         SearchPanel.Visibility = ViewModel.ShowSearchTab ? Visibility.Visible : Visibility.Collapsed;
-
-        ProfileHeaderText.Text = ViewModel.ProfileHeader;
-        ProfileSubtitleText.Text = ViewModel.ProfileSubtitle;
-        ProfileStatusText.Text = ViewModel.ProfileStatus;
-        ProfileAchievementsText.Text = ViewModel.ProfileAchievementsText;
-        ProfileAchievementsList.ItemsSource = ViewModel.ProfileAchievements;
-        MessageFromProfileButton.Visibility = ViewModel.CanMessageProfile ? Visibility.Visible : Visibility.Collapsed;
-        if (ProfileCommentBox.FocusState == FocusState.Unfocused)
-        {
-            ProfileCommentBox.Text = ViewModel.ProfileCommentDraft;
-        }
-
-        ProfileCommentsList.ItemsSource = ViewModel.ProfileComments;
 
         ChatStatusText.Text = ViewModel.ChatStatus;
         EmptyChatText.Visibility = ViewModel.ShowEmptyChat ? Visibility.Visible : Visibility.Collapsed;
@@ -181,45 +166,12 @@ public sealed partial class FriendsPage : Page
         }
     }
 
-    private async void OpenProfile_Click(object sender, RoutedEventArgs e)
+    private void OpenProfile_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is SocialPersonItem person)
         {
-            await ViewModel.OpenProfileCommand.ExecuteAsync(person);
-            RefreshUi();
+            ViewModel.OpenProfileCommand.Execute(person);
         }
-    }
-
-    private void CloseProfile_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.CloseProfileCommand.Execute(null);
-        RefreshUi();
-    }
-
-    private void ProfileCommentBox_TextChanged(object sender, TextChangedEventArgs e) =>
-        ViewModel.ProfileCommentDraft = ProfileCommentBox.Text ?? string.Empty;
-
-    private async void PostComment_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.ProfileCommentDraft = ProfileCommentBox.Text ?? string.Empty;
-        await ViewModel.PostProfileCommentCommand.ExecuteAsync(null);
-        ProfileCommentBox.Text = ViewModel.ProfileCommentDraft;
-        RefreshUi();
-    }
-
-    private async void DeleteComment_Click(object sender, RoutedEventArgs e)
-    {
-        if ((sender as FrameworkElement)?.Tag is ProfileCommentItem comment)
-        {
-            await ViewModel.DeleteProfileCommentCommand.ExecuteAsync(comment);
-            RefreshUi();
-        }
-    }
-
-    private async void MessageFromProfile_Click(object sender, RoutedEventArgs e)
-    {
-        await ViewModel.MessageFromProfileCommand.ExecuteAsync(null);
-        RefreshUi();
     }
 
     private async void JoinLobby_Click(object sender, RoutedEventArgs e)
