@@ -21,6 +21,7 @@ public sealed partial class AccountPage : Page, ILoadingPage
     {
         ViewModel = App.Services.GetRequiredService<AccountViewModel>();
         InitializeComponent();
+        CenteredColumn.Attach(this, ContentColumn, 1280);
 
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
         ViewModel.RecentGames.CollectionChanged += (_, _) => RefreshLists();

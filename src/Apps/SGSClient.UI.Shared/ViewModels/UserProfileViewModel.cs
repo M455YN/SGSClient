@@ -52,7 +52,11 @@ public sealed partial class UserProfileViewModel : ObservableObject
 
     [ObservableProperty] public partial int GamesCount { get; set; }
     [ObservableProperty] public partial string TotalPlaytimeText { get; set; } = string.Empty;
-    [ObservableProperty] public partial string MemberSinceText { get; set; } = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMemberSince))]
+    public partial string MemberSinceText { get; set; } = string.Empty;
+
+    public bool HasMemberSince => !string.IsNullOrEmpty(MemberSinceText);
 
     /// <summary>Landscape art of the most recently played game, used as the profile banner.</summary>
     [ObservableProperty] public partial string BannerImageUrl { get; set; } = string.Empty;
@@ -173,7 +177,7 @@ public sealed partial class UserProfileViewModel : ObservableObject
             ? string.Empty
             : Loc.F("Na SGS od {0}", profile.MemberSinceUtc.LocalDateTime.ToString("MMMM yyyy", Loc.Culture));
         GamesCount = profile.GamesCount;
-        TotalPlaytimeText = PlaytimeFormat.ToPolish(profile.TotalPlaytimeSeconds);
+        TotalPlaytimeText = PlaytimeFormat.ToPolishOrDash(profile.TotalPlaytimeSeconds);
         var progress = Achievements.ToDictionary(a => a.GameId);
         Games.Clear();
         foreach (var game in profile.Games)
