@@ -172,7 +172,15 @@ public partial class HomeViewModel : ObservableObject
     private void SelectSlide(int index) => ShowSlide(index);
 
     /// <summary>The page can load behind the login gate, before it is known whose library to show.</summary>
-    public async Task ReloadLibraryAsync() => ApplyLibrary(await LoadLibraryAsync());
+    public async Task ReloadLibraryAsync()
+    {
+        var library = await LoadLibraryAsync();
+        // Without this the cards after sign-in have no store artwork until the page is reopened.
+        await SyncLibraryArtworkAsync(library, _catalog);
+        ApplyLibrary(library);
+    }
+
+    private IReadOnlyList<GameDto> _catalog = [];
 
     public async Task EnsureLoadedAsync()
     {
@@ -224,6 +232,7 @@ public partial class HomeViewModel : ObservableObject
                 StatusText = Loc.T("Brak połączenia ze sklepem. Sprawdź adres serwera w konfiguracji.");
             }
 
+            _catalog = games;
             var library = await LoadLibraryAsync();
             await SyncLibraryArtworkAsync(library, games);
             ApplyCatalog(games);
