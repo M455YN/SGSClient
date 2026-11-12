@@ -124,6 +124,56 @@ public sealed class RofwController(IRofwLegacyService rofw) : ControllerBase
         return Ok(new { message = "Synergies updated successfully!" });
     }
 
+    [HttpGet("ranking")]
+    public async Task<IActionResult> GetRanking(
+        [FromQuery] int offset = 0,
+        [FromQuery] int take = 7,
+        [FromQuery] int playerId = 0,
+        CancellationToken cancellationToken = default)
+    {
+        if (Unavailable() is { } unavailable)
+        {
+            return unavailable;
+        }
+
+        return Ok(await rofw.GetRankingAsync(offset, take, playerId, cancellationToken));
+    }
+
+    [HttpGet("player-card")]
+    public async Task<IActionResult> GetPlayerCard([FromQuery] int id, CancellationToken cancellationToken = default)
+    {
+        if (Unavailable() is { } unavailable)
+        {
+            return unavailable;
+        }
+
+        var card = await rofw.GetPlayerCardAsync(id, cancellationToken);
+        return card is null ? NotFound() : Ok(card);
+    }
+
+    [HttpPost("opponents")]
+    public async Task<IActionResult> GetOpponents([FromBody] RofwOpponentsRequest request, CancellationToken cancellationToken)
+    {
+        if (Unavailable() is { } unavailable)
+        {
+            return unavailable;
+        }
+
+        return Ok(await rofw.GetOpponentsAsync(request, cancellationToken));
+    }
+
+    [HttpPost("add-ghost")]
+    public async Task<IActionResult> AddGhost([FromBody] RofwAddGhostRequest request, CancellationToken cancellationToken)
+    {
+        if (Unavailable() is { } unavailable)
+        {
+            return unavailable;
+        }
+
+        await rofw.AddGhostAsync(request, cancellationToken);
+        return Ok(new { message = "Ghost saved successfully!" });
+    }
+
     private IActionResult? Unavailable() =>
         rofw.IsConfigured
             ? null

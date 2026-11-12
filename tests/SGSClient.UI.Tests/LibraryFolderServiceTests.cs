@@ -11,8 +11,10 @@ public class LibraryFolderServiceTests
     [Fact]
     public async Task AddFolderAsync_WritesMarkerAndRegistry()
     {
-        var libraryRoot = Path.Combine(Path.GetTempPath(), $"sgs-lib-folder-{Guid.NewGuid():N}");
-        var dbPath = Path.Combine(Path.GetTempPath(), $"sgsclient-lib-{Guid.NewGuid():N}.db");
+        // The registry lives next to the database, so each run needs its own directory.
+        var testRoot = Path.Combine(Path.GetTempPath(), $"sgs-lib-folder-{Guid.NewGuid():N}");
+        var libraryRoot = Path.Combine(testRoot, "library");
+        var dbPath = Path.Combine(testRoot, "library.db");
 
         try
         {
@@ -29,18 +31,14 @@ public class LibraryFolderServiceTests
             Assert.True(Directory.Exists(SgsLibraryLayout.GetCommonRoot(libraryRoot)));
             Assert.True(Directory.Exists(SgsLibraryLayout.GetManifestsRoot(libraryRoot)));
             Assert.Single(folderService.GetFolders());
+            Assert.True(File.Exists(Path.Combine(testRoot, SgsLibraryFoldersRegistry.FileName)));
         }
         finally
         {
-            if (Directory.Exists(libraryRoot))
-            {
-                Directory.Delete(libraryRoot, recursive: true);
-            }
-
             Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-            if (File.Exists(dbPath))
+            if (Directory.Exists(testRoot))
             {
-                File.Delete(dbPath);
+                Directory.Delete(testRoot, recursive: true);
             }
         }
     }

@@ -32,6 +32,17 @@ public sealed class CatalogCacheStore(IServiceScopeFactory scopes) : ICatalogCac
         CancellationToken cancellationToken = default) =>
         LoadAsync(WishlistKey, cancellationToken);
 
+    public Task SaveAccountLibraryAsync(
+        string accountSub,
+        IReadOnlyList<GameDto> games,
+        CancellationToken cancellationToken = default) =>
+        SaveAsync($"library:{accountSub}", games, cancellationToken);
+
+    public Task<(IReadOnlyList<GameDto> Games, DateTimeOffset? SavedAtUtc)> LoadAccountLibraryAsync(
+        string accountSub,
+        CancellationToken cancellationToken = default) =>
+        LoadAsync($"library:{accountSub}", cancellationToken);
+
     private async Task SaveAsync(string key, IReadOnlyList<GameDto> games, CancellationToken cancellationToken)
     {
         using var scope = scopes.CreateScope();

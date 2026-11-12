@@ -1,8 +1,8 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using SGSClient.Core.Auth;
+using SGSClient.Api.Auth;
+using SGSClient.Core.Achievements;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -645,30 +645,8 @@ public sealed class GamesController(
             new { errors = new[] { "Twoje konto nie ma roli twórcy. Poproś administratora o nadanie uprawnień." } });
     }
 
-    private async Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken)
-    {
-        var azure = azureOptions.Value;
-        if (!azure.IsConfigured)
-        {
-            return 1;
-        }
-
-        if (User.Identity?.IsAuthenticated != true)
-        {
-            return null;
-        }
-
-        var sub = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(sub))
-        {
-            return null;
-        }
-
-        var displayName = User.FindFirstValue("name") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Player";
-        var email = EmailClaimHelper.FromPrincipal(User);
-        var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatarUrl: null, cancellationToken);
-        return profile.Id;
-    }
+    private Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken) =>
+        users.ResolveUserIdAsync(User, azureOptions.Value, cancellationToken);
 
     [HttpGet("packages/{symbol}/{version}/{fileName}")]
     [AllowAnonymous]
@@ -738,7 +716,17 @@ public sealed class GamesController(
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult DownloadMedia(string symbol, string fileName)
+    public IActionResult DownloadMedia(string symbol, string fileName) => ServeMedia(symbol, ["media"], fileName);
+
+    /// <summary>Achievement icons, kept with the game in <c>{symbol}/sdk_sgs/achievements</c>.</summary>
+    [HttpGet("media/{symbol}/sdk_sgs/achievements/{fileName}")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult DownloadAchievementIcon(string symbol, string fileName) =>
+        ServeMedia(symbol, AchievementRules.IconFolder.Split('/'), fileName);
+
+    private IActionResult ServeMedia(string symbol, string[] folder, string fileName)
     {
         if (!SgsPackageRules.IsSafeStorageSegment(symbol)
             || string.IsNullOrWhiteSpace(fileName)
@@ -750,7 +738,7 @@ public sealed class GamesController(
         }
 
         var root = Path.GetFullPath(storageOptions.Value.StoragePath);
-        var path = Path.GetFullPath(Path.Combine(root, symbol, "media", fileName));
+        var path = Path.GetFullPath(Path.Combine([root, symbol, .. folder, fileName]));
         if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
         {
             return NotFound();

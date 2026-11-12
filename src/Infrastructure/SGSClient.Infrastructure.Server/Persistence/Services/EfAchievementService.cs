@@ -55,9 +55,11 @@ public sealed class EfAchievementService(
                 Title = masked ? string.Empty : title,
                 Description = masked ? string.Empty : description,
                 IconUrl = masked ? null : d.IconUrl,
+                LockedIconUrl = masked ? null : d.LockedIconUrl,
                 Points = d.Points,
                 Hidden = d.Hidden,
                 Target = d.Target,
+                StatKey = d.StatKey,
                 Progress = state?.Progress ?? 0,
                 UnlockedAtUtc = unlockedAt,
                 RarityPercent = Math.Min(100d, unlockedCounts.GetValueOrDefault(d.Id) * 100d / owners)
@@ -71,8 +73,19 @@ public sealed class EfAchievementService(
             Unlocked = items.Count(i => i.UnlockedAtUtc is not null),
             PointsTotal = items.Sum(i => i.Points),
             PointsEarned = items.Where(i => i.UnlockedAtUtc is not null).Sum(i => i.Points),
-            Items = items
+            Items = items,
+            Stats = await StatValuesAsync(gameId, viewerUserId, cancellationToken)
         };
+    }
+
+    public async Task<IReadOnlyList<GameStatDefinitionDto>> GetStatDefinitionsAsync(
+        int gameId,
+        int ownerUserId,
+        bool isAdmin = false,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureOwnedAsync(gameId, ownerUserId, isAdmin, cancellationToken);
+        return (await ActiveStats(gameId).ToListAsync(cancellationToken)).Select(ToDto).ToList();
     }
 
     public async Task<IReadOnlyList<AchievementDefinitionDto>> GetDefinitionsAsync(
@@ -97,13 +110,17 @@ public sealed class EfAchievementService(
         var game = await OwnedGame(gameId, ownerUserId, isAdmin).FirstOrDefaultAsync(cancellationToken)
             ?? throw new KeyNotFoundException("Gra nie istnieje.");
 
-        var error = AchievementRules.Validate(request.Items);
+        var now = DateTimeOffset.UtcNow;
+        var statKeys = request.Stats is null
+            ? await ActiveStats(gameId).Select(s => s.Key).ToListAsync(cancellationToken)
+            : await SyncStatsAsync(gameId, request.Stats, now, cancellationToken);
+
+        var error = AchievementRules.Validate(request.Items, statKeys);
         if (error is not null)
         {
             throw new ArgumentException(error);
         }
 
-        var now = DateTimeOffset.UtcNow;
         var existing = await db.GameAchievements
             .Where(a => a.GameId == gameId)
             .ToDictionaryAsync(a => a.Key, StringComparer.Ordinal, cancellationToken);
@@ -121,9 +138,12 @@ public sealed class EfAchievementService(
             }
 
             AchievementRules.TryNormalizeIconUrl(item.IconUrl, out var iconUrl, out _);
+            AchievementRules.TryNormalizeIconUrl(item.LockedIconUrl, out var lockedIconUrl, out _);
             row.Title = item.Title.Trim();
             row.Description = item.Description?.Trim() ?? string.Empty;
             row.IconUrl = iconUrl;
+            row.LockedIconUrl = lockedIconUrl;
+            row.StatKey = AchievementRules.NormalizeKey(item.StatKey);
             row.TranslationsJson = SerializeTranslations(item.Translations);
             row.Points = item.Points;
             row.Hidden = item.Hidden;
@@ -155,6 +175,7 @@ public sealed class EfAchievementService(
         Stream content,
         string fileName,
         bool isAdmin = false,
+        bool locked = false,
         CancellationToken cancellationToken = default)
     {
         await EnsureOwnedAsync(gameId, ownerUserId, isAdmin, cancellationToken);
@@ -170,14 +191,23 @@ public sealed class EfAchievementService(
             throw new KeyNotFoundException("Osiągnięcie nie istnieje.");
         }
 
-        row.IconUrl = await media.SaveAchievementIconAsync(
+        var url = await media.SaveAchievementIconAsync(
                 gameId,
-                row.Key,
-                row.IconUrl,
+                locked ? row.Key + "_locked" : row.Key,
+                locked ? row.LockedIconUrl : row.IconUrl,
                 content,
                 fileName,
                 cancellationToken)
             ?? throw new KeyNotFoundException("Gra nie istnieje.");
+        if (locked)
+        {
+            row.LockedIconUrl = url;
+        }
+        else
+        {
+            row.IconUrl = url;
+        }
+
         row.UpdatedAtUtc = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
 
@@ -189,7 +219,7 @@ public sealed class EfAchievementService(
         int gameId,
         string key,
         CancellationToken cancellationToken = default) =>
-        ApplyAsync(userId, gameId, key, value: null, cancellationToken);
+        ApplyAsync(userId, gameId, key, value: null, fromStat: false, cancellationToken);
 
     public Task<AchievementUpdateResultDto> SetProgressAsync(
         int userId,
@@ -197,7 +227,76 @@ public sealed class EfAchievementService(
         string key,
         int value,
         CancellationToken cancellationToken = default) =>
-        ApplyAsync(userId, gameId, key, value, cancellationToken);
+        ApplyAsync(userId, gameId, key, value, fromStat: false, cancellationToken);
+
+    public async Task<StatUpdateResultDto> SetStatAsync(
+        int userId,
+        int gameId,
+        string key,
+        double value,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureCanPlayAsync(userId, gameId, cancellationToken);
+
+        var normalized = AchievementRules.NormalizeKey(key);
+        var stat = normalized is null
+            ? null
+            : await ActiveStats(gameId).FirstOrDefaultAsync(s => s.Key == normalized, cancellationToken);
+        if (stat is null)
+        {
+            throw new KeyNotFoundException("Statystyka nie istnieje.");
+        }
+
+        for (var attempt = 0; ; attempt++)
+        {
+            var row = await db.UserGameStats.FirstOrDefaultAsync(
+                u => u.UserId == userId && u.StatId == stat.Id,
+                cancellationToken);
+            var isNew = row is null;
+            if (AchievementRules.CheckStatValue(ToDto(stat), row?.Value ?? stat.DefaultValue, value) is { } error)
+            {
+                throw new ArgumentException(error);
+            }
+
+            if (row is null)
+            {
+                row = new UserGameStatEntity { UserId = userId, StatId = stat.Id };
+                db.UserGameStats.Add(row);
+            }
+
+            row.Value = value;
+            row.UpdatedAtUtc = DateTimeOffset.UtcNow;
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+                break;
+            }
+            catch (DbUpdateException) when (isNew && attempt == 0)
+            {
+                // A parallel request inserted the row first; recheck against its value.
+                db.ChangeTracker.Clear();
+            }
+        }
+
+        var linked = await ActiveDefinitions(gameId)
+            .Where(a => a.StatKey == stat.Key && a.Target != null)
+            .Select(a => new { a.Key, Target = a.Target!.Value })
+            .ToListAsync(cancellationToken);
+        var results = new List<AchievementUpdateResultDto>();
+        foreach (var achievement in linked)
+        {
+            var (progress, reached) = AchievementRules.StatProgress(value, achievement.Target);
+            results.Add(await ApplyAsync(
+                userId,
+                gameId,
+                achievement.Key,
+                reached ? achievement.Target : progress,
+                fromStat: true,
+                cancellationToken));
+        }
+
+        return new StatUpdateResultDto { Key = stat.Key, Value = value, Achievements = results };
+    }
 
     public async Task<IReadOnlyList<UserAchievementSummaryDto>> GetSummariesAsync(
         int userId,
@@ -268,15 +367,22 @@ public sealed class EfAchievementService(
             .Where(u => u.UserId == ownerUserId && u.Achievement!.GameId == gameId)
             .ToListAsync(cancellationToken);
         db.UserGameAchievements.RemoveRange(rows);
+        db.UserGameStats.RemoveRange(await db.UserGameStats
+            .Where(u => u.UserId == ownerUserId && u.Stat!.GameId == gameId)
+            .ToListAsync(cancellationToken));
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    /// <summary>One entry point for unlock (<paramref name="value"/> null) and counter updates.</summary>
+    /// <summary>
+    /// One entry point for unlock (<paramref name="value"/> null) and counter updates. A stat-driven
+    /// achievement only takes progress from its stat (<paramref name="fromStat"/>).
+    /// </summary>
     private async Task<AchievementUpdateResultDto> ApplyAsync(
         int userId,
         int gameId,
         string key,
         int? value,
+        bool fromStat,
         CancellationToken cancellationToken)
     {
         await EnsureCanPlayAsync(userId, gameId, cancellationToken);
@@ -297,6 +403,11 @@ public sealed class EfAchievementService(
             if (definition.Target is null)
             {
                 throw new ArgumentException("To osiągnięcie nie ma licznika — użyj odblokowania.");
+            }
+
+            if (definition.StatKey is not null && !fromStat)
+            {
+                throw new ArgumentException($"Postęp tego osiągnięcia wynika ze statystyki „{definition.StatKey}” — ustaw statystykę.");
             }
 
             if (value < 0)
@@ -433,6 +544,96 @@ public sealed class EfAchievementService(
             .OrderBy(a => a.SortOrder)
             .ThenBy(a => a.Id);
 
+    private IQueryable<GameStatEntity> ActiveStats(int gameId) =>
+        db.GameStats.AsNoTracking()
+            .Where(s => s.GameId == gameId && s.IsActive)
+            .OrderBy(s => s.SortOrder)
+            .ThenBy(s => s.Id);
+
+    private static GameStatDefinitionDto ToDto(GameStatEntity s) => new()
+    {
+        Key = s.Key,
+        DisplayName = s.DisplayName,
+        Type = s.Type,
+        MinValue = s.MinValue,
+        MaxValue = s.MaxValue,
+        DefaultValue = s.DefaultValue,
+        MaxChange = s.MaxChange,
+        IncrementOnly = s.IncrementOnly,
+        SortOrder = s.SortOrder,
+        IsActive = s.IsActive
+    };
+
+    private async Task<IReadOnlyList<GameStatValueDto>> StatValuesAsync(
+        int gameId,
+        int? viewerUserId,
+        CancellationToken cancellationToken)
+    {
+        var stats = await ActiveStats(gameId).ToListAsync(cancellationToken);
+        var values = viewerUserId is int viewerId
+            ? await db.UserGameStats.AsNoTracking()
+                .Where(u => u.UserId == viewerId && u.Stat!.GameId == gameId)
+                .ToDictionaryAsync(u => u.StatId, u => u.Value, cancellationToken)
+            : [];
+        return stats.Select(s => new GameStatValueDto
+        {
+            Key = s.Key,
+            DisplayName = s.DisplayName,
+            Type = s.Type,
+            Value = values.TryGetValue(s.Id, out var v) ? v : s.DefaultValue
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Upserts stats by key and deactivates the rest (saved with the achievements); returns the active keys,
+    /// so an achievement still linked to a removed stat fails validation and nothing is saved.
+    /// </summary>
+    private async Task<List<string>> SyncStatsAsync(
+        int gameId,
+        IReadOnlyList<GameStatDefinitionDto> stats,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        if (AchievementRules.ValidateStats(stats) is { } error)
+        {
+            throw new ArgumentException(error);
+        }
+
+        var existing = await db.GameStats
+            .Where(s => s.GameId == gameId)
+            .ToDictionaryAsync(s => s.Key, StringComparer.Ordinal, cancellationToken);
+        var kept = new List<string>();
+        foreach (var item in stats)
+        {
+            var key = AchievementRules.NormalizeKey(item.Key)!;
+            kept.Add(key);
+            if (!existing.TryGetValue(key, out var row))
+            {
+                row = new GameStatEntity { GameId = gameId, Key = key, CreatedAtUtc = now };
+                db.GameStats.Add(row);
+            }
+
+            row.DisplayName = item.DisplayName?.Trim() ?? string.Empty;
+            row.Type = item.Type;
+            row.MinValue = item.MinValue;
+            row.MaxValue = item.MaxValue;
+            row.DefaultValue = item.DefaultValue;
+            row.MaxChange = item.MaxChange;
+            row.IncrementOnly = item.IncrementOnly;
+            row.SortOrder = kept.Count - 1;
+            row.IsActive = true;
+            row.UpdatedAtUtc = now;
+        }
+
+        foreach (var row in existing.Values.Where(s => !kept.Contains(s.Key) && s.IsActive))
+        {
+            row.IsActive = false;
+            row.UpdatedAtUtc = now;
+        }
+
+        return kept;
+    }
+
     private async Task<Dictionary<int, int>> UnlockedCountsAsync(int gameId, CancellationToken cancellationToken) =>
         await db.UserGameAchievements.AsNoTracking()
             .Where(u => u.Achievement!.GameId == gameId && u.UnlockedAtUtc != null)
@@ -452,6 +653,8 @@ public sealed class EfAchievementService(
             Title = a.Title,
             Description = a.Description,
             IconUrl = a.IconUrl,
+            LockedIconUrl = a.LockedIconUrl,
+            StatKey = a.StatKey,
             Translations = ParseTranslations(a.TranslationsJson),
             Points = a.Points,
             Hidden = a.Hidden,

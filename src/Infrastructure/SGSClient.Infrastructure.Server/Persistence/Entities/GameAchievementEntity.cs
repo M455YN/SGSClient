@@ -13,6 +13,12 @@ public sealed class GameAchievementEntity
     public string Description { get; set; } = string.Empty;
     public string? IconUrl { get; set; }
 
+    /// <summary>Unachieved icon; null = clients dim the achieved one.</summary>
+    public string? LockedIconUrl { get; set; }
+
+    /// <summary>Key of the <see cref="GameStatEntity"/> that drives the progress; null = set directly.</summary>
+    public string? StatKey { get; set; }
+
     /// <summary>JSON map of language code to title/description; null = no translations.</summary>
     public string? TranslationsJson { get; set; }
 

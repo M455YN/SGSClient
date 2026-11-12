@@ -57,6 +57,8 @@
           </StackPanel>
         </Button>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <Button Content="{Binding JoinLabel}" Tag="{Binding}" Click="JoinLobby_OnClick" Classes="accent compact"
+                  IsVisible="{Binding HasLobby}"/>
           <Button Content="{loc:Tr Key='Napisz'}" Tag="{Binding}" Click="Message_OnClick" Classes="compact"
                   IsVisible="{Binding ShowMessage}"/>
           <Button Content="{loc:Tr Key='Akceptuj'}" Tag="{Binding}" Click="Accept_OnClick" Classes="accent compact"
@@ -120,61 +122,10 @@
     <ScrollViewer Grid.Row="3" HorizontalScrollBarVisibility="Disabled" Margin="0,8,0,0">
       <StackPanel Spacing="8">
         <TextBlock Text="{Binding StatusText}" FontSize="12"
-                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"
-                   IsVisible="{Binding !ShowProfileView}"/>
-
-        <!-- Public profile + wall -->
-        <StackPanel Spacing="10" IsVisible="{Binding ShowProfileView}">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="{loc:Tr Key='← Wróć'}" Click="CloseProfile_OnClick" Classes="compact"/>
-            <Button Content="{loc:Tr Key='Napisz wiadomość'}" Click="MessageFromProfile_OnClick" Classes="accent compact"
-                    IsVisible="{Binding CanMessageProfile}"/>
-          </StackPanel>
-          <TextBlock Text="{Binding ProfileHeader}" FontSize="22" FontWeight="SemiBold"/>
-          <TextBlock Text="{Binding ProfileSubtitle}" Opacity="0.7" FontSize="13"/>
-          <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" FontWeight="SemiBold" Margin="0,8,0,0"/>
-          <TextBlock Text="{Binding ProfileAchievementsText}" Opacity="0.7" FontSize="12" TextWrapping="Wrap"/>
-          <ItemsControl ItemsSource="{Binding ProfileAchievements}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:AchievementSummaryItem">
-                <Grid Margin="0,0,0,8" RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                  <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
-                  <TextBlock Grid.Column="1" Text="{Binding ProgressText}" Opacity="0.75"/>
-                  <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="1"
-                               Value="{Binding Fraction}" Height="4" Margin="0,4,0,0"/>
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="{loc:Tr Key='Ściana'}" FontWeight="SemiBold" Margin="0,8,0,0"/>
-          <TextBox Text="{Binding ProfileCommentDraft}" PlaceholderText="{loc:Tr Key='Podpisz się pod profilem…'}"
-                   AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"/>
-          <Button Content="{loc:Tr Key='Dodaj podpis'}" Classes="accent compact" Click="PostComment_OnClick"
-                  HorizontalAlignment="Left"/>
-          <TextBlock Text="{Binding ProfileStatus}" FontSize="12" Opacity="0.65"/>
-          <ItemsControl ItemsSource="{Binding ProfileComments}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:ProfileCommentItem">
-                <Border Margin="0,0,0,8" Padding="12" CornerRadius="8"
-                        Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-                  <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Spacing="4">
-                      <TextBlock Text="{Binding AuthorLabel}" FontWeight="SemiBold"/>
-                      <TextBlock Text="{Binding WhenText}" FontSize="11" Opacity="0.55"/>
-                      <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
-                    </StackPanel>
-                    <Button Grid.Column="1" Content="{loc:Tr Key='Usuń'}" Classes="compact"
-                            Tag="{Binding}" Click="DeleteComment_OnClick"
-                            IsVisible="{Binding CanDelete}" VerticalAlignment="Top"/>
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
+                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap"/>
 
         <!-- Chat -->
-        <Grid IsVisible="{Binding ShowChatTab}" ColumnDefinitions="140,*" ColumnSpacing="10" MinHeight="320">
+        <Grid IsVisible="{Binding ShowChatTab}" MinHeight="320">
           <StackPanel Spacing="6">
             <TextBlock Text="{loc:Tr Key='Rozmowy'}" FontWeight="SemiBold"/>
             <TextBlock Text="{Binding ChatStatus}" FontSize="11" Opacity="0.65" TextWrapping="Wrap"/>
@@ -195,28 +146,6 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-          </StackPanel>
-          <StackPanel Grid.Column="1" Spacing="8" IsVisible="{Binding ShowChatConversation}">
-            <TextBlock Text="{Binding ChatPeerTitle}" FontWeight="SemiBold" FontSize="16"/>
-            <ScrollViewer MaxHeight="240" HorizontalScrollBarVisibility="Disabled">
-              <ItemsControl ItemsSource="{Binding ChatMessages}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:ChatMessageItem">
-                    <Border Margin="0,0,0,6" Padding="10,8" CornerRadius="8"
-                            Background="#22FFFFFF" HorizontalAlignment="Left" MaxWidth="280">
-                      <StackPanel Spacing="2">
-                        <TextBlock Text="{Binding Meta}" FontSize="10" Opacity="0.55"/>
-                        <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
-                      </StackPanel>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-              <TextBox Text="{Binding ChatDraft}" PlaceholderText="{loc:Tr Key='Wiadomość…'}" KeyDown="ChatDraft_OnKeyDown"/>
-              <Button Grid.Column="1" Content="{loc:Tr Key='Wyślij'}" Classes="accent" Click="SendChat_OnClick"/>
-            </Grid>
           </StackPanel>
         </Grid>
 

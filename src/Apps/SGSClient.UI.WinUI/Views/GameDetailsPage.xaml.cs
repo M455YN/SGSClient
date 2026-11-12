@@ -9,7 +9,7 @@ using Windows.Media.Core;
 
 namespace SGSClient.UI.WinUI.Views;
 
-public sealed partial class GameDetailsPage : Page
+public sealed partial class GameDetailsPage : Page, ILoadingPage
 {
     private MediaPlayerElement? _introPlayer;
     private MediaPlayerElement? _previewPlayer;
@@ -52,9 +52,16 @@ public sealed partial class GameDetailsPage : Page
         };
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    public Task Ready { get; private set; } = Task.CompletedTask;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        Ready = LoadForNavigationAsync(e);
+    }
+
+    private async Task LoadForNavigationAsync(NavigationEventArgs e)
+    {
         StopIntro();
 
         var (gameId, fromLibrary, returnTag) = e.Parameter switch

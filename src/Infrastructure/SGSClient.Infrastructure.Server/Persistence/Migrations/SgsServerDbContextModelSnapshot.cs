@@ -173,11 +173,19 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
+                    b.Property<string>("LockedIconUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<int>("Points")
                         .HasColumnType("int");
 
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
+
+                    b.Property<string>("StatKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<int?>("Target")
                         .HasColumnType("int");
@@ -640,6 +648,65 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.ToTable("game_screenshots", (string)null);
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameStatEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<double>("DefaultValue")
+                        .HasColumnType("float");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IncrementOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<double?>("MaxChange")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("MaxValue")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("MinValue")
+                        .HasColumnType("float");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("game_stats", (string)null);
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.StoryChapterEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -803,6 +870,9 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<bool>("HideAchievements")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("HideGameActivity")
+                        .HasColumnType("bit");
+
                     b.Property<DateTimeOffset?>("LastLoginUtc")
                         .HasColumnType("datetimeoffset");
 
@@ -918,6 +988,27 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.HasIndex("UserId", "LastPlayedUtc");
 
                     b.ToTable("user_game_playtime", (string)null);
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameStatEntity", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StatId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<double>("Value")
+                        .HasColumnType("float");
+
+                    b.HasKey("UserId", "StatId");
+
+                    b.HasIndex("StatId");
+
+                    b.ToTable("user_game_stats", (string)null);
                 });
 
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameWishlistEntity", b =>
@@ -1224,6 +1315,17 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Navigation("Game");
                 });
 
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.GameStatEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameEntity", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
             modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.StoryChapterEntity", b =>
                 {
                     b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.StoryEntity", "Story")
@@ -1288,6 +1390,25 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Game");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SGSClient.Infrastructure.Server.Persistence.Entities.UserGameStatEntity", b =>
+                {
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.GameStatEntity", "Stat")
+                        .WithMany()
+                        .HasForeignKey("StatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SGSClient.Infrastructure.Server.Persistence.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Stat");
 
                     b.Navigation("User");
                 });

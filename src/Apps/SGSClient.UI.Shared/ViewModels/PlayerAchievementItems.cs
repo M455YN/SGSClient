@@ -10,8 +10,12 @@ public sealed class PlayerAchievementItem
 {
     public required string Title { get; init; }
     public required string Description { get; init; }
+    /// <summary>Achieved icon when unlocked; the unachieved icon (or the achieved one, dimmed) when locked.</summary>
     public string? IconUrl { get; init; }
     public bool HasIcon => IconUrl is not null;
+
+    /// <summary>Below 1 when a locked achievement has no unachieved icon of its own (stands in for greyscale).</summary>
+    public double IconOpacity { get; init; } = 1;
     public bool IsUnlocked { get; init; }
     public DateTimeOffset? UnlockedAtUtc { get; init; }
     public double RarityPercent { get; init; }
@@ -28,12 +32,14 @@ public sealed class PlayerAchievementItem
         var unlocked = dto.UnlockedAtUtc is not null;
         var masked = dto.Hidden && !unlocked;
         var progress = dto.Target is int target && !unlocked;
+        var lockedIcon = unlocked ? null : InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, dto.LockedIconUrl);
 
         return new PlayerAchievementItem
         {
             Title = masked ? Loc.T("Ukryte osiągnięcie") : dto.Title,
             Description = masked ? Loc.T("Odblokuj, aby poznać szczegóły.") : dto.Description,
-            IconUrl = InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, dto.IconUrl),
+            IconUrl = lockedIcon ?? InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, dto.IconUrl),
+            IconOpacity = unlocked || lockedIcon is not null ? 1 : 0.35,
             IsUnlocked = unlocked,
             UnlockedAtUtc = dto.UnlockedAtUtc,
             RarityPercent = dto.RarityPercent,

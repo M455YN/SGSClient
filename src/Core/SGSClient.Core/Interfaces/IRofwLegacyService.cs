@@ -23,4 +23,12 @@ public interface IRofwLegacyService
     Task RegisterAsync(RofwRegisterRequest request, CancellationToken cancellationToken = default);
 
     Task UpdateSynergiesAsync(RofwUpdateSynergiesRequest request, CancellationToken cancellationToken = default);
+
+    Task<RofwRankingResponse> GetRankingAsync(int offset, int take, int playerId, CancellationToken cancellationToken = default);
+
+    Task<RofwPlayerCardResponse?> GetPlayerCardAsync(int playerId, CancellationToken cancellationToken = default);
+
+    Task<RofwOpponentsResponse> GetOpponentsAsync(RofwOpponentsRequest request, CancellationToken cancellationToken = default);
+
+    Task AddGhostAsync(RofwAddGhostRequest request, CancellationToken cancellationToken = default);
 }

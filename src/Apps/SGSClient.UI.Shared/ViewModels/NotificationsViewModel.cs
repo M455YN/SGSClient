@@ -122,13 +122,41 @@ public partial class NotificationsViewModel : ObservableObject
     [RelayCommand]
     private async Task MarkReadAsync(NotificationDto? item)
     {
-        if (_userApi is null || item is null || item.IsRead)
+        if (item is null)
+        {
+            return;
+        }
+
+        if (item.Kind == ILobbyService.InviteNotificationKind
+            && TryReadInvite(item.DataJson, out var gameId, out var code))
+        {
+            await LobbyJoin.RequestAsync(gameId, code);
+        }
+
+        if (_userApi is null || item.IsRead)
         {
             return;
         }
 
         await _userApi.MarkNotificationReadAsync(item.Id);
         await RefreshAsync();
+    }
+
+    private static bool TryReadInvite(string? dataJson, out int gameId, out string code)
+    {
+        gameId = 0;
+        code = string.Empty;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(dataJson ?? string.Empty);
+            code = doc.RootElement.GetProperty("code").GetString() ?? string.Empty;
+            gameId = doc.RootElement.GetProperty("gameId").GetInt32();
+            return code.Length > 0 && gameId > 0;
+        }
+        catch (Exception ex) when (ex is System.Text.Json.JsonException or KeyNotFoundException or InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     private void OnNotification(NotificationDto dto)

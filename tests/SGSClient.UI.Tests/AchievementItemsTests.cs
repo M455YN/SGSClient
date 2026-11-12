@@ -43,7 +43,11 @@ public sealed class AchievementItemsTests
     [Fact]
     public void EditorRow_ParsesNumbersAndRejectsGarbage()
     {
-        var item = new StudioAchievementItem { EditKey = "kills", EditTitle = "Hunter", EditPoints = " 50 ", EditTarget = "100" };
+        var item = new StudioAchievementItem
+        {
+            EditKey = "kills", EditTitle = "Hunter", EditPoints = " 50 ", EditTarget = "100",
+            EditKindIndex = StudioAchievementItem.KindCounter
+        };
 
         Assert.True(item.TryToDto(3, out var dto, out _));
         Assert.Equal((50, 100, 3), (dto!.Points, dto.Target, dto.SortOrder));

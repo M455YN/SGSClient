@@ -18,6 +18,7 @@ public partial class App : Application
     public static IServiceProvider Services { get; private set; } = null!;
     public static MainWindow? MainWindow { get; private set; }
 
+    private static Mutex? _runningMutex;
     private SimpleSplashScreen? _splash;
 
     public App()
@@ -54,6 +55,7 @@ public partial class App : Application
 
     private void LaunchCore()
     {
+        _runningMutex = new Mutex(true, SGSClient.Core.SgsClientConstants.RunningMutexName, out _);
         var userSettings = new ClientUserSettingsStore().Load();
         Loc.Initialize(userSettings.Language);
 
@@ -150,7 +152,8 @@ public partial class App : Application
             sp.GetRequiredService<ILibraryFolderService>(),
             sp.GetService<IAuthSession>(),
             sp.GetService<IClientUserSettingsStore>(),
-            sp.GetService<IThemeApplier>()));
+            sp.GetService<IThemeApplier>(),
+            sp.GetRequiredService<DownloadsViewModel>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
@@ -165,6 +168,11 @@ public partial class App : Application
             sp.GetService<IAuthSession>(),
             sp.GetService<SocialRealtimeService>(),
             sp.GetService<IUiDispatcher>()));
+        services.AddTransient(sp => new UserProfileViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<SocialRealtimeService>(),
+            sp.GetService<IUiDispatcher>(),
+            configuration));
         services.AddSingleton(sp => new NotificationsViewModel(
             sp.GetService<IUserApiClient>(),
             sp.GetService<IAuthSession>(),
@@ -186,6 +194,7 @@ public partial class App : Application
         Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
         Services.GetService<IInstallQueueService>()?.RestorePersistedAsync().GetAwaiter().GetResult();
         Services.GetService<PresenceHeartbeatService>()?.Start();
+        (Services.GetRequiredService<IGameLauncherService>() as ProcessGameLauncherService)?.StartMonitoring();
         Services.GetService<AchievementBridge>()?.Start();
         Services.GetService<INetworkStatusService>()?.StartAsync().GetAwaiter().GetResult();
 
@@ -240,6 +249,11 @@ public partial class App : Application
         }
 
         MainWindow?.RefreshSidebar();
+        if (MainWindow is not null)
+        {
+            await MainWindow.ReloadHomeLibraryAsync();
+        }
+
         var library = Services.GetService<LibraryViewModel>();
         if (library is not null)
         {

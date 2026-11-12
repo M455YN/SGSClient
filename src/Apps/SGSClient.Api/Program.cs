@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SGSClient.Api.Auth;
 using SGSClient.Api.Hubs;
@@ -14,6 +15,7 @@ builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, relo
 
 builder.Services.Configure<AzureAdSettings>(builder.Configuration.GetSection(AzureAdSettings.SectionName));
 builder.Services.Configure<AdminSettings>(builder.Configuration.GetSection(AdminSettings.SectionName));
+builder.Services.Configure<MaintenanceSettings>(builder.Configuration.GetSection(MaintenanceSettings.SectionName));
 var azureAd = builder.Configuration.GetSection(AzureAdSettings.SectionName).Get<AzureAdSettings>() ?? new AzureAdSettings();
 
 builder.Services.AddControllers();
@@ -83,6 +85,13 @@ if (azureAd.IsConfigured)
 }
 else
 {
+    // Without Azure AD every caller is local user 1 with admin rights: development only.
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException(
+            "AzureAd is not configured. Set AzureAd:Enabled=true, AzureAd:ClientId, AzureAd:TenantName and AzureAd:SigninPolicy.");
+    }
+
     // Always register a default scheme so AuthorizationMiddleware Challenge does not 500
     // when AzureAd is disabled (see MeController / [Authorize] without JwtBearer).
     builder.Services
@@ -122,7 +131,8 @@ if (httpsRedirect)
 
 app.UseCors();
 
-app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapGet("/health", (IOptionsMonitor<MaintenanceSettings> maintenance) =>
+    Results.Ok(new { status = "ok", maintenance = maintenance.CurrentValue.Enabled }));
 
 LogLegacyApi(
     app,
@@ -136,6 +146,7 @@ LogLegacyApi(
     "Reportingo compatibility API is disabled. Set ConnectionStrings:ReportingoDatabase to keep bug reports working.");
 
 app.UseAuthentication();
+app.UseMiddleware<MaintenanceMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<ChatHub>("/hubs/social");

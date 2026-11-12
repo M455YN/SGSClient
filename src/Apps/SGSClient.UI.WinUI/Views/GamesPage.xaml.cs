@@ -10,7 +10,7 @@ using Windows.UI;
 
 namespace SGSClient.UI.WinUI.Views;
 
-public sealed partial class GamesPage : Page
+public sealed partial class GamesPage : Page, ILoadingPage
 {
     private static readonly SolidColorBrush CardBrush = new(Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF));
     private static readonly SolidColorBrush CardHoverBrush = new(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
@@ -33,9 +33,16 @@ public sealed partial class GamesPage : Page
         RefreshUi();
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    public Task Ready { get; private set; } = Task.CompletedTask;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        Ready = LoadForNavigationAsync(e);
+    }
+
+    private async Task LoadForNavigationAsync(NavigationEventArgs e)
+    {
         SearchBox.Text = ViewModel.SearchText;
         SortBox.SelectedItem = ViewModel.SelectedSort;
         await ViewModel.EnsureLoadedAsync();

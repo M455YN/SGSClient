@@ -7,7 +7,7 @@ using SGSClient.UI.ViewModels;
 
 namespace SGSClient.UI.WinUI.Views;
 
-public sealed partial class AdminPage : Page
+public sealed partial class AdminPage : Page, ILoadingPage
 {
     private bool _syncingToggles;
 
@@ -18,8 +18,11 @@ public sealed partial class AdminPage : Page
         ViewModel = App.Services.GetRequiredService<AdminViewModel>();
         InitializeComponent();
         DataContext = ViewModel;
-        ViewModel.SetAddVersionHandler(() =>
-            App.MainWindow?.NavigateTo(typeof(PublishPage), parameter: null, selectTag: "Admin"));
+        ViewModel.SetAddVersionHandler(id =>
+            App.MainWindow?.NavigateTo(typeof(PublishPage), PublishPage.VersionParameter(id, asAdmin: true), "Admin"));
+        ViewModel.SetSaveFileHandler((name, content) => App.MainWindow is null
+            ? Task.FromResult<string?>(null)
+            : WinUiFilePicker.SaveTextFileAsync(App.MainWindow, name, content));
         ViewModel.SetAddDlcHandler(symbol =>
             App.MainWindow?.NavigateTo(typeof(PublishPage), symbol, "Admin"));
         ViewModel.SetConfirmDeleteHandler(ConfirmDeleteAsync);
@@ -28,9 +31,16 @@ public sealed partial class AdminPage : Page
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    public Task Ready { get; private set; } = Task.CompletedTask;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        Ready = LoadForNavigationAsync(e);
+    }
+
+    private async Task LoadForNavigationAsync(NavigationEventArgs e)
+    {
         await ViewModel.LoadAsync();
         RefreshUi();
     }
@@ -156,6 +166,9 @@ public sealed partial class AdminPage : Page
 
     private void AddVersion_Click(object sender, RoutedEventArgs e) =>
         ViewModel.AddVersionCommand.Execute(null);
+
+    private async void DownloadManifest_Click(object sender, RoutedEventArgs e) =>
+        await ViewModel.DownloadManifestCommand.ExecuteAsync(null);
 
     private void AddDlc_Click(object sender, RoutedEventArgs e) =>
         ViewModel.AddDlcCommand.Execute(ViewModel.SelectedGame);

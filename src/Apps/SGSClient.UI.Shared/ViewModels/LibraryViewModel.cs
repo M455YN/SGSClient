@@ -122,7 +122,7 @@ public partial class LibraryViewModel : ObservableObject
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
             await SyncEntitlementsAsync(library);
-            var items = await library.GetAllAsync();
+            var items = await library.GetOwnedAsync();
             var playtime = scope.ServiceProvider.GetService<IPlaytimeStore>();
             if (playtime is not null)
             {
@@ -196,7 +196,12 @@ public partial class LibraryViewModel : ObservableObject
 
         try
         {
-            var remote = await _api.GetMyLibraryAsync();
+            var remote = await _api.TryGetMyLibraryAsync();
+            if (remote is null)
+            {
+                return;
+            }
+
             var local = await library.GetAllAsync();
             var remoteById = remote.ToDictionary(g => g.Id);
             var localById = local.ToDictionary(x => x.GameId);

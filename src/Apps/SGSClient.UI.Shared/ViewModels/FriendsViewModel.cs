@@ -16,7 +16,8 @@ public partial class FriendsViewModel : ObservableObject
     private readonly SocialRealtimeService? _realtime;
     private readonly IUiTimer? _chatPollTimer;
     private readonly IUiDispatcher? _dispatcher;
-    private int? _activeChatPeerId;
+    private Func<ChatModalViewModel, Task>? _showChat;
+    private Dictionary<int, LobbyDto> _friendLobbies = [];
     private bool _realtimeWired;
 
     public FriendsViewModel(
@@ -70,24 +71,16 @@ public partial class FriendsViewModel : ObservableObject
         };
     }
 
-    private void OnRealtimeMessage(ChatMessageDto message)
-    {
-        void Apply()
-        {
-            if (_activeChatPeerId is int peer
-                && (message.SenderUserId == peer || message.RecipientUserId == peer))
-            {
-                if (ChatMessages.All(m => m.Id != message.Id))
-                {
-                    ChatMessages.Add(ChatMessageItem.FromDto(message));
-                }
-            }
+    /// <summary>The view shows the conversation in a dialog and completes when it is closed.</summary>
+    public void SetShowChatHandler(Func<ChatModalViewModel, Task> show) => _showChat = show;
 
-            _ = LoadChatThreadsAsync();
-        }
+    private Action<int>? _openFullProfile;
 
-        RunOnUi(Apply);
-    }
+    /// <summary>The shell's full-page profile; opening a person in this panel goes there.</summary>
+    public void SetOpenFullProfileHandler(Action<int> open) => _openFullProfile = open;
+
+    // An open conversation dialog handles its own messages; this only keeps the thread list fresh.
+    private void OnRealtimeMessage(ChatMessageDto message) => RunOnUi(() => _ = LoadChatThreadsAsync());
 
     private void RunOnUi(Action action)
     {
@@ -109,10 +102,7 @@ public partial class FriendsViewModel : ObservableObject
     public ObservableCollection<SocialPersonItem> SearchResults { get; } = [];
     public ObservableCollection<SocialPersonItem> OnlineFriends { get; } = [];
     public ObservableCollection<SocialPersonItem> OfflineFriends { get; } = [];
-    public ObservableCollection<ProfileCommentItem> ProfileComments { get; } = [];
-    public ObservableCollection<AchievementSummaryItem> ProfileAchievements { get; } = [];
     public ObservableCollection<ChatThreadItem> ChatThreads { get; } = [];
-    public ObservableCollection<ChatMessageItem> ChatMessages { get; } = [];
 
     [ObservableProperty]
     public partial string SelectedTab { get; set; } = "Friends";
@@ -139,58 +129,23 @@ public partial class FriendsViewModel : ObservableObject
     public partial bool IncomingExpanded { get; set; } = true;
 
     [ObservableProperty]
-    public partial SocialPersonItem? ViewedProfile { get; set; }
-
-    [ObservableProperty]
-    public partial string ProfileHeader { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string ProfileSubtitle { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string ProfileCommentDraft { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string ProfileStatus { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial string ProfileAchievementsText { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial int? ProfileUserId { get; set; }
-
-    [ObservableProperty]
-    public partial bool CanMessageProfile { get; set; }
-
-    [ObservableProperty]
     public partial ChatThreadItem? SelectedChatThread { get; set; }
-
-    [ObservableProperty]
-    public partial string ChatDraft { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial string ChatStatus { get; set; } = string.Empty;
 
-    [ObservableProperty]
-    public partial string ChatPeerTitle { get; set; } = Loc.T("Wybierz rozmowę");
-
-    [ObservableProperty]
-    public partial bool HasActiveChat { get; set; }
-
-    public bool ShowFriendsTab => SelectedTab == "Friends" && ViewedProfile is null;
-    public bool ShowRequestsTab => SelectedTab == "Requests" && ViewedProfile is null;
-    public bool ShowFollowingTab => SelectedTab == "Following" && ViewedProfile is null;
-    public bool ShowFollowersTab => SelectedTab == "Followers" && ViewedProfile is null;
-    public bool ShowSearchTab => SelectedTab == "Search" && ViewedProfile is null;
-    public bool ShowChatTab => SelectedTab == "Chat" && ViewedProfile is null;
-    public bool ShowProfileView => ViewedProfile is not null;
-    public bool ShowMainList => ViewedProfile is null && SelectedTab is not "Chat";
+    public bool ShowFriendsTab => SelectedTab == "Friends";
+    public bool ShowRequestsTab => SelectedTab == "Requests";
+    public bool ShowFollowingTab => SelectedTab == "Following";
+    public bool ShowFollowersTab => SelectedTab == "Followers";
+    public bool ShowSearchTab => SelectedTab == "Search";
+    public bool ShowChatTab => SelectedTab == "Chat";
+    public bool ShowMainList => SelectedTab is not "Chat";
     public bool ShowEmptyFriends => ShowFriendsTab && Friends.Count == 0;
     public bool ShowEmptyFollowing => ShowFollowingTab && Following.Count == 0;
     public bool ShowEmptyFollowers => ShowFollowersTab && Followers.Count == 0;
     public bool ShowEmptySearch => ShowSearchTab && SearchResults.Count == 0 && !IsBusy;
-    public bool ShowEmptyChat => ShowChatTab && ChatThreads.Count == 0 && !HasActiveChat;
-    public bool ShowChatConversation => ShowChatTab && HasActiveChat;
+    public bool ShowEmptyChat => ShowChatTab && ChatThreads.Count == 0;
     public bool HasIncoming => Incoming.Count > 0;
     public bool HasOutgoing => Outgoing.Count > 0;
     public bool ShowFriendsGroups => ShowFriendsTab && Friends.Count > 0;
@@ -256,14 +211,6 @@ public partial class FriendsViewModel : ObservableObject
         _chatPollTimer?.Start();
     }
 
-    partial void OnViewedProfileChanged(SocialPersonItem? value) => NotifyLists();
-
-    partial void OnHasActiveChatChanged(bool value)
-    {
-        OnPropertyChanged(nameof(ShowEmptyChat));
-        OnPropertyChanged(nameof(ShowChatConversation));
-    }
-
     partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(ShowEmptySearch));
 
     [RelayCommand]
@@ -271,7 +218,6 @@ public partial class FriendsViewModel : ObservableObject
     {
         if (!string.IsNullOrWhiteSpace(tab))
         {
-            ViewedProfile = null;
             SelectedTab = tab;
         }
     }
@@ -295,6 +241,16 @@ public partial class FriendsViewModel : ObservableObject
                 return;
             }
 
+            // Before ApplyOverview: the rows are plain objects, so lobby info must be set before they are shown.
+            try
+            {
+                _friendLobbies = (await _userApi.GetFriendLobbiesAsync()).ToDictionary(l => l.HostUserId);
+            }
+            catch
+            {
+                _friendLobbies = [];
+            }
+
             ApplyOverview(overview);
             StatusText = overview.IncomingCount > 0
                 ? Loc.F("{0} oczekujących zaproszeń.", overview.IncomingCount)
@@ -313,7 +269,6 @@ public partial class FriendsViewModel : ObservableObject
     [RelayCommand]
     private async Task SearchAsync()
     {
-        ViewedProfile = null;
         SelectedTab = "Search";
         if (_userApi is null)
         {
@@ -354,108 +309,12 @@ public partial class FriendsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task OpenProfileAsync(SocialPersonItem? person)
+    private void OpenProfile(SocialPersonItem? person)
     {
-        if (person is null || _userApi is null)
+        if (person is not null)
         {
-            return;
+            _openFullProfile?.Invoke(person.UserId);
         }
-
-        IsBusy = true;
-        ProfileStatus = Loc.T("Ładowanie profilu…");
-        try
-        {
-            var profile = await _userApi.GetPublicProfileAsync(person.UserId);
-            if (profile is null)
-            {
-                ProfileStatus = Loc.T("Nie udało się wczytać profilu.");
-                return;
-            }
-
-            ApplyPublicProfile(profile);
-        }
-        catch (Exception ex)
-        {
-            ProfileStatus = ex.Message;
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
-    [RelayCommand]
-    private void CloseProfile()
-    {
-        ViewedProfile = null;
-        ProfileUserId = null;
-        ProfileComments.Clear();
-        ProfileAchievements.Clear();
-        ProfileAchievementsText = string.Empty;
-        ProfileCommentDraft = string.Empty;
-        ProfileStatus = string.Empty;
-        NotifyLists();
-    }
-
-    [RelayCommand]
-    private async Task PostProfileCommentAsync()
-    {
-        if (_userApi is null || ProfileUserId is not int userId)
-        {
-            return;
-        }
-
-        var text = ProfileCommentDraft.Trim();
-        if (text.Length < 2)
-        {
-            ProfileStatus = Loc.T("Wpisz dłuższy komentarz.");
-            return;
-        }
-
-        ProfileStatus = Loc.T("Wysyłanie…");
-        var (comment, error) = await _userApi.AddProfileCommentAsync(userId, text);
-        if (comment is null)
-        {
-            ProfileStatus = error ?? Loc.T("Nie udało się dodać komentarza.");
-            return;
-        }
-
-        ProfileCommentDraft = string.Empty;
-        ProfileComments.Insert(0, ProfileCommentItem.FromDto(comment));
-        ProfileStatus = Loc.T("Dodano podpis.");
-    }
-
-    [RelayCommand]
-    private async Task DeleteProfileCommentAsync(ProfileCommentItem? comment)
-    {
-        if (comment is null || _userApi is null || ProfileUserId is not int userId)
-        {
-            return;
-        }
-
-        var (ok, error) = await _userApi.DeleteProfileCommentAsync(userId, comment.Id);
-        if (!ok)
-        {
-            ProfileStatus = error ?? Loc.T("Nie udało się usunąć.");
-            return;
-        }
-
-        ProfileComments.Remove(comment);
-        ProfileStatus = Loc.T("Usunięto.");
-    }
-
-    [RelayCommand]
-    private async Task MessageFromProfileAsync()
-    {
-        if (ViewedProfile is null)
-        {
-            return;
-        }
-
-        var person = ViewedProfile;
-        CloseProfile();
-        SelectedTab = "Chat";
-        await OpenChatWithAsync(person);
     }
 
     [RelayCommand]
@@ -514,35 +373,7 @@ public partial class FriendsViewModel : ObservableObject
             return;
         }
 
-        SelectedTab = "Chat";
         await OpenChatWithPeerIdAsync(person.UserId, person.Title);
-    }
-
-    [RelayCommand]
-    private async Task SendChatMessageAsync()
-    {
-        if (_userApi is null || _activeChatPeerId is not int peerId)
-        {
-            return;
-        }
-
-        var text = ChatDraft.Trim();
-        if (text.Length == 0)
-        {
-            return;
-        }
-
-        ChatDraft = string.Empty;
-        var (message, error) = await _userApi.SendChatMessageAsync(peerId, text);
-        if (message is null)
-        {
-            ChatStatus = error ?? Loc.T("Nie wysłano.");
-            return;
-        }
-
-        ChatMessages.Add(ChatMessageItem.FromDto(message));
-        ChatStatus = string.Empty;
-        await LoadChatThreadsAsync();
     }
 
     [RelayCommand]
@@ -567,109 +398,24 @@ public partial class FriendsViewModel : ObservableObject
 
     private async Task OpenChatWithPeerIdAsync(int peerUserId, string title)
     {
-        if (_userApi is null)
+        if (_userApi is null || _showChat is null)
         {
             return;
         }
 
-        _activeChatPeerId = peerUserId;
-        HasActiveChat = true;
-        ChatPeerTitle = title;
-        SelectedChatThread = ChatThreads.FirstOrDefault(t => t.PeerUserId == peerUserId);
-        ChatStatus = Loc.T("Ładowanie…");
-        await RefreshConversationAsync(peerUserId);
-        await EnsureChatRealtimeOrPollAsync();
-        OnPropertyChanged(nameof(ShowEmptyChat));
-        OnPropertyChanged(nameof(ShowChatConversation));
-    }
-
-    private async Task RefreshConversationAsync(int peerUserId)
-    {
-        if (_userApi is null)
-        {
-            return;
-        }
-
-        try
-        {
-            var convo = await _userApi.GetChatConversationAsync(peerUserId);
-            ChatMessages.Clear();
-            if (convo is null)
-            {
-                ChatStatus = Loc.T("Nie udało się wczytać rozmowy (tylko znajomi).");
-                return;
-            }
-
-            ChatPeerTitle = string.IsNullOrWhiteSpace(convo.Peer.PlayerTag)
-                ? convo.Peer.DisplayName
-                : convo.Peer.PlayerTag!;
-            foreach (var m in convo.Messages)
-            {
-                ChatMessages.Add(ChatMessageItem.FromDto(m));
-            }
-
-            ChatStatus = string.Empty;
-        }
-        catch (Exception ex)
-        {
-            ChatStatus = ex.Message;
-        }
+        using var chat = new ChatModalViewModel(_userApi, _realtime, _dispatcher, peerUserId, title);
+        _ = chat.LoadAsync();
+        await _showChat(chat);
+        await chat.MarkLiveMessagesReadAsync();
+        await LoadChatThreadsAsync(); // reading clears unread counts
     }
 
     private async Task PollChatAsync()
     {
-        if (!ShowChatTab || _activeChatPeerId is not int peerId)
+        if (ShowChatTab)
         {
-            return;
+            await LoadChatThreadsAsync();
         }
-
-        try
-        {
-            await RefreshConversationAsync(peerId);
-        }
-        catch
-        {
-            // ignore poll errors
-        }
-    }
-
-    private void ApplyPublicProfile(PublicUserProfileDto profile)
-    {
-        ViewedProfile = SocialPersonItem.FromDto(profile.User);
-        ProfileUserId = profile.User.Id;
-        ProfileHeader = ViewedProfile.Title;
-        ProfileSubtitle = profile.IsOwnProfile
-            ? Loc.T("Twój profil — inni mogą się tu podpisać.")
-            : Loc.F("{0} · ściana komentarzy", profile.User.DisplayName);
-        CanMessageProfile = !profile.IsOwnProfile && profile.User.FriendRelation == FriendRelation.Friends;
-        ProfileComments.Clear();
-        ProfileAchievements.Clear();
-        ProfileAchievementsText = string.Empty;
-        foreach (var c in profile.Comments)
-        {
-            ProfileComments.Add(ProfileCommentItem.FromDto(c));
-        }
-
-        ProfileStatus = ProfileComments.Count == 0
-            ? Loc.T("Brak podpisów — napisz coś.")
-            : Loc.F("{0} podpisów", ProfileComments.Count);
-
-        foreach (var summary in profile.Achievements)
-        {
-            ProfileAchievements.Add(AchievementSummaryItem.FromDto(summary));
-        }
-
-        ProfileAchievementsText = profile switch
-        {
-            { AchievementsHidden: true, IsOwnProfile: false } => Loc.T("Ten gracz ukrył swoje osiągnięcia."),
-            { AchievementsHidden: true } => Loc.T("Ukryłeś swoje osiągnięcia — inni gracze ich nie widzą."),
-            { Achievements.Count: 0 } => Loc.T("Nie odblokowano jeszcze żadnych osiągnięć."),
-            _ => Loc.F(
-                "Odblokowano łącznie: {0} · {1} pkt",
-                profile.Achievements.Sum(a => a.Unlocked),
-                profile.Achievements.Sum(a => a.PointsEarned))
-        };
-        NotifyLists();
     }
 
     private async Task MutateAsync(
@@ -710,9 +456,23 @@ public partial class FriendsViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private async Task JoinLobbyAsync(SocialPersonItem? person)
+    {
+        if (person?.Lobby is { } lobby)
+        {
+            await LobbyJoin.RequestAsync(lobby.GameId, lobby.Code);
+        }
+    }
+
     private void ApplyOverview(SocialOverviewDto overview)
     {
         Replace(Friends, overview.Friends);
+        foreach (var friend in Friends)
+        {
+            friend.Lobby = _friendLobbies.GetValueOrDefault(friend.UserId);
+        }
+
         Replace(Incoming, overview.Incoming);
         Replace(Outgoing, overview.Outgoing);
         Replace(Following, overview.Following);
@@ -771,10 +531,8 @@ public partial class FriendsViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowFollowersTab));
         OnPropertyChanged(nameof(ShowSearchTab));
         OnPropertyChanged(nameof(ShowChatTab));
-        OnPropertyChanged(nameof(ShowProfileView));
         OnPropertyChanged(nameof(ShowMainList));
         OnPropertyChanged(nameof(ShowEmptyChat));
-        OnPropertyChanged(nameof(ShowChatConversation));
         OnPropertyChanged(nameof(HasIncoming));
         OnPropertyChanged(nameof(HasOutgoing));
         OnPropertyChanged(nameof(RequestsTabLabel));
@@ -787,19 +545,23 @@ public partial class FriendsViewModel : ObservableObject
 public sealed class ProfileCommentItem
 {
     public long Id { get; init; }
+    public int AuthorUserId { get; init; }
     public required string AuthorLabel { get; init; }
     public required string Text { get; init; }
     public required string WhenText { get; init; }
+    public required string Initials { get; init; }
     public bool CanDelete { get; init; }
 
     public static ProfileCommentItem FromDto(ProfileCommentDto dto) => new()
     {
         Id = dto.Id,
+        AuthorUserId = dto.AuthorUserId,
         AuthorLabel = string.IsNullOrWhiteSpace(dto.AuthorPlayerTag)
             ? dto.AuthorDisplayName
             : $"{dto.AuthorDisplayName} (@{dto.AuthorPlayerTag})",
         Text = dto.Text,
         WhenText = dto.CreatedAtUtc.LocalDateTime.ToString("g"),
+        Initials = SocialPersonItem.MakeInitials(dto.AuthorDisplayName),
         CanDelete = dto.CanDelete
     };
 }
@@ -842,14 +604,15 @@ public sealed class ChatMessageItem
     public required string Meta { get; init; }
     public bool IsMine { get; init; }
 
-    public static ChatMessageItem FromDto(ChatMessageDto dto) => new()
+    // isMine comes from the viewer: a hub push carries the sender's IsMine to both sides.
+    public static ChatMessageItem FromDto(ChatMessageDto dto, bool isMine) => new()
     {
         Id = dto.Id,
         Text = dto.Text,
-        Meta = dto.IsMine
+        Meta = isMine
             ? Loc.F("Ty · {0:t}", dto.CreatedAtUtc.LocalDateTime)
             : dto.CreatedAtUtc.LocalDateTime.ToString("t"),
-        IsMine = dto.IsMine
+        IsMine = isMine
     };
 }
 
@@ -876,6 +639,14 @@ public sealed class SocialPersonItem
     public bool ShowFollow => !IsFollowing && FriendRelation == FriendRelation.None;
     public bool ShowUnfollow => IsFollowing && FriendRelation != FriendRelation.Friends;
     public bool ShowMessage => FriendRelation == FriendRelation.Friends;
+
+    /// <summary>Open lobby this friend hosts; set before the row is shown.</summary>
+    public LobbyDto? Lobby { get; set; }
+
+    public bool HasLobby => Lobby is not null;
+    public string JoinLabel => Lobby is { } l
+        ? Loc.F("Dołącz · {0} {1}/{2}", l.GameTitle ?? "SGS", l.Players, l.MaxPlayers)
+        : string.Empty;
     public bool HasActions => ShowAddFriend || ShowAccept || ShowRemoveFriend;
 
     public bool Matches(string query) =>
@@ -910,7 +681,7 @@ public sealed class SocialPersonItem
         };
     }
 
-    private static string MakeInitials(string name)
+    internal static string MakeInitials(string name)
     {
         var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (parts.Length == 0)

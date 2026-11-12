@@ -84,3 +84,9 @@ App_Data
 
 ## Generated / local package examples
 schemas/examples/
+
+# Dev publish output
+dist/
+
+# Zensical docs build output
+/site/

@@ -27,6 +27,9 @@ public static class PlaytimeFormat
             : $"{(long)hours} {Loc.T("godz.")}";
     }
 
+    /// <summary>Stat label: "—" when nothing was played (instead of "mniej niż 1 min").</summary>
+    public static string ToPolishOrDash(long totalSeconds) => totalSeconds <= 0 ? "—" : ToPolish(totalSeconds);
+
     /// <summary>Library-style label, e.g. "2,4 godz. łącznie".</summary>
     public static string ToPolishTotal(long totalSeconds) => Loc.F("{0} łącznie", ToPolish(totalSeconds));
 }

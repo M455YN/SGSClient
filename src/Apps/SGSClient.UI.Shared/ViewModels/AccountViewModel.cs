@@ -47,14 +47,51 @@ public partial class AccountViewModel : ObservableObject
             : auth.IsAvailable
                 ? Loc.T("Nie zalogowano")
                 : auth.LastError ?? Loc.T("Logowanie nie jest skonfigurowane.");
+        RecentGames.CollectionChanged += (_, _) => OnPropertyChanged(nameof(RecentActivity));
+        Achievements.CollectionChanged += (_, _) => OnPropertyChanged(nameof(TopAchievements));
+        FriendsPreview.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasFriendsPreview));
     }
+
+    private const int ActivityCards = 4;
+    private const int AchievementRows = 4;
 
     public ObservableCollection<RecentGameItem> RecentGames { get; } = [];
     public ObservableCollection<AchievementSummaryItem> Achievements { get; } = [];
     public bool HasAchievements => Achievements.Count > 0;
 
+    /// <summary>The few most recently played games shown as large activity cards.</summary>
+    public IReadOnlyList<RecentGameItem> RecentActivity => RecentGames.Take(ActivityCards).ToList();
+
+    /// <summary>Games closest to completion for the achievements side card.</summary>
+    public IReadOnlyList<AchievementSummaryItem> TopAchievements =>
+        Achievements.OrderByDescending(a => a.Fraction).Take(AchievementRows).ToList();
+
+    public bool HasFriendsPreview => FriendsPreview.Count > 0;
+
     [ObservableProperty] public partial string AchievementsTotalText { get; set; } = string.Empty;
     public ObservableCollection<ProfileCommentItem> WallComments { get; } = [];
+
+    /// <summary>A few friends for the profile side card, online ones first.</summary>
+    public ObservableCollection<SocialPersonItem> FriendsPreview { get; } = [];
+
+    [ObservableProperty] public partial string MemberSinceText { get; set; } = string.Empty;
+
+    /// <summary>Landscape art of the most recently played game, used as the profile banner.</summary>
+    [ObservableProperty] public partial string BannerImageUrl { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalPlaytimeSummary))]
+    public partial int OwnedGamesCount { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TotalPlaytimeSummary))]
+    public partial string TotalPlaytimeText { get; set; } = string.Empty;
+
+    /// <summary>"12 godz. łącznie" next to the activity header; empty without games.</summary>
+    public string TotalPlaytimeSummary => OwnedGamesCount == 0 || TotalPlaytimeText is "" or "—"
+        ? string.Empty
+        : Loc.F("{0} łącznie", TotalPlaytimeText);
+    [ObservableProperty] public partial int AchievementsUnlocked { get; set; }
+    [ObservableProperty] public partial int AchievementPoints { get; set; }
 
     public bool ShowSignedOut => !IsLoggedIn;
     public bool ShowTagSetup => IsLoggedIn && NeedsPlayerTagSetup;
@@ -63,7 +100,7 @@ public partial class AccountViewModel : ObservableObject
     public bool HasAvatar => !string.IsNullOrWhiteSpace(AvatarUrl);
     public bool HasRecentGames => RecentGames.Count > 0;
     public bool ShowEmptyRecentGames => IsLoggedIn && !NeedsPlayerTagSetup && RecentGames.Count == 0;
-    public string BioDisplay => string.IsNullOrWhiteSpace(Bio) ? Loc.T("Dodaj bio w Dostosuj profil") : Bio;
+    public string BioDisplay => string.IsNullOrWhiteSpace(Bio) ? Loc.T("Dodaj opis w edycji profilu.") : Bio;
     public string LocationDisplay => string.IsNullOrWhiteSpace(Location) ? "—" : Location;
     public string PlayerTagDisplay => string.IsNullOrWhiteSpace(PlayerTag) ? string.Empty : $"@{PlayerTag}";
     public string TagPreview => string.IsNullOrWhiteSpace(DraftPlayerTag)
@@ -154,6 +191,12 @@ public partial class AccountViewModel : ObservableObject
     public partial bool EditHideAchievements { get; set; }
 
     private bool _hideAchievements;
+
+    /// <summary>Privacy switch in the profile editor: hide games and playtime from other players.</summary>
+    [ObservableProperty]
+    public partial bool EditHideGameActivity { get; set; }
+
+    private bool _hideGameActivity;
 
     [ObservableProperty]
     public partial int FriendsCount { get; set; }
@@ -288,6 +331,7 @@ public partial class AccountViewModel : ObservableObject
         EditLocation = Location;
         EditPlayerTag = PlayerTag;
         EditHideAchievements = _hideAchievements;
+        EditHideGameActivity = _hideGameActivity;
         ProfileActionStatus = string.Empty;
         IsEditing = true;
     }
@@ -313,7 +357,8 @@ public partial class AccountViewModel : ObservableObject
                 Bio = EditBio,
                 Location = EditLocation,
                 PlayerTag = string.IsNullOrWhiteSpace(EditPlayerTag) ? null : EditPlayerTag,
-                HideAchievements = EditHideAchievements
+                HideAchievements = EditHideAchievements,
+                HideGameActivity = EditHideGameActivity
             });
 
             if (updated is null)
@@ -423,8 +468,12 @@ public partial class AccountViewModel : ObservableObject
         Bio = user.Bio ?? string.Empty;
         Location = user.Location ?? string.Empty;
         _hideAchievements = user.HideAchievements;
+        _hideGameActivity = user.HideGameActivity;
         AvatarInitials = MakeInitials(user.DisplayName);
         LastActivityText = FormatLastActivity(user.LastLoginUtc);
+        MemberSinceText = user.CreatedAtUtc == default
+            ? string.Empty
+            : Loc.F("Na SGS od {0}", user.CreatedAtUtc.LocalDateTime.ToString("MMMM yyyy", Loc.Culture));
         AccountStatus = string.IsNullOrWhiteSpace(user.Email)
             ? Loc.F("Zalogowano jako {0}", user.DisplayName)
             : Loc.F("Zalogowano jako {0} · {1}", user.DisplayName, user.Email);
@@ -434,8 +483,8 @@ public partial class AccountViewModel : ObservableObject
         }
         FriendsCount = FollowingCount = FollowersCount = 0;
         await LoadSocialCountsAsync();
-        await LoadRecentGamesAsync();
         await LoadAchievementsAsync();
+        await LoadRecentGamesAsync();
         await LoadWallAsync(user.Id);
         OnPropertyChanged(nameof(HasRecentGames));
         OnPropertyChanged(nameof(ShowEmptyRecentGames));
@@ -457,7 +506,7 @@ public partial class AccountViewModel : ObservableObject
             var profile = await _userApi.GetPublicProfileAsync(userId);
             if (profile is null)
             {
-                WallStatus = Loc.T("Nie udało się wczytać ściany.");
+                WallStatus = Loc.T("Nie udało się wczytać komentarzy.");
                 return;
             }
 
@@ -467,8 +516,8 @@ public partial class AccountViewModel : ObservableObject
             }
 
             WallStatus = WallComments.Count == 0
-                ? Loc.T("Brak podpisów — znajomi mogą coś tu napisać.")
-                : Loc.F("{0} podpisów na ścianie", WallComments.Count);
+                ? Loc.T("Nie ma jeszcze komentarzy.")
+                : string.Empty;
         }
         catch (Exception ex)
         {
@@ -494,13 +543,13 @@ public partial class AccountViewModel : ObservableObject
         var (comment, error) = await _userApi.AddProfileCommentAsync(ProfileUserId, text);
         if (comment is null)
         {
-            WallStatus = error ?? Loc.T("Nie udało się dodać podpisu.");
+            WallStatus = error ?? Loc.T("Nie udało się dodać komentarza.");
             return;
         }
 
         WallCommentDraft = string.Empty;
         WallComments.Insert(0, ProfileCommentItem.FromDto(comment));
-        WallStatus = Loc.T("Dodano podpis.");
+        WallStatus = string.Empty;
     }
 
     [RelayCommand]
@@ -531,6 +580,9 @@ public partial class AccountViewModel : ObservableObject
         DraftPlayerTag = TagStatus = string.Empty;
         AvatarInitials = "?";
         FriendsCount = FollowingCount = FollowersCount = 0;
+        FriendsPreview.Clear();
+        MemberSinceText = BannerImageUrl = TotalPlaytimeText = string.Empty;
+        OwnedGamesCount = AchievementsUnlocked = AchievementPoints = 0;
         RecentGames.Clear();
         Achievements.Clear();
         AchievementsTotalText = string.Empty;
@@ -608,6 +660,15 @@ public partial class AccountViewModel : ObservableObject
             FriendsCount = social.FriendsCount;
             FollowingCount = social.FollowingCount;
             FollowersCount = social.FollowersCount;
+            FriendsPreview.Clear();
+            foreach (var friend in social.Friends
+                         .Select(SocialPersonItem.FromDto)
+                         .OrderByDescending(f => f.IsOnline)
+                         .ThenBy(f => f.Title, StringComparer.CurrentCultureIgnoreCase)
+                         .Take(6))
+            {
+                FriendsPreview.Add(friend);
+            }
         }
         catch
         {
@@ -666,9 +727,11 @@ public partial class AccountViewModel : ObservableObject
                 Achievements.Add(AchievementSummaryItem.FromDto(summary));
             }
 
+            AchievementsUnlocked = summaries.Sum(s => s.Unlocked);
+            AchievementPoints = summaries.Sum(s => s.PointsEarned);
             AchievementsTotalText = summaries.Count == 0
                 ? Loc.T("Nie odblokowano jeszcze żadnych osiągnięć.")
-                : Loc.F("Odblokowano łącznie: {0} · {1} pkt", summaries.Sum(s => s.Unlocked), summaries.Sum(s => s.PointsEarned));
+                : Loc.F("Odblokowano łącznie: {0} · {1} pkt", AchievementsUnlocked, AchievementPoints);
         }
         catch
         {
@@ -683,6 +746,9 @@ public partial class AccountViewModel : ObservableObject
     private async Task LoadRecentGamesAsync()
     {
         RecentGames.Clear();
+        OwnedGamesCount = 0;
+        TotalPlaytimeText = PlaytimeFormat.ToPolishOrDash(0);
+        BannerImageUrl = string.Empty;
         if (_scopes is null)
         {
             return;
@@ -698,22 +764,73 @@ public partial class AccountViewModel : ObservableObject
                 return;
             }
 
-            var items = await library.GetAllAsync();
+            var items = await library.GetOwnedAsync();
+            var headers = await SyncArtworkAsync(scope.ServiceProvider.GetService<ISgsApiService>(), items, library);
             if (playtime is not null)
             {
                 await playtime.SyncFromServerAsync();
                 await playtime.ApplyToLibraryAsync(items);
             }
 
+            OwnedGamesCount = items.Count;
+            TotalPlaytimeText = PlaytimeFormat.ToPolishOrDash(items.Sum(i => i.TotalPlayTimeSeconds));
+            var achievements = Achievements.ToDictionary(a => a.GameId);
             foreach (var item in items
                          .OrderByDescending(x => x.LastPlayedUtc ?? DateTimeOffset.MinValue)
                          .Take(9))
             {
-                RecentGames.Add(new RecentGameItem(item.Title, item.Symbol, item.LastPlayedUtc, item.TotalPlayTimeSeconds, item.GameId));
+                headers.TryGetValue(item.GameId, out var header);
+                RecentGames.Add(new RecentGameItem(
+                    item.Title,
+                    item.Symbol,
+                    item.LastPlayedUtc,
+                    item.TotalPlayTimeSeconds,
+                    item.GameId,
+                    SidebarInstalledGame.FromModel(item, _apiBaseUrl).CoverImageUrl,
+                    InstallPathHelper.TryResolveDownloadUrl(_apiBaseUrl, header),
+                    achievements.GetValueOrDefault(item.GameId)));
             }
+
+            BannerImageUrl = RecentGames.FirstOrDefault(g => g.HasHeader)?.HeaderImageUrl ?? string.Empty;
         }
         catch
         {
+        }
+    }
+
+    /// <summary>
+    /// Fills missing local tile art from the store catalog (same rule as the sidebar) and returns
+    /// each owned game's landscape header for the activity cards.
+    /// </summary>
+    private static async Task<Dictionary<int, string?>> SyncArtworkAsync(
+        ISgsApiService? api,
+        IReadOnlyList<GameLibraryItem> items,
+        ILocalLibraryStore store)
+    {
+        if (api is null)
+        {
+            return [];
+        }
+
+        try
+        {
+            var byId = (await api.GetGamesAsync()).ToDictionary(g => g.Id);
+            foreach (var item in items)
+            {
+                if (byId.TryGetValue(item.GameId, out var game)
+                    && item.ApplyStoreArtwork(game.CoverUrl, game.LogoUrl, game.HeaderUrl))
+                {
+                    await store.UpsertAsync(item);
+                }
+            }
+
+            return items.Where(i => byId.ContainsKey(i.GameId))
+                .ToDictionary(i => i.GameId, i => byId[i.GameId].LandscapeUrl);
+        }
+        catch
+        {
+            // offline: keep whatever art the library already has
+            return [];
         }
     }
 
@@ -773,9 +890,24 @@ public sealed class RecentGameItem(
     string symbol,
     DateTimeOffset? lastPlayedUtc,
     long playtimeSeconds = 0,
-    int gameId = 0)
+    int gameId = 0,
+    string? coverImageUrl = null,
+    string? headerImageUrl = null,
+    AchievementSummaryItem? achievements = null)
 {
     public int GameId { get; } = gameId;
+    public string? CoverImageUrl { get; } = coverImageUrl;
+    public bool HasCover => !string.IsNullOrWhiteSpace(CoverImageUrl);
+    public string? HeaderImageUrl { get; } = headerImageUrl;
+    public bool HasHeader => !string.IsNullOrWhiteSpace(HeaderImageUrl);
+    public AchievementSummaryItem? Achievements { get; } = achievements;
+    public bool HasAchievements => Achievements is not null;
+    public string PlaytimeText { get; } = playtimeSeconds > 0
+        ? PlaytimeFormat.ToPolishTotal(playtimeSeconds)
+        : Loc.T("Jeszcze nie grano");
+    public string LastPlayedText { get; } = lastPlayedUtc is null
+        ? string.Empty
+        : Loc.F("Ostatnio grano {0}", lastPlayedUtc.Value.LocalDateTime.ToString("d MMM yyyy", Loc.Culture));
     public string Title { get; } = title;
     public string TileLabel { get; } = string.IsNullOrWhiteSpace(symbol)
         ? title[..Math.Min(2, title.Length)].ToUpperInvariant()

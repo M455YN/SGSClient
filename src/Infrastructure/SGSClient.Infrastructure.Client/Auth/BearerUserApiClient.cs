@@ -12,6 +12,9 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
     public Task<UserProfileDto?> GetMeAsync(CancellationToken cancellationToken = default) =>
         SendAsync<UserProfileDto>(HttpMethod.Get, "api/me", body: null, cancellationToken);
 
+    public Task<UserProfileDto?> GetMeWithIdTokenAsync(string idToken, CancellationToken cancellationToken = default) =>
+        SendCoreAsync<UserProfileDto>(HttpMethod.Get, "api/me", body: null, idToken, cancellationToken);
+
     public Task<UserProfileDto?> UpdateMeAsync(UpdateProfileRequestDto request, CancellationToken cancellationToken = default) =>
         SendAsync<UserProfileDto>(HttpMethod.Patch, "api/me", request, cancellationToken);
 
@@ -225,6 +228,10 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
             cancellationToken).ConfigureAwait(false);
         return list ?? [];
     }
+
+    public async Task<IReadOnlyList<LobbyDto>> GetFriendLobbiesAsync(CancellationToken cancellationToken = default) =>
+        await SendAsync<List<LobbyDto>>(HttpMethod.Get, "api/me/lobbies/friends", body: null, cancellationToken)
+            .ConfigureAwait(false) ?? [];
 
     public Task<ChatConversationDto?> GetChatConversationAsync(int peerUserId, CancellationToken cancellationToken = default) =>
         SendAsync<ChatConversationDto>(HttpMethod.Get, $"api/me/chat/{peerUserId}", body: null, cancellationToken);

@@ -15,6 +15,7 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), $"sgs-bridge-{Guid.NewGuid():N}");
     private readonly ScriptedApi _api = new();
+    private readonly SignedInAuth _auth = new();
     private readonly List<AchievementBridge> _bridges = [];
 
     public GameLauncherEnvironmentTests() => Directory.CreateDirectory(_dir);
@@ -139,6 +140,91 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
         Assert.Empty(_api.Requests);
     }
 
+    [Fact]
+    public async Task Launch_PassesTheLobbyCodeToTheGame()
+    {
+        var output = await LaunchAsync(CreateBridge(), gameId: 7, lobbyCode: "ABC234");
+
+        Assert.Equal("ABC234", output.Split(';')[3]);
+    }
+
+    [Fact]
+    public async Task CreatingALobby_IsRelayedWithTheLaunchedGamesIdNotTheOneTheGameSent()
+    {
+        var (bridge, token) = StartSession(gameId: 7);
+        _api.Respond(HttpStatusCode.OK, """{"code":"ABC234"}""");
+
+        var (status, body) = await CallAsync(
+            bridge, token, HttpMethod.Post, "/api/sdk/lobbies", """{"address":"1.2.3.4:5","gameId":999,"maxPlayers":4}""");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Contains("ABC234", body);
+        var sent = Assert.Single(_api.Requests);
+        Assert.Equal("https://api.example/api/lobbies", sent.Url);
+        Assert.Equal("Bearer player-token", sent.Authorization);
+        Assert.Contains("\"gameId\": 7", sent.Body);
+        Assert.Contains("1.2.3.4:5", sent.Body);
+    }
+
+    [Fact]
+    public async Task LobbyCalls_MapOntoTheApi_AndOddCodesAreNeverRelayed()
+    {
+        var (bridge, token) = StartSession(gameId: 7);
+
+        await CallAsync(bridge, token, HttpMethod.Get, "/api/sdk/lobbies/ABC234");
+        await CallAsync(bridge, token, HttpMethod.Patch, "/api/sdk/lobbies/ABC234", """{"players":2}""");
+        await CallAsync(bridge, token, HttpMethod.Post, "/api/sdk/lobbies/ABC234/invite", """{"friendUserId":3}""");
+        await CallAsync(bridge, token, HttpMethod.Delete, "/api/sdk/lobbies/ABC234");
+
+        Assert.Equal(
+            [
+                "GET https://api.example/api/lobbies/ABC234",
+                "PATCH https://api.example/api/lobbies/ABC234",
+                "POST https://api.example/api/lobbies/ABC234/invite",
+                "DELETE https://api.example/api/lobbies/ABC234"
+            ],
+            _api.Requests.Select(r => $"{r.Method} {r.Url}"));
+
+        _api.Requests.Clear();
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await CallAsync(bridge, token, HttpMethod.Get, "/api/sdk/lobbies/bad%20code")).Status);
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await CallAsync(bridge, "nope", HttpMethod.Get, "/api/sdk/lobbies/ABC234")).Status);
+        Assert.Empty(_api.Requests);
+    }
+
+    [Fact]
+    public async Task Lobbies_NeedTheApi_SoOfflineIsAnHonest503()
+    {
+        var (bridge, token) = StartSession(gameId: 7);
+        _api.Offline = true;
+
+        var (status, _) = await CallAsync(bridge, token, HttpMethod.Get, "/api/sdk/lobbies/ABC234");
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, status);
+        Assert.Equal(0, bridge.PendingCount);
+    }
+
+    [Fact]
+    public async Task Me_ReturnsTheSignedInPlayersNickAndTag()
+    {
+        var (bridge, token) = StartSession(gameId: 7);
+
+        Assert.Equal(
+            HttpStatusCode.ServiceUnavailable,
+            (await CallAsync(bridge, token, HttpMethod.Get, "/api/sdk/me")).Status);
+
+        _auth.User = new UserProfileDto { Id = 3, AzureSub = "x", DisplayName = "Kasia", PlayerTag = "kasia" };
+        var (status, body) = await CallAsync(bridge, token, HttpMethod.Get, "/api/sdk/me");
+
+        Assert.Equal(HttpStatusCode.OK, status);
+        Assert.Contains("\"displayName\": \"Kasia\"", body);
+        Assert.Contains("\"playerTag\": \"kasia\"", body);
+        Assert.Contains("\"id\": 3", body);
+    }
+
     private (AchievementBridge Bridge, string Token) StartSession(int gameId, string? queuePath = null)
     {
         var bridge = CreateBridge(queuePath);
@@ -149,7 +235,7 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
     private AchievementBridge CreateBridge(string? queuePath = null)
     {
         var bridge = new AchievementBridge(
-            new SignedInAuth(),
+            _auth,
             Options.Create(new ApiClientSettings { BaseUrl = "https://api.example/" }),
             _api,
             queuePath ?? Path.Combine(_dir, $"queue-{Guid.NewGuid():N}.json"),
@@ -178,7 +264,7 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
     }
 
     /// <summary>Starts a real throw-away script and reads back the environment the launcher gave it.</summary>
-    private async Task<string> LaunchAsync(AchievementBridge bridge, int gameId)
+    private async Task<string> LaunchAsync(AchievementBridge bridge, int gameId, string? lobbyCode = null)
     {
         var outputPath = Path.Combine(_dir, "env.txt");
         var script = OperatingSystem.IsWindows()
@@ -187,8 +273,8 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
         File.WriteAllText(
             script,
             OperatingSystem.IsWindows()
-                ? $"@echo %SGS_GAME_ID%;%SGS_API_URL%;%SGS_ACHIEVEMENTS_TOKEN%> \"{outputPath}\""
-                : $"echo \"$SGS_GAME_ID;$SGS_API_URL;$SGS_ACHIEVEMENTS_TOKEN\" > \"{outputPath}\"",
+                ? $"@echo %SGS_GAME_ID%;%SGS_API_URL%;%SGS_ACHIEVEMENTS_TOKEN%;%SGS_LOBBY_CODE%> \"{outputPath}\""
+                : $"echo \"$SGS_GAME_ID;$SGS_API_URL;$SGS_ACHIEVEMENTS_TOKEN;$SGS_LOBBY_CODE\" > \"{outputPath}\"",
             new UTF8Encoding(false));
 
         var services = new ServiceCollection();
@@ -200,7 +286,8 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
         {
             GameId = gameId,
             Title = "Test",
-            ExecutablePath = script
+            ExecutablePath = script,
+            LobbyCode = lobbyCode
         });
         Assert.True(result.Started, result.Message);
 
@@ -234,7 +321,7 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
         private string _body = "{}";
 
         public bool Offline { get; set; }
-        public List<(string Url, string? Authorization, string? Body)> Requests { get; } = [];
+        public List<(string Method, string Url, string? Authorization, string? Body)> Requests { get; } = [];
 
         public void Respond(HttpStatusCode status, string body)
         {
@@ -252,6 +339,7 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
             }
 
             Requests.Add((
+                request.Method.Method,
                 request.RequestUri!.ToString(),
                 request.Headers.Authorization?.ToString(),
                 request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken)));
@@ -266,7 +354,8 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
     {
         public bool IsAvailable => true;
         public bool IsLoggedIn => true;
-        public UserProfileDto? CurrentUser => null;
+        public UserProfileDto? User { get; set; }
+        public UserProfileDto? CurrentUser => User;
         public string? LastError => null;
 
         public Task<bool> TrySilentLoginAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);

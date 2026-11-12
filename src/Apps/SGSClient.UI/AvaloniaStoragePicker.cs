@@ -51,6 +51,32 @@ internal static class AvaloniaStoragePicker
         return await MaterializeLocalPathAsync(files[0]);
     }
 
+    /// <summary>Returns the saved file's name (full path when the platform exposes one); null when cancelled.</summary>
+    public static async Task<string?> SaveTextFileAsync(TopLevel? top, string suggestedName, string content)
+    {
+        if (top is null || !top.StorageProvider.CanSave)
+        {
+            throw new InvalidOperationException("File picker unavailable.");
+        }
+
+        var file = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            SuggestedFileName = suggestedName,
+            DefaultExtension = Path.GetExtension(suggestedName).TrimStart('.'),
+            ShowOverwritePrompt = true
+        });
+        if (file is null)
+        {
+            return null;
+        }
+
+        await using var stream = await file.OpenWriteAsync();
+        stream.SetLength(0);
+        await using var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false));
+        await writer.WriteAsync(content);
+        return file.TryGetLocalPath() ?? file.Name;
+    }
+
     public static async Task<IReadOnlyList<string>> PickMultipleFilesAsync(
         TopLevel? top,
         FilePickerFileType type,

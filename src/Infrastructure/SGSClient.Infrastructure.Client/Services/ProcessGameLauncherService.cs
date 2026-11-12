@@ -7,13 +7,28 @@ using SGSClient.Core.Models;
 
 namespace SGSClient.Infrastructure.Client.Services;
 
-public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IGameLauncherService
+public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IGameLauncherService, IDisposable
 {
     private readonly ConcurrentDictionary<int, ActiveSession> _byGameId = new();
     private readonly ConcurrentDictionary<string, int> _byExe = new(StringComparer.OrdinalIgnoreCase);
+    private CancellationTokenSource? _monitorCts;
+    private Task? _monitorLoop;
 
     public bool IsRunning(int gameId) =>
         _byGameId.TryGetValue(gameId, out var session) && !session.Completed;
+
+    public void StartMonitoring()
+    {
+        if (_monitorLoop is not null) return;
+        _monitorCts = new CancellationTokenSource();
+        _monitorLoop = MonitorInstalledGamesAsync(_monitorCts.Token);
+    }
+
+    public void Dispose()
+    {
+        _monitorCts?.Cancel();
+        _monitorCts?.Dispose();
+    }
 
     public async Task<GameLaunchResult> LaunchAsync(
         GameLaunchRequest request,
@@ -51,7 +66,7 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
 
         _byExe[Normalize(exe)] = request.GameId;
 
-        var sdkEnvironment = BuildSdkEnvironment(request.GameId);
+        var sdkEnvironment = BuildSdkEnvironment(request.GameId, request.LobbyCode);
 
         Process? process;
         try
@@ -80,12 +95,18 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
     /// Gives a starting game the address of the local achievement bridge and a per-launch token.
     /// Nothing here touches the network, so it works offline; with no bridge the game just starts without it.
     /// </summary>
-    private IReadOnlyDictionary<string, string>? BuildSdkEnvironment(int gameId)
+    private IReadOnlyDictionary<string, string>? BuildSdkEnvironment(int gameId, string? lobbyCode)
     {
         try
         {
             using var scope = scopes.CreateScope();
-            return scope.ServiceProvider.GetService<AchievementBridge>()?.CreateSession(gameId);
+            var environment = scope.ServiceProvider.GetService<AchievementBridge>()?.CreateSession(gameId);
+            if (environment is null || string.IsNullOrWhiteSpace(lobbyCode))
+            {
+                return environment;
+            }
+
+            return new Dictionary<string, string>(environment) { ["SGS_LOBBY_CODE"] = lobbyCode.Trim() };
         }
         catch
         {
@@ -346,6 +367,94 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
 
     private static string Normalize(string path) =>
         Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+    private async Task MonitorInstalledGamesAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(5000, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            try
+            {
+                using var scope = scopes.CreateScope();
+                var library = scope.ServiceProvider.GetService<ILocalLibraryStore>();
+                if (library is null) continue;
+
+                var installed = await library.GetAllAsync(cancellationToken);
+                foreach (var item in installed)
+                {
+                    if (item.InstallState != Core.Enums.InstallState.Installed) continue;
+                    if (string.IsNullOrWhiteSpace(item.ExecutablePath)) continue;
+                    if (_byGameId.ContainsKey(item.GameId)) continue;
+
+                    string exe;
+                    try { exe = Path.GetFullPath(item.ExecutablePath); }
+                    catch { continue; }
+
+                    if (!IsExeRunningOnOs(exe)) continue;
+
+                    var session = new ActiveSession(item.GameId, exe, DateTimeOffset.UtcNow);
+                    if (!_byGameId.TryAdd(item.GameId, session)) continue;
+                    _byExe[Normalize(exe)] = item.GameId;
+
+                    _ = TrackExternalUntilExitAsync(session);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch
+            {
+                // best-effort monitoring
+            }
+        }
+    }
+
+    private async Task TrackExternalUntilExitAsync(ActiveSession session)
+    {
+        try
+        {
+            while (IsExeRunningOnOs(session.ExecutablePath))
+            {
+                await Task.Delay(3000);
+            }
+            await Task.Delay(1500);
+            if (IsExeRunningOnOs(session.ExecutablePath))
+            {
+                await TrackExternalUntilExitAsync(session);
+                return;
+            }
+        }
+        catch
+        {
+        }
+        finally
+        {
+            var ended = DateTimeOffset.UtcNow;
+            var duration = ended - session.StartedAtUtc;
+            session.Completed = true;
+            RemoveSession(session);
+
+            if (duration.TotalSeconds >= 1)
+            {
+                try
+                {
+                    using var scope = scopes.CreateScope();
+                    var playtime = scope.ServiceProvider.GetRequiredService<IPlaytimeStore>();
+                    await playtime.RecordSessionAsync(session.GameId, duration, ended);
+                }
+                catch { }
+            }
+        }
+    }
 
     private sealed class ActiveSession(int gameId, string executablePath, DateTimeOffset startedAtUtc)
     {

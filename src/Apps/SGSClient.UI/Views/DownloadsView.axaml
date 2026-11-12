@@ -14,11 +14,11 @@
     </Grid>
 
     <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
-      <TextBlock Text="{loc:Tr Key='Limit pasma (KB/s):'}" VerticalAlignment="Center" Opacity="0.75" FontSize="13"/>
-      <NumericUpDown Width="120" Minimum="0" Maximum="100000"
-                     Value="{Binding DownloadMaxKbps}"
-                     FormatString="0"
-                     ToolTip.Tip="0 = bez limitu"/>
+      <TextBlock Text="{loc:Tr Key='Limit pobierania (MB/s):'}" VerticalAlignment="Center" Opacity="0.75" FontSize="13"/>
+      <NumericUpDown Width="120" Minimum="0" Maximum="1000"
+                     Value="{Binding DownloadMaxMbps}"
+                     FormatString="0.##"
+                     ToolTip.Tip="{loc:Tr Key='0 = bez limitu'}"/>
       <TextBlock Text="{loc:Tr Key='0 = bez limitu'}" VerticalAlignment="Center" Opacity="0.5" FontSize="12"/>
     </StackPanel>
 

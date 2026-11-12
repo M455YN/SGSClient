@@ -7,18 +7,71 @@
 
   <Page.Resources>
     <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <local:InverseBoolToVisibilityConverter x:Key="BoolToVisInv" />
+
+    <Style x:Key="ProfileCard" TargetType="Border">
+      <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="20" />
+    </Style>
+
+    <Style x:Key="CountPill" TargetType="Border">
+      <Setter Property="Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="8,1" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="StatButton" TargetType="Button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="8,14" />
+    </Style>
   </Page.Resources>
 
   <Grid>
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup>
+        <VisualState x:Name="Wide">
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="1100" />
+          </VisualState.StateTriggers>
+        </VisualState>
+        <VisualState x:Name="Narrow">
+          <VisualState.StateTriggers>
+            <AdaptiveTrigger MinWindowWidth="0" />
+          </VisualState.StateTriggers>
+          <VisualState.Setters>
+            <Setter Target="RailColumn.Width" Value="0" />
+            <Setter Target="BodyGrid.ColumnSpacing" Value="0" />
+            <Setter Target="RightRail.(Grid.Column)" Value="0" />
+            <Setter Target="RightRail.(Grid.Row)" Value="1" />
+            <Setter Target="RightRail.Margin" Value="0,16,0,0" />
+            <Setter Target="HeroActions.(Grid.Column)" Value="1" />
+            <Setter Target="HeroActions.(Grid.Row)" Value="1" />
+            <Setter Target="HeroActions.HorizontalAlignment" Value="Left" />
+            <Setter Target="HeroActions.Margin" Value="0,16,0,0" />
+            <Setter Target="HeroGrid.Height" Value="280" />
+          </VisualState.Setters>
+        </VisualState>
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+
     <StackPanel x:Name="SignedOutPanel"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center"
                 Spacing="12"
                 MaxWidth="480"
                 Margin="32">
-      <TextBlock Text="{loc:Tr Key='Profil'}" FontSize="32" FontWeight="SemiBold" />
-      <TextBlock x:Name="SignedOutStatus" Opacity="0.75" TextWrapping="Wrap" />
-      <Button Content="{loc:Tr Key='Zaloguj się'}" Click="SignIn_Click" HorizontalAlignment="Left" Padding="16,8" />
+      <TextBlock Text="{loc:Tr Key='Profil'}" Style="{StaticResource TitleTextBlockStyle}" />
+      <TextBlock x:Name="SignedOutStatus" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+      <Button Content="{loc:Tr Key='Zaloguj się'}" Style="{StaticResource AccentButtonStyle}"
+              Click="SignIn_Click" HorizontalAlignment="Left" Padding="16,8" />
     </StackPanel>
 
     <StackPanel x:Name="TagSetupPanel"
@@ -28,249 +81,494 @@
                 MaxWidth="480"
                 Margin="32"
                 Visibility="Collapsed">
-      <TextBlock Text="{loc:Tr Key='Wybierz tag gracza'}" FontSize="32" FontWeight="SemiBold" />
+      <TextBlock Text="{loc:Tr Key='Wybierz tag gracza'}" Style="{StaticResource TitleTextBlockStyle}" />
       <TextBlock Text="{loc:Tr Key='Twój unikalny identyfikator w SGS. Inni znajdą Cię po @tagu.'}"
-                 Opacity="0.75" TextWrapping="Wrap" />
-      <TextBlock x:Name="TagPreviewText" FontSize="22" FontWeight="SemiBold" Opacity="0.9" />
+                 Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+      <TextBlock x:Name="TagPreviewText" FontSize="22" FontWeight="SemiBold" />
       <TextBox x:Name="DraftTagBox" PlaceholderText="np. m455yn" MinHeight="40"
                TextChanged="DraftTag_TextChanged" />
-      <TextBlock x:Name="TagStatusText" Opacity="0.7" TextWrapping="Wrap" FontSize="13" />
-      <Button Content="{loc:Tr Key='Zapisz tag'}" Click="ClaimTag_Click" HorizontalAlignment="Left" Padding="16,8" />
+      <TextBlock x:Name="TagStatusText" Style="{StaticResource CaptionTextBlockStyle}"
+                 Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+      <Button Content="{loc:Tr Key='Zapisz tag'}" Style="{StaticResource AccentButtonStyle}"
+              Click="ClaimTag_Click" HorizontalAlignment="Left" Padding="16,8" />
     </StackPanel>
 
     <ScrollViewer x:Name="ProfileScroll" Visibility="Collapsed">
-      <Grid>
-        <Border Height="360" VerticalAlignment="Top" IsHitTestVisible="False">
-          <Border.Background>
-            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-              <GradientStop Color="#331A3A5C" Offset="0" />
-              <GradientStop Color="#1A243848" Offset="0.45" />
-              <GradientStop Color="#00000000" Offset="1" />
-            </LinearGradientBrush>
-          </Border.Background>
-        </Border>
+      <StackPanel x:Name="ContentColumn" Padding="28,24,28,40" Spacing="16">
 
-        <Grid Padding="28" ColumnSpacing="28">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="340" />
-          </Grid.ColumnDefinitions>
+        <!-- Hero: banner art, avatar, name, bio, actions -->
+        <!-- Fixed height: the banner art would otherwise size the hero to the image. -->
+        <Grid x:Name="HeroGrid" CornerRadius="12" Height="220"
+              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+          <Rectangle>
+            <Rectangle.Fill>
+              <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="{ThemeResource SystemAccentColorDark2}" Offset="0" />
+                <GradientStop Color="{ThemeResource SystemAccentColorDark3}" Offset="1" />
+              </LinearGradientBrush>
+            </Rectangle.Fill>
+          </Rectangle>
+          <Image x:Name="BannerImage" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <Rectangle>
+            <Rectangle.Fill>
+              <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                <GradientStop Color="{ThemeResource SolidBackgroundFillColorBase}" Offset="0" />
+                <GradientStop Color="{ThemeResource SolidBackgroundFillColorBase}" Offset="0.35" />
+                <GradientStop Color="Transparent" Offset="1" />
+              </LinearGradientBrush>
+            </Rectangle.Fill>
+            <Rectangle.Opacity>0.88</Rectangle.Opacity>
+          </Rectangle>
 
-          <StackPanel Grid.Column="0" Spacing="20">
-            <Grid ColumnSpacing="20">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-              </Grid.ColumnDefinitions>
-              <Border Width="96" Height="96" CornerRadius="48"
-                      Background="#2A2A2A" BorderBrush="#55FFFFFF" BorderThickness="2">
-                <Grid>
-                  <TextBlock x:Name="AvatarInitialsText"
-                             FontSize="32" FontWeight="SemiBold"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  <Ellipse Width="96" Height="96">
-                    <Ellipse.Fill>
-                      <ImageBrush x:Name="AvatarBrush" Stretch="UniformToFill" />
-                    </Ellipse.Fill>
-                  </Ellipse>
-                </Grid>
-              </Border>
-              <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-                <TextBlock x:Name="DisplayNameText" FontSize="34" FontWeight="Bold" />
-                <TextBlock x:Name="PlayerTagText" Opacity="0.75" FontSize="16" />
-                <TextBlock x:Name="LastActivityText" Opacity="0.7" FontSize="13" />
-                <StackPanel Orientation="Horizontal" Spacing="18" Margin="0,8,0,0">
-                  <Button x:Name="FriendsText" Click="OpenFriends_Click" Tag="Friends"
-                          Background="Transparent" BorderThickness="0" Padding="0"
-                          HorizontalAlignment="Left" />
-                  <Button x:Name="FollowingText" Click="OpenFriends_Click" Tag="Following"
-                          Background="Transparent" BorderThickness="0" Padding="0"
-                          HorizontalAlignment="Left" />
-                  <Button x:Name="FollowersText" Click="OpenFriends_Click" Tag="Followers"
-                          Background="Transparent" BorderThickness="0" Padding="0"
-                          HorizontalAlignment="Left" />
-                </StackPanel>
-              </StackPanel>
+          <Grid Padding="28" ColumnSpacing="24">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="*" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid VerticalAlignment="Center">
+              <PersonPicture x:Name="AvatarPicture" Width="128" Height="128" />
+              <Ellipse Width="22" Height="22" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8"
+                       Fill="{ThemeResource SystemFillColorSuccessBrush}"
+                       Stroke="{ThemeResource SolidBackgroundFillColorBaseBrush}" StrokeThickness="3" />
             </Grid>
 
-            <StackPanel x:Name="ProfileInfoPanel" Spacing="14">
-              <StackPanel Spacing="4">
-                <TextBlock Text="{loc:Tr Key='Biografia'}" FontWeight="SemiBold" Opacity="0.55" FontSize="12" />
-                <TextBlock x:Name="BioText" TextWrapping="Wrap" Opacity="0.9" />
+            <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center" MaxWidth="680" HorizontalAlignment="Left">
+              <TextBlock x:Name="DisplayNameText" Style="{StaticResource TitleTextBlockStyle}"
+                         TextTrimming="CharacterEllipsis" />
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock x:Name="PlayerTagText" Style="{StaticResource BodyStrongTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsTextSelectionEnabled="True" />
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <Ellipse Width="8" Height="8" Fill="{ThemeResource SystemFillColorSuccessBrush}" />
+                  <TextBlock Text="Online" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource SystemFillColorSuccessBrush}" />
+                </StackPanel>
               </StackPanel>
-              <StackPanel Spacing="4">
-                <TextBlock Text="{loc:Tr Key='Lokalizacja'}" FontWeight="SemiBold" Opacity="0.55" FontSize="12" />
-                <TextBlock x:Name="LocationText" />
+              <TextBlock x:Name="BioText" TextWrapping="Wrap" MaxLines="3" TextTrimming="WordEllipsis"
+                         Margin="0,6,0,0" IsTextSelectionEnabled="True" />
+              <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,8,0,0">
+                <StackPanel x:Name="LocationPanel" Orientation="Horizontal" Spacing="6">
+                  <FontIcon Glyph="&#xE707;" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  <TextBlock x:Name="LocationText" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel x:Name="MemberSincePanel" Orientation="Horizontal" Spacing="6">
+                  <FontIcon Glyph="&#xE787;" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  <TextBlock x:Name="MemberSinceText" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                </StackPanel>
               </StackPanel>
-              <TextBlock x:Name="EmailText" Opacity="0.55" FontSize="12" />
             </StackPanel>
 
-            <StackPanel Spacing="10" Margin="0,8,0,0">
-              <TextBlock Text="{loc:Tr Key='Ściana'}" FontSize="18" FontWeight="SemiBold" />
-              <TextBlock Text="Znajomi mogą zostawić tu podpis." Opacity="0.55" FontSize="12" />
-              <TextBox x:Name="WallCommentBox" PlaceholderText="{loc:Tr Key='Napisz coś na swojej ścianie…'}"
-                       AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
-                       TextChanged="WallCommentBox_TextChanged" />
-              <Button Content="{loc:Tr Key='Dodaj podpis'}" HorizontalAlignment="Left" Padding="12,8"
-                      Click="PostWall_Click" />
-              <TextBlock x:Name="WallStatusText" Opacity="0.6" FontSize="12" />
-              <ItemsControl x:Name="WallCommentsList">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:ProfileCommentItem">
-                    <Border Margin="0,0,0,8" Padding="12" CornerRadius="8"
-                            Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
-                      <Grid>
+            <StackPanel x:Name="HeroActions" Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                        VerticalAlignment="Top" HorizontalAlignment="Right">
+              <Button Style="{StaticResource AccentButtonStyle}" Click="Edit_Click" Padding="14,7">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <FontIcon Glyph="&#xE70F;" FontSize="14" />
+                  <TextBlock Text="{loc:Tr Key='Edytuj profil'}" />
+                </StackPanel>
+              </Button>
+              <Button x:Name="MoreButton" Padding="10,7"
+                      ToolTipService.ToolTip="{loc:Tr Key='Więcej'}" AutomationProperties.Name="{loc:Tr Key='Więcej'}">
+                <FontIcon Glyph="&#xE712;" FontSize="14" />
+                <Button.Flyout>
+                  <MenuFlyout Placement="BottomEdgeAlignedRight">
+                    <MenuFlyoutItem Text="{loc:Tr Key='Kopiuj tag gracza'}" Click="CopyTag_Click">
+                      <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE8C8;" />
+                      </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutItem Text="{loc:Tr Key='Znajdź znajomych'}" Click="FindFriends_Click">
+                      <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE8FA;" />
+                      </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                    <MenuFlyoutSeparator />
+                    <MenuFlyoutItem Text="{loc:Tr Key='Wyloguj'}" Click="SignOut_Click">
+                      <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xF3B1;" />
+                      </MenuFlyoutItem.Icon>
+                    </MenuFlyoutItem>
+                  </MenuFlyout>
+                </Button.Flyout>
+              </Button>
+            </StackPanel>
+          </Grid>
+        </Grid>
+
+        <!-- Stats strip -->
+        <Border Style="{StaticResource ProfileCard}" Padding="0">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button Style="{StaticResource StatButton}" Click="OpenLibrary_Click">
+              <StackPanel HorizontalAlignment="Center">
+                <TextBlock x:Name="GamesCountText" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Key='Gry'}" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Button>
+            <Border Grid.Column="1" BorderThickness="1,0,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+              <Button Style="{StaticResource StatButton}" Click="OpenLibrary_Click">
+                <StackPanel HorizontalAlignment="Center">
+                  <TextBlock x:Name="PlaytimeStatText" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Tr Key='Czas gry'}" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Border>
+            <Border Grid.Column="2" BorderThickness="1,0,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Padding="8,14">
+                <TextBlock x:Name="AchievementsStatText" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="3" BorderThickness="1,0,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+              <Button Style="{StaticResource StatButton}" Click="OpenFriends_Click" Tag="Friends">
+                <StackPanel HorizontalAlignment="Center">
+                  <TextBlock x:Name="FriendsStatText" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Tr Key='Znajomi'}" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Border>
+            <Border Grid.Column="4" BorderThickness="1,0,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+              <Button Style="{StaticResource StatButton}" Click="OpenFriends_Click" Tag="Followers">
+                <StackPanel HorizontalAlignment="Center">
+                  <TextBlock x:Name="FollowersStatText" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Tr Key='Obserwujący'}" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Border>
+            <Border Grid.Column="5" BorderThickness="1,0,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
+              <Button Style="{StaticResource StatButton}" Click="OpenFriends_Click" Tag="Following">
+                <StackPanel HorizontalAlignment="Center">
+                  <TextBlock x:Name="FollowingStatText" Style="{StaticResource SubtitleTextBlockStyle}" HorizontalAlignment="Center" />
+                  <TextBlock Text="{loc:Tr Key='Obserwowani'}" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Border>
+          </Grid>
+        </Border>
+
+        <Grid x:Name="BodyGrid" ColumnSpacing="16">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition x:Name="RailColumn" Width="340" />
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <!-- Main column: recent activity, comments -->
+          <StackPanel Spacing="16">
+            <Grid>
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Tr Key='Ostatnia aktywność'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                <TextBlock x:Name="ActivitySummaryText" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+              </StackPanel>
+              <HyperlinkButton Content="{loc:Tr Key='Biblioteka'}" HorizontalAlignment="Right" Click="OpenLibrary_Click" />
+            </Grid>
+
+            <ItemsControl x:Name="ActivityList">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="12" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:RecentGameItem">
+                  <Border Style="{StaticResource ProfileCard}" Padding="16">
+                    <Grid ColumnSpacing="20">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200" />
+                        <ColumnDefinition Width="*" />
+                      </Grid.ColumnDefinitions>
+                      <Border Height="94" CornerRadius="6" VerticalAlignment="Top"
+                              Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                        <Grid>
+                          <TextBlock Text="{Binding TileLabel}" Style="{StaticResource SubtitleTextBlockStyle}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Visibility="{Binding HasHeader, Converter={StaticResource BoolToVisInv}}" />
+                          <Image Source="{Binding HeaderImageUrl}" Stretch="UniformToFill"
+                                 Visibility="{Binding HasHeader, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="4">
+                        <Grid>
+                          <HyperlinkButton Content="{Binding Title}" Tag="{Binding}" Click="OpenGame_Click"
+                                           Padding="0" FontWeight="SemiBold" FontSize="16"
+                                           Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                          <TextBlock Text="{Binding LastPlayedText}" Style="{StaticResource CaptionTextBlockStyle}"
+                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                     HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+                        <TextBlock Text="{Binding PlaytimeText}" Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <Grid Margin="0,10,0,0" RowSpacing="6"
+                              Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
+                          <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                          </Grid.RowDefinitions>
+                          <TextBlock Text="{loc:Tr Key='Postęp osiągnięć'}" Style="{StaticResource CaptionTextBlockStyle}" />
+                          <TextBlock Text="{Binding Achievements.ProgressText}" Style="{StaticResource CaptionTextBlockStyle}"
+                                     HorizontalAlignment="Right" />
+                          <ProgressBar Grid.Row="1" Minimum="0" Maximum="1" Value="{Binding Achievements.Fraction}" />
+                        </Grid>
+                        <Button Content="{loc:Tr Key='Osiągnięcia'}" Tag="{Binding}" Click="OpenLibraryAchievements_Click"
+                                HorizontalAlignment="Right" Padding="12,5" Margin="0,8,0,0" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border x:Name="EmptyActivityPanel" Style="{StaticResource ProfileCard}" Padding="28" Visibility="Collapsed">
+              <StackPanel Spacing="10" HorizontalAlignment="Center">
+                <FontIcon Glyph="&#xE7FC;" FontSize="32" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <TextBlock Text="{loc:Tr Key='Nie masz jeszcze gier w bibliotece.'}" HorizontalAlignment="Center" />
+                <Button Content="{loc:Tr Key='Przejdź do sklepu'}" Style="{StaticResource AccentButtonStyle}"
+                        HorizontalAlignment="Center" Click="OpenStore_Click" />
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource ProfileCard}">
+              <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Text="{loc:Tr Key='Komentarze'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                  <Border Style="{StaticResource CountPill}">
+                    <TextBlock x:Name="CommentsCountText" Style="{StaticResource CaptionTextBlockStyle}" />
+                  </Border>
+                </StackPanel>
+                <TextBox x:Name="WallCommentBox" PlaceholderText="{loc:Tr Key='Dodaj komentarz…'}"
+                         AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" MaxLength="1000"
+                         TextChanged="WallCommentBox_TextChanged" />
+                <Button Content="{loc:Tr Key='Opublikuj'}" Style="{StaticResource AccentButtonStyle}"
+                        HorizontalAlignment="Right" MinWidth="96" Click="PostWall_Click" />
+                <TextBlock x:Name="WallStatusText" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <ItemsControl x:Name="WallCommentsList">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ProfileCommentItem">
+                      <Grid Padding="0,12" ColumnSpacing="12" BorderThickness="0,1,0,0"
+                            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}">
                         <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="Auto" />
                           <ColumnDefinition Width="*" />
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="4">
-                          <TextBlock Text="{Binding AuthorLabel}" FontWeight="SemiBold" />
-                          <TextBlock Text="{Binding WhenText}" FontSize="11" Opacity="0.55" />
-                          <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                        <PersonPicture Width="32" Height="32" VerticalAlignment="Top"
+                                       DisplayName="{Binding AuthorLabel}" Initials="{Binding Initials}" />
+                        <StackPanel Grid.Column="1" Spacing="2">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <HyperlinkButton Content="{Binding AuthorLabel}" Tag="{Binding}" Click="OpenAuthor_Click"
+                                             Padding="0" FontWeight="SemiBold"
+                                             Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                            <TextBlock Text="{Binding WhenText}" Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                          </StackPanel>
+                          <TextBlock Text="{Binding Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                         </StackPanel>
-                        <Button Grid.Column="1" Content="{loc:Tr Key='Usuń'}" Padding="8,4" Tag="{Binding}"
-                                Click="DeleteWall_Click" VerticalAlignment="Top"
-                                Visibility="{Binding CanDelete, Converter={StaticResource BoolToVis}}" />
+                        <Button Grid.Column="2" Tag="{Binding}" Click="DeleteWall_Click" VerticalAlignment="Top"
+                                Background="Transparent" BorderThickness="0" Padding="6"
+                                ToolTipService.ToolTip="{loc:Tr Key='Usuń'}"
+                                AutomationProperties.Name="{loc:Tr Key='Usuń'}"
+                                Visibility="{Binding CanDelete, Converter={StaticResource BoolToVis}}">
+                          <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                        </Button>
                       </Grid>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
-
-            <StackPanel Spacing="10" Margin="0,8,0,0">
-              <TextBlock Text="{loc:Tr Key='Biblioteka'}" FontSize="18" FontWeight="SemiBold" />
-              <TextBlock Text="{loc:Tr Key='Osiągnięcia i postęp gier pojawią się tutaj.'}" Opacity="0.55" FontSize="13" />
-              <ItemsControl x:Name="LibraryList">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Grid Margin="0,0,0,10" ColumnSpacing="12">
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="48" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                      </Grid.ColumnDefinitions>
-                      <Border Width="48" Height="48" CornerRadius="4" Background="#333">
-                        <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   FontWeight="SemiBold" FontSize="12" />
-                      </Border>
-                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding Subtitle}" Opacity="0.55" FontSize="12" />
-                      </StackPanel>
-                      <Button Grid.Column="2" Content="{loc:Tr Key='Osiągnięcia'}" Tag="{Binding}"
-                              Click="OpenLibraryAchievements_Click" VerticalAlignment="Center" Padding="10,4" />
-                    </Grid>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
           </StackPanel>
 
+          <!-- Side rail -->
           <StackPanel x:Name="RightRail" Grid.Column="1" Spacing="16">
-            <Button x:Name="EditButton" Content="{loc:Tr Key='Dostosuj profil'}" HorizontalAlignment="Stretch"
-                    Padding="12,10" Click="Edit_Click" />
-            <Button Content="{loc:Tr Key='Znajomi'}" HorizontalAlignment="Stretch" Padding="12,10" Click="OpenFriendsPage_Click" />
-            <Button Content="{loc:Tr Key='Wyloguj'}" HorizontalAlignment="Stretch" Padding="12,10" Click="SignOut_Click" />
-
-            <StackPanel Spacing="10" Margin="0,8,0,0">
-              <TextBlock Text="{loc:Tr Key='Ostatnio używane gry'}" FontWeight="SemiBold" />
-              <GridView x:Name="RecentGrid" SelectionMode="None" IsItemClickEnabled="False">
-                <GridView.ItemTemplate>
-                  <DataTemplate>
-                    <Border Width="88" Height="88" CornerRadius="6" Background="#2B2B2B" Margin="4"
-                            ToolTipService.ToolTip="{Binding Title}">
-                      <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                 FontWeight="Bold" FontSize="14" />
+            <Border Style="{StaticResource ProfileCard}" Padding="16">
+              <StackPanel Spacing="12">
+                <Grid>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{loc:Tr Key='Gry'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <Border Style="{StaticResource CountPill}">
+                      <TextBlock x:Name="GamesPillText" Style="{StaticResource CaptionTextBlockStyle}" />
                     </Border>
-                  </DataTemplate>
-                </GridView.ItemTemplate>
-              </GridView>
-              <TextBlock x:Name="EmptyRecentText" Text="{loc:Tr Key='Brak gier w lokalnej bibliotece.'}"
-                         Opacity="0.5" FontSize="12" Visibility="Collapsed" />
-            </StackPanel>
+                  </StackPanel>
+                  <HyperlinkButton Content="{loc:Tr Key='Wszystkie'}" HorizontalAlignment="Right" Padding="4,2"
+                                   Click="OpenLibrary_Click" />
+                </Grid>
+                <GridView x:Name="GamesGrid" SelectionMode="None" IsItemClickEnabled="True" ItemClick="GamesGrid_ItemClick">
+                  <GridView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:RecentGameItem">
+                      <Border Width="64" Height="64" CornerRadius="6" Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                              ToolTipService.ToolTip="{Binding Title}" AutomationProperties.Name="{Binding Title}">
+                        <Grid>
+                          <TextBlock Text="{Binding TileLabel}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     FontWeight="SemiBold" FontSize="12"
+                                     Visibility="{Binding HasCover, Converter={StaticResource BoolToVisInv}}" />
+                          <Image Stretch="UniformToFill" Source="{Binding CoverImageUrl}"
+                                 Visibility="{Binding HasCover, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </GridView.ItemTemplate>
+                </GridView>
+                <TextBlock x:Name="EmptyRecentText" Text="{loc:Tr Key='Brak gier w lokalnej bibliotece.'}"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
+              </StackPanel>
+            </Border>
 
-            <StackPanel Spacing="10" Margin="0,8,0,0">
-              <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" FontWeight="SemiBold" />
-              <TextBlock x:Name="AchievementsTotalText" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
-              <ItemsControl x:Name="AchievementsList">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate>
-                    <Grid Margin="0,0,0,8" ColumnSpacing="8">
-                      <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                      </Grid.RowDefinitions>
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                      </Grid.ColumnDefinitions>
-                      <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Grid.Column="1" Text="{Binding ProgressText}" Opacity="0.75" />
-                      <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="1"
-                                   Value="{Binding Fraction}" Height="4" Margin="0,4,0,0" />
-                      <Button Grid.Row="2" Grid.ColumnSpan="2" Content="{loc:Tr Key='Pokaż wszystkie osiągnięcia'}"
-                              Tag="{Binding}" Click="OpenGameAchievements_Click" Padding="10,4" Margin="0,6,0,0" />
-                    </Grid>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </StackPanel>
-
-            <StackPanel Spacing="8" Margin="0,8,0,0">
-              <TextBlock Text="{loc:Tr Key='Gdzie gram'}" FontWeight="SemiBold" />
-              <TextBlock Text="PC" Opacity="0.75" />
-            </StackPanel>
-          </StackPanel>
-
-          <Border x:Name="EditPanel"
-                  Grid.Column="1"
-                  Visibility="Collapsed"
-                  Background="#22FFFFFF"
-                  CornerRadius="8"
-                  Padding="18"
-                  VerticalAlignment="Top">
-            <StackPanel Spacing="14">
-              <TextBlock Text="{loc:Tr Key='Dostosuj profil'}" FontSize="20" FontWeight="SemiBold" />
-              <StackPanel Spacing="6">
-                <TextBlock Text="{loc:Tr Key='Tag gracza'}" Opacity="0.6" FontSize="12" />
-                <TextBox x:Name="EditPlayerTagBox" MinHeight="36" PlaceholderText="np. m455yn" />
-              </StackPanel>
-              <StackPanel Spacing="6">
-                <TextBlock Text="{loc:Tr Key='Nazwa wyświetlana'}" Opacity="0.6" FontSize="12" />
-                <TextBox x:Name="EditDisplayNameBox" MinHeight="36" />
-              </StackPanel>
-              <StackPanel Spacing="6">
-                <TextBlock Text="{loc:Tr Key='Biografia'}" Opacity="0.6" FontSize="12" />
-                <TextBox x:Name="EditBioBox" AcceptsReturn="True" Height="110" TextWrapping="Wrap" />
-              </StackPanel>
-              <StackPanel Spacing="6">
-                <TextBlock Text="{loc:Tr Key='Lokalizacja'}" Opacity="0.6" FontSize="12" />
-                <TextBox x:Name="EditLocationBox" MinHeight="36" />
-              </StackPanel>
-              <StackPanel Spacing="6">
-                <TextBlock Text="{loc:Tr Key='Prywatność'}" Opacity="0.6" FontSize="12" />
-                <CheckBox x:Name="EditHideAchievementsBox"
-                          Content="{loc:Tr Key='Ukryj moje osiągnięcia przed innymi graczami'}" />
-              </StackPanel>
-              <StackPanel Spacing="6">
-                <TextBlock Text="{loc:Tr Key='Zdjęcie profilowe'}" Opacity="0.6" FontSize="12" />
+            <Border Style="{StaticResource ProfileCard}" Padding="16">
+              <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <Button Content="{loc:Tr Key='Zmień zdjęcie'}" Click="ChangeAvatar_Click" Padding="12,8" />
-                  <Button Content="{loc:Tr Key='Usuń'}" Click="ClearAvatar_Click" Padding="12,8" />
+                  <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <Border Style="{StaticResource CountPill}">
+                    <TextBlock x:Name="AchievementsPillText" Style="{StaticResource CaptionTextBlockStyle}" />
+                  </Border>
                 </StackPanel>
-                <TextBlock x:Name="AvatarActionStatusText" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+                <TextBlock x:Name="AchievementsTotalText" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                <ItemsControl x:Name="AchievementsList">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AchievementSummaryItem">
+                      <Button Tag="{Binding}" Click="OpenGameAchievements_Click" Background="Transparent" BorderThickness="0"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="8,6" Margin="-8,0">
+                        <Grid RowSpacing="4">
+                          <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                          </Grid.RowDefinitions>
+                          <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" Margin="0,0,56,0" />
+                          <TextBlock Text="{Binding ProgressText}" Style="{StaticResource CaptionTextBlockStyle}"
+                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                     HorizontalAlignment="Right" VerticalAlignment="Center" />
+                          <ProgressBar Grid.Row="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" />
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
-                <Button Content="{loc:Tr Key='Zapisz'}" Click="Save_Click" Padding="16,8" />
-                <Button Content="{loc:Tr Key='Anuluj'}" Click="CancelEdit_Click" Padding="16,8" />
+            </Border>
+
+            <Border Style="{StaticResource ProfileCard}" Padding="16">
+              <StackPanel Spacing="12">
+                <Grid>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{loc:Tr Key='Znajomi'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <Border Style="{StaticResource CountPill}">
+                      <TextBlock x:Name="FriendsPillText" Style="{StaticResource CaptionTextBlockStyle}" />
+                    </Border>
+                  </StackPanel>
+                  <HyperlinkButton Content="{loc:Tr Key='Wszyscy'}" HorizontalAlignment="Right" Padding="4,2"
+                                   Click="OpenFriends_Click" Tag="Friends" />
+                </Grid>
+                <ItemsControl x:Name="FriendsPreviewList">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SocialPersonItem">
+                      <Button Click="OpenFriendProfile_Click" Tag="{Binding}" Background="Transparent" BorderThickness="0"
+                              HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Padding="8,6" Margin="-8,0">
+                        <Grid ColumnSpacing="10">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                          </Grid.ColumnDefinitions>
+                          <Grid>
+                            <PersonPicture Width="32" Height="32" DisplayName="{Binding DisplayName}" Initials="{Binding Initials}" />
+                            <Ellipse Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                     Fill="{ThemeResource SystemFillColorSuccessBrush}"
+                                     Stroke="{ThemeResource CardBackgroundFillColorDefaultBrush}" StrokeThickness="2"
+                                     Visibility="{Binding IsOnline, Converter={StaticResource BoolToVis}}" />
+                          </Grid>
+                          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Subtitle}" Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                          </StackPanel>
+                        </Grid>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <StackPanel x:Name="EmptyFriendsPanel" Spacing="8" Visibility="Collapsed">
+                  <TextBlock Text="{loc:Tr Key='Nie masz jeszcze znajomych.'}" Style="{StaticResource CaptionTextBlockStyle}"
+                             Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                  <Button Content="{loc:Tr Key='Znajdź znajomych'}" Click="FindFriends_Click" />
+                </StackPanel>
               </StackPanel>
-            </StackPanel>
-          </Border>
+            </Border>
+
+            <Border Style="{StaticResource ProfileCard}" Padding="16">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{loc:Tr Key='Konto'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Name="EmailText" Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsTextSelectionEnabled="True" />
+                <Button Content="{loc:Tr Key='Wyloguj'}" Click="SignOut_Click" Margin="0,4,0,0" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </Grid>
-      </Grid>
+      </StackPanel>
     </ScrollViewer>
+
+    <TeachingTip x:Name="CopiedTip" Target="{x:Bind MoreButton}" IsLightDismissEnabled="True"
+                 Title="{loc:Tr Key='Skopiowano do schowka'}" />
+
+    <ContentDialog x:Name="EditDialog"
+                   Title="{loc:Tr Key='Edytuj profil'}"
+                   PrimaryButtonText="{loc:Tr Key='Zapisz'}"
+                   CloseButtonText="{loc:Tr Key='Anuluj'}"
+                   DefaultButton="Primary"
+                   PrimaryButtonClick="EditDialog_PrimaryButtonClick"
+                   Closed="EditDialog_Closed">
+      <ScrollViewer MaxHeight="560" Padding="0,0,12,0">
+        <StackPanel Spacing="16" Width="440">
+          <Grid ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <PersonPicture x:Name="EditAvatarPicture" Width="72" Height="72" />
+            <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="{loc:Tr Key='Zmień zdjęcie'}" Click="ChangeAvatar_Click" />
+                <Button Content="{loc:Tr Key='Usuń'}" Click="ClearAvatar_Click" />
+              </StackPanel>
+              <TextBlock x:Name="AvatarActionStatusText" Style="{StaticResource CaptionTextBlockStyle}"
+                         Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+          <TextBox x:Name="EditDisplayNameBox" Header="{loc:Tr Key='Nazwa wyświetlana'}" />
+          <TextBox x:Name="EditPlayerTagBox" Header="{loc:Tr Key='Tag gracza'}" PlaceholderText="np. m455yn" />
+          <TextBox x:Name="EditBioBox" Header="{loc:Tr Key='Biografia'}" AcceptsReturn="True" TextWrapping="Wrap"
+                   Height="110" />
+          <TextBox x:Name="EditLocationBox" Header="{loc:Tr Key='Lokalizacja'}" />
+          <ToggleSwitch x:Name="EditHideAchievementsBox" Header="{loc:Tr Key='Ukryj moje osiągnięcia przed innymi graczami'}" />
+          <ToggleSwitch x:Name="EditHideGameActivityBox" Header="{loc:Tr Key='Ukryj moje gry i czas gry przed innymi graczami'}" />
+          <InfoBar x:Name="EditErrorBar" Severity="Error" IsClosable="False" />
+        </StackPanel>
+      </ScrollViewer>
+    </ContentDialog>
   </Grid>
 </Page>

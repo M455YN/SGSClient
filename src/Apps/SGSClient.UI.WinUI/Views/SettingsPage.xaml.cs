@@ -31,14 +31,49 @@ public sealed partial class SettingsPage : Page
         StoreStatusText.Text = ViewModel.StoreStatus;
         LibrarySummaryText.Text = ViewModel.LibrarySummary;
         AboutText.Text = ViewModel.AboutText;
+        PageList.SelectedIndex = 0;
         RefreshUi();
+    }
+
+    private void PageList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Ctrl+klik odznacza element; zostajemy wtedy na bieżącej stronie.
+        if (PageList.SelectedIndex < 0)
+        {
+            return;
+        }
+
+        AppearancePage.Visibility = PageList.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+        GeneralPage.Visibility = PageList.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+        LibraryPage.Visibility = PageList.SelectedIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
+        DownloadsPage.Visibility = PageList.SelectedIndex == 3 ? Visibility.Visible : Visibility.Collapsed;
+        AccountPage.Visibility = PageList.SelectedIndex == 4 ? Visibility.Visible : Visibility.Collapsed;
+        AboutPage.Visibility = PageList.SelectedIndex == 5 ? Visibility.Visible : Visibility.Collapsed;
+        PageScroller.ChangeView(null, 0, null, true);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
         ViewModel.RefreshAccountStatus();
+        ViewModel.RefreshPreferences();
+        CloseToTraySwitch.IsOn = ViewModel.CloseToTray;
+        AutoUpdateSwitch.IsOn = ViewModel.AutoUpdateEnabled;
+        BandwidthBox.Value = ViewModel.Downloads?.DownloadMaxMbps ?? 0;
         RefreshUi();
+    }
+
+    private void CloseToTraySwitch_Toggled(object sender, RoutedEventArgs e) => ViewModel.CloseToTray = CloseToTraySwitch.IsOn;
+
+    private void AutoUpdateSwitch_Toggled(object sender, RoutedEventArgs e) => ViewModel.AutoUpdateEnabled = AutoUpdateSwitch.IsOn;
+
+    private void BandwidthBox_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
+    {
+        // Wyczyszczone pole daje NaN.
+        if (ViewModel.Downloads is { } downloads)
+        {
+            downloads.DownloadMaxMbps = double.IsNaN(args.NewValue) ? 0 : args.NewValue;
+        }
     }
 
     private void RefreshUi()

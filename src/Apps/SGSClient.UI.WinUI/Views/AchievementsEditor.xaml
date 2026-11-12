@@ -6,8 +6,11 @@
     xmlns:vm="using:SGSClient.UI.ViewModels"
     xmlns:local="using:SGSClient.UI.WinUI.Views">
 
+  <!-- Steamworks-style admin: an achievements table (each one edited in a dialog and saved at once)
+       and a stats table edited in place. -->
   <UserControl.Resources>
     <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
 
     <Style x:Key="SectionCard" TargetType="Border">
       <Setter Property="CornerRadius" Value="8" />
@@ -16,9 +19,20 @@
       <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
+    <Style x:Key="ColumnHeader" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Opacity" Value="0.7" />
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+      <Setter Property="Padding" Value="8" />
+    </Style>
   </UserControl.Resources>
 
   <StackPanel Spacing="12">
+    <!-- ===== Achievements ===== -->
     <Border Style="{StaticResource SectionCard}">
       <Grid ColumnSpacing="8">
         <Grid.ColumnDefinitions>
@@ -29,99 +43,417 @@
           <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
           <TextBlock Text="{Binding Summary}" Opacity="0.7" FontSize="12" />
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-          <Button Content="{loc:Tr Key='Dodaj osiągnięcie'}" Command="{Binding AddCommand}" />
-          <Button Content="{loc:Tr Key='Odśwież'}" Command="{Binding ReloadCommand}" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+          <Button Style="{StaticResource AccentButtonStyle}" Click="New_Click">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <FontIcon Glyph="&#xE710;" FontSize="14" />
+              <TextBlock Text="{loc:Tr Key='Nowe osiągnięcie'}" />
+            </StackPanel>
+          </Button>
+          <Button Command="{Binding ReloadCommand}" Style="{StaticResource IconButton}"
+                  ToolTipService.ToolTip="{loc:Tr Key='Odśwież'}" AutomationProperties.Name="{loc:Tr Key='Odśwież'}">
+            <FontIcon Glyph="&#xE72C;" FontSize="14" />
+          </Button>
         </StackPanel>
       </Grid>
     </Border>
 
-    <ItemsControl ItemsSource="{Binding Items}">
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="vm:StudioAchievementItem">
-          <Border Padding="12" Margin="0,0,0,8" CornerRadius="6"
-                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-            <StackPanel Spacing="8">
-              <Grid ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBox Header="{loc:Tr Key='Klucz (stały identyfikator)'}"
-                         Text="{Binding EditKey, Mode=TwoWay}" IsEnabled="{Binding IsKeyEditable}" />
-                <TextBox Grid.Column="1" Header="{loc:Tr Key='Tytuł'}" Text="{Binding EditTitle, Mode=TwoWay}" />
-              </Grid>
-              <TextBox Header="{loc:Tr Key='Opis'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64"
-                       Text="{Binding EditDescription, Mode=TwoWay}" />
-              <Grid ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBox Header="{loc:Tr Key='Tytuł (angielski)'}" Text="{Binding EditTitleEn, Mode=TwoWay}" />
-                <TextBox Grid.Column="1" Header="{loc:Tr Key='Opis (angielski)'}"
-                         Text="{Binding EditDescriptionEn, Mode=TwoWay}" />
-              </Grid>
-              <Grid ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="48" />
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Border Width="48" Height="48" CornerRadius="6"
-                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-                  <Image Source="{Binding IconPreviewUrl}" Stretch="UniformToFill"
-                         Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}" />
-                </Border>
-                <TextBox Grid.Column="1" Header="{loc:Tr Key='Adres ikony (URL)'}"
-                         Text="{Binding EditIconUrl, Mode=TwoWay}" />
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Bottom">
-                  <Button Content="{loc:Tr Key='Wgraj ikonę'}" Tag="{Binding}" Click="PickIcon_Click" />
-                  <Button Content="{loc:Tr Key='Usuń ikonę'}" Tag="{Binding}" Click="ClearIcon_Click" />
+    <Border Style="{StaticResource SectionCard}" Padding="12">
+      <StackPanel Spacing="4">
+        <Grid ColumnSpacing="10" Padding="4,0,4,6">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="32" />
+            <ColumnDefinition Width="170" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="60" />
+            <ColumnDefinition Width="64" />
+            <ColumnDefinition Width="64" />
+            <ColumnDefinition Width="130" />
+            <ColumnDefinition Width="164" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Text="ID" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="1" Text="{loc:Tr Key='API name'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="2" Text="{loc:Tr Key='Nazwa / opis'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="3" Text="{loc:Tr Key='Ukryte?'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="4" Text="{loc:Tr Key='Ikona zdobyta'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="5" Text="{loc:Tr Key='Ikona niezdobyta'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="6" Text="{loc:Tr Key='Postęp'}" Style="{StaticResource ColumnHeader}" />
+        </Grid>
+
+        <!-- empty state -->
+        <StackPanel Spacing="8" Margin="4,16" HorizontalAlignment="Center"
+                    Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVis}}">
+          <FontIcon Glyph="&#xE734;" FontSize="32" Opacity="0.5" />
+          <TextBlock Text="{loc:Tr Key='Ta gra nie ma jeszcze osiągnięć.'}" HorizontalAlignment="Center" Opacity="0.7" />
+          <Button Content="{loc:Tr Key='Dodaj pierwsze osiągnięcie'}" HorizontalAlignment="Center" Click="New_Click" />
+        </StackPanel>
+
+        <ItemsControl ItemsSource="{Binding Items}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StudioAchievementItem">
+              <Border Padding="4,8" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                <Grid ColumnSpacing="10">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="32" />
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="60" />
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="130" />
+                    <ColumnDefinition Width="164" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding RowId}" Opacity="0.7" VerticalAlignment="Top" />
+                  <TextBlock Grid.Column="1" Text="{Binding EditKey}" FontFamily="Consolas" FontSize="12"
+                             TextWrapping="Wrap" VerticalAlignment="Top" IsTextSelectionEnabled="True" />
+                  <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Top">
+                    <TextBlock Text="{Binding DisplayTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding EditDescription}" Opacity="0.75" FontSize="12" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding StatsText}" Opacity="0.55" FontSize="12" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="3" Text="{Binding HiddenText}" VerticalAlignment="Top" />
+                  <Border Grid.Column="4" Width="64" Height="64" VerticalAlignment="Top" CornerRadius="4"
+                          Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                    <Image Source="{Binding IconPreviewUrl}" Stretch="UniformToFill"
+                           Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}" />
+                  </Border>
+                  <Border Grid.Column="5" Width="64" Height="64" VerticalAlignment="Top" CornerRadius="4"
+                          Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                    <Image Source="{Binding LockedColumnUrl}" Stretch="UniformToFill" Opacity="{Binding LockedColumnOpacity}"
+                           Visibility="{Binding HasLockedColumnIcon, Converter={StaticResource BoolToVis}}" />
+                  </Border>
+                  <TextBlock Grid.Column="6" Text="{Binding ProgressText}" FontSize="12" TextWrapping="Wrap"
+                             VerticalAlignment="Top" />
+                  <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <Button Tag="{Binding}" Click="MoveUp_Click" Style="{StaticResource IconButton}"
+                            ToolTipService.ToolTip="{loc:Tr Key='Przenieś wyżej'}" AutomationProperties.Name="{loc:Tr Key='Przenieś wyżej'}">
+                      <FontIcon Glyph="&#xE70E;" FontSize="14" />
+                    </Button>
+                    <Button Tag="{Binding}" Click="MoveDown_Click" Style="{StaticResource IconButton}"
+                            ToolTipService.ToolTip="{loc:Tr Key='Przenieś niżej'}" AutomationProperties.Name="{loc:Tr Key='Przenieś niżej'}">
+                      <FontIcon Glyph="&#xE70D;" FontSize="14" />
+                    </Button>
+                    <Button Tag="{Binding}" Click="Edit_Click" Style="{StaticResource IconButton}"
+                            ToolTipService.ToolTip="{loc:Tr Key='Edytuj'}" AutomationProperties.Name="{loc:Tr Key='Edytuj'}">
+                      <FontIcon Glyph="&#xE70F;" FontSize="14" />
+                    </Button>
+                    <Button Tag="{Binding}" Click="Delete_Click" Style="{StaticResource IconButton}"
+                            ToolTipService.ToolTip="{loc:Tr Key='Usuń'}" AutomationProperties.Name="{loc:Tr Key='Usuń'}">
+                      <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
+
+    <!-- ===== Stats ===== -->
+    <Border Style="{StaticResource SectionCard}" Padding="12">
+      <StackPanel Spacing="4">
+        <Grid ColumnSpacing="8" Margin="4,0,4,8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Spacing="2">
+            <TextBlock Text="{loc:Tr Key='Statystyki'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <TextBlock Text="{loc:Tr Key='Liczby zapisywane przez grę dla każdego gracza. Osiągnięcie z rodzajem „Postęp ze statystyki” pokazuje jej wartość jako postęp i odblokowuje się po osiągnięciu celu.'}"
+                       Opacity="0.6" FontSize="12" TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+            <Button Content="{loc:Tr Key='Nowa statystyka'}" Command="{Binding AddStatCommand}" />
+            <Button Content="{loc:Tr Key='Zapisz statystyki'}" Style="{StaticResource AccentButtonStyle}" Command="{Binding SaveCommand}" />
+          </StackPanel>
+        </Grid>
+        <Grid ColumnSpacing="10" Padding="4,0,4,6" Visibility="{Binding HasStats, Converter={StaticResource BoolToVis}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="32" />
+            <ColumnDefinition Width="170" />
+            <ColumnDefinition Width="64" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="140" />
+            <ColumnDefinition Width="80" />
+            <ColumnDefinition Width="80" />
+            <ColumnDefinition Width="88" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Text="ID" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="1" Text="{loc:Tr Key='API name'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="2" Text="{loc:Tr Key='Typ'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="3" Text="{loc:Tr Key='Nazwa wyświetlana'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="4" Text="{loc:Tr Key='Zakres'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="5" Text="{loc:Tr Key='Domyślna'}" Style="{StaticResource ColumnHeader}" />
+          <TextBlock Grid.Column="6" Text="{loc:Tr Key='Tylko rośnie'}" Style="{StaticResource ColumnHeader}" />
+        </Grid>
+
+        <ItemsControl ItemsSource="{Binding Stats}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StudioStatItem">
+              <Border Padding="4,8" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+                <StackPanel Spacing="10">
+                  <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="32" />
+                      <ColumnDefinition Width="170" />
+                      <ColumnDefinition Width="64" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="140" />
+                      <ColumnDefinition Width="80" />
+                      <ColumnDefinition Width="80" />
+                      <ColumnDefinition Width="88" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding RowId}" Opacity="0.7" />
+                    <TextBlock Grid.Column="1" Text="{Binding EditKey}" FontFamily="Consolas" FontSize="12"
+                               TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                    <TextBlock Grid.Column="2" Text="{Binding TypeText}" FontSize="12" />
+                    <TextBlock Grid.Column="3" Text="{Binding EditDisplayName}" TextWrapping="Wrap" />
+                    <TextBlock Grid.Column="4" Text="{Binding RangeText}" FontSize="12" />
+                    <TextBlock Grid.Column="5" Text="{Binding EditDefault}" FontSize="12" />
+                    <TextBlock Grid.Column="6" Text="{Binding IncrementOnlyText}" FontSize="12" />
+                    <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                      <Button Tag="{Binding}" Click="ToggleStat_Click" Style="{StaticResource IconButton}"
+                              ToolTipService.ToolTip="{loc:Tr Key='Edytuj'}" AutomationProperties.Name="{loc:Tr Key='Edytuj'}">
+                        <FontIcon Glyph="&#xE70F;" FontSize="14" />
+                      </Button>
+                      <Button Tag="{Binding}" Click="RemoveStat_Click" Style="{StaticResource IconButton}"
+                              ToolTipService.ToolTip="{loc:Tr Key='Usuń'}" AutomationProperties.Name="{loc:Tr Key='Usuń'}">
+                        <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                      </Button>
+                    </StackPanel>
+                  </Grid>
+
+                  <Border Padding="12" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                          Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Spacing="8">
+                      <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="120" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Header="{loc:Tr Key='API name (np. NUM_GAMES)'}" Text="{Binding EditKey, Mode=TwoWay}"
+                                 IsEnabled="{Binding IsKeyEditable}" />
+                        <TextBox Grid.Column="1" Header="{loc:Tr Key='Nazwa wyświetlana'}" Text="{Binding EditDisplayName, Mode=TwoWay}" />
+                        <ComboBox Grid.Column="2" Header="{loc:Tr Key='Typ'}" HorizontalAlignment="Stretch"
+                                  SelectedIndex="{Binding EditTypeIndex, Mode=TwoWay}">
+                          <ComboBoxItem Content="INT" />
+                          <ComboBoxItem Content="FLOAT" />
+                        </ComboBox>
+                      </Grid>
+                      <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Header="{loc:Tr Key='Minimum (puste = brak)'}" Text="{Binding EditMin, Mode=TwoWay}" />
+                        <TextBox Grid.Column="1" Header="{loc:Tr Key='Maksimum (puste = brak)'}" Text="{Binding EditMax, Mode=TwoWay}" />
+                        <TextBox Grid.Column="2" Header="{loc:Tr Key='Wartość domyślna'}" Text="{Binding EditDefault, Mode=TwoWay}" />
+                        <TextBox Grid.Column="3" Header="{loc:Tr Key='Maks. zmiana na wywołanie'}" Text="{Binding EditMaxChange, Mode=TwoWay}" />
+                      </Grid>
+                      <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <CheckBox Content="{loc:Tr Key='Tylko rośnie (increment only)'}" IsChecked="{Binding EditIncrementOnly, Mode=TwoWay}" />
+                        <Button Grid.Column="1" Content="{loc:Tr Key='Gotowe'}" Tag="{Binding}" Click="ToggleStat_Click" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
                 </StackPanel>
-              </Grid>
-              <Grid ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="120" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBox Header="{loc:Tr Key='Punkty'}" Text="{Binding EditPoints, Mode=TwoWay}" />
-                <TextBox Grid.Column="1" Header="{loc:Tr Key='Cel licznika (puste = jednorazowe)'}"
-                         Text="{Binding EditTarget, Mode=TwoWay}" />
-              </Grid>
-              <Grid ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                  <CheckBox Content="{loc:Tr Key='Ukryte do odblokowania'}" IsChecked="{Binding EditHidden, Mode=TwoWay}" />
-                  <TextBlock Text="{Binding StatsText}" Opacity="0.7" FontSize="12" VerticalAlignment="Center" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                  <Button Content="&#xE70E;" FontFamily="Segoe MDL2 Assets" Tag="{Binding}" Click="MoveUp_Click" />
-                  <Button Content="&#xE70D;" FontFamily="Segoe MDL2 Assets" Tag="{Binding}" Click="MoveDown_Click" />
-                  <Button Content="{loc:Tr Key='Testowo odblokuj'}" Tag="{Binding}" Click="TestUnlock_Click" />
-                  <Button Content="{loc:Tr Key='Usuń'}" Tag="{Binding}" Click="Remove_Click" />
-                </StackPanel>
-              </Grid>
-            </StackPanel>
-          </Border>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </Border>
 
     <StackPanel Orientation="Horizontal" Spacing="8">
-      <Button Content="{loc:Tr Key='Zapisz osiągnięcia'}" Style="{StaticResource AccentButtonStyle}"
-              Command="{Binding SaveCommand}" Padding="16,8" />
-      <Button Content="{loc:Tr Key='Wyzeruj mój postęp'}" Command="{Binding ResetProgressCommand}" Padding="14,8" />
+      <Button Content="{loc:Tr Key='Wyzeruj mój postęp'}" Command="{Binding ResetProgressCommand}" Padding="14,8"
+              ToolTipService.ToolTip="{loc:Tr Key='Czyści Twoje osiągnięcia i statystyki w tej grze, żeby przetestować je od nowa.'}" />
     </StackPanel>
 
     <Border Style="{StaticResource SectionCard}">
       <StackPanel Spacing="6">
         <TextBlock Text="{loc:Tr Key='Integracja z grą'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-        <TextBlock Text="{Binding Help}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Help}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
       </StackPanel>
     </Border>
+
+    <!-- ===== Add / edit dialog (DataContext = the working copy from BeginEdit) ===== -->
+    <ContentDialog x:Name="EditDialog" x:DataType="vm:StudioAchievementItem"
+                   PrimaryButtonText="{loc:Tr Key='Zapisz'}" CloseButtonText="{loc:Tr Key='Anuluj'}"
+                   DefaultButton="Primary" IsPrimaryButtonEnabled="{Binding CanSave}"
+                   PrimaryButtonClick="EditDialog_PrimaryButtonClick">
+      <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">920</x:Double>
+        <x:Double x:Key="ContentDialogMaxHeight">900</x:Double>
+      </ContentDialog.Resources>
+      <ScrollViewer MaxHeight="640" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
+        <Grid ColumnSpacing="24" Width="820">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="260" />
+          </Grid.ColumnDefinitions>
+
+          <StackPanel Spacing="14">
+            <InfoBar Severity="Warning" IsClosable="False" IsOpen="{Binding HasValidationError}" Message="{Binding ValidationError}" />
+
+            <TextBox Header="{loc:Tr Key='Nazwa wyświetlana'}" PlaceholderText="{loc:Tr Key='np. Pogromca bossa'}"
+                     Text="{Binding EditTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBox Header="{loc:Tr Key='Opis'}" PlaceholderText="{loc:Tr Key='np. Pokonaj pierwszego bossa.'}"
+                     AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64"
+                     Text="{Binding EditDescription, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <StackPanel Spacing="4">
+              <TextBox Header="{loc:Tr Key='API name'}" IsEnabled="{Binding IsKeyEditable}"
+                       Text="{Binding EditKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+              <TextBlock Text="{loc:Tr Key='Tworzy się z nazwy. Tego identyfikatora używa kod gry; po zapisaniu nie można go zmienić.'}"
+                         Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <RadioButtons Header="{loc:Tr Key='Jak gra je odblokowuje?'}" SelectedIndex="{Binding EditKindIndex, Mode=TwoWay}">
+              <RadioButton Content="{loc:Tr Key='Jednorazowo — gra wywołuje „unlock”'}" />
+              <RadioButton Content="{loc:Tr Key='Licznikiem — gra wysyła postęp, np. 37 / 100'}" />
+              <RadioButton Content="{loc:Tr Key='Ze statystyki — odblokuje się samo po osiągnięciu progu'}" />
+            </RadioButtons>
+
+            <Grid ColumnSpacing="12" Visibility="{Binding ShowsTarget, Converter={StaticResource BoolToVis}}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <TextBox Header="{loc:Tr Key='Cel'}" PlaceholderText="100"
+                       Text="{Binding EditTarget, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+              <ComboBox Grid.Column="1" Header="{loc:Tr Key='Statystyka'}" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding AvailableStats}" SelectedItem="{Binding EditStatKey, Mode=TwoWay}"
+                        PlaceholderText="{loc:Tr Key='Wybierz statystykę'}"
+                        Visibility="{Binding IsStatKind, Converter={StaticResource BoolToVis}}" />
+            </Grid>
+
+            <Grid ColumnSpacing="12">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <TextBox Header="{loc:Tr Key='Punkty'}" Text="{Binding EditPoints, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+              <CheckBox Grid.Column="1" VerticalAlignment="Bottom" IsChecked="{Binding EditHidden, Mode=TwoWay}"
+                        Content="{loc:Tr Key='Ukryte do odblokowania (spoiler)'}" />
+            </Grid>
+
+            <!-- Icons: uploaded like the game's media, stored in <game>/sdk_sgs/achievements -->
+            <StackPanel Spacing="12">
+              <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="80" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Width="80" Height="80" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                  <Image Source="{Binding IconPreviewUrl}" Stretch="UniformToFill"
+                         Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Ikona zdobyta'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <TextBlock Text="{loc:Tr Key='Kolorowa, kwadratowa. Zalecane 256 × 256.'}"
+                             Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button Content="{loc:Tr Key='Wybierz plik'}" Click="PickIcon_Click" />
+                    <Button Content="{loc:Tr Key='Usuń'}" Click="ClearIcon_Click" />
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+              <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="80" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Width="80" Height="80" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+                  <Image Source="{Binding LockedColumnUrl}" Stretch="UniformToFill" Opacity="{Binding LockedColumnOpacity}"
+                         Visibility="{Binding HasLockedColumnIcon, Converter={StaticResource BoolToVis}}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Tr Key='Ikona niezdobyta'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <TextBlock Text="{loc:Tr Key='Zwykle w odcieniach szarości. Bez niej gracze widzą przyciemnioną ikonę zdobytą.'}"
+                             Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Button Content="{loc:Tr Key='Wybierz plik'}" Click="PickLockedIcon_Click" />
+                    <Button Click="Greyscale_Click" IsEnabled="{Binding HasIcon}"
+                            ToolTipService.ToolTip="{loc:Tr Key='Utwórz szarą wersję ikony zdobytej'}"
+                            AutomationProperties.Name="{loc:Tr Key='Utwórz szarą wersję ikony zdobytej'}">
+                      <FontIcon Glyph="&#xE790;" FontSize="14" />
+                    </Button>
+                    <Button Click="ClearLockedIcon_Click" ToolTipService.ToolTip="{loc:Tr Key='Usuń'}"
+                            AutomationProperties.Name="{loc:Tr Key='Usuń'}">
+                      <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                    </Button>
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+
+            <Expander Header="{loc:Tr Key='Tłumaczenie angielskie (opcjonalnie)'}" HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch">
+              <StackPanel Spacing="8">
+                <TextBox Header="{loc:Tr Key='Tytuł (angielski)'}" Text="{Binding EditTitleEn, Mode=TwoWay}" />
+                <TextBox Header="{loc:Tr Key='Opis (angielski)'}" Text="{Binding EditDescriptionEn, Mode=TwoWay}" />
+              </StackPanel>
+            </Expander>
+
+            <StackPanel Orientation="Horizontal" Spacing="12" Visibility="{Binding IsSaved, Converter={StaticResource BoolToVis}}">
+              <Button Content="{loc:Tr Key='Testowo odblokuj'}" Click="TestUnlock_Click" />
+              <TextBlock Text="{Binding StatsText}" Opacity="0.6" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- how players will see it -->
+          <StackPanel Grid.Column="1" Spacing="10">
+            <TextBlock Text="{loc:Tr Key='Tak zobaczą to gracze'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <TextBlock Text="{loc:Tr Key='Zablokowane'}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+            <Border Padding="10" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+              <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="48" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Width="48" Height="48" CornerRadius="4" VerticalAlignment="Top"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                  <Image Source="{Binding PreviewLockedIconUrl}" Stretch="UniformToFill" Opacity="{Binding LockedColumnOpacity}"
+                         Visibility="{Binding HasPreviewLockedIcon, Converter={StaticResource BoolToVis}}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{Binding PreviewLockedTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding PreviewLockedDescription}" FontSize="12" Opacity="0.75" TextWrapping="Wrap" />
+                  <ProgressBar Value="0" Maximum="{Binding PreviewProgressMax}" Margin="0,6,0,0"
+                               Visibility="{Binding ShowPreviewProgress, Converter={StaticResource BoolToVis}}" />
+                  <TextBlock Text="{Binding PreviewProgressText}" FontSize="12" Opacity="0.6"
+                             Visibility="{Binding ShowPreviewProgress, Converter={StaticResource BoolToVis}}" />
+                </StackPanel>
+              </Grid>
+            </Border>
+            <TextBlock Text="{loc:Tr Key='Odblokowane'}" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" />
+            <Border Padding="10" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
+              <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="48" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Width="48" Height="48" CornerRadius="4" VerticalAlignment="Top"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                  <Image Source="{Binding IconPreviewUrl}" Stretch="UniformToFill"
+                         Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="{Binding DisplayTitle}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding EditDescription}" FontSize="12" Opacity="0.75" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </StackPanel>
+        </Grid>
+      </ScrollViewer>
+    </ContentDialog>
   </StackPanel>
 </UserControl>

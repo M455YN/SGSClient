@@ -34,6 +34,7 @@ public sealed partial class MainWindow : Window
         Sidebar.ViewModel.SetNavigateHandler(NavigateByTag);
         Sidebar.ViewModel.SetOpenDetailsHandler(OpenGameDetails);
         Sidebar.ViewModel.SetOpenPropertiesHandler(OpenGameProperties);
+        App.Services.GetService<FriendsViewModel>()?.SetOpenFullProfileHandler(OpenUserProfile);
         ContentFrame.Navigate(typeof(HomePage));
         _ = Sidebar.InitializeAsync();
         WireDownloadStatusBar();
@@ -64,7 +65,15 @@ public sealed partial class MainWindow : Window
             }
 
             e.Cancel = true;
-            AppWindow.Hide();
+            if (App.Services.GetService<IClientUserSettingsStore>()?.Load().CloseToTray ?? true)
+            {
+                AppWindow.Hide();
+            }
+            else
+            {
+                // Po bieżącym Closing: ExitApplication sam zamyka okno.
+                DispatcherQueue.TryEnqueue(ExitApplication);
+            }
         };
     }
 
@@ -153,6 +162,8 @@ public sealed partial class MainWindow : Window
         void Refresh()
         {
             OfflineBanner.Visibility = network.IsOnline ? Visibility.Collapsed : Visibility.Visible;
+            MaintenanceBanner.Visibility = network.IsMaintenance ? Visibility.Visible : Visibility.Collapsed;
+            MaintenanceBannerText.Text = MaintenanceNotice.Text(App.Services.GetService<IAuthSession>());
         }
 
         network.Changed += (_, _) =>
@@ -254,6 +265,9 @@ public sealed partial class MainWindow : Window
     private void FriendsStatusButton_OnClick(object sender, RoutedEventArgs e) =>
         NavigateByTagPublic("Friends");
 
+    public Task ReloadHomeLibraryAsync() =>
+        ContentFrame.Content is HomePage home ? home.ViewModel.ReloadLibraryAsync() : Task.CompletedTask;
+
     public void RefreshSidebar()
     {
         Sidebar.ViewModel.RefreshProfile();
@@ -266,9 +280,73 @@ public sealed partial class MainWindow : Window
         Sidebar.ViewModel.RefreshProfile();
     }
 
+    /// <summary>Leaving the page mid-upload drops its transient view model and breaks the upload.</summary>
+    private bool BlockedByUpload()
+    {
+        var busy = ContentFrame.Content switch
+        {
+            PublishPage p => p.ViewModel.IsBusy,
+            AddMediaPage m => m.ViewModel.IsBusy,
+            AddStoryPage s => s.ViewModel.IsBusy,
+            _ => false
+        };
+        if (busy)
+        {
+            Sidebar.ViewModel.SelectNav(_contentNavTag); // revert the highlight the click already moved
+        }
+
+        return busy;
+    }
+
+    private static readonly TimeSpan PageLoadTimeout = TimeSpan.FromSeconds(20);
+    private int _pageLoadVersion;
+
+    /// <summary>Shows the blurred logo overlay until the new page reports its data is loaded.</summary>
+    private async void ContentFrame_Navigated(object sender, Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+    {
+        var version = ++_pageLoadVersion;
+        PageLoadingFadeOut.Stop();
+        PageLoadingOverlay.Opacity = 1;
+        PageLoadingOverlay.Visibility = Visibility.Visible;
+        PageLoadingPulse.Begin();
+
+        // The page's OnNavigatedTo runs inside the same Navigate call; read Ready once it has.
+        await Task.Yield();
+        var ready = (e.Content as ILoadingPage)?.Ready ?? Task.CompletedTask;
+        if (ready.IsCompleted)
+        {
+            // Nothing to wait for (static page or cached data): drop it before it is ever drawn, no flash.
+            if (version == _pageLoadVersion)
+            {
+                PageLoadingFadeOut_Completed(null, EventArgs.Empty);
+            }
+        }
+        else
+        {
+            await Task.WhenAny(ready, Task.Delay(PageLoadTimeout));
+            if (version == _pageLoadVersion)
+            {
+                PageLoadingFadeOut.Begin();
+            }
+        }
+
+        // Same path as before the overlay: a failed load reaches App.UnhandledException.
+        if (ready.IsFaulted)
+        {
+            throw ready.Exception!.InnerException ?? ready.Exception;
+        }
+    }
+
+    private void PageLoadingFadeOut_Completed(object? sender, object e)
+    {
+        PageLoadingPulse.Stop();
+        PageLoadingOverlay.Visibility = Visibility.Collapsed;
+    }
+
     public void NavigateTo(Type pageType, object? parameter = null, string? selectTag = null)
     {
-        if (LoginGatePanel.Visibility == Visibility.Visible)
+        if (LoginGatePanel.Visibility == Visibility.Visible
+            || (pageType != typeof(FriendsPage) && BlockedByUpload()))
         {
             return;
         }
@@ -313,6 +391,12 @@ public sealed partial class MainWindow : Window
     public void NavigateByTagPublic(string tag)
     {
         if (LoginGatePanel.Visibility == Visibility.Visible)
+        {
+            return;
+        }
+
+        // Friends is an overlay, the upload page stays alive under it.
+        if (tag != "Friends" && BlockedByUpload())
         {
             return;
         }
@@ -404,6 +488,24 @@ public sealed partial class MainWindow : Window
         SocialPanel.Visibility = Visibility.Collapsed;
         _socialOpen = false;
         Sidebar.ViewModel.SelectNav(_contentNavTag);
+    }
+
+    /// <summary>Full-page profile of a player; the signed-in user's own id opens the Account page.</summary>
+    public void OpenUserProfile(int userId)
+    {
+        if (userId <= 0)
+        {
+            return;
+        }
+
+        CloseSocialOverlay();
+        if (userId == App.Services.GetService<IAuthSession>()?.CurrentUser?.Id)
+        {
+            NavigateByTagPublic("Account");
+            return;
+        }
+
+        NavigateTo(typeof(UserProfilePage), userId);
     }
 
     private void OpenGameDetails(int gameId)

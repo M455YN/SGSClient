@@ -67,6 +67,8 @@
           </StackPanel>
         </Button>
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+          <Button Content="{Binding JoinLabel}" Tag="{Binding}" Click="JoinLobby_Click" Style="{StaticResource CompactAccentButton}"
+                  Visibility="{Binding HasLobby, Converter={StaticResource BoolToVis}}" />
           <Button Content="{loc:Tr Key='Napisz'}" Tag="{Binding}" Click="Message_Click" Style="{StaticResource CompactButton}"
                   Visibility="{Binding ShowMessage, Converter={StaticResource BoolToVis}}" />
           <Button Content="{loc:Tr Key='Akceptuj'}" Tag="{Binding}" Click="Accept_Click" Style="{StaticResource CompactAccentButton}"
@@ -81,28 +83,6 @@
                   Visibility="{Binding ShowUnfollow, Converter={StaticResource BoolToVis}}" />
         </StackPanel>
       </Grid>
-    </DataTemplate>
-
-    <DataTemplate x:Key="ProfileCommentTemplate" x:DataType="vm:ProfileCommentItem">
-      <Border Margin="0,0,0,8" Padding="12" CornerRadius="8"
-              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1">
-        <Grid ColumnSpacing="8">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-          </Grid.ColumnDefinitions>
-          <StackPanel Spacing="4">
-            <TextBlock Text="{Binding AuthorLabel}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-            <TextBlock Text="{Binding WhenText}" Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
-          </StackPanel>
-          <Button Grid.Column="1" Content="{loc:Tr Key='Usuń'}" Tag="{Binding}" Click="DeleteComment_Click"
-                  Style="{StaticResource CompactButton}" VerticalAlignment="Top"
-                  Visibility="{Binding CanDelete, Converter={StaticResource BoolToVis}}" />
-        </Grid>
-      </Border>
     </DataTemplate>
 
     <DataTemplate x:Key="ChatThreadTemplate" x:DataType="vm:ChatThreadItem">
@@ -127,17 +107,6 @@
       </Button>
     </DataTemplate>
 
-    <DataTemplate x:Key="ChatMessageTemplate" x:DataType="vm:ChatMessageItem">
-      <Border Margin="0,0,0,6" Padding="10,8" CornerRadius="8" MaxWidth="280"
-              HorizontalAlignment="Left"
-              Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}">
-        <StackPanel Spacing="2">
-          <TextBlock Text="{Binding Meta}" Style="{StaticResource CaptionTextBlockStyle}"
-                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="10" />
-          <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-    </DataTemplate>
   </Page.Resources>
 
   <Grid Padding="16,12,12,12" RowSpacing="8">
@@ -178,50 +147,6 @@
         <TextBlock x:Name="StatusText" Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
 
-        <!-- Public profile + wall -->
-        <StackPanel x:Name="ProfilePanel" Spacing="10" Visibility="Collapsed">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="{loc:Tr Key='← Wróć'}" Click="CloseProfile_Click" Style="{StaticResource CompactButton}" />
-            <Button x:Name="MessageFromProfileButton" Content="{loc:Tr Key='Napisz wiadomość'}"
-                    Click="MessageFromProfile_Click" Style="{StaticResource CompactAccentButton}" />
-          </StackPanel>
-          <TextBlock x:Name="ProfileHeaderText" Style="{StaticResource TitleTextBlockStyle}" />
-          <TextBlock x:Name="ProfileSubtitleText" Style="{StaticResource CaptionTextBlockStyle}"
-                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-          <TextBlock Text="{loc:Tr Key='Osiągnięcia'}" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
-          <TextBlock x:Name="ProfileAchievementsText" Style="{StaticResource CaptionTextBlockStyle}"
-                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
-          <ItemsControl x:Name="ProfileAchievementsList">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <Grid Margin="0,0,0,8" ColumnSpacing="8">
-                  <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                  </Grid.RowDefinitions>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Grid.Column="1" Text="{Binding ProgressText}" Opacity="0.75" />
-                  <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="1"
-                               Value="{Binding Fraction}" Height="4" Margin="0,4,0,0" />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-          <TextBlock Text="{loc:Tr Key='Ściana'}" Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
-          <TextBox x:Name="ProfileCommentBox" PlaceholderText="{loc:Tr Key='Podpisz się pod profilem…'}"
-                   AcceptsReturn="True" TextWrapping="Wrap" MinHeight="56"
-                   TextChanged="ProfileCommentBox_TextChanged" />
-          <Button Content="{loc:Tr Key='Dodaj podpis'}" Style="{StaticResource CompactAccentButton}"
-                  Click="PostComment_Click" HorizontalAlignment="Left" />
-          <TextBlock x:Name="ProfileStatusText" Style="{StaticResource CaptionTextBlockStyle}"
-                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-          <ItemsControl x:Name="ProfileCommentsList" ItemTemplate="{StaticResource ProfileCommentTemplate}" />
-        </StackPanel>
-
         <!-- Chat -->
         <Grid x:Name="ChatPanel" MinHeight="320" ColumnSpacing="10" Visibility="Collapsed">
           <Grid.ColumnDefinitions>
@@ -235,22 +160,6 @@
             <TextBlock x:Name="EmptyChatText" Text="{loc:Tr Key='Brak rozmów.'}" Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             <ItemsControl x:Name="ChatThreadsList" ItemTemplate="{StaticResource ChatThreadTemplate}" />
-          </StackPanel>
-          <StackPanel x:Name="ChatConversationPanel" Grid.Column="1" Spacing="8" Visibility="Collapsed">
-            <TextBlock x:Name="ChatPeerTitleText" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="16" />
-            <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto">
-              <ItemsControl x:Name="ChatMessagesList" ItemTemplate="{StaticResource ChatMessageTemplate}" />
-            </ScrollViewer>
-            <Grid ColumnSpacing="8">
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-              </Grid.ColumnDefinitions>
-              <TextBox x:Name="ChatDraftBox" PlaceholderText="{loc:Tr Key='Wiadomość…'}"
-                       KeyDown="ChatDraft_KeyDown" TextChanged="ChatDraftBox_TextChanged" />
-              <Button Grid.Column="1" Content="{loc:Tr Key='Wyślij'}" Style="{StaticResource AccentButtonStyle}"
-                      Click="SendChat_Click" />
-            </Grid>
           </StackPanel>
         </Grid>
 

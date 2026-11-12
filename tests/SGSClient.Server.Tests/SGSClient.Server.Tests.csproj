@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Apps\SGSClient.Api\SGSClient.Api.csproj" />
     <ProjectReference Include="..\..\src\Infrastructure\SGSClient.Infrastructure.Server\SGSClient.Infrastructure.Server.csproj" />
   </ItemGroup>
 

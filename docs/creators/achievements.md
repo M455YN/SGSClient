@@ -1,106 +1,171 @@
-# Achievements / Osiągnięcia
+# Osiągnięcia i statystyki
 
-SGS achievements are plain HTTP. Any engine that can send a `POST` request can unlock them — no SDK, no native plugin.
+Osiągnięcia w SGS działają jak w Steamworks: każde ma stały **API name**, nazwę i opis, flagę ukrycia, ikonę zdobytą i niezdobytą, a postęp może wynikać ze **statystyki** gracza. Komunikacja to zwykłe HTTP. Każdy silnik, który potrafi wysłać `POST`, może je odblokowywać. Nie potrzebujesz SDK ani natywnej wtyczki.
 
-Osiągnięcia w SGS to zwykłe HTTP. Każdy silnik, który potrafi wysłać `POST`, może je odblokowywać — bez SDK i bez natywnych wtyczek.
-
-## 1. Define them / Zdefiniuj osiągnięcia
-
-Two ways, use whichever fits your workflow / Dwa sposoby, wybierz wygodniejszy:
-
-- **Creator panel** (Admins: Admin panel, any game): pick the game → **Achievements** tab → **Add achievement** → **Save achievements**. / **Panel twórcy** (admini: Panel admina, dowolna gra): wybierz grę → zakładka **Osiągnięcia** → **Dodaj osiągnięcie** → **Zapisz osiągnięcia**.
-- **Package manifest** (`achievements` array in `sgs-manifest.json`): published together with the build. / **Manifest paczki** (tablica `achievements` w `sgs-manifest.json`): publikowane razem z buildem.
-
-| Field / Pole | Meaning / Znaczenie |
+| Steamworks | SGS |
 |---|---|
-| `key` | Permanent id used by your game code, e.g. `first_boss`. Lowercase letters, digits, `_` and `-`, up to 64 characters. **Never rename it** — a new key is a new achievement. / Stały identyfikator w kodzie gry. Małe litery, cyfry, `_` i `-`, do 64 znaków. **Nie zmieniaj go** — nowy klucz to nowe osiągnięcie. |
-| `title`, `description` | Shown to players (128 / 512 characters). |
-| `translations` | `{ "en": { "title": "…", "description": "…" } }`, up to 10 language codes. The panel edits English; other codes are kept. Players on that language see the translation, everyone else the base text. / Do 10 kodów języków. Panel edytuje angielski, pozostałe kody są zachowywane. |
-| `icon` (manifest) / Icon (panel) | An `http(s)` URL, an image path inside the ZIP (manifest), or an uploaded file (panel: **Upload icon**). png, jpg, webp, gif. / URL `http(s)`, ścieżka obrazu w ZIP (manifest) albo wgrany plik (panel: **Wgraj ikonę**). |
-| `points` | 0–1000, cosmetic. |
-| `target` | Absent = one-shot unlock. A number (2–1 000 000) = counter that unlocks when progress reaches it. / Brak = jednorazowe. Liczba = licznik, który odblokowuje się po osiągnięciu wartości. |
-| `hidden` | Title, description and icon stay empty for players until unlocked. / Tytuł, opis i ikona są puste dla graczy do czasu odblokowania. |
+| API Name (`ACH_WIN_ONE_GAME`) | `key` — wielkość liter bez znaczenia, zapisywany małymi literami |
+| Display Name / Description | `title` / `description` (+ `translations`) |
+| Hidden (Spoiler) | `hidden` |
+| Achieved / Unachieved Icon | `icon` / `lockedIcon` |
+| Progress stat + min/max | `stat` + `target` (postęp od 0 do `target`) |
+| Stats: INT / FLOAT, min, max, default, max change, increment only | `stats` (bez AVGRATE i statystyk agregowanych) |
+| `SetAchievement` / `SetStat` + `StoreStats` | `POST …/unlock` / `POST /api/sdk/stats/{key}` (zapis od razu) |
+| `GetAchievementAchievedPercent` | `rarityPercent` w liście osiągnięć |
+| `GetAchievementAndUnlockTime` | `unlockedAtUtc` |
+| `ResetAllStats(true)` | **Wyzeruj mój postęp** w panelu (Twoje osiągnięcia i statystyki w tej grze) |
 
-Up to 500 achievements per game. Removing one only deactivates it: players keep what they earned, and adding the same key back restores it.
+## 1. Zdefiniuj osiągnięcia
 
-Do 500 osiągnięć na grę. Usunięcie tylko je dezaktywuje: gracze zachowują zdobyte, a dodanie tego samego klucza przywraca osiągnięcie.
+Masz dwa sposoby. Wybierz ten, który pasuje do Twojego workflow:
+
+- **Panel twórcy** (admini: Panel admina, dowolna gra): wybierz grę → zakładka **Osiągnięcia**. Widok jest tabelą jak w Steamworks (Game Admin → Achievements): kolumny **ID**, **API name**, **Nazwa / opis**, **Ukryte?**, **Ikona zdobyta**, **Ikona niezdobyta**, **Postęp** i w każdym wierszu przyciski: przenieś wyżej / niżej, **Edytuj**, **Usuń**. **Nowe osiągnięcie** i **Edytuj** otwierają okienko; **Zapisz** w okienku od razu zapisuje osiągnięcie na serwerze, a **Anuluj** niczego nie zmienia. Usunięcie i zmiana kolejności też zapisują się od razu (usunięcie po potwierdzeniu). Pod tabelą jest tabela **Statystyki** (**Nowa statystyka**, **Zapisz statystyki**).
+- **Manifest paczki** (tablice `achievements` i `stats` w `sgs-manifest.json`): publikowane razem z buildem.
+
+![Tabela osiągnięć w Panelu twórcy, układ jak w Steamworks](../assets/screenshots/osiagniecia-tabela.png)
+
+### Okienko osiągnięcia
+
+**Nowe osiągnięcie** i **Edytuj** otwierają okienko z polami:
+
+- **Nazwa wyświetlana** — z niej sam tworzy się **API name** (np. „Pogromca bossa” → `ach_pogromca_bossa`). Możesz go zmienić, dopóki osiągnięcie nie jest zapisane.
+- **Jak gra je odblokowuje?** — *Jednorazowo*, *Licznikiem* (pojawia się pole **Cel**) albo *Ze statystyki* (**Cel** + wybór **Statystyki** z listy). Widać tylko pola pasujące do wybranego rodzaju.
+- **Ikona zdobyta** / **Ikona niezdobyta** — **Wybierz plik** jak przy multimediach gry. Przycisk ◐ obok ikony niezdobytej robi jej szarą wersję z ikony zdobytej (jak automatyczne ikony w Steam).
+- Błędy (pusta nazwa, zajęty API name, brak celu) pokazują się od razu nad formularzem, a **Zapisz** jest wtedy wyłączony.
+- Po prawej podgląd „Tak zobaczą to gracze”: wersja zablokowana (z „Ukryte osiągnięcie” dla spoilera i paskiem postępu) i odblokowana.
+
+| Pole | Znaczenie |
+|---|---|
+| `key` (API name) | Stały identyfikator używany w kodzie gry, np. `ACH_WIN_ONE_GAME` albo `first_boss`. Litery, cyfry, `_` i `-`, do 64 znaków. Wielkość liter nie ma znaczenia (serwer zapisuje małymi literami). **Nie zmieniaj go.** Nowy klucz to nowe osiągnięcie. |
+| `title`, `description` | Nazwa wyświetlana i opis (do 128 i 512 znaków). |
+| `translations` | `{ "en": { "title": "…", "description": "…" } }`, do 10 kodów języków. Panel edytuje wersję angielską, pozostałe kody są zachowywane. Gracze z danym językiem widzą tłumaczenie, pozostali tekst podstawowy. |
+| `icon` | Ikona zdobyta: adres `http(s)`, ścieżka obrazu w ZIP (manifest) albo plik wgrany w panelu (**Edytuj** → **Ikona zdobyta** → **Wybierz plik**, tak jak multimedia gry). Formaty: png, jpg, webp, gif. Kwadratowa, zalecane 256×256 (min. 64×64). |
+| `lockedIcon` | Ikona niezdobyta, zwykle w odcieniach szarości. Te same formy co `icon`. Bez niej gracze widzą przyciemnioną ikonę zdobytą. |
+| `points` | 0–1000, wartość kosmetyczna. |
+| `target` | Brak = odblokowanie jednorazowe. Liczba (2–1 000 000) = licznik albo próg statystyki, po którego osiągnięciu osiągnięcie się odblokowuje. |
+| `stat` | API name statystyki, z której wynika postęp (wymaga `target`). Patrz [statystyki](#2-statystyki). |
+| `hidden` | Spoiler: nazwa, opis i obie ikony są puste dla graczy do momentu odblokowania. Lista pokazuje wtedy „Ukryte osiągnięcie”. |
+
+Ikony wgrane w panelu i wyciągnięte z ZIP-a leżą przy grze na serwerze, w folderze `<symbol gry>/sdk_sgs/achievements/` (`<api name>.png` i `<api name>_locked.png` dla ikony niezdobytej) i są dostępne pod `/api/games/media/<symbol gry>/sdk_sgs/achievements/<plik>`. Nowe osiągnięcie jest zapisywane automatycznie przy wgrywaniu pierwszej ikony, bo plik nosi nazwę API name.
+
+Kolejność w tabeli (strzałki w formularzu) jest kolejnością, w jakiej gracze widzą osiągnięcia. Na grę przypada do 500 osiągnięć. Usunięcie osiągnięcia tylko je dezaktywuje: gracze zachowują zdobyte, a ponowne dodanie tego samego klucza je przywraca.
+
+![Okienko „Nowe osiągnięcie” z rodzajem „Ze statystyki” i podglądem dla graczy](../assets/screenshots/osiagniecia-nowe.png)
+
+![Okienko „Edytuj osiągnięcie” z ikoną zdobytą i niezdobytą](../assets/screenshots/osiagniecia-edycja.png)
 
 ### Manifest
 
 ```json
 "achievements": [
-  { "key": "first_run", "title": "Pierwszy bieg", "description": "Ukończ pierwszy poziom.",
-    "icon": "media/first_run.png", "points": 10,
+  { "key": "ACH_FIRST_RUN", "title": "Pierwszy bieg", "description": "Ukończ pierwszy poziom.",
+    "icon": "media/first_run.png", "lockedIcon": "media/first_run_gray.png", "points": 10,
     "translations": { "en": { "title": "First run", "description": "Finish the first level." } } },
-  { "key": "marathon", "title": "Maratończyk", "points": 50, "target": 100 }
+  { "key": "ACH_MARATHON", "title": "Maratończyk", "points": 50, "stat": "DISTANCE_KM", "target": 100 }
+],
+"stats": [
+  { "key": "DISTANCE_KM", "displayName": "Przebiegnięte km", "type": "Float", "minValue": 0, "incrementOnly": true }
 ]
 ```
 
-Absent `achievements` leaves the game's achievements untouched. A present array — even an empty one — **replaces** them on publish, so the manifest wins over the panel. See [`schemas/examples/demo-runner.sgs-manifest.json`](../../schemas/examples/demo-runner.sgs-manifest.json).
+Brak tablicy `achievements` zostawia osiągnięcia i statystyki gry bez zmian. Obecna tablica, nawet pusta, **zastępuje** osiągnięcia przy publikacji, więc manifest wygrywa z Panelem twórcy. `stats` jest czytane tylko razem z `achievements`: obecne zastępuje statystyki, brak zostawia je bez zmian. Każda statystyka użyta w polu `stat` musi być zadeklarowana w `stats` tego samego manifestu.
 
-Brak `achievements` zostawia osiągnięcia gry bez zmian. Obecna tablica — nawet pusta — **zastępuje** je przy publikacji, więc manifest wygrywa z panelem.
+**Ikony bez wpisywania ścieżek.** Pliki w folderze gry `sdk_sgs/achievements/` są dobierane do osiągnięć po nazwie, gdy osiągnięcie w manifeście nie ma pola `icon` / `lockedIcon`: `sdk_sgs/achievements/<api name>.png` to ikona zdobyta, `<api name>_locked.png` — niezdobyta (dowolny dozwolony format, wielkość liter bez znaczenia, bez podfolderów). Ścieżka podana wprost w manifeście ma pierwszeństwo.
 
-The store's **Achievements** feature flag follows the list automatically. **Test unlock** unlocks an achievement on your own account; **Reset my progress** clears your own progress for the game.
+**Pobierz manifest** (Panel twórcy / Admin) zapisuje teraz w `sgs-manifest.json` także `achievements` i `stats` z serwera, a wgrane ikony pobiera obok niego do `sdk_sgs/achievements/`. Ikona, której nie udało się pobrać, zostaje w manifeście jako adres URL. Zapisz manifest w folderze gry i publikuj ten folder — osiągnięcia i ikony pojadą razem z buildem.
 
-Flaga funkcji **Osiągnięcia** w sklepie sama podąża za listą. **Testowo odblokuj** odblokowuje osiągnięcie na Twoim koncie; **Wyzeruj mój postęp** czyści Twój postęp w tej grze.
+Publikacja z formularza (**Opublikuj** / **Opublikuj nową wersję**) zachowuje `achievements` i `stats` z pliku w folderze (wcześniej przepisanie manifestu z formularza je gubiło) i ostrzega, że zastąpią listę z Panelu twórcy. Pełny przykład: [`demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json).
 
-Players see the list on the game page (**Achievements** tab) and a per-game summary on their profile (visible to others unless the player hides it).
+Flaga funkcji **Osiągnięcia** w sklepie włącza się automatycznie, gdy lista nie jest pusta.
 
-Gracze widzą listę na stronie gry (zakładka **Osiągnięcia**) i podsumowanie per gra w profilu.
+### Testowanie
 
-## 2. What your game receives / Co dostaje gra
+- **Testowo odblokuj** (w okienku edycji zapisanego osiągnięcia) odblokowuje je na Twoim koncie.
+- **Wyzeruj mój postęp** czyści Twoje osiągnięcia i statystyki w tej grze (odpowiednik `ResetAllStats(true)` / `reset_all_stats` w Steam). Postęp innych graczy zostaje.
 
-When the player starts the game from the SGS client, the process gets three environment variables:
+### Co widzą gracze
+
+Na stronie gry (zakładka **Osiągnięcia**) i w oknie **Pokaż wszystkie osiągnięcia** każde osiągnięcie ma ikonę (niezdobytą lub przyciemnioną, dopóki jest zablokowane), pasek postępu dla liczników i statystyk, datę odblokowania i globalny procent graczy, którzy je zdobyli. Ukryte i niezdobyte pokazują się jako „Ukryte osiągnięcie”. W profilu jest podsumowanie per gra, widoczne dla innych, o ile gracz tego nie ukrył.
+
+![Zakładka Osiągnięcia na stronie gry: odblokowane, postęp ze statystyk i ukryte osiągnięcie](../assets/screenshots/osiagniecia-gracz.png)
+
+![Okno wszystkich osiągnięć gry z postępem i procentem graczy](../assets/screenshots/osiagniecia-okno.png)
+
+## 2. Statystyki
+
+Statystyka to liczba, którą gra zapisuje dla każdego gracza (wygrane gry, przebyty dystans). Osiągnięcie z polem `stat` traktuje jej wartość jako postęp i odblokowuje się samo, gdy wartość dojdzie do `target`. Tak w Steam działają osiągnięcia typu „Wygraj 100 gier”.
+
+![Tabela statystyk z otwartym wierszem do edycji](../assets/screenshots/osiagniecia-statystyki.png)
+
+| Pole | Znaczenie |
+|---|---|
+| `key` (API name) | Np. `NUM_GAMES`. Te same zasady co klucz osiągnięcia. |
+| `displayName` | Nazwa dla ludzi (do 128 znaków). |
+| `type` | `Int` (liczby całkowite) albo `Float`. |
+| `minValue`, `maxValue` | Zakres. Brak = bez ograniczenia. |
+| `defaultValue` | Wartość, zanim gra cokolwiek zapisze (domyślnie 0). |
+| `maxChange` | Największa zmiana w jednym wywołaniu. Brak = bez limitu. |
+| `incrementOnly` | Wartość może tylko rosnąć. |
+
+Zapis łamiący którąś z tych zasad jest **odrzucany** (`400`), a nie przycinany — jak `k_EResultInvalidParam` w Steam. Do 100 statystyk na grę. Usunięcie statystyki, której wciąż używa jakieś osiągnięcie, jest blokowane przy zapisie. Postęp osiągnięcia to wartość statystyki zaokrąglona w dół i przycięta do `0…target`; raz zdobyte osiągnięcie zostaje zdobyte, nawet jeśli statystyka później spadnie.
+
+Na osiągnięciu ze statystyką nie da się wywołać `progress` (`400`) — ustaw statystykę. `unlock` działa zawsze.
+
+## 3. Co dostaje gra
 
 Gdy gracz uruchamia grę z klienta SGS, proces dostaje trzy zmienne środowiskowe:
 
-| Variable | Example | Meaning |
+| Zmienna | Przykład | Znaczenie |
 |---|---|---|
-| `SGS_API_URL` | `http://127.0.0.1:51234` | Address of the **local SGS bridge** (loopback only) / adres **lokalnego mostu SGS** (tylko pętla zwrotna) |
-| `SGS_GAME_ID` | `12` | Id of your game / id Twojej gry |
-| `SGS_ACHIEVEMENTS_TOKEN` | `3f9a…` | Random per-launch token that only the bridge accepts / losowy token na uruchomienie, akceptowany tylko przez most |
+| `SGS_API_URL` | `http://127.0.0.1:51234` | Adres **lokalnego mostu SGS** (tylko pętla zwrotna) |
+| `SGS_GAME_ID` | `12` | Id Twojej gry |
+| `SGS_ACHIEVEMENTS_TOKEN` | `3f9a…` | Losowy token na jedno uruchomienie, akceptowany tylko przez most |
 
-The bridge signs your calls with the player's own sign-in, so there is no token to expire during a long session, and it **queues calls while the player is offline** and replays them later (it survives a client restart). If the variables are missing (game started outside SGS) just skip achievements — the game must keep working.
+Most podpisuje wywołania logowaniem gracza, więc token nie wygasa w długiej sesji. Gdy gracz jest **offline**, most **kolejkuje wywołania** i odtwarza je później. Kolejka przeżywa restart klienta. Jeśli zmiennych nie ma (gra uruchomiona poza SGS), pomiń osiągnięcia. Gra ma działać dalej.
 
-Most podpisuje wywołania logowaniem samego gracza, więc token nie wygasa w długiej sesji, a gdy gracz jest **offline, kolejkuje wywołania** i odtwarza je później (przeżywa restart klienta). Jeśli zmiennych nie ma (gra uruchomiona poza SGS), po prostu pomiń osiągnięcia — gra ma dalej działać.
+Token wysyłaj w nagłówku `X-SGS-Token`.
 
-Send the token in the `X-SGS-Token` header.
+## 4. Endpointy
 
-## 3. Endpoints / Endpointy
+Wszystkie wywołania są względne do `SGS_API_URL`. Most odpowiada na zapytania CORS preflight, więc działają też buildy HTML5 i WebGL.
 
-All calls are relative to `SGS_API_URL`. The bridge answers CORS pre-flights, so HTML5 / WebGL builds work too.
-
-| Call | Purpose / Cel |
+| Wywołanie | Cel |
 |---|---|
-| `POST /api/sdk/achievements/{key}/unlock` | Unlock a one-shot achievement (or fill a counter). Safe to repeat. |
-| `POST /api/sdk/achievements/{key}/progress` with `{"value": 37}` | Set a counter to an absolute value. It never goes down and is capped at the target; reaching the target unlocks it. |
-| `GET /api/sdk/achievements?lang=en` | Definitions plus this player's progress, unlock time and rarity (needs the player to be online). |
+| `POST /api/sdk/achievements/{key}/unlock` | Odblokowanie osiągnięcia jednorazowego (lub wypełnienie licznika). Można powtarzać bezpiecznie. |
+| `POST /api/sdk/achievements/{key}/progress` z `{"value": 37}` | Ustawienie licznika na wartość bezwzględną. Nigdy nie spada i jest ograniczony do celu. Osiągnięcie celu je odblokowuje. |
+| `POST /api/sdk/stats/{key}` z `{"value": 12}` | Ustawienie statystyki na wartość bezwzględną (jak `SetStat`). Przesuwa postęp powiązanych osiągnięć i odblokowuje te, których próg osiągnięto. |
+| `GET /api/sdk/achievements?lang=pl` | Definicje oraz postęp gracza, czas odblokowania, rzadkość i aktualne wartości statystyk (`stats`) — odpowiednik `RequestCurrentStats` + `GetStat` (wymaga połączenia). |
 
-Both `POST` calls answer with:
+Wywołania `unlock` i `progress` zwracają:
 
 ```json
 { "key": "kills", "progress": 40, "target": 100, "unlocked": false, "justUnlocked": false }
 ```
 
-`justUnlocked` is `true` only for the call that actually unlocked it — show your own toast then. The player also gets a notification in the SGS client.
+Wywołanie statystyki zwraca jej wartość i wynik dla każdego powiązanego osiągnięcia:
 
-When the player is offline the bridge answers `202` with the same shape plus `"queued": true` — treat it as success; the unlock reaches the server later (and the notification arrives then).
+```json
+{ "key": "num_games", "value": 12,
+  "achievements": [ { "key": "ach_win_10", "progress": 10, "target": 10, "unlocked": true, "justUnlocked": true } ] }
+```
 
-Gdy gracz jest offline, most odpowiada `202` w tym samym kształcie plus `"queued": true` — traktuj to jako sukces; odblokowanie dotrze do serwera później (wtedy też przyjdzie powiadomienie).
+`justUnlocked` ma wartość `true` tylko dla wywołania, które faktycznie odblokowało osiągnięcie. Wtedy pokaż własny komunikat. Gracz dostaje też powiadomienie w kliencie SGS.
 
-| Status | Meaning / Znaczenie |
+Gdy gracz jest offline, most odpowiada `202` w tym samym kształcie z polem `"queued": true`. Traktuj to jak sukces. Odblokowanie dotrze do serwera później, a powiadomienie przyjdzie wtedy.
+
+| Kod | Znaczenie |
 |---|---|
 | `200` | OK |
-| `202` | Accepted into the offline queue / przyjęte do kolejki offline |
-| `400` | Invalid input, e.g. `progress` on a one-shot achievement / np. `progress` na osiągnięciu jednorazowym |
-| `401` | Token missing or wrong / brak lub błędny token |
-| `403` | The player does not have the game in their library / gracz nie ma gry w bibliotece |
-| `404` | Unknown or deactivated key / nieznany lub nieaktywny klucz |
-| `503` | `GET` while offline or signed out / `GET` bez sieci lub bez logowania |
+| `202` | Przyjęte do kolejki offline |
+| `400` | Błędne dane, np. `progress` na osiągnięciu jednorazowym albo statystyka poza zakresem / malejąca przy `incrementOnly` |
+| `401` | Brak lub błędny token |
+| `403` | Gracz nie ma gry w bibliotece |
+| `404` | Nieznany lub nieaktywny klucz osiągnięcia lub statystyki |
+| `503` | `GET` bez sieci lub bez logowania |
 
-Keys are trimmed and lowercased by the server, so `First_Boss` and `first_boss` are the same achievement.
+Serwer przycina klucze i zamienia je na małe litery, więc `ACH_WIN_ONE_GAME` i `ach_win_one_game` to to samo osiągnięcie.
 
-## 4. Examples / Przykłady
+## 5. Przykłady
 
 ### curl
 
@@ -111,6 +176,10 @@ curl -X POST "$SGS_API_URL/api/sdk/achievements/first_boss/unlock" \
 curl -X POST "$SGS_API_URL/api/sdk/achievements/kills/progress" \
      -H "X-SGS-Token: $SGS_ACHIEVEMENTS_TOKEN" \
      -H "Content-Type: application/json" -d '{"value": 40}'
+
+curl -X POST "$SGS_API_URL/api/sdk/stats/NUM_GAMES" \
+     -H "X-SGS-Token: $SGS_ACHIEVEMENTS_TOKEN" \
+     -H "Content-Type: application/json" -d '{"value": 12}'
 ```
 
 ### Unity (C#)
@@ -133,8 +202,25 @@ public static class Sgs
         request.SetRequestHeader("X-SGS-Token", token);
         yield return request.SendWebRequest();
     }
+
+    public static IEnumerator SetStat(string key, float value)
+    {
+        var url = System.Environment.GetEnvironmentVariable("SGS_API_URL");
+        var token = System.Environment.GetEnvironmentVariable("SGS_ACHIEVEMENTS_TOKEN");
+        if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(token)) yield break;
+
+        var body = System.Text.Encoding.UTF8.GetBytes(
+            "{\"value\":" + value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
+        using var request = new UnityWebRequest($"{url}/api/sdk/stats/{key}", "POST");
+        request.uploadHandler = new UploadHandlerRaw(body);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("X-SGS-Token", token);
+        request.SetRequestHeader("Content-Type", "application/json");
+        yield return request.SendWebRequest();
+    }
 }
-// StartCoroutine(Sgs.Unlock("first_boss"));
+// StartCoroutine(Sgs.Unlock("ACH_WIN_ONE_GAME"));
+// StartCoroutine(Sgs.SetStat("NUM_GAMES", gamesWon));
 ```
 
 ### Godot 4 (GDScript)
@@ -150,6 +236,18 @@ func sgs_unlock(key: String) -> void:
     http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
     http.request(url + "/api/sdk/achievements/" + key + "/unlock",
         ["X-SGS-Token: " + token], HTTPClient.METHOD_POST)
+
+func sgs_set_stat(key: String, value: float) -> void:
+    var url := OS.get_environment("SGS_API_URL")
+    var token := OS.get_environment("SGS_ACHIEVEMENTS_TOKEN")
+    if url.is_empty() or token.is_empty():
+        return
+    var http := HTTPRequest.new()
+    add_child(http)
+    http.request_completed.connect(func(_r, _c, _h, _b): http.queue_free())
+    http.request(url + "/api/sdk/stats/" + key,
+        ["X-SGS-Token: " + token, "Content-Type: application/json"],
+        HTTPClient.METHOD_POST, JSON.stringify({"value": value}))
 ```
 
 ### Unreal (C++)
@@ -173,26 +271,19 @@ void SgsUnlock(const FString& Key)
 }
 ```
 
-Any other engine works the same way: read the two variables, send the header, `POST`.
+Statystykę w Unrealu ustawiasz tak samo: `SetURL(Url + TEXT("/api/sdk/stats/") + Key)`, nagłówek `Content-Type: application/json` i `SetContentAsString(FString::Printf(TEXT("{\"value\":%g}"), Value))`.
 
-Każdy inny silnik działa tak samo: odczytaj dwie zmienne, ustaw nagłówek, wyślij `POST`.
+Każdy inny silnik działa tak samo: odczytaj dwie zmienne, ustaw nagłówek i wyślij `POST`.
 
-## 5. Without the SGS client / Bez klienta SGS
+## 6. Bez klienta SGS
 
-Another launcher (or a server) can call the API directly. Ask `POST /api/me/games/{id}/achievements/session` with the player's sign-in token for a short-lived game token (12 h), then use the same `api/sdk/achievements` paths on the API host with `X-SGS-Token`. There is no offline queue in that mode.
+Inny launcher albo serwer może wołać API bezpośrednio. Wywołaj `POST /api/me/games/{id}/achievements/session` z tokenem logowania gracza. Dostaniesz krótkotrwały token gry (12 h). Potem używasz ścieżek `api/sdk/achievements` i `api/sdk/stats` na hoście API z nagłówkiem `X-SGS-Token`. W tym trybie nie ma kolejki offline.
 
-Inny launcher (lub serwer) może wołać API bezpośrednio: `POST /api/me/games/{id}/achievements/session` z tokenem logowania gracza zwraca krótkotrwały token gry (12 h), z którym używasz tych samych ścieżek `api/sdk/achievements` na hoście API. W tym trybie nie ma kolejki offline.
+Host API potrzebuje `Achievements:SigningKey` (zmienna `Achievements__SigningKey`, 32 lub więcej losowych znaków), żeby podpisywać te tokeny. Bez niego serwer generuje losowy klucz przy każdym starcie, więc tokeny przestają działać po restarcie i przy kilku instancjach API. Klient SGS tego klucza nie potrzebuje.
 
-The API host needs `Achievements:SigningKey` (env `Achievements__SigningKey`, 32+ random characters) to sign those tokens. Without it a random key is used per start, so tokens die on every restart (and with several API instances). The SGS client does not need it.
-
-Host API potrzebuje `Achievements:SigningKey` (zmienna `Achievements__SigningKey`, 32+ losowych znaków) do podpisywania tych tokenów. Klient SGS jej nie potrzebuje.
-
-## Limits / Ograniczenia
-
-- Game code runs on the player's machine, so achievements cannot be made tamper-proof. Treat them as cosmetic.
-- The queue replays when the client is running and the player is signed in; calls for another account stay queued until that account signs in.
-- Players can hide their achievements from others in **Profile → Customize profile → Privacy**; hidden lists are empty for everyone but the owner. Per-game rarity stays aggregated and anonymous.
+## Ograniczenia
 
 - Kod gry działa na komputerze gracza, więc osiągnięć nie da się zabezpieczyć przed ingerencją. Traktuj je jako element kosmetyczny.
-- Kolejka jest odtwarzana, gdy klient działa i gracz jest zalogowany; wywołania innego konta czekają, aż to konto się zaloguje.
-- Gracz może ukryć swoje osiągnięcia przed innymi w **Profil → Dostosuj profil → Prywatność**; ukryta lista jest pusta dla wszystkich poza właścicielem. Rzadkość per gra pozostaje zagregowana i anonimowa.
+- Kolejka jest odtwarzana, gdy klient działa i gracz jest zalogowany. Wywołania innego konta czekają, aż to konto się zaloguje. Dla statystyki kolejka trzyma tylko ostatnią wartość.
+- W odróżnieniu od Steam nie ma typu AVGRATE, statystyk agregowanych globalnie ani zestawów osiągnięć (achievement sets).
+- Gracz może ukryć swoje osiągnięcia przed innymi w **Profil → Dostosuj profil → Prywatność**. Ukryta lista jest pusta dla wszystkich poza właścicielem. Rzadkość per gra pozostaje zagregowana i anonimowa.
