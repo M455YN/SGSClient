@@ -1,0 +1,69 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.StatEditDialog"
+             x:DataType="vm:StudioStatItem">
+  <!-- Body of the add / edit stat dialog; DataContext = the working copy from BeginEditStat. -->
+  <UserControl.Styles>
+    <Style Selector="TextBlock.label">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.75"/>
+      <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Opacity" Value="0.6"/>
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="14" Width="540">
+    <Border Padding="10,8" CornerRadius="6" Background="#33E8A33D" BorderBrush="#88E8A33D" BorderThickness="1"
+            IsVisible="{Binding HasValidationError}">
+      <TextBlock Text="{Binding ValidationError}" TextWrapping="Wrap"/>
+    </Border>
+
+    <StackPanel>
+      <TextBlock Classes="label" Text="{loc:Tr Key='API name'}"/>
+      <TextBox Text="{Binding EditKey, Mode=TwoWay}" PlaceholderText="NUM_GAMES" IsEnabled="{Binding IsKeyEditable}"/>
+      <TextBlock Classes="caption" Margin="0,4,0,0" TextWrapping="Wrap"
+                 Text="{loc:Tr Key='Tego identyfikatora używa kod gry; po zapisaniu nie można go zmienić.'}"/>
+    </StackPanel>
+    <StackPanel>
+      <TextBlock Classes="label" Text="{loc:Tr Key='Nazwa wyświetlana'}"/>
+      <TextBox Text="{Binding EditDisplayName, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='np. Wygrane mecze'}"/>
+    </StackPanel>
+
+    <StackPanel Spacing="4">
+      <TextBlock Classes="label" Text="{loc:Tr Key='Typ'}"/>
+      <RadioButton GroupName="StatType" IsChecked="{Binding IsIntType, Mode=TwoWay}"
+                   Content="{loc:Tr Key='INT — liczba całkowita (np. wygrane mecze)'}"/>
+      <RadioButton GroupName="StatType" IsChecked="{Binding IsFloatType, Mode=TwoWay}"
+                   Content="{loc:Tr Key='FLOAT — liczba z częścią ułamkową (np. dystans w metrach)'}"/>
+    </StackPanel>
+
+    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+      <StackPanel>
+        <TextBlock Classes="label" Text="{loc:Tr Key='Minimum'}"/>
+        <TextBox Text="{Binding EditMin, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='brak'}"/>
+      </StackPanel>
+      <StackPanel Grid.Column="1">
+        <TextBlock Classes="label" Text="{loc:Tr Key='Maksimum'}"/>
+        <TextBox Text="{Binding EditMax, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='brak'}"/>
+      </StackPanel>
+      <StackPanel Grid.Row="1">
+        <TextBlock Classes="label" Text="{loc:Tr Key='Wartość domyślna'}"/>
+        <TextBox Text="{Binding EditDefault, Mode=TwoWay}"/>
+      </StackPanel>
+      <StackPanel Grid.Row="1" Grid.Column="1">
+        <TextBlock Classes="label" Text="{loc:Tr Key='Maks. zmiana na wywołanie'}"/>
+        <TextBox Text="{Binding EditMaxChange, Mode=TwoWay}" PlaceholderText="{loc:Tr Key='bez limitu'}"/>
+      </StackPanel>
+    </Grid>
+
+    <StackPanel Spacing="2">
+      <CheckBox Content="{loc:Tr Key='Tylko rośnie'}" IsChecked="{Binding EditIncrementOnly, Mode=TwoWay}"/>
+      <TextBlock Classes="caption" TextWrapping="Wrap" Margin="28,0,0,0"
+                 Text="{loc:Tr Key='Serwer odrzuci zapis mniejszej wartości — dobre dla liczników typu „wygrane mecze”.'}"/>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

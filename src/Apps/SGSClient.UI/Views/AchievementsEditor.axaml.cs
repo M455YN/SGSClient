@@ -113,19 +113,73 @@ public partial class AchievementsEditor : UserControl
 
     // ---- stats ----------------------------------------------------------------------------
 
-    private void ToggleStat_OnClick(object? sender, RoutedEventArgs e)
+    private async void NewStat_OnClick(object? sender, RoutedEventArgs e) => await OpenStatEditorAsync(null);
+
+    private async void EditStat_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (Vm is { } vm && sender is Control { Tag: StudioStatItem item })
+        if (sender is Control { Tag: StudioStatItem item })
         {
-            vm.ToggleEditCommand.Execute(item);
+            await OpenStatEditorAsync(item);
         }
     }
 
-    private void RemoveStat_OnClick(object? sender, RoutedEventArgs e)
+    private async void DeleteStat_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (Vm is { } vm && sender is Control { Tag: StudioStatItem item })
+        if (Vm is not { } vm || sender is not Control { Tag: StudioStatItem item })
         {
-            vm.RemoveStatCommand.Execute(item);
+            return;
+        }
+
+        var confirm = new FAContentDialog
+        {
+            Title = Loc.T("Usunąć statystykę?"),
+            Content = Loc.F("„{0}” zniknie z listy gry. Wartości graczy zostają, a ponowne dodanie tego samego API name je przywróci.", item.EditKey),
+            PrimaryButtonText = Loc.T("Usuń"),
+            CloseButtonText = Loc.T("Anuluj"),
+            DefaultButton = FAContentDialogButton.Close
+        };
+        if (await confirm.ShowAsync(TopLevel.GetTopLevel(this)) == FAContentDialogResult.Primary)
+        {
+            await vm.DeleteStatAsync(item);
+        }
+    }
+
+    private async Task OpenStatEditorAsync(StudioStatItem? item)
+    {
+        if (Vm is not { } vm || vm.BeginEditStat(item) is not { } draft)
+        {
+            return;
+        }
+
+        var dialog = new FAContentDialog
+        {
+            Title = item is null ? Loc.T("Nowa statystyka") : Loc.T("Edytuj statystykę"),
+            Content = new StatEditDialog { DataContext = draft },
+            PrimaryButtonText = Loc.T("Zapisz"),
+            CloseButtonText = Loc.T("Anuluj"),
+            DefaultButton = FAContentDialogButton.Primary
+        };
+        dialog.Bind(FAContentDialog.IsPrimaryButtonEnabledProperty, new Binding(nameof(StudioStatItem.CanSave)) { Source = draft });
+        dialog.PrimaryButtonClick += async (_, args) =>
+        {
+            var deferral = args.GetDeferral();
+            try
+            {
+                args.Cancel = !await vm.CommitStatEditAsync();
+            }
+            finally
+            {
+                deferral.Complete();
+            }
+        };
+
+        try
+        {
+            await dialog.ShowAsync(TopLevel.GetTopLevel(this));
+        }
+        finally
+        {
+            vm.EndEditStat();
         }
     }
 }

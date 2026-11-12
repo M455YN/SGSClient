@@ -19,11 +19,6 @@
       <Setter Property="BorderBrush" Value="#22FFFFFF"/>
       <Setter Property="BorderThickness" Value="0,1,0,0"/>
     </Style>
-    <Style Selector="Border.form">
-      <Setter Property="Padding" Value="12"/>
-      <Setter Property="CornerRadius" Value="6"/>
-      <Setter Property="Background" Value="#0DFFFFFF"/>
-    </Style>
     <Style Selector="Border.icon">
       <Setter Property="Width" Value="64"/>
       <Setter Property="Height" Value="64"/>
@@ -47,11 +42,6 @@
       <Setter Property="Padding" Value="8,4"/>
       <Setter Property="MinWidth" Value="34"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
-    </Style>
-    <Style Selector="Border.form TextBlock.label">
-      <Setter Property="FontSize" Value="12"/>
-      <Setter Property="Opacity" Value="0.7"/>
-      <Setter Property="Margin" Value="0,0,0,2"/>
     </Style>
   </UserControl.Styles>
 
@@ -133,10 +123,7 @@
             <TextBlock Text="{loc:Tr Key='Liczby zapisywane przez grę dla każdego gracza. Osiągnięcie z rodzajem „Postęp ze statystyki” pokazuje jej wartość jako postęp i odblokowuje się po osiągnięciu celu.'}"
                        Classes="caption" TextWrapping="Wrap"/>
           </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
-            <Button Content="{loc:Tr Key='Nowa statystyka'}" Command="{Binding AddStatCommand}"/>
-            <Button Content="{loc:Tr Key='Zapisz statystyki'}" Classes="accent" Command="{Binding SaveCommand}"/>
-          </StackPanel>
+          <Button Grid.Column="1" VerticalAlignment="Top" Content="{loc:Tr Key='Nowa statystyka'}" Click="NewStat_OnClick"/>
         </Grid>
         <Grid ColumnDefinitions="32,170,64,*,140,80,80,88" ColumnSpacing="10" Margin="4,0,4,6" IsVisible="{Binding HasStats}">
           <TextBlock Text="ID" Classes="head"/>
@@ -147,71 +134,26 @@
           <TextBlock Grid.Column="5" Text="{loc:Tr Key='Domyślna'}" Classes="head"/>
           <TextBlock Grid.Column="6" Text="{loc:Tr Key='Tylko rośnie'}" Classes="head"/>
         </Grid>
+        <TextBlock Text="{loc:Tr Key='Ta gra nie ma jeszcze statystyk.'}" Opacity="0.6" Margin="4,8" IsVisible="{Binding !HasStats}"/>
 
         <ItemsControl ItemsSource="{Binding Stats}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:StudioStatItem">
               <Border Classes="row">
-                <StackPanel Spacing="10">
-                  <Grid ColumnDefinitions="32,170,64,*,140,80,80,88" ColumnSpacing="10">
-                    <TextBlock Text="{Binding RowId}" Opacity="0.7"/>
-                    <SelectableTextBlock Grid.Column="1" Text="{Binding EditKey}" FontFamily="Consolas,Menlo,monospace"
-                                         FontSize="12" TextWrapping="Wrap"/>
-                    <TextBlock Grid.Column="2" Text="{Binding TypeText}" FontSize="12"/>
-                    <TextBlock Grid.Column="3" Text="{Binding EditDisplayName}" TextWrapping="Wrap"/>
-                    <TextBlock Grid.Column="4" Text="{Binding RangeText}" FontSize="12"/>
-                    <TextBlock Grid.Column="5" Text="{Binding EditDefault}" FontSize="12"/>
-                    <TextBlock Grid.Column="6" Text="{Binding IncrementOnlyText}" FontSize="12"/>
-                    <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
-                      <Button Classes="icon" Content="✎" Tag="{Binding}" Click="ToggleStat_OnClick" ToolTip.Tip="{loc:Tr Key='Edytuj'}"/>
-                      <Button Classes="icon" Content="🗑" Tag="{Binding}" Click="RemoveStat_OnClick" ToolTip.Tip="{loc:Tr Key='Usuń'}"/>
-                    </StackPanel>
-                  </Grid>
-
-                  <Border Classes="form" IsVisible="{Binding IsEditing}">
-                    <StackPanel Spacing="8">
-                      <Grid ColumnDefinitions="*,*,120" ColumnSpacing="8">
-                        <StackPanel>
-                          <TextBlock Classes="label" Text="{loc:Tr Key='API name (np. NUM_GAMES)'}"/>
-                          <TextBox Text="{Binding EditKey, Mode=TwoWay}" IsEnabled="{Binding IsKeyEditable}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1">
-                          <TextBlock Classes="label" Text="{loc:Tr Key='Nazwa wyświetlana'}"/>
-                          <TextBox Text="{Binding EditDisplayName, Mode=TwoWay}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2">
-                          <TextBlock Classes="label" Text="{loc:Tr Key='Typ'}"/>
-                          <ComboBox HorizontalAlignment="Stretch" SelectedIndex="{Binding EditTypeIndex, Mode=TwoWay}">
-                            <ComboBoxItem Content="INT"/>
-                            <ComboBoxItem Content="FLOAT"/>
-                          </ComboBox>
-                        </StackPanel>
-                      </Grid>
-                      <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-                        <StackPanel>
-                          <TextBlock Classes="label" Text="{loc:Tr Key='Minimum (puste = brak)'}"/>
-                          <TextBox Text="{Binding EditMin, Mode=TwoWay}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1">
-                          <TextBlock Classes="label" Text="{loc:Tr Key='Maksimum (puste = brak)'}"/>
-                          <TextBox Text="{Binding EditMax, Mode=TwoWay}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2">
-                          <TextBlock Classes="label" Text="{loc:Tr Key='Wartość domyślna'}"/>
-                          <TextBox Text="{Binding EditDefault, Mode=TwoWay}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="3">
-                          <TextBlock Classes="label" Text="{loc:Tr Key='Maks. zmiana na wywołanie'}"/>
-                          <TextBox Text="{Binding EditMaxChange, Mode=TwoWay}"/>
-                        </StackPanel>
-                      </Grid>
-                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                        <CheckBox Content="{loc:Tr Key='Tylko rośnie (increment only)'}" IsChecked="{Binding EditIncrementOnly, Mode=TwoWay}"/>
-                        <Button Grid.Column="1" Content="{loc:Tr Key='Gotowe'}" Tag="{Binding}" Click="ToggleStat_OnClick"/>
-                      </Grid>
-                    </StackPanel>
-                  </Border>
-                </StackPanel>
+                <Grid ColumnDefinitions="32,170,64,*,140,80,80,88" ColumnSpacing="10">
+                  <TextBlock Text="{Binding RowId}" Opacity="0.7"/>
+                  <SelectableTextBlock Grid.Column="1" Text="{Binding EditKey}" FontFamily="Consolas,Menlo,monospace"
+                                       FontSize="12" TextWrapping="Wrap"/>
+                  <TextBlock Grid.Column="2" Text="{Binding TypeText}" FontSize="12"/>
+                  <TextBlock Grid.Column="3" Text="{Binding EditDisplayName}" TextWrapping="Wrap"/>
+                  <TextBlock Grid.Column="4" Text="{Binding RangeText}" FontSize="12"/>
+                  <TextBlock Grid.Column="5" Text="{Binding EditDefault}" FontSize="12"/>
+                  <TextBlock Grid.Column="6" Text="{Binding IncrementOnlyText}" FontSize="12"/>
+                  <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                    <Button Classes="icon" Content="✎" Tag="{Binding}" Click="EditStat_OnClick" ToolTip.Tip="{loc:Tr Key='Edytuj'}"/>
+                    <Button Classes="icon" Content="🗑" Tag="{Binding}" Click="DeleteStat_OnClick" ToolTip.Tip="{loc:Tr Key='Usuń'}"/>
+                  </StackPanel>
+                </Grid>
               </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -223,12 +165,5 @@
       <Button Content="{loc:Tr Key='Wyzeruj mój postęp'}" Command="{Binding ResetProgressCommand}" Padding="14,8"
               ToolTip.Tip="{loc:Tr Key='Czyści Twoje osiągnięcia i statystyki w tej grze, żeby przetestować je od nowa.'}"/>
     </StackPanel>
-
-    <Border Classes="card">
-      <StackPanel Spacing="6">
-        <TextBlock Text="{loc:Tr Key='Integracja z grą'}" FontWeight="SemiBold"/>
-        <SelectableTextBlock Text="{Binding Help}" FontSize="12" Opacity="0.6" TextWrapping="Wrap"/>
-      </StackPanel>
-    </Border>
   </StackPanel>
 </UserControl>

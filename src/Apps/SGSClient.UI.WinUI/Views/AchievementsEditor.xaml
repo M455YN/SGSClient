@@ -163,10 +163,12 @@
             <TextBlock Text="{loc:Tr Key='Liczby zapisywane przez grę dla każdego gracza. Osiągnięcie z rodzajem „Postęp ze statystyki” pokazuje jej wartość jako postęp i odblokowuje się po osiągnięciu celu.'}"
                        Opacity="0.6" FontSize="12" TextWrapping="Wrap" />
           </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
-            <Button Content="{loc:Tr Key='Nowa statystyka'}" Command="{Binding AddStatCommand}" />
-            <Button Content="{loc:Tr Key='Zapisz statystyki'}" Style="{StaticResource AccentButtonStyle}" Command="{Binding SaveCommand}" />
-          </StackPanel>
+          <Button Grid.Column="1" VerticalAlignment="Top" Click="NewStat_Click">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <FontIcon Glyph="&#xE710;" FontSize="14" />
+              <TextBlock Text="{loc:Tr Key='Nowa statystyka'}" />
+            </StackPanel>
+          </Button>
         </Grid>
         <Grid ColumnSpacing="10" Padding="4,0,4,6" Visibility="{Binding HasStats, Converter={StaticResource BoolToVis}}">
           <Grid.ColumnDefinitions>
@@ -187,84 +189,43 @@
           <TextBlock Grid.Column="5" Text="{loc:Tr Key='Domyślna'}" Style="{StaticResource ColumnHeader}" />
           <TextBlock Grid.Column="6" Text="{loc:Tr Key='Tylko rośnie'}" Style="{StaticResource ColumnHeader}" />
         </Grid>
+        <TextBlock Text="{loc:Tr Key='Ta gra nie ma jeszcze statystyk.'}" Opacity="0.6" Margin="4,8"
+                   Visibility="{Binding HasStats, Converter={StaticResource InverseBoolToVis}}" />
 
         <ItemsControl ItemsSource="{Binding Stats}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:StudioStatItem">
               <Border Padding="4,8" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
-                <StackPanel Spacing="10">
-                  <Grid ColumnSpacing="10">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="32" />
-                      <ColumnDefinition Width="170" />
-                      <ColumnDefinition Width="64" />
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="140" />
-                      <ColumnDefinition Width="80" />
-                      <ColumnDefinition Width="80" />
-                      <ColumnDefinition Width="88" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="{Binding RowId}" Opacity="0.7" />
-                    <TextBlock Grid.Column="1" Text="{Binding EditKey}" FontFamily="Consolas" FontSize="12"
-                               TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-                    <TextBlock Grid.Column="2" Text="{Binding TypeText}" FontSize="12" />
-                    <TextBlock Grid.Column="3" Text="{Binding EditDisplayName}" TextWrapping="Wrap" />
-                    <TextBlock Grid.Column="4" Text="{Binding RangeText}" FontSize="12" />
-                    <TextBlock Grid.Column="5" Text="{Binding EditDefault}" FontSize="12" />
-                    <TextBlock Grid.Column="6" Text="{Binding IncrementOnlyText}" FontSize="12" />
-                    <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
-                      <Button Tag="{Binding}" Click="ToggleStat_Click" Style="{StaticResource IconButton}"
-                              ToolTipService.ToolTip="{loc:Tr Key='Edytuj'}" AutomationProperties.Name="{loc:Tr Key='Edytuj'}">
-                        <FontIcon Glyph="&#xE70F;" FontSize="14" />
-                      </Button>
-                      <Button Tag="{Binding}" Click="RemoveStat_Click" Style="{StaticResource IconButton}"
-                              ToolTipService.ToolTip="{loc:Tr Key='Usuń'}" AutomationProperties.Name="{loc:Tr Key='Usuń'}">
-                        <FontIcon Glyph="&#xE74D;" FontSize="14" />
-                      </Button>
-                    </StackPanel>
-                  </Grid>
-
-                  <Border Padding="12" CornerRadius="6" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                          Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}">
-                    <StackPanel Spacing="8">
-                      <Grid ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="120" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox Header="{loc:Tr Key='API name (np. NUM_GAMES)'}" Text="{Binding EditKey, Mode=TwoWay}"
-                                 IsEnabled="{Binding IsKeyEditable}" />
-                        <TextBox Grid.Column="1" Header="{loc:Tr Key='Nazwa wyświetlana'}" Text="{Binding EditDisplayName, Mode=TwoWay}" />
-                        <ComboBox Grid.Column="2" Header="{loc:Tr Key='Typ'}" HorizontalAlignment="Stretch"
-                                  SelectedIndex="{Binding EditTypeIndex, Mode=TwoWay}">
-                          <ComboBoxItem Content="INT" />
-                          <ComboBoxItem Content="FLOAT" />
-                        </ComboBox>
-                      </Grid>
-                      <Grid ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox Header="{loc:Tr Key='Minimum (puste = brak)'}" Text="{Binding EditMin, Mode=TwoWay}" />
-                        <TextBox Grid.Column="1" Header="{loc:Tr Key='Maksimum (puste = brak)'}" Text="{Binding EditMax, Mode=TwoWay}" />
-                        <TextBox Grid.Column="2" Header="{loc:Tr Key='Wartość domyślna'}" Text="{Binding EditDefault, Mode=TwoWay}" />
-                        <TextBox Grid.Column="3" Header="{loc:Tr Key='Maks. zmiana na wywołanie'}" Text="{Binding EditMaxChange, Mode=TwoWay}" />
-                      </Grid>
-                      <Grid ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <CheckBox Content="{loc:Tr Key='Tylko rośnie (increment only)'}" IsChecked="{Binding EditIncrementOnly, Mode=TwoWay}" />
-                        <Button Grid.Column="1" Content="{loc:Tr Key='Gotowe'}" Tag="{Binding}" Click="ToggleStat_Click" />
-                      </Grid>
-                    </StackPanel>
-                  </Border>
-                </StackPanel>
+                <Grid ColumnSpacing="10">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="32" />
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="80" />
+                    <ColumnDefinition Width="80" />
+                    <ColumnDefinition Width="88" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding RowId}" Opacity="0.7" />
+                  <TextBlock Grid.Column="1" Text="{Binding EditKey}" FontFamily="Consolas" FontSize="12"
+                             TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                  <TextBlock Grid.Column="2" Text="{Binding TypeText}" FontSize="12" />
+                  <TextBlock Grid.Column="3" Text="{Binding EditDisplayName}" TextWrapping="Wrap" />
+                  <TextBlock Grid.Column="4" Text="{Binding RangeText}" FontSize="12" />
+                  <TextBlock Grid.Column="5" Text="{Binding EditDefault}" FontSize="12" />
+                  <TextBlock Grid.Column="6" Text="{Binding IncrementOnlyText}" FontSize="12" />
+                  <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
+                    <Button Tag="{Binding}" Click="EditStat_Click" Style="{StaticResource IconButton}"
+                            ToolTipService.ToolTip="{loc:Tr Key='Edytuj'}" AutomationProperties.Name="{loc:Tr Key='Edytuj'}">
+                      <FontIcon Glyph="&#xE70F;" FontSize="14" />
+                    </Button>
+                    <Button Tag="{Binding}" Click="DeleteStat_Click" Style="{StaticResource IconButton}"
+                            ToolTipService.ToolTip="{loc:Tr Key='Usuń'}" AutomationProperties.Name="{loc:Tr Key='Usuń'}">
+                      <FontIcon Glyph="&#xE74D;" FontSize="14" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
               </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -276,13 +237,6 @@
       <Button Content="{loc:Tr Key='Wyzeruj mój postęp'}" Command="{Binding ResetProgressCommand}" Padding="14,8"
               ToolTipService.ToolTip="{loc:Tr Key='Czyści Twoje osiągnięcia i statystyki w tej grze, żeby przetestować je od nowa.'}" />
     </StackPanel>
-
-    <Border Style="{StaticResource SectionCard}">
-      <StackPanel Spacing="6">
-        <TextBlock Text="{loc:Tr Key='Integracja z grą'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-        <TextBlock Text="{Binding Help}" Opacity="0.7" FontSize="12" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
-      </StackPanel>
-    </Border>
 
     <!-- ===== Add / edit dialog (DataContext = the working copy from BeginEdit) ===== -->
     <ContentDialog x:Name="EditDialog" x:DataType="vm:StudioAchievementItem"
@@ -454,6 +408,58 @@
           </StackPanel>
         </Grid>
       </ScrollViewer>
+    </ContentDialog>
+
+    <!-- ===== Add / edit stat dialog (DataContext = the working copy from BeginEditStat) ===== -->
+    <ContentDialog x:Name="StatDialog" x:DataType="vm:StudioStatItem"
+                   PrimaryButtonText="{loc:Tr Key='Zapisz'}" CloseButtonText="{loc:Tr Key='Anuluj'}"
+                   DefaultButton="Primary" IsPrimaryButtonEnabled="{Binding CanSave}"
+                   PrimaryButtonClick="StatDialog_PrimaryButtonClick">
+      <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">720</x:Double>
+      </ContentDialog.Resources>
+      <StackPanel Spacing="14" Width="560">
+        <InfoBar Severity="Warning" IsClosable="False" IsOpen="{Binding HasValidationError}" Message="{Binding ValidationError}" />
+
+        <StackPanel Spacing="4">
+          <TextBox Header="{loc:Tr Key='API name'}" PlaceholderText="NUM_GAMES" IsEnabled="{Binding IsKeyEditable}"
+                   Text="{Binding EditKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+          <TextBlock Text="{loc:Tr Key='Tego identyfikatora używa kod gry; po zapisaniu nie można go zmienić.'}"
+                     Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" />
+        </StackPanel>
+        <TextBox Header="{loc:Tr Key='Nazwa wyświetlana'}" PlaceholderText="{loc:Tr Key='np. Wygrane mecze'}"
+                 Text="{Binding EditDisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+        <RadioButtons Header="{loc:Tr Key='Typ'}" SelectedIndex="{Binding EditTypeIndex, Mode=TwoWay}">
+          <RadioButton Content="{loc:Tr Key='INT — liczba całkowita (np. wygrane mecze)'}" />
+          <RadioButton Content="{loc:Tr Key='FLOAT — liczba z częścią ułamkową (np. dystans w metrach)'}" />
+        </RadioButtons>
+
+        <Grid ColumnSpacing="12" RowSpacing="12">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+          <TextBox Header="{loc:Tr Key='Minimum'}" PlaceholderText="{loc:Tr Key='brak'}"
+                   Text="{Binding EditMin, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+          <TextBox Grid.Column="1" Header="{loc:Tr Key='Maksimum'}" PlaceholderText="{loc:Tr Key='brak'}"
+                   Text="{Binding EditMax, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+          <TextBox Grid.Row="1" Header="{loc:Tr Key='Wartość domyślna'}"
+                   Text="{Binding EditDefault, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+          <TextBox Grid.Row="1" Grid.Column="1" Header="{loc:Tr Key='Maks. zmiana na wywołanie'}" PlaceholderText="{loc:Tr Key='bez limitu'}"
+                   Text="{Binding EditMaxChange, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <StackPanel Spacing="2">
+          <CheckBox Content="{loc:Tr Key='Tylko rośnie'}" IsChecked="{Binding EditIncrementOnly, Mode=TwoWay}" />
+          <TextBlock Text="{loc:Tr Key='Serwer odrzuci zapis mniejszej wartości — dobre dla liczników typu „wygrane mecze”.'}"
+                     Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" TextWrapping="Wrap" Margin="28,0,0,0" />
+        </StackPanel>
+      </StackPanel>
     </ContentDialog>
   </StackPanel>
 </UserControl>
