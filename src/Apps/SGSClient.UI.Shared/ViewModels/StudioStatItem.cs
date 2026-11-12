@@ -6,25 +6,45 @@ using SGSClient.Core.Localization;
 
 namespace SGSClient.UI.ViewModels;
 
-/// <summary>One row of the stats table (Steamworks "Stats"). Numbers are edited as text; empty = no limit.</summary>
+/// <summary>
+/// One row of the stats table (Steamworks "Stats"). Rows are read-only; editing happens on a <see cref="Clone"/>
+/// shown in a dialog. Numbers are edited as text; empty = no limit.
+/// </summary>
 public partial class StudioStatItem : ObservableObject
 {
     public static IReadOnlyList<string> TypeNames { get; } = ["INT", "FLOAT"];
 
     /// <summary>True until the first save: the key is the game's public id, so it is locked afterwards.</summary>
-    public bool IsNew { get; init; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsKeyEditable))]
+    public partial bool IsNew { get; set; }
 
     public bool IsKeyEditable => IsNew;
 
     [ObservableProperty] public partial string RowId { get; set; } = string.Empty;
-    [ObservableProperty] public partial bool IsEditing { get; set; }
+
+    /// <summary>First problem with the dialog's fields; empty when it can be saved.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasValidationError))]
+    [NotifyPropertyChangedFor(nameof(CanSave))]
+    public partial string ValidationError { get; set; } = string.Empty;
+
+    public bool HasValidationError => ValidationError.Length > 0;
+
+    public bool CanSave => !HasValidationError;
     [ObservableProperty] public partial string EditKey { get; set; } = string.Empty;
     [ObservableProperty] public partial string EditDisplayName { get; set; } = string.Empty;
 
     /// <summary>Index into <see cref="TypeNames"/> (0 = INT, 1 = FLOAT), for a ComboBox.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(TypeText))]
+    [NotifyPropertyChangedFor(nameof(IsIntType))]
+    [NotifyPropertyChangedFor(nameof(IsFloatType))]
     public partial int EditTypeIndex { get; set; }
+
+    // Two-way friendly flags for radio buttons.
+    public bool IsIntType { get => EditTypeIndex == 0; set { if (value) EditTypeIndex = 0; } }
+    public bool IsFloatType { get => EditTypeIndex == 1; set { if (value) EditTypeIndex = 1; } }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(RangeText))]
@@ -58,6 +78,21 @@ public partial class StudioStatItem : ObservableObject
         EditDefault = Format(dto.DefaultValue),
         EditMaxChange = Format(dto.MaxChange),
         EditIncrementOnly = dto.IncrementOnly
+    };
+
+    /// <summary>An independent copy for the edit dialog, so Cancel leaves the table untouched.</summary>
+    public StudioStatItem Clone() => new()
+    {
+        IsNew = IsNew,
+        RowId = RowId,
+        EditKey = EditKey,
+        EditDisplayName = EditDisplayName,
+        EditTypeIndex = EditTypeIndex,
+        EditMin = EditMin,
+        EditMax = EditMax,
+        EditDefault = EditDefault,
+        EditMaxChange = EditMaxChange,
+        EditIncrementOnly = EditIncrementOnly
     };
 
     /// <summary>Parses the number fields (dot or comma); range rules are checked by <c>AchievementRules.ValidateStats</c>.</summary>

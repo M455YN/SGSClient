@@ -19,7 +19,7 @@ Osiągnięcia w SGS działają jak w Steamworks: każde ma stały **API name**, 
 
 Masz dwa sposoby. Wybierz ten, który pasuje do Twojego workflow:
 
-- **Panel twórcy** (admini: Panel admina, dowolna gra): wybierz grę → zakładka **Osiągnięcia**. Widok jest tabelą jak w Steamworks (Game Admin → Achievements): kolumny **ID**, **API name**, **Nazwa / opis**, **Ukryte?**, **Ikona zdobyta**, **Ikona niezdobyta**, **Postęp** i w każdym wierszu przyciski: przenieś wyżej / niżej, **Edytuj**, **Usuń**. **Nowe osiągnięcie** i **Edytuj** otwierają okienko; **Zapisz** w okienku od razu zapisuje osiągnięcie na serwerze, a **Anuluj** niczego nie zmienia. Usunięcie i zmiana kolejności też zapisują się od razu (usunięcie po potwierdzeniu). Pod tabelą jest tabela **Statystyki** (**Nowa statystyka**, **Zapisz statystyki**).
+- **Panel twórcy** (admini: Panel admina, dowolna gra): wybierz grę → zakładka **Osiągnięcia**. Widok jest tabelą jak w Steamworks (Game Admin → Achievements): kolumny **ID**, **API name**, **Nazwa / opis**, **Ukryte?**, **Ikona zdobyta**, **Ikona niezdobyta**, **Postęp** i w każdym wierszu przyciski: przenieś wyżej / niżej, **Edytuj**, **Usuń**. **Nowe osiągnięcie** i **Edytuj** otwierają okienko; **Zapisz** w okienku od razu zapisuje osiągnięcie na serwerze, a **Anuluj** niczego nie zmienia. Usunięcie i zmiana kolejności też zapisują się od razu (usunięcie po potwierdzeniu). Pod nią jest tabela **Statystyki**: **Nowa statystyka** i ołówek w wierszu otwierają takie samo okienko (API name, nazwa, typ INT/FLOAT, zakres, wartość domyślna, maksymalna zmiana, „tylko rośnie”), a **Zapisz** od razu zapisuje statystykę.
 - **Manifest paczki** (tablice `achievements` i `stats` w `sgs-manifest.json`): publikowane razem z buildem.
 
 ![Tabela osiągnięć w Panelu twórcy, układ jak w Steamworks](../assets/screenshots/osiagniecia-tabela.png)
@@ -95,7 +95,7 @@ Na stronie gry (zakładka **Osiągnięcia**) i w oknie **Pokaż wszystkie osiąg
 
 Statystyka to liczba, którą gra zapisuje dla każdego gracza (wygrane gry, przebyty dystans). Osiągnięcie z polem `stat` traktuje jej wartość jako postęp i odblokowuje się samo, gdy wartość dojdzie do `target`. Tak w Steam działają osiągnięcia typu „Wygraj 100 gier”.
 
-![Tabela statystyk z otwartym wierszem do edycji](../assets/screenshots/osiagniecia-statystyki.png)
+![Okienko „Edytuj statystykę” nad tabelą statystyk](../assets/screenshots/osiagniecia-statystyki.png)
 
 | Pole | Znaczenie |
 |---|---|

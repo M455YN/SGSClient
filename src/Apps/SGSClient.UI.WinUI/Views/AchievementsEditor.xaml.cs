@@ -123,19 +123,69 @@ public sealed partial class AchievementsEditor : UserControl
 
     // ---- stats ----------------------------------------------------------------------------
 
-    private void ToggleStat_Click(object sender, RoutedEventArgs e)
+    private async void NewStat_Click(object sender, RoutedEventArgs e) => await OpenStatEditorAsync(null);
+
+    private async void EditStat_Click(object sender, RoutedEventArgs e)
     {
-        if (Vm is { } vm && sender is FrameworkElement { Tag: StudioStatItem item })
+        if (sender is FrameworkElement { Tag: StudioStatItem item })
         {
-            vm.ToggleEditCommand.Execute(item);
+            await OpenStatEditorAsync(item);
         }
     }
 
-    private void RemoveStat_Click(object sender, RoutedEventArgs e)
+    private async void DeleteStat_Click(object sender, RoutedEventArgs e)
     {
-        if (Vm is { } vm && sender is FrameworkElement { Tag: StudioStatItem item })
+        if (Vm is not { } vm || sender is not FrameworkElement { Tag: StudioStatItem item })
         {
-            vm.RemoveStatCommand.Execute(item);
+            return;
+        }
+
+        var confirm = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = Loc.T("Usunąć statystykę?"),
+            Content = Loc.F("„{0}” zniknie z listy gry. Wartości graczy zostają, a ponowne dodanie tego samego API name je przywróci.", item.EditKey),
+            PrimaryButtonText = Loc.T("Usuń"),
+            CloseButtonText = Loc.T("Anuluj"),
+            DefaultButton = ContentDialogButton.Close
+        };
+        if (await confirm.ShowAsync() == ContentDialogResult.Primary)
+        {
+            await vm.DeleteStatAsync(item);
+        }
+    }
+
+    private async Task OpenStatEditorAsync(StudioStatItem? item)
+    {
+        if (Vm is not { } vm || vm.BeginEditStat(item) is not { } draft)
+        {
+            return;
+        }
+
+        StatDialog.Title = item is null ? Loc.T("Nowa statystyka") : Loc.T("Edytuj statystykę");
+        StatDialog.DataContext = draft;
+        StatDialog.XamlRoot = XamlRoot;
+        try
+        {
+            await StatDialog.ShowAsync();
+        }
+        finally
+        {
+            vm.EndEditStat();
+            StatDialog.DataContext = null;
+        }
+    }
+
+    private async void StatDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
+    {
+        var deferral = args.GetDeferral();
+        try
+        {
+            args.Cancel = Vm is not { } vm || !await vm.CommitStatEditAsync();
+        }
+        finally
+        {
+            deferral.Complete();
         }
     }
 }

@@ -14,8 +14,8 @@ namespace SGSClient.UI.ViewModels;
 /// The achievements tab shared by the Creator panel and the Admin panel, laid out like Steamworks'
 /// Achievements and Stats pages: it edits the definitions of whichever game the host passes to
 /// <see cref="LoadAsync"/>. The server decides who may edit what.
-/// Achievements are edited one at a time in a dialog (<see cref="BeginEdit"/> → <see cref="CommitEditAsync"/>)
-/// and every change is saved right away; the stats table is edited in place and saved with <see cref="SaveCommand"/>.
+/// Achievements and stats are edited one at a time in a dialog (<see cref="BeginEdit"/> / <see cref="BeginEditStat"/>)
+/// and every change is saved right away.
 /// </summary>
 public partial class AchievementsEditorViewModel(
     ISgsApiService? api,
@@ -31,6 +31,10 @@ public partial class AchievementsEditorViewModel(
     private StudioAchievementItem? _editing;
     private StudioAchievementItem? _draft;
 
+    /// <summary>The same for the stat dialog.</summary>
+    private StudioStatItem? _editingStat;
+    private StudioStatItem? _statDraft;
+
     /// <summary>Raised after a save with whether the game now has any achievements.</summary>
     public event Action<bool>? Saved;
 
@@ -40,13 +44,6 @@ public partial class AchievementsEditorViewModel(
     [ObservableProperty] public partial bool HasItems { get; set; }
     [ObservableProperty] public partial bool HasStats { get; set; }
     [ObservableProperty] public partial string Summary { get; set; } = string.Empty;
-
-    public string Help { get; } = Loc.T(
-        "Gra uruchomiona z SGS dostaje zmienne środowiskowe SGS_API_URL, SGS_GAME_ID i SGS_ACHIEVEMENTS_TOKEN. "
-        + "Odblokowanie to POST na <SGS_API_URL>/api/sdk/achievements/<API name>/unlock z nagłówkiem X-SGS-Token; "
-        + "licznik: POST .../progress z JSON-em {\"value\": 5}; statystyka: POST <SGS_API_URL>/api/sdk/stats/<API name> "
-        + "z {\"value\": 5} — osiągnięcia powiązane ze statystyką odblokują się same po osiągnięciu celu. "
-        + "Bez sieci wywołania trafiają do kolejki w kliencie. Przykłady dla Unity, Godota i Unreala: docs/creators/achievements.md.");
 
     public bool IsReady => _gameId != 0 && api is not null;
 
@@ -423,39 +420,121 @@ public partial class AchievementsEditorViewModel(
         }
     }
 
-    // ---- stats table -----------------------------------------------------------------------
+    // ---- stat dialog -----------------------------------------------------------------------
 
-    [RelayCommand]
-    private void AddStat()
+    /// <summary>Starts editing <paramref name="original"/> (or a new stat when null); null when no game is loaded.</summary>
+    public StudioStatItem? BeginEditStat(StudioStatItem? original)
     {
-        if (_gameId == 0)
+        if (!IsReady)
+        {
+            return null;
+        }
+
+        EndEditStat();
+        _editingStat = original;
+        _statDraft = original?.Clone() ?? new StudioStatItem { IsNew = true };
+        if (original is null)
+        {
+            _statDraft.RowId = (Stats.Count + 1).ToString(CultureInfo.InvariantCulture);
+        }
+
+        _statDraft.PropertyChanged += OnStatDraftChanged;
+        ValidateStatDraft();
+        return _statDraft;
+    }
+
+    public void EndEditStat()
+    {
+        if (_statDraft is not null)
+        {
+            _statDraft.PropertyChanged -= OnStatDraftChanged;
+        }
+
+        _statDraft = null;
+        _editingStat = null;
+    }
+
+    /// <summary>Saves the dialog's stat. False keeps the dialog open with the reason shown.</summary>
+    public async Task<bool> CommitStatEditAsync()
+    {
+        var draft = _statDraft;
+        if (draft is null)
+        {
+            return false;
+        }
+
+        ValidateStatDraft();
+        if (draft.HasValidationError)
+        {
+            return false;
+        }
+
+        var stats = Stats.ToList();
+        var index = _editingStat is null ? -1 : stats.IndexOf(_editingStat);
+        if (index >= 0)
+        {
+            stats[index] = draft;
+        }
+        else
+        {
+            stats.Add(draft);
+        }
+
+        if (await SyncAsync(Items.ToList(), stats) is { } error)
+        {
+            draft.ValidationError = error;
+            return false;
+        }
+
+        draft.IsNew = false;
+        return true;
+    }
+
+    /// <summary>Deletes (deactivates) a stat; the server refuses while an achievement still uses it.</summary>
+    public async Task DeleteStatAsync(StudioStatItem item)
+    {
+        if (IsReady && Stats.Contains(item)
+            && await SyncAsync(Items.ToList(), Stats.Where(s => s != item).ToList()) is { } error)
+        {
+            setStatus(error);
+        }
+    }
+
+    private void OnStatDraftChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is { } name && name.StartsWith("Edit", StringComparison.Ordinal))
+        {
+            ValidateStatDraft();
+        }
+    }
+
+    private void ValidateStatDraft()
+    {
+        if (_statDraft is not { } d)
         {
             return;
         }
 
-        Stats.Add(new StudioStatItem { IsNew = true, IsEditing = true });
-        Refresh();
-    }
-
-    [RelayCommand]
-    private void RemoveStat(StudioStatItem? item)
-    {
-        if (item is null || !Stats.Remove(item))
+        string? error;
+        if (string.IsNullOrWhiteSpace(d.EditKey))
         {
-            return;
+            error = Loc.T("Podaj API name statystyki.");
+        }
+        else if (!d.TryToDto(0, out var dto, out var parseError))
+        {
+            error = parseError;
+        }
+        else if (AchievementRules.NormalizeKey(dto!.Key) is { } key
+            && Stats.Any(s => s != _editingStat && AchievementRules.NormalizeKey(s.EditKey) == key))
+        {
+            error = Loc.F("API name „{0}” jest już zajęty.", key);
+        }
+        else
+        {
+            error = AchievementRules.ValidateStats([dto]);
         }
 
-        Refresh();
-        setStatus(Loc.T("Usunięto z listy. Zapisz statystyki, aby zatwierdzić zmianę."));
-    }
-
-    [RelayCommand]
-    private void ToggleEdit(StudioStatItem? item)
-    {
-        if (item is not null)
-        {
-            item.IsEditing = !item.IsEditing;
-        }
+        d.ValidationError = error ?? string.Empty;
     }
 
     [RelayCommand]
@@ -468,18 +547,13 @@ public partial class AchievementsEditorViewModel(
         }
     }
 
-    /// <summary>Saves the stats table (and the achievements as they are).</summary>
-    [RelayCommand]
-    private async Task SaveAsync()
-    {
-        if (await SyncAsync(Items.ToList()) is { } error)
-        {
-            setStatus(error);
-        }
-    }
-
-    /// <summary>Sends <paramref name="rows"/> (in order) plus the stats table; null on success, else the reason.</summary>
-    private async Task<string?> SyncAsync(IReadOnlyList<StudioAchievementItem> rows)
+    /// <summary>
+    /// Sends <paramref name="rows"/> (in order) plus <paramref name="statRows"/> (default: the stats table);
+    /// null on success, else the reason.
+    /// </summary>
+    private async Task<string?> SyncAsync(
+        IReadOnlyList<StudioAchievementItem> rows,
+        IReadOnlyList<StudioStatItem>? statRows = null)
     {
         if (!IsReady)
         {
@@ -498,7 +572,7 @@ public partial class AchievementsEditorViewModel(
         }
 
         var stats = new List<GameStatDefinitionDto>();
-        foreach (var item in Stats)
+        foreach (var item in statRows ?? Stats)
         {
             if (!item.TryToDto(stats.Count, out var dto, out var parseError))
             {
