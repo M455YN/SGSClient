@@ -23,7 +23,23 @@
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <WindowsPackageType>MSIX</WindowsPackageType>
-    <DefaultLanguage>en-US</DefaultLanguage>
+    <DefaultLanguage>pl-PL</DefaultLanguage>
+    <!-- Keep languages in the main package: the MSIX tooling never builds language resource packs, which drops pl-PL from the Store manifest. -->
+    <AppxBundleAutoResourcePackageQualifiers>Scale|DXFeatureLevel</AppxBundleAutoResourcePackageQualifiers>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+    <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
+    <GenerateTestArtifacts>False</GenerateTestArtifacts>
+    <AppxBundle>Never</AppxBundle>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+  </PropertyGroup>
+
+  <!-- Store package (deploy\build-msixbundle.ps1): ship .NET inside (Store does not install it), only this platform's
+       native libs, and Windows App SDK as a framework dependency that the Store installs itself. -->
+  <PropertyGroup Condition="'$(UapAppxPackageBuildMode)' == 'StoreUpload'">
+    <RuntimeIdentifier>win-$(Platform)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,6 +52,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7175" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
+    <!-- Windows ML (onnxruntime + DirectML, ~40 MB per platform) comes with the metapackage; the app does not use it. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.ML" Version="1.8.2109" ExcludeAssets="all" />
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.3.2" />
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.4.1" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
