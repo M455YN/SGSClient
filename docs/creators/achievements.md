@@ -271,9 +271,119 @@ void SgsUnlock(const FString& Key)
 }
 ```
 
-Statystykę w Unrealu ustawiasz tak samo: `SetURL(Url + TEXT("/api/sdk/stats/") + Key)`, nagłówek `Content-Type: application/json` i `SetContentAsString(FString::Printf(TEXT("{\"value\":%g}"), Value))`.
+Statystyka w Unrealu (wartość bezwzględna, jak `SetStat`):
+
+```cpp
+void SgsSetStat(const FString& Key, double Value)
+{
+    const FString Url = FPlatformMisc::GetEnvironmentVariable(TEXT("SGS_API_URL"));
+    const FString Token = FPlatformMisc::GetEnvironmentVariable(TEXT("SGS_ACHIEVEMENTS_TOKEN"));
+    if (Url.IsEmpty() || Token.IsEmpty()) return;
+
+    auto Request = FHttpModule::Get().CreateRequest();
+    Request->SetURL(Url + TEXT("/api/sdk/stats/") + Key);
+    Request->SetVerb(TEXT("POST"));
+    Request->SetHeader(TEXT("X-SGS-Token"), Token);
+    Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+    // SanitizeFloat always writes a dot, whatever the player's locale.
+    Request->SetContentAsString(FString::Printf(TEXT("{\"value\":%s}"), *FString::SanitizeFloat(Value)));
+    Request->ProcessRequest();
+}
+// SgsSetStat(TEXT("NUM_GAMES"), GamesWon);
+```
 
 Każdy inny silnik działa tak samo: odczytaj dwie zmienne, ustaw nagłówek i wyślij `POST`.
+
+### Pełny przykład: wygrane mecze → statystyka → osiągnięcie
+
+W Panelu twórcy są zdefiniowane:
+
+- statystyka `NUM_GAMES` (INT, minimum 0, **tylko rośnie**),
+- osiągnięcie `ACH_WIN_10` „Weteran areny”, rodzaj **Ze statystyki**, statystyka `num_games`, cel 10.
+
+Gra nie odblokowuje `ACH_WIN_10` sama. Po każdej wygranej wysyła nową wartość `NUM_GAMES`, a serwer przesuwa pasek postępu (6 / 10) i przy 10 odblokowuje osiągnięcie. Wartość jest **bezwzględna**, więc na starcie gra odczytuje zapisaną liczbę (odpowiednik `RequestCurrentStats` + `GetStat` w Steam), a potem wysyła `+1`.
+
+```csharp
+using System;
+using System.Collections;
+using System.Globalization;
+using System.Linq;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Networking;
+
+public class SgsStats : MonoBehaviour
+{
+    // Pola nazwane jak w JSON-ie z API (camelCase); reszta odpowiedzi jest pomijana.
+    [Serializable] class StatValue { public string key; public float value; }
+    [Serializable] class GameAchievements { public StatValue[] stats; }
+    [Serializable] class AchievementResult { public string key; public int progress; public bool unlocked; public bool justUnlocked; }
+    [Serializable] class StatResult { public string key; public float value; public AchievementResult[] achievements; }
+
+    string _url, _token;
+    int _gamesWon;
+
+    IEnumerator Start()
+    {
+        _url = Environment.GetEnvironmentVariable("SGS_API_URL");
+        _token = Environment.GetEnvironmentVariable("SGS_ACHIEVEMENTS_TOKEN");
+        _gamesWon = PlayerPrefs.GetInt("num_games"); // lokalna kopia na wypadek grania offline
+        if (string.IsNullOrEmpty(_url) || string.IsNullOrEmpty(_token)) yield break; // gra uruchomiona poza SGS
+
+        using var get = UnityWebRequest.Get($"{_url}/api/sdk/achievements");
+        get.SetRequestHeader("X-SGS-Token", _token);
+        yield return get.SendWebRequest();
+        if (get.result != UnityWebRequest.Result.Success) yield break; // 503 = offline, gramy dalej na kopii lokalnej
+
+        // Serwer zwraca API name małymi literami.
+        var stored = JsonUtility.FromJson<GameAchievements>(get.downloadHandler.text)
+            .stats?.FirstOrDefault(s => s.key == "num_games")?.value ?? 0;
+        _gamesWon = Math.Max(_gamesWon, (int)stored); // "tylko rośnie" odrzuciłoby mniejszą wartość
+    }
+
+    // Wywołaj po wygranym meczu.
+    public void OnMatchWon()
+    {
+        _gamesWon++;
+        PlayerPrefs.SetInt("num_games", _gamesWon);
+        StartCoroutine(SetStat("NUM_GAMES", _gamesWon));
+    }
+
+    IEnumerator SetStat(string key, float value)
+    {
+        if (string.IsNullOrEmpty(_url) || string.IsNullOrEmpty(_token)) yield break;
+
+        var body = "{\"value\":" + value.ToString(CultureInfo.InvariantCulture) + "}";
+        using var post = new UnityWebRequest($"{_url}/api/sdk/stats/{key}", "POST");
+        post.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(body));
+        post.downloadHandler = new DownloadHandlerBuffer();
+        post.SetRequestHeader("X-SGS-Token", _token);
+        post.SetRequestHeader("Content-Type", "application/json");
+        yield return post.SendWebRequest();
+
+        // 202 = klient SGS zakolejkował wywołanie offline; odblokowanie przyjdzie później jako powiadomienie.
+        if (post.responseCode != 200) yield break;
+
+        var result = JsonUtility.FromJson<StatResult>(post.downloadHandler.text);
+        foreach (var achievement in result.achievements ?? Array.Empty<AchievementResult>())
+        {
+            if (achievement.justUnlocked)
+            {
+                Debug.Log($"Odblokowano osiągnięcie {achievement.key}"); // tu pokaż własny komunikat w grze
+            }
+        }
+    }
+}
+```
+
+Odpowiedź na `POST /api/sdk/stats/NUM_GAMES` z `{"value": 10}`:
+
+```json
+{ "key": "num_games", "value": 10,
+  "achievements": [ { "key": "ach_win_10", "progress": 10, "target": 10, "unlocked": true, "justUnlocked": true } ] }
+```
+
+Gdy postęp nie wynika z żadnej statystyki (np. „Przeleć 1000 m” liczone tylko na potrzeby osiągnięcia), wybierz rodzaj **Licznikiem** i wysyłaj `POST /api/sdk/achievements/ACH_SKY_HIGH/progress` z `{"value": 420}`. Ten sam kod z adresem `.../achievements/{key}/progress` zamiast `.../stats/{key}`; odpowiedź ma wtedy kształt z punktu 4 (`progress`, `target`, `justUnlocked`). Statystyka jest lepsza, gdy z jednej liczby korzysta kilka osiągnięć (10, 50 i 100 wygranych) albo sama gra chce ją pokazać graczowi.
 
 ## 6. Bez klienta SGS
 
