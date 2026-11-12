@@ -279,9 +279,15 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
             try
             {
                 var game = await api.GetGameAsync(item.GameId, cancellationToken).ConfigureAwait(false);
-                var build = game?.Builds.FirstOrDefault(b => b.Id == item.BuildId)
-                    ?? game?.Builds.FirstOrDefault(b => b.IsDefault)
-                    ?? game?.Builds.FirstOrDefault();
+                if (game is null || !string.Equals(game.Symbol, item.Symbol, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Same id, different game: the install came from another SGS server (e.g. a test API).
+                    continue;
+                }
+
+                var build = game.Builds.FirstOrDefault(b => b.Id == item.BuildId)
+                    ?? game.Builds.FirstOrDefault(b => b.IsDefault)
+                    ?? game.Builds.FirstOrDefault();
                 if (build is null || string.IsNullOrWhiteSpace(build.CurrentVersion))
                 {
                     continue;

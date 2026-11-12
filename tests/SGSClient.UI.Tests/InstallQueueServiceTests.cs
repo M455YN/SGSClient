@@ -45,6 +45,60 @@ public class InstallQueueServiceTests
         Assert.True(installer.MaxConcurrent <= 1);
     }
 
+    [Fact]
+    public async Task CheckForUpdates_SkipsAnInstallWhoseIdBelongsToAnotherGameOnTheServer()
+    {
+        var installer = new TrackingInstaller();
+        var library = new InMemoryLibrary();
+        // Game 1 was installed from a test server, where id 1 is a different game than here.
+        library.Items[1] = Installed(MakeItem(1, "Sky Arena"), "sky-arena");
+        library.Items[2] = Installed(MakeItem(2, "Two"), "g2");
+
+        var api = AchievementDialogFlowTests.FakeApi.Create((method, args) =>
+            method.Name == nameof(ISgsApiService.GetGameAsync)
+                ? Task.FromResult<GameDto?>(new GameDto
+                {
+                    Id = (int)args![0]!,
+                    Title = "Server game",
+                    Symbol = $"g{args[0]}",
+                    Builds = [new GameBuildDto { Id = 9, CurrentVersion = "2.0.0", ExeName = "g.exe", ZipLink = "z", IsDefault = true }]
+                })
+                : null);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<ILocalLibraryStore>(library);
+        services.AddSingleton<IGameInstallService>(installer);
+        services.AddSingleton(api);
+        await using var provider = services.BuildServiceProvider();
+
+        var queue = new InstallQueueService(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            Options.Create(new ClientInstallSettings()),
+            new FakeUserSettings());
+
+        await queue.CheckForUpdatesAsync();
+
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (DateTime.UtcNow < deadline && installer.StartedOrder.Count < 1)
+        {
+            await Task.Delay(20);
+        }
+
+        await Task.Delay(200);
+        Assert.Equal([2], installer.StartedOrder);
+    }
+
+    private static GameLibraryItem Installed(GameLibraryItem item, string symbol) => new()
+    {
+        GameId = item.GameId,
+        BuildId = item.BuildId,
+        Symbol = symbol,
+        Title = item.Title,
+        Platform = item.Platform,
+        InstallState = InstallState.Installed,
+        InstalledVersion = "1.0.0"
+    };
+
     private static GameLibraryItem MakeItem(int id, string title) => new()
     {
         GameId = id,
