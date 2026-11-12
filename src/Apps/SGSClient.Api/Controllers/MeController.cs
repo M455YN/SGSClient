@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using SGSClient.Api.Auth;
 using SGSClient.Core.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
@@ -25,9 +26,6 @@ public sealed class MeController(
     IOptions<AzureAdSettings> azureOptions,
     IOptions<GameStorageSettings> storageOptions) : ControllerBase
 {
-    // Do NOT use [Authorize] here: when AzureAd is disabled, no auth scheme is registered
-    // and [Authorize] throws 500. Mirror GamesController — AllowAnonymous + ResolveAzureSubAsync.
-
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
@@ -531,6 +529,7 @@ public sealed class MeController(
             Location = profile.Location,
             PlayerTag = profile.PlayerTag,
             HideAchievements = profile.HideAchievements,
+            HideGameActivity = profile.HideGameActivity,
             CreatedAtUtc = profile.CreatedAtUtc,
             LastLoginUtc = profile.LastLoginUtc,
             Role = adminAuth.ResolveRole(profile.Role, email),
@@ -553,54 +552,13 @@ public sealed class MeController(
             return new ResolvedIdentity("local-dev", "Player", Email: null, AvatarFromIdp: null);
         }
 
-        if (User.Identity?.IsAuthenticated != true)
-        {
-            return null;
-        }
-
-        var sub = GetSub();
-        if (sub is null)
-        {
-            return null;
-        }
-
-        var displayName = User.FindFirstValue("name")
-            ?? User.FindFirstValue(ClaimTypes.Name)
-            ?? "Player";
-        var email = EmailClaimHelper.FromPrincipal(User);
-        var avatar = User.FindFirstValue("picture");
-        return new ResolvedIdentity(sub, displayName, email, avatar);
+        return CurrentUser.ReadClaims(User) is { } claims
+            ? new ResolvedIdentity(claims.Sub, claims.DisplayName, claims.Email, User.FindFirstValue("picture"))
+            : null;
     }
 
-    private async Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken)
-    {
-        var azure = azureOptions.Value;
-        if (!azure.IsConfigured)
-        {
-            return 1;
-        }
-
-        if (User.Identity?.IsAuthenticated != true)
-        {
-            return null;
-        }
-
-        var sub = GetSub();
-        if (sub is null)
-        {
-            return null;
-        }
-
-        var displayName = User.FindFirstValue("name")
-            ?? User.FindFirstValue(ClaimTypes.Name)
-            ?? "Player";
-        var email = EmailClaimHelper.FromPrincipal(User);
-        var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatarUrl: null, cancellationToken);
-        return profile.Id;
-    }
-
-    private string? GetSub() =>
-        User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+    private Task<int?> ResolveOwnerUserIdAsync(CancellationToken cancellationToken) =>
+        users.ResolveUserIdAsync(User, azureOptions.Value, cancellationToken);
 
     private sealed record ResolvedIdentity(
         string AzureSub,

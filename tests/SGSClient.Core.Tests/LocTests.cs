@@ -27,6 +27,8 @@ public class LocTests
             Assert.Equal("Nie ma takiego tekstu", Loc.T("Nie ma takiego tekstu"));
             Assert.Equal(" · default", Loc.T(" · domyślny"));
             Assert.Equal("Library folder added.", Loc.T("Dodano folder biblioteki."));
+            Assert.Equal("Download limit (MB/s):", Loc.T("Limit pobierania (MB/s):"));
+            Assert.Equal("Speed in MB/s. 0 means no limit (default).", Loc.T("Prędkość w MB/s. 0 oznacza brak limitu (domyślnie)."));
         }
         finally
         {

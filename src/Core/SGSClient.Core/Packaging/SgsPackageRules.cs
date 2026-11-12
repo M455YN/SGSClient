@@ -1,4 +1,5 @@
 using SGSClient.Core.Achievements;
+using SGSClient.Core.DTOs;
 using SGSClient.Core.Localization;
 using System.Text.RegularExpressions;
 using SGSClient.Core.Enums;
@@ -385,7 +386,7 @@ public static partial class SgsPackageRules
             }
         }
 
-        ValidateAchievements(manifest.Achievements, errors);
+        ValidateAchievements(manifest.Achievements, manifest.Stats, errors);
 
         return errors.Count == 0
             ? SgsPackageValidationResult.Ok()
@@ -808,13 +809,62 @@ public static partial class SgsPackageRules
         return flag != GameFeatures.None;
     }
 
+    /// <summary>
+    /// Fills a missing <c>icon</c> / <c>lockedIcon</c> from files that follow the folder convention
+    /// <c>sdk_sgs/achievements/{api name}.png</c> and <c>{api name}_locked.png</c> (any allowed image type,
+    /// file names matched case-insensitively). Icons the manifest names explicitly are kept.
+    /// </summary>
+    public static void ApplyAchievementIconConvention(SgsPackageManifest manifest, IEnumerable<string> entryPaths)
+    {
+        if (manifest.Achievements is null)
+        {
+            return;
+        }
+
+        var prefix = AchievementRules.IconFolder + "/";
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in entryPaths)
+        {
+            if (TryNormalizeEntryPath(entry.TrimEnd('/'), out var path, out _)
+                && path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                && !path[prefix.Length..].Contains('/')
+                && AllowedImageExtensions.Contains(Path.GetExtension(path)))
+            {
+                files.TryAdd(Path.GetFileNameWithoutExtension(path), path);
+            }
+        }
+
+        foreach (var achievement in manifest.Achievements.Where(a => a is not null))
+        {
+            if (AchievementRules.NormalizeKey(achievement.Key) is not { } key)
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(achievement.Icon) && files.TryGetValue(key, out var icon))
+            {
+                achievement.Icon = icon;
+            }
+
+            if (string.IsNullOrWhiteSpace(achievement.LockedIcon) && files.TryGetValue(key + "_locked", out var locked))
+            {
+                achievement.LockedIcon = locked;
+            }
+        }
+    }
+
     /// <summary>Package-relative icon paths of manifest achievements (http(s) icons are not in the ZIP).</summary>
     public static IEnumerable<string> EnumerateAchievementIconPaths(SgsPackageManifest manifest) =>
         (manifest.Achievements ?? [])
-            .Where(a => a is not null && !a.IconIsUrl && !string.IsNullOrWhiteSpace(a.Icon))
-            .Select(a => a.Icon!);
+            .Where(a => a is not null)
+            .SelectMany(a => new[] { a.Icon, a.LockedIcon })
+            .Where(icon => !SgsPackageAchievement.IsUrl(icon) && !string.IsNullOrWhiteSpace(icon))
+            .Select(icon => icon!);
 
-    private static void ValidateAchievements(IList<SgsPackageAchievement>? achievements, List<string> errors)
+    private static void ValidateAchievements(
+        IList<SgsPackageAchievement>? achievements,
+        IList<GameStatDefinitionDto>? stats,
+        List<string> errors)
     {
         if (achievements is null)
         {
@@ -827,24 +877,55 @@ public static partial class SgsPackageRules
             return;
         }
 
-        foreach (var achievement in achievements.Where(a => !a.IconIsUrl && !string.IsNullOrWhiteSpace(a.Icon)))
+        foreach (var achievement in achievements)
         {
-            if (TryNormalizeMediaPath(achievement.Icon!, AllowedImageExtensions, $"achievements.{achievement.Key}.icon", out var icon, out var iconError))
+            achievement.Icon = NormalizeIconPath(achievement.Icon, $"achievements.{achievement.Key}.icon", errors);
+            achievement.LockedIcon = NormalizeIconPath(achievement.LockedIcon, $"achievements.{achievement.Key}.lockedIcon", errors);
+        }
+
+        if (stats is not null)
+        {
+            if (stats.Any(s => s is null))
             {
-                achievement.Icon = icon;
+                errors.Add(Loc.T("Lista 'stats' zawiera pusty wpis."));
+                return;
             }
-            else
+
+            if (AchievementRules.ValidateStats(stats.ToList()) is { } statsError)
             {
-                errors.Add(iconError!);
+                errors.Add(statsError);
             }
         }
 
         // Paths were checked above; the definitions only need the icon to be a well-formed URL or absent.
-        var definitions = achievements.Select(a => a.ToDefinition(a.IconIsUrl ? a.Icon : null)).ToList();
-        if (AchievementRules.Validate(definitions) is { } error)
+        var definitions = achievements
+            .Select(a => a.ToDefinition(
+                SgsPackageAchievement.IsUrl(a.Icon) ? a.Icon : null,
+                SgsPackageAchievement.IsUrl(a.LockedIcon) ? a.LockedIcon : null))
+            .ToList();
+        // A manifest must declare every stat it links, so publishing never fails half-way on the server.
+        var statKeys = stats?.Select(s => AchievementRules.NormalizeKey(s.Key) ?? s.Key).ToList() ?? [];
+        if (AchievementRules.Validate(definitions, statKeys) is { } error)
         {
             errors.Add(error);
         }
+    }
+
+    /// <summary>A package-relative icon path, normalized; URLs and empty values pass through.</summary>
+    private static string? NormalizeIconPath(string? icon, string field, List<string> errors)
+    {
+        if (SgsPackageAchievement.IsUrl(icon) || string.IsNullOrWhiteSpace(icon))
+        {
+            return icon;
+        }
+
+        if (TryNormalizeMediaPath(icon, AllowedImageExtensions, field, out var normalized, out var iconError))
+        {
+            return normalized;
+        }
+
+        errors.Add(iconError!);
+        return icon;
     }
 
     private static void ValidateMedia(SgsPackageMediaInfo? media, List<string> errors)

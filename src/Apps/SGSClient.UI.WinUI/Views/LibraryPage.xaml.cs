@@ -11,7 +11,7 @@ using SGSClient.UI.ViewModels;
 
 namespace SGSClient.UI.WinUI.Views;
 
-public sealed partial class LibraryPage : Page
+public sealed partial class LibraryPage : Page, ILoadingPage
 {
     private readonly Dictionary<FrameworkElement, CaptionBlurState> _captionBlurs = new();
 
@@ -26,9 +26,16 @@ public sealed partial class LibraryPage : Page
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    public Task Ready { get; private set; } = Task.CompletedTask;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        Ready = LoadForNavigationAsync(e);
+    }
+
+    private async Task LoadForNavigationAsync(NavigationEventArgs e)
+    {
         await ViewModel.LoadAsync();
         RefreshUi();
         App.MainWindow?.RefreshSidebar();

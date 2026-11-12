@@ -1,7 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using SGSClient.Api.Auth;
 using SGSClient.Core.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
@@ -47,6 +47,25 @@ public sealed class AchievementsController(
         return await RunAsync(() => achievements.GetDefinitionsAsync(gameId, userId.Value, isAdmin, cancellationToken));
     }
 
+    [HttpGet("games/{gameId:int}/studio/stats")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<GameStatDefinitionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<GameStatDefinitionDto>>> GetStatDefinitions(
+        int gameId,
+        CancellationToken cancellationToken)
+    {
+        var userId = await ResolveUserIdAsync(cancellationToken);
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        var isAdmin = await IsAdminAsync(userId.Value, cancellationToken);
+        return await RunAsync(() => achievements.GetStatDefinitionsAsync(gameId, userId.Value, isAdmin, cancellationToken));
+    }
+
     [HttpPut("games/{gameId:int}/studio/achievements")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<AchievementDefinitionDto>), StatusCodes.Status200OK)]
@@ -81,6 +100,7 @@ public sealed class AchievementsController(
         int gameId,
         string key,
         [FromForm] IFormFile? file,
+        [FromQuery] bool locked,
         CancellationToken cancellationToken)
     {
         var userId = await ResolveUserIdAsync(cancellationToken);
@@ -97,7 +117,7 @@ public sealed class AchievementsController(
         var isAdmin = await IsAdminAsync(userId.Value, cancellationToken);
         await using var stream = file.OpenReadStream();
         return await RunAsync(() => achievements.SetIconAsync(
-            gameId, userId.Value, key, stream, file.FileName, isAdmin, cancellationToken));
+            gameId, userId.Value, key, stream, file.FileName, isAdmin, locked, cancellationToken));
     }
 
     [HttpDelete("games/{gameId:int}/studio/achievements/progress")]
@@ -220,6 +240,28 @@ public sealed class AchievementsController(
         return await RunAsync(() => achievements.SetProgressAsync(userId.Value, gameId, key, request.Value, cancellationToken));
     }
 
+    [HttpPost("me/games/{gameId:int}/stats/{key}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(StatUpdateResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StatUpdateResultDto>> SetStatMine(
+        int gameId,
+        string key,
+        [FromBody] SetStatRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = await ResolveUserIdAsync(cancellationToken);
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        return await RunAsync(() => achievements.SetStatAsync(userId.Value, gameId, key, request.Value, cancellationToken));
+    }
+
     // ---- game (SDK) ------------------------------------------------------------------------
 
     [HttpGet("sdk/achievements")]
@@ -276,6 +318,26 @@ public sealed class AchievementsController(
         return await RunAsync(() => achievements.SetProgressAsync(userId, gameId, key, request.Value, cancellationToken));
     }
 
+    [HttpPost("sdk/stats/{key}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(StatUpdateResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<StatUpdateResultDto>> SdkSetStat(
+        string key,
+        [FromBody] SetStatRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryReadToken(out var userId, out var gameId))
+        {
+            return Unauthorized();
+        }
+
+        return await RunAsync(() => achievements.SetStatAsync(userId, gameId, key, request.Value, cancellationToken));
+    }
+
     // ---- helpers ---------------------------------------------------------------------------
 
     private bool TryReadToken(out int userId, out int gameId)
@@ -317,28 +379,6 @@ public sealed class AchievementsController(
             && adminAuth.IsAdmin(User, profile.Email ?? EmailClaimHelper.FromPrincipal(User), profile.Role);
     }
 
-    // Same identity resolution as MeController / GamesController (AzureAd disabled = local user 1).
-    private async Task<int?> ResolveUserIdAsync(CancellationToken cancellationToken)
-    {
-        if (!azureOptions.Value.IsConfigured)
-        {
-            return 1;
-        }
-
-        if (User.Identity?.IsAuthenticated != true)
-        {
-            return null;
-        }
-
-        var sub = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(sub))
-        {
-            return null;
-        }
-
-        var displayName = User.FindFirstValue("name") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Player";
-        var email = EmailClaimHelper.FromPrincipal(User);
-        var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatarUrl: null, cancellationToken);
-        return profile.Id;
-    }
+    private Task<int?> ResolveUserIdAsync(CancellationToken cancellationToken) =>
+        users.ResolveUserIdAsync(User, azureOptions.Value, cancellationToken);
 }

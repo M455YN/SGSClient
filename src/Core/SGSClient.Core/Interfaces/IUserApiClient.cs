@@ -5,6 +5,7 @@ namespace SGSClient.Core.Interfaces;
 public interface IUserApiClient
 {
     Task<UserProfileDto?> GetMeAsync(CancellationToken cancellationToken = default);
+    Task<UserProfileDto?> GetMeWithIdTokenAsync(string idToken, CancellationToken cancellationToken = default);
     Task<UserProfileDto?> UpdateMeAsync(UpdateProfileRequestDto request, CancellationToken cancellationToken = default);
     Task<(UserProfileDto? Profile, string? Error)> UploadAvatarAsync(string localFilePath, CancellationToken cancellationToken = default);
     Task<(UserProfileDto? Profile, string? Error)> UploadAvatarAsync(Stream content, string fileName, CancellationToken cancellationToken = default);
@@ -57,6 +58,9 @@ public interface IUserApiClient
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<ChatThreadDto>> GetChatThreadsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Open lobbies with a free slot that friends host.</summary>
+    Task<IReadOnlyList<LobbyDto>> GetFriendLobbiesAsync(CancellationToken cancellationToken = default);
 
     Task<ChatConversationDto?> GetChatConversationAsync(int peerUserId, CancellationToken cancellationToken = default);
 

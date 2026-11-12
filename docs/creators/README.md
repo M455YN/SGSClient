@@ -1,18 +1,19 @@
-# Creator docs / Dokumentacja dla twórców
+# Dokumentacja dla twórców gier
 
-How to publish a game on SGS.
+Jak opublikować grę w SGS i jak podłączyć ją do platformy.
 
-Jak publikować gry w SGS.
+| Strona | Temat |
+|---|---|
+| [Jak opublikować grę](how-to-publish.md) | Konto, folder, `sgs-manifest.json`, Panel twórcy |
+| [Grafika sklepowa](store-art.md) | Miniaturka, okładka pozioma, logo, zrzuty ekranu |
+| [Osiągnięcia i statystyki](achievements.md) | Tabela osiągnięć i statystyk w stylu Steamworks w Panelu twórcy, odblokowywanie i postęp z dowolnego silnika przez HTTP |
+| [Lobby i zaproszenia](lobbies.md) | Znajdowanie hosta po kodzie, zaproszenia, dołączanie z klienta |
 
-| Page | Topic |
-|------|--------|
-| [How to publish a game](how-to-publish.md) / [Jak opublikować grę](how-to-publish.md) | Account, folder, `sgs-manifest.json`, Creator panel / Konto, folder, manifest, Panel twórcy |
-| [Store art](store-art.md) / [Grafika sklepowa](store-art.md) | Thumbnail, landscape header, logo, screenshots / Miniaturka, okładka pozioma, logo, screeny |
-| [Achievements](achievements.md) / [Osiągnięcia](achievements.md) | Define achievements in Creator panel, unlock them from any engine over HTTP / Definiowanie osiągnięć w Panelu twórcy, odblokowywanie z dowolnego silnika przez HTTP |
+Schemat i przykład paczki:
 
-Schema and sample package / Schemat i przykład paczki:
+- [`schemas/sgs-manifest.v1.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/sgs-manifest.v1.json)
+- [`schemas/examples/demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json)
+- **Gotowy szablon do rozpakowania:** [`schemas/examples/sample-game-package.zip`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/sample-game-package.zip) (folder: [`sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game))
+- **Szablony gier z bazy (exe i wersja):** [`schemas/examples/catalog-templates/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/catalog-templates)
 
-- [`schemas/sgs-manifest.v1.json`](../../schemas/sgs-manifest.v1.json)
-- [`schemas/examples/demo-runner.sgs-manifest.json`](../../schemas/examples/demo-runner.sgs-manifest.json)
-- **Ready-to-unzip template** / **Gotowy szablon:** [`schemas/examples/sample-game-package.zip`](../../schemas/examples/sample-game-package.zip) (folder: [`sample-game/`](../../schemas/examples/sample-game/))
-- **Per-game catalog templates (DB exe/version)** / **Szablony per gra (exe/wersja z bazy):** [`schemas/examples/catalog-templates/`](../../schemas/examples/catalog-templates/) · ZIP: [`catalog-template-zips/`](../../schemas/examples/catalog-template-zips/)
+Informacje o integracji technicznej znajdziesz w [Integracji z SGS](../developers/README.md).

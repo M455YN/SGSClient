@@ -3,21 +3,31 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Navigation;
 using SGSClient.UI.ViewModels;
+using Windows.ApplicationModel.DataTransfer;
 using WinRT.Interop;
 
 namespace SGSClient.UI.WinUI.Views;
 
-public sealed partial class AccountPage : Page
+public sealed partial class AccountPage : Page, ILoadingPage
 {
+    private string _shownAvatarUrl = string.Empty;
+    private string _shownBannerUrl = string.Empty;
+
     public AccountViewModel ViewModel { get; }
 
     public AccountPage()
     {
         ViewModel = App.Services.GetRequiredService<AccountViewModel>();
         InitializeComponent();
+        CenteredColumn.Attach(this, ContentColumn, 1280);
 
         ViewModel.PropertyChanged += (_, _) => RefreshUi();
+        ViewModel.RecentGames.CollectionChanged += (_, _) => RefreshLists();
+        ViewModel.Achievements.CollectionChanged += (_, _) => RefreshLists();
+        ViewModel.FriendsPreview.CollectionChanged += (_, _) => RefreshLists();
+        ViewModel.WallComments.CollectionChanged += (_, _) => RefreshLists();
         ViewModel.AchievementsRequested += async (gameId, title) =>
         {
             var modal = await ViewModel.CreateAchievementsModalAsync(gameId, title);
@@ -54,28 +64,30 @@ public sealed partial class AccountPage : Page
             });
         }
 
-        Loaded += async (_, _) =>
-        {
-            await ViewModel.InitializeAsync();
-            RefreshUi();
-        };
+    }
+
+    public Task Ready { get; private set; } = Task.CompletedTask;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        Ready = LoadForNavigationAsync();
+    }
+
+    private async Task LoadForNavigationAsync()
+    {
+        await ViewModel.InitializeAsync();
+        RefreshUi();
+        RefreshLists();
     }
 
     private void RefreshUi()
     {
-        SignedOutPanel.Visibility = ViewModel.ShowSignedOut ? Visibility.Visible : Visibility.Collapsed;
-        TagSetupPanel.Visibility = ViewModel.ShowTagSetup ? Visibility.Visible : Visibility.Collapsed;
-        ProfileScroll.Visibility = ViewModel.IsLoggedIn && !ViewModel.NeedsPlayerTagSetup
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        SignedOutPanel.Visibility = ToVisibility(ViewModel.ShowSignedOut);
+        TagSetupPanel.Visibility = ToVisibility(ViewModel.ShowTagSetup);
+        ProfileScroll.Visibility = ToVisibility(ViewModel.ShowAccountContent);
         SignedOutStatus.Text = ViewModel.AccountStatus;
 
-        DisplayNameText.Text = ViewModel.DisplayName;
-        PlayerTagText.Text = ViewModel.PlayerTagDisplay;
-        PlayerTagText.Visibility = string.IsNullOrWhiteSpace(ViewModel.PlayerTag)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
-        LastActivityText.Text = ViewModel.LastActivityText;
         if (DraftTagBox.FocusState == FocusState.Unfocused)
         {
             DraftTagBox.Text = ViewModel.DraftPlayerTag;
@@ -83,55 +95,77 @@ public sealed partial class AccountPage : Page
 
         TagPreviewText.Text = ViewModel.TagPreview;
         TagStatusText.Text = ViewModel.TagStatus;
-        FriendsText.Content = Loc.F("{0} Znajomi", ViewModel.FriendsCount);
-        FollowingText.Content = $"{ViewModel.FollowingCount} Obserwowane";
-        FollowersText.Content = Loc.F("{0} Obserwujący", ViewModel.FollowersCount);
+
+        DisplayNameText.Text = ViewModel.DisplayName;
+        PlayerTagText.Text = ViewModel.PlayerTagDisplay;
+        PlayerTagText.Visibility = ToVisibility(!string.IsNullOrWhiteSpace(ViewModel.PlayerTag));
         BioText.Text = ViewModel.BioDisplay;
-        LocationText.Text = ViewModel.LocationDisplay;
+        LocationText.Text = ViewModel.Location;
+        LocationPanel.Visibility = ToVisibility(!string.IsNullOrWhiteSpace(ViewModel.Location));
+        MemberSinceText.Text = ViewModel.MemberSinceText;
+        MemberSincePanel.Visibility = ToVisibility(!string.IsNullOrWhiteSpace(ViewModel.MemberSinceText));
         EmailText.Text = ViewModel.Email;
-        AvatarInitialsText.Text = ViewModel.AvatarInitials;
 
-        RightRail.Visibility = ViewModel.ShowProfile ? Visibility.Visible : Visibility.Collapsed;
-        EditPanel.Visibility = ViewModel.IsEditing ? Visibility.Visible : Visibility.Collapsed;
-
-        if (ViewModel.IsEditing)
+        AvatarPicture.DisplayName = ViewModel.DisplayName;
+        AvatarPicture.Initials = ViewModel.AvatarInitials;
+        EditAvatarPicture.DisplayName = ViewModel.DisplayName;
+        EditAvatarPicture.Initials = ViewModel.AvatarInitials;
+        if (_shownAvatarUrl != ViewModel.AvatarUrl)
         {
-            EditDisplayNameBox.Text = ViewModel.EditDisplayName;
-            EditBioBox.Text = ViewModel.EditBio;
-            EditLocationBox.Text = ViewModel.EditLocation;
-            EditHideAchievementsBox.IsChecked = ViewModel.EditHideAchievements;
-            EditPlayerTagBox.Text = ViewModel.EditPlayerTag;
+            _shownAvatarUrl = ViewModel.AvatarUrl;
+            var avatar = ToBitmap(ViewModel.AvatarUrl);
+            AvatarPicture.ProfilePicture = avatar;
+            EditAvatarPicture.ProfilePicture = avatar;
         }
 
-        AvatarActionStatusText.Text = ViewModel.ProfileActionStatus;
-
-        if (ViewModel.HasAvatar && Uri.TryCreate(ViewModel.AvatarUrl, UriKind.Absolute, out var uri))
+        if (_shownBannerUrl != ViewModel.BannerImageUrl)
         {
-            var image = new BitmapImage();
-            image.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
-            image.UriSource = uri;
-            AvatarBrush.ImageSource = image;
-            AvatarInitialsText.Visibility = Visibility.Collapsed;
-        }
-        else
-        {
-            AvatarBrush.ImageSource = null;
-            AvatarInitialsText.Visibility = Visibility.Visible;
+            _shownBannerUrl = ViewModel.BannerImageUrl;
+            BannerImage.Source = ToBitmap(ViewModel.BannerImageUrl);
         }
 
-        LibraryList.ItemsSource = ViewModel.RecentGames;
-        RecentGrid.ItemsSource = ViewModel.RecentGames;
-        EmptyRecentText.Visibility = ViewModel.ShowEmptyRecentGames ? Visibility.Visible : Visibility.Collapsed;
-        AchievementsList.ItemsSource = ViewModel.Achievements;
+        GamesCountText.Text = ViewModel.OwnedGamesCount.ToString(Loc.Culture);
+        GamesPillText.Text = GamesCountText.Text;
+        PlaytimeStatText.Text = string.IsNullOrEmpty(ViewModel.TotalPlaytimeText) ? "—" : ViewModel.TotalPlaytimeText;
+        AchievementsStatText.Text = ViewModel.AchievementsUnlocked.ToString(Loc.Culture);
+        AchievementsPillText.Text = AchievementsStatText.Text;
         AchievementsTotalText.Text = ViewModel.AchievementsTotalText;
+        FriendsStatText.Text = ViewModel.FriendsCount.ToString(Loc.Culture);
+        FriendsPillText.Text = FriendsStatText.Text;
+        FollowersStatText.Text = ViewModel.FollowersCount.ToString(Loc.Culture);
+        FollowingStatText.Text = ViewModel.FollowingCount.ToString(Loc.Culture);
+        ActivitySummaryText.Text = ViewModel.TotalPlaytimeSummary;
 
         WallStatusText.Text = ViewModel.WallStatus;
-        WallCommentsList.ItemsSource = ViewModel.WallComments;
+        WallStatusText.Visibility = ToVisibility(!string.IsNullOrEmpty(ViewModel.WallStatus));
         if (WallCommentBox.FocusState == FocusState.Unfocused)
         {
             WallCommentBox.Text = ViewModel.WallCommentDraft;
         }
+
+        AvatarActionStatusText.Text = ViewModel.ProfileActionStatus;
     }
+
+    /// <summary>Re-binds the lists only when a collection changes, not on every property change.</summary>
+    private void RefreshLists()
+    {
+        ActivityList.ItemsSource = ViewModel.RecentActivity;
+        EmptyActivityPanel.Visibility = ToVisibility(ViewModel.ShowEmptyRecentGames);
+        GamesGrid.ItemsSource = ViewModel.RecentGames;
+        EmptyRecentText.Visibility = ToVisibility(ViewModel.ShowEmptyRecentGames);
+        AchievementsList.ItemsSource = ViewModel.TopAchievements;
+        FriendsPreviewList.ItemsSource = ViewModel.FriendsPreview;
+        EmptyFriendsPanel.Visibility = ToVisibility(!ViewModel.HasFriendsPreview);
+        WallCommentsList.ItemsSource = ViewModel.WallComments;
+        CommentsCountText.Text = ViewModel.WallComments.Count.ToString(Loc.Culture);
+    }
+
+    private static Visibility ToVisibility(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+
+    private static BitmapImage? ToBitmap(string? url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            ? new BitmapImage { CreateOptions = BitmapCreateOptions.IgnoreImageCache, UriSource = uri }
+            : null;
 
     private void WallCommentBox_TextChanged(object sender, TextChangedEventArgs e) =>
         ViewModel.WallCommentDraft = WallCommentBox.Text ?? string.Empty;
@@ -150,6 +184,66 @@ public sealed partial class AccountPage : Page
         {
             ViewModel.OpenGameAchievementsCommand.Execute(item);
         }
+    }
+
+    private void OpenGame_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: RecentGameItem item })
+        {
+            OpenGameDetails(item);
+        }
+    }
+
+    private void GamesGrid_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is RecentGameItem item)
+        {
+            OpenGameDetails(item);
+        }
+    }
+
+    private static void OpenGameDetails(RecentGameItem item)
+    {
+        if (item.GameId > 0)
+        {
+            App.MainWindow?.NavigateTo(typeof(GameDetailsPage), new GameDetailsNavArgs(item.GameId, "Library"), "Library");
+        }
+    }
+
+    private void OpenFriendProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: SocialPersonItem person })
+        {
+            App.MainWindow?.OpenUserProfile(person.UserId);
+        }
+    }
+
+    private void OpenAuthor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: ProfileCommentItem comment })
+        {
+            App.MainWindow?.OpenUserProfile(comment.AuthorUserId);
+        }
+    }
+
+    private void OpenLibrary_Click(object sender, RoutedEventArgs e) => App.MainWindow?.NavigateByTagPublic("Library");
+
+    private void OpenStore_Click(object sender, RoutedEventArgs e) => App.MainWindow?.NavigateByTagPublic("Games");
+
+    private void FindFriends_Click(object sender, RoutedEventArgs e) => ViewModel.OpenFriendsCommand.Execute("Search");
+
+    private void CopyTag_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(ViewModel.PlayerTagDisplay))
+        {
+            return;
+        }
+
+        var package = new DataPackage();
+        package.SetText(ViewModel.PlayerTagDisplay);
+        Clipboard.SetContent(package);
+        CopiedTip.Subtitle = ViewModel.PlayerTagDisplay;
+        CopiedTip.IsOpen = true;
     }
 
     private async void PostWall_Click(object sender, RoutedEventArgs e)
@@ -189,9 +283,6 @@ public sealed partial class AccountPage : Page
         ViewModel.OpenFriendsCommand.Execute(tab);
     }
 
-    private void OpenFriendsPage_Click(object sender, RoutedEventArgs e) =>
-        ViewModel.OpenFriendsCommand.Execute("Friends");
-
     private async void ClaimTag_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.DraftPlayerTag = DraftTagBox.Text ?? string.Empty;
@@ -206,26 +297,61 @@ public sealed partial class AccountPage : Page
         TagPreviewText.Text = ViewModel.TagPreview;
     }
 
-    private void Edit_Click(object sender, RoutedEventArgs e)
+    private async void Edit_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.BeginEditCommand.Execute(null);
+        EditDisplayNameBox.Text = ViewModel.EditDisplayName;
+        EditBioBox.Text = ViewModel.EditBio;
+        EditLocationBox.Text = ViewModel.EditLocation;
+        EditHideAchievementsBox.IsOn = ViewModel.EditHideAchievements;
+        EditHideGameActivityBox.IsOn = ViewModel.EditHideGameActivity;
+        EditPlayerTagBox.Text = ViewModel.EditPlayerTag;
+        EditErrorBar.IsOpen = false;
         RefreshUi();
+        EditDialog.XamlRoot = XamlRoot;
+        await EditDialog.ShowAsync();
     }
 
-    private void CancelEdit_Click(object sender, RoutedEventArgs e)
+    private async void EditDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
-        ViewModel.CancelEditCommand.Execute(null);
-        RefreshUi();
+        var deferral = args.GetDeferral();
+        try
+        {
+            ViewModel.EditDisplayName = EditDisplayNameBox.Text ?? string.Empty;
+            ViewModel.EditBio = EditBioBox.Text ?? string.Empty;
+            ViewModel.EditLocation = EditLocationBox.Text ?? string.Empty;
+            ViewModel.EditHideAchievements = EditHideAchievementsBox.IsOn;
+            ViewModel.EditHideGameActivity = EditHideGameActivityBox.IsOn;
+            ViewModel.EditPlayerTag = EditPlayerTagBox.Text ?? string.Empty;
+            await ViewModel.SaveProfileCommand.ExecuteAsync(null);
+
+            // A failed save leaves the editor open with the reason in AccountStatus.
+            if (ViewModel.IsEditing)
+            {
+                args.Cancel = true;
+                EditErrorBar.Message = ViewModel.AccountStatus;
+                EditErrorBar.IsOpen = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            args.Cancel = true;
+            EditErrorBar.Message = ex.Message;
+            EditErrorBar.IsOpen = true;
+        }
+        finally
+        {
+            deferral.Complete();
+        }
     }
 
-    private async void Save_Click(object sender, RoutedEventArgs e)
+    private void EditDialog_Closed(ContentDialog sender, ContentDialogClosedEventArgs args)
     {
-        ViewModel.EditDisplayName = EditDisplayNameBox.Text ?? string.Empty;
-        ViewModel.EditBio = EditBioBox.Text ?? string.Empty;
-        ViewModel.EditLocation = EditLocationBox.Text ?? string.Empty;
-        ViewModel.EditHideAchievements = EditHideAchievementsBox.IsChecked == true;
-        ViewModel.EditPlayerTag = EditPlayerTagBox.Text ?? string.Empty;
-        await ViewModel.SaveProfileCommand.ExecuteAsync(null);
+        if (ViewModel.IsEditing)
+        {
+            ViewModel.CancelEditCommand.Execute(null);
+        }
+
         RefreshUi();
     }
 

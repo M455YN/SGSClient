@@ -19,6 +19,7 @@ public partial class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
 
+    private static Mutex? _runningMutex;
     private static Action? _exit;
 
     /// <summary>Really quits: closing the window only hides it to the tray.</summary>
@@ -61,6 +62,8 @@ public partial class App : Application
 
     private void StartClient()
     {
+        _runningMutex = new Mutex(true, SGSClient.Core.SgsClientConstants.RunningMutexName, out _);
+
         var userSettings = new ClientUserSettingsStore().Load();
         Loc.Initialize(userSettings.Language);
         RequestedThemeVariant = AvaloniaThemeApplier.ToVariant(userSettings.Theme);
@@ -158,7 +161,8 @@ public partial class App : Application
             sp.GetRequiredService<ILibraryFolderService>(),
             sp.GetService<IAuthSession>(),
             sp.GetService<IClientUserSettingsStore>(),
-            sp.GetService<IThemeApplier>()));
+            sp.GetService<IThemeApplier>(),
+            sp.GetRequiredService<DownloadsViewModel>()));
         services.AddTransient(sp => new AccountViewModel(
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>(),
@@ -173,6 +177,11 @@ public partial class App : Application
             sp.GetService<IAuthSession>(),
             sp.GetService<SocialRealtimeService>(),
             sp.GetService<IUiDispatcher>()));
+        services.AddTransient(sp => new UserProfileViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<SocialRealtimeService>(),
+            sp.GetService<IUiDispatcher>(),
+            configuration));
         services.AddSingleton(sp => new NotificationsViewModel(
             sp.GetService<IUserApiClient>(),
             sp.GetService<IAuthSession>(),
@@ -205,7 +214,9 @@ public partial class App : Application
             sp.GetRequiredService<FriendsViewModel>(),
             sp.GetRequiredService<ShellSidebarViewModel>(),
             sp.GetRequiredService<LoginGateViewModel>(),
-            sp.GetService<INetworkStatusService>()));
+            sp.GetService<INetworkStatusService>(),
+            sp.GetService<IAuthSession>(),
+            () => sp.GetRequiredService<UserProfileViewModel>()));
 
         Services = services.BuildServiceProvider();
 
@@ -214,6 +225,7 @@ public partial class App : Application
         Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
         Services.GetService<IInstallQueueService>()?.RestorePersistedAsync().GetAwaiter().GetResult();
         Services.GetService<PresenceHeartbeatService>()?.Start();
+        (Services.GetRequiredService<IGameLauncherService>() as ProcessGameLauncherService)?.StartMonitoring();
         Services.GetService<AchievementBridge>()?.Start();
         Services.GetService<INetworkStatusService>()?.StartAsync().GetAwaiter().GetResult();
 
@@ -256,7 +268,15 @@ public partial class App : Application
             if (!exiting)
             {
                 e.Cancel = true;
-                window.Hide();
+                if (Services.GetService<IClientUserSettingsStore>()?.Load().CloseToTray ?? true)
+                {
+                    window.Hide();
+                }
+                else
+                {
+                    // Po bieżącym Closing: Shutdown sam zamyka okna.
+                    Avalonia.Threading.Dispatcher.UIThread.Post(_exit);
+                }
             }
         };
 

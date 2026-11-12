@@ -98,11 +98,6 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
             }
         }
 
-        if (request.Email is not null)
-        {
-            user.Email = EmailClaimHelper.Normalize(request.Email);
-        }
-
         if (request.Bio is not null)
         {
             user.Bio = string.IsNullOrWhiteSpace(request.Bio) ? null : request.Bio.Trim();
@@ -134,6 +129,11 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
         if (request.HideAchievements is bool hide)
         {
             user.HideAchievements = hide;
+        }
+
+        if (request.HideGameActivity is bool hideGames)
+        {
+            user.HideGameActivity = hideGames;
         }
 
         await db.SaveChangesAsync(cancellationToken);
@@ -267,6 +267,7 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
         Location = user.Location,
         PlayerTag = user.PlayerTag,
         HideAchievements = user.HideAchievements,
+        HideGameActivity = user.HideGameActivity,
         Role = adminAuth.ResolveRole(user.Role, user.Email),
         CreatedAtUtc = user.CreatedAtUtc,
         LastLoginUtc = user.LastLoginUtc

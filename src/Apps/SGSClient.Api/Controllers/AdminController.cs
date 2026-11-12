@@ -1,8 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using SGSClient.Core.Auth;
+using SGSClient.Api.Auth;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -431,21 +430,8 @@ public sealed class AdminController(
             return await users.GetByIdAsync(1, cancellationToken);
         }
 
-        if (User.Identity?.IsAuthenticated != true)
-        {
-            return null;
-        }
-
-        var sub = User.FindFirstValue("sub") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(sub))
-        {
-            return null;
-        }
-
-        var displayName = User.FindFirstValue("name") ?? User.FindFirstValue(ClaimTypes.Name) ?? "Player";
-        var email = EmailClaimHelper.FromPrincipal(User);
-        var profile = await users.UpsertFromClaimsAsync(sub, displayName, email, avatarUrl: null, cancellationToken);
-        return adminAuth.IsAdmin(User, profile.Email ?? email, profile.Role) ? profile : null;
+        var profile = await users.ResolveProfileAsync(User, azureOptions.Value, cancellationToken);
+        return profile is not null && adminAuth.IsAdmin(User, profile.Email, profile.Role) ? profile : null;
     }
 
     private ActionResult ForbidOrUnauthorized()

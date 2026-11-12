@@ -20,11 +20,17 @@ public sealed class SgsPackageManifest
     /// (even empty) = this list replaces them on publish.
     /// </summary>
     public IList<SgsPackageAchievement>? Achievements { get; set; }
+
+    /// <summary>
+    /// Stat definitions, applied together with <see cref="Achievements"/> (ignored without it).
+    /// Absent = the game's stats are left as they are.
+    /// </summary>
+    public IList<GameStatDefinitionDto>? Stats { get; set; }
 }
 
 public sealed class SgsPackageAchievement
 {
-    /// <summary>Stable id used by game code, lowercase letters, digits, _ and -.</summary>
+    /// <summary>API name used by game code: letters, digits, _ and - (stored lowercase).</summary>
     public required string Key { get; set; }
 
     public required string Title { get; set; }
@@ -32,6 +38,12 @@ public sealed class SgsPackageAchievement
 
     /// <summary>Relative path of an image in the ZIP, or an http(s) URL.</summary>
     public string? Icon { get; set; }
+
+    /// <summary>Unachieved icon, same forms as <see cref="Icon"/>; absent = the achieved icon dimmed.</summary>
+    public string? LockedIcon { get; set; }
+
+    /// <summary>API name of the stat that drives the progress; needs <see cref="Target"/>.</summary>
+    public string? Stat { get; set; }
 
     public int Points { get; set; }
     public bool Hidden { get; set; }
@@ -43,18 +55,22 @@ public sealed class SgsPackageAchievement
     public IDictionary<string, AchievementTextDto>? Translations { get; set; }
 
     [System.Text.Json.Serialization.JsonIgnore]
-    public bool IconIsUrl =>
-        Icon is not null
-        && (Icon.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-            || Icon.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+    public bool IconIsUrl => IsUrl(Icon);
 
-    /// <summary>The definition the server stores; <paramref name="iconUrl"/> is the resolved icon.</summary>
-    public AchievementDefinitionDto ToDefinition(string? iconUrl) => new()
+    public static bool IsUrl(string? icon) =>
+        icon is not null
+        && (icon.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || icon.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The definition the server stores; the URLs are the resolved icons.</summary>
+    public AchievementDefinitionDto ToDefinition(string? iconUrl, string? lockedIconUrl = null) => new()
     {
         Key = Key,
         Title = Title,
         Description = Description ?? string.Empty,
         IconUrl = iconUrl,
+        LockedIconUrl = lockedIconUrl,
+        StatKey = string.IsNullOrWhiteSpace(Stat) ? null : Stat,
         Translations = Translations is null ? null : new Dictionary<string, AchievementTextDto>(Translations),
         Points = Points,
         Hidden = Hidden,

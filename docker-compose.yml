@@ -20,12 +20,16 @@ services:
       Games__PublicBaseUrl: /api/games/packages
       Games__MediaPublicBaseUrl: /api/games/media
       Games__RetentionCount: ${SGS_RETENTION_COUNT:-3}
-      AzureAd__Enabled: ${SGS_AZUREAD_ENABLED:-false}
+      # true = only game downloads work; super admins keep full access.
+      Maintenance__Enabled: ${SGS_MAINTENANCE_ENABLED:-false}
+      AzureAd__Enabled: ${SGS_AZUREAD_ENABLED:-true}
       AzureAd__ClientId: ${SGS_AZUREAD_CLIENT_ID:-}
       AzureAd__TenantName: ${SGS_AZUREAD_TENANT:-}
       AzureAd__SigninPolicy: ${SGS_AZUREAD_SIGNIN_POLICY:-B2C_1_SGSClient_SignInUp}
       AzureAd__PasswordResetPolicy: ${SGS_AZUREAD_PASSWORD_RESET_POLICY:-B2C_1_SGSClient_PassRESET}
       AzureAd__ApiAudience: ${SGS_AZUREAD_API_AUDIENCE:-}
+      # 32+ random chars. Signs achievement tokens handed to running games; empty = random per start.
+      Achievements__SigningKey: ${SGS_ACHIEVEMENTS_SIGNING_KEY:-}
     volumes:
       - ${SGS_GAMES_VOLUME:-sgs_games}:/data/sgs/games
     extra_hosts:

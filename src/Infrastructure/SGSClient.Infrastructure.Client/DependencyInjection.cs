@@ -17,7 +17,7 @@ public static class DependencyInjection
         string? sqliteDatabasePath = null)
     {
         var dbPath = sqliteDatabasePath ?? GetDefaultLibraryDbPath();
-        var directory = Path.GetDirectoryName(dbPath);
+        var directory = Path.GetDirectoryName(dbPath) ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(directory))
         {
             Directory.CreateDirectory(directory);
@@ -33,10 +33,10 @@ public static class DependencyInjection
             sp.GetService<IAuthSession>(),
             sp.GetService<IUserApiClient>()));
         services.AddSingleton<IGamePackagePacker, GamePackagePacker>();
-        services.AddSingleton<IClientUserSettingsStore, ClientUserSettingsStore>();
+        services.AddSingleton<IClientUserSettingsStore>(_ => new ClientUserSettingsStore(directory));
         services.AddSingleton<ICatalogCacheStore, CatalogCacheStore>();
         services.AddSingleton<INetworkStatusService, NetworkStatusService>();
-        services.AddSingleton<ILibraryFoldersStore, LibraryFoldersStore>();
+        services.AddSingleton<ILibraryFoldersStore>(_ => new LibraryFoldersStore(directory));
         services.AddSingleton<ILibraryFolderService, LibraryFolderService>();
         services.AddSingleton<ILibraryPathProvider, LibraryPathProvider>();
         services.AddScoped<ILibraryDiscoveryService, LibraryDiscoveryService>();

@@ -10,6 +10,7 @@ public sealed class EfProfileCommentService(SgsServerDbContext db, IAchievementS
     : IProfileCommentService
 {
     private const int MaxCommentLength = 1000;
+    private const int MaxProfileGames = 12;
 
     public async Task<PublicUserProfileDto> GetPublicProfileAsync(
         int targetUserId,
@@ -108,6 +109,25 @@ public sealed class EfProfileCommentService(SgsServerDbContext db, IAchievementS
         // Privacy: the owner always sees their own list, everyone else only when it is not hidden.
         var showAchievements = !user.HideAchievements || viewerUserId == user.Id;
 
+        // Same privacy rule as achievements, with its own switch.
+        var showGames = !user.HideGameActivity || viewerUserId == user.Id;
+        var played = showGames
+            ? await db.UserGamePlaytimes.AsNoTracking()
+                .Where(p => p.UserId == user.Id && p.TotalSeconds > 0 && p.Game != null && !p.Game.DraftP)
+                .OrderByDescending(p => p.LastPlayedUtc)
+                .Select(p => new PublicGameActivityDto
+                {
+                    GameId = p.GameId,
+                    Title = p.Game!.Title,
+                    CoverUrl = p.Game.CoverUrl,
+                    LogoUrl = p.Game.LogoUrl,
+                    HeaderUrl = p.Game.HeaderUrl,
+                    TotalSeconds = p.TotalSeconds,
+                    LastPlayedUtc = p.LastPlayedUtc
+                })
+                .ToListAsync(cancellationToken)
+            : [];
+
         var comments = await db.UserProfileComments.AsNoTracking()
             .Include(c => c.Author)
             .Where(c => c.TargetUserId == user.Id)
@@ -128,7 +148,12 @@ public sealed class EfProfileCommentService(SgsServerDbContext db, IAchievementS
                 : [],
             Comments = comments
                 .Select(c => MapComment(c, c.Author, viewerUserId, user.Id))
-                .ToList()
+                .ToList(),
+            MemberSinceUtc = user.CreatedAtUtc,
+            GameActivityHidden = user.HideGameActivity,
+            GamesCount = played.Count,
+            TotalPlaytimeSeconds = played.Sum(p => p.TotalSeconds),
+            Games = played.Take(MaxProfileGames).ToList()
         };
     }
 

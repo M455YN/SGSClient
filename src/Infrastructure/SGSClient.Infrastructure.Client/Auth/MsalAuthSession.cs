@@ -101,12 +101,11 @@ public sealed class MsalAuthSession : IAuthSession
                 await _msal.RemoveAsync(account).ConfigureAwait(false);
             }
 
-            var request = _msal.AcquireTokenInteractive(_settings.Scopes);
+            // ForceLogin: otherwise the system browser's B2C SSO cookie silently signs in the previous account.
+            var request = _msal.AcquireTokenInteractive(_settings.Scopes).WithPrompt(Prompt.ForceLogin);
             if (signUp)
             {
-                request = request
-                    .WithB2CAuthority(_settings.SignUpAuthority)
-                    .WithPrompt(Prompt.ForceLogin);
+                request = request.WithB2CAuthority(_settings.SignUpAuthority);
             }
 
             if (parentWindowHandle != 0)
@@ -240,7 +239,7 @@ public sealed class MsalAuthSession : IAuthSession
 
             if (CurrentUser is not null)
             {
-                CurrentUser = await EnsureEmailSyncedAsync(api, CurrentUser, fromIdToken, cancellationToken)
+                CurrentUser = await EnsureEmailSyncedAsync(api, CurrentUser, fromIdToken, _authResult?.IdToken, cancellationToken)
                     .ConfigureAwait(false);
                 return true;
             }
@@ -271,12 +270,14 @@ public sealed class MsalAuthSession : IAuthSession
 
     /// <summary>
     /// B2C often puts email only in the ID token, not the access token used by /api/me.
-    /// Sync it to the profile so admin checks and UI can see the address.
+    /// Sync it to the profile so admin checks and UI can see the address. The server takes it only
+    /// from the signed ID token, because admin rights depend on it.
     /// </summary>
     private static async Task<UserProfileDto> EnsureEmailSyncedAsync(
         IUserApiClient api,
         UserProfileDto profile,
         UserProfileDto? fromIdToken,
+        string? idToken,
         CancellationToken cancellationToken)
     {
         var idEmail = EmailClaimHelper.Normalize(fromIdToken?.Email);
@@ -294,25 +295,13 @@ public sealed class MsalAuthSession : IAuthSession
             return profile;
         }
 
-        var updated = await api.UpdateMeAsync(
-                new UpdateProfileRequestDto { Email = idEmail },
-                cancellationToken)
-            .ConfigureAwait(false);
+        var synced = string.IsNullOrWhiteSpace(idToken)
+            ? null
+            : await api.GetMeWithIdTokenAsync(idToken, cancellationToken).ConfigureAwait(false);
 
-        if (updated is not null)
-        {
-            return updated;
-        }
-
-        // PATCH may have applied even if the body failed to deserialize — refresh IsAdmin from API.
-        var refreshed = await api.GetMeAsync(cancellationToken).ConfigureAwait(false);
-        if (refreshed is not null)
-        {
-            var refreshedEmail = EmailClaimHelper.Normalize(refreshed.Email) ?? idEmail;
-            return CloneProfile(refreshed, refreshedEmail, refreshed.IsAdmin);
-        }
-
-        return CloneProfile(profile, idEmail, profile.IsAdmin);
+        return synced is not null && EmailClaimHelper.Normalize(synced.Email) is not null
+            ? synced
+            : CloneProfile(synced ?? profile, idEmail, (synced ?? profile).IsAdmin);
     }
 
     private static UserProfileDto CloneProfile(UserProfileDto source, string? email, bool isAdmin) => new()

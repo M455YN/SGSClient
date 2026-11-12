@@ -11,7 +11,7 @@ using SGSClient.UI.ViewModels;
 
 namespace SGSClient.UI.WinUI.Views;
 
-public sealed partial class HomePage : Page
+public sealed partial class HomePage : Page, ILoadingPage
 {
     public HomeViewModel ViewModel { get; }
 
@@ -42,9 +42,16 @@ public sealed partial class HomePage : Page
         PublishColumn.Width = ViewModel.CanPublish ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    public Task Ready { get; private set; } = Task.CompletedTask;
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
+        Ready = LoadForNavigationAsync(e);
+    }
+
+    private async Task LoadForNavigationAsync(NavigationEventArgs e)
+    {
         await ViewModel.EnsureLoadedAsync();
         UpdateHeroBackdrop();
     }

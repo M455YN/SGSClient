@@ -30,16 +30,27 @@
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
-      <Border x:Name="OfflineBanner"
-              Grid.Row="0"
-              Visibility="Collapsed"
-              Background="#CC8B0000"
-              Padding="12,8">
-        <TextBlock Text="{loc:Tr Key='Tryb offline — pokazujemy zapisane dane'}"
-                   Foreground="White"
-                   FontSize="13"
-                   HorizontalAlignment="Center" />
-      </Border>
+      <StackPanel Grid.Row="0">
+        <Border x:Name="OfflineBanner"
+                Visibility="Collapsed"
+                Background="#CC8B0000"
+                Padding="12,8">
+          <TextBlock Text="{loc:Tr Key='Tryb offline — pokazujemy zapisane dane'}"
+                     Foreground="White"
+                     FontSize="13"
+                     HorizontalAlignment="Center" />
+        </Border>
+        <Border x:Name="MaintenanceBanner"
+                Visibility="Collapsed"
+                Background="#CCB45309"
+                Padding="12,8">
+          <TextBlock x:Name="MaintenanceBannerText"
+                     Foreground="White"
+                     FontSize="13"
+                     HorizontalAlignment="Center"
+                     TextWrapping="Wrap" />
+        </Border>
+      </StackPanel>
 
       <Grid Grid.Row="1">
         <Grid.ColumnDefinitions>
@@ -54,8 +65,40 @@
                   BorderThickness="1,1,0,1"
                   CornerRadius="8,0,0,8"
                   Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-            <Frame x:Name="ContentFrame" Background="Transparent" />
+            <!-- No page slide-in: it froze mid-way (pages stuck offset); the loading overlay covers the switch. -->
+            <Frame x:Name="ContentFrame" Background="Transparent" Navigated="ContentFrame_Navigated">
+              <Frame.ContentTransitions>
+                <TransitionCollection />
+              </Frame.ContentTransitions>
+            </Frame>
           </Border>
+
+          <!-- Covers a page until its data is loaded (see ILoadingPage). -->
+          <Grid x:Name="PageLoadingOverlay"
+                CornerRadius="8,0,0,8"
+                Visibility="Collapsed"
+                Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+                AutomationProperties.Name="{loc:Tr Key='Wczytywanie…'}">
+            <Grid.Resources>
+              <Storyboard x:Name="PageLoadingPulse" RepeatBehavior="Forever" AutoReverse="True">
+                <DoubleAnimation Storyboard.TargetName="PageLoadingLogo" Storyboard.TargetProperty="Opacity"
+                                 From="1" To="0.45" Duration="0:0:0.9">
+                  <DoubleAnimation.EasingFunction>
+                    <SineEase EasingMode="EaseInOut" />
+                  </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+              </Storyboard>
+              <Storyboard x:Name="PageLoadingFadeOut" Completed="PageLoadingFadeOut_Completed">
+                <DoubleAnimation Storyboard.TargetName="PageLoadingOverlay" Storyboard.TargetProperty="Opacity"
+                                 To="0" Duration="0:0:0.2" />
+              </Storyboard>
+            </Grid.Resources>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+              <Image x:Name="PageLoadingLogo" Source="ms-appx:///Assets/Login/sgs-logo.png"
+                     Width="72" Height="72" />
+              <ProgressRing IsActive="True" Width="28" Height="28" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
 
           <Border x:Name="SocialPanel"
                   Width="360"

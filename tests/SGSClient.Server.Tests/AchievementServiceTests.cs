@@ -273,8 +273,8 @@ public class AchievementServiceTests
             await using var png = new MemoryStream([1, 2, 3, 4]);
             var updated = await sut.SetIconAsync(GameId, Owner, "boss", png, "icon.PNG");
 
-            Assert.Equal("/api/games/media/demo/achievement_boss.png", updated.IconUrl);
-            Assert.True(File.Exists(Path.Combine(storage, "demo", "media", "achievement_boss.png")));
+            Assert.Equal("/api/games/media/demo/sdk_sgs/achievements/boss.png", updated.IconUrl);
+            Assert.True(File.Exists(Path.Combine(storage, "demo", "sdk_sgs", "achievements", "boss.png")));
 
             await using var exe = new MemoryStream([1]);
             await Assert.ThrowsAsync<ArgumentException>(() => sut.SetIconAsync(GameId, Owner, "boss", exe, "icon.exe"));
@@ -285,6 +285,17 @@ public class AchievementServiceTests
             var resaved = await sut.SyncDefinitionsAsync(GameId, Owner, Request(
                 new AchievementDefinitionDto { Key = "boss", Title = "Boss", IconUrl = updated.IconUrl }));
             Assert.Equal(updated.IconUrl, resaved.Single().IconUrl);
+
+            // The unachieved icon sits next to it; replacing a file with another extension removes the old one.
+            await using var gray = new MemoryStream([5]);
+            var locked = await sut.SetIconAsync(GameId, Owner, "boss", gray, "gray.jpg", locked: true);
+            Assert.Equal("/api/games/media/demo/sdk_sgs/achievements/boss_locked.jpg", locked.LockedIconUrl);
+            Assert.Equal(updated.IconUrl, locked.IconUrl);
+
+            await using var jpg = new MemoryStream([6]);
+            await sut.SetIconAsync(GameId, Owner, "boss", jpg, "new.jpg");
+            Assert.False(File.Exists(Path.Combine(storage, "demo", "sdk_sgs", "achievements", "boss.png")));
+            Assert.True(File.Exists(Path.Combine(storage, "demo", "sdk_sgs", "achievements", "boss_locked.jpg")));
         }
         finally
         {

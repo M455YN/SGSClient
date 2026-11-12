@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using SGSClient.Core.Localization;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using SGSClient.UI.ViewModels;
@@ -7,9 +8,30 @@ namespace SGSClient.UI.Views;
 
 public partial class FriendsView : UserControl
 {
+    private FriendsViewModel? _wiredVm;
+
     public FriendsView()
     {
         InitializeComponent();
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is FriendsViewModel vm && !ReferenceEquals(vm, _wiredVm))
+            {
+                _wiredVm = vm;
+                vm.SetShowChatHandler(ShowChatAsync);
+            }
+        };
+    }
+
+    private async Task ShowChatAsync(ChatModalViewModel chat)
+    {
+        var dialog = new FluentAvalonia.UI.Controls.FAContentDialog
+        {
+            Content = new ChatModal { DataContext = chat },
+            CloseButtonText = Loc.T("Zamknij"),
+            DefaultButton = FluentAvalonia.UI.Controls.FAContentDialogButton.Close
+        };
+        await dialog.ShowAsync(TopLevel.GetTopLevel(this));
     }
 
     private MainWindowViewModel? Shell =>
@@ -45,43 +67,19 @@ public partial class FriendsView : UserControl
         }
     }
 
-    private async void OpenProfile_OnClick(object? sender, RoutedEventArgs e)
+    private void OpenProfile_OnClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is FriendsViewModel vm && sender is Control { Tag: SocialPersonItem person })
         {
-            await vm.OpenProfileCommand.ExecuteAsync(person);
+            vm.OpenProfileCommand.Execute(person);
         }
     }
 
-    private void CloseProfile_OnClick(object? sender, RoutedEventArgs e)
+    private async void JoinLobby_OnClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is FriendsViewModel vm)
+        if (DataContext is FriendsViewModel vm && sender is Control { Tag: SocialPersonItem person })
         {
-            vm.CloseProfileCommand.Execute(null);
-        }
-    }
-
-    private async void PostComment_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm)
-        {
-            await vm.PostProfileCommentCommand.ExecuteAsync(null);
-        }
-    }
-
-    private async void DeleteComment_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm && sender is Control { Tag: ProfileCommentItem comment })
-        {
-            await vm.DeleteProfileCommentCommand.ExecuteAsync(comment);
-        }
-    }
-
-    private async void MessageFromProfile_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm)
-        {
-            await vm.MessageFromProfileCommand.ExecuteAsync(null);
+            await vm.JoinLobbyCommand.ExecuteAsync(person);
         }
     }
 
@@ -99,25 +97,6 @@ public partial class FriendsView : UserControl
         {
             await vm.OpenChatThreadCommand.ExecuteAsync(thread);
         }
-    }
-
-    private async void SendChat_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is FriendsViewModel vm)
-        {
-            await vm.SendChatMessageCommand.ExecuteAsync(null);
-        }
-    }
-
-    private async void ChatDraft_OnKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Key != Key.Enter || DataContext is not FriendsViewModel vm)
-        {
-            return;
-        }
-
-        await vm.SendChatMessageCommand.ExecuteAsync(null);
-        e.Handled = true;
     }
 
     private async void AddFriend_OnClick(object? sender, RoutedEventArgs e)

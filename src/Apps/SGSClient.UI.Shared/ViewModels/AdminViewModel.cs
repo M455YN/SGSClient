@@ -17,7 +17,8 @@ public partial class AdminViewModel : ObservableObject
     private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
     private readonly Dictionary<string, CreativeWorksViewModel> _works = [];
-    private Action? _addVersion;
+    private Action<int>? _addVersion;
+    private Func<string, string, Task<string?>>? _saveFile;
     private Action<string>? _addDlc;
     private Func<AdminGameItem, Task<bool>>? _confirmDelete;
     private Func<Task<string?>>? _pickImage;
@@ -119,7 +120,8 @@ public partial class AdminViewModel : ObservableObject
         set => _ = SetFeaturedAsync(value);
     }
 
-    public void SetAddVersionHandler(Action add) => _addVersion = add;
+    public void SetAddVersionHandler(Action<int> add) => _addVersion = add;
+    public void SetSaveFileHandler(Func<string, string, Task<string?>> save) => _saveFile = save;
     public void SetAddDlcHandler(Action<string> add) => _addDlc = add;
     public void SetConfirmDeleteHandler(Func<AdminGameItem, Task<bool>> confirm) => _confirmDelete = confirm;
     public void SetPickImageHandler(Func<Task<string?>> pick)
@@ -418,7 +420,25 @@ public partial class AdminViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void AddVersion() => _addVersion?.Invoke();
+    private void AddVersion()
+    {
+        if (SelectedGame is not null)
+        {
+            _addVersion?.Invoke(SelectedGame.Id);
+        }
+    }
+
+    [RelayCommand]
+    private async Task DownloadManifestAsync()
+    {
+        if (SelectedGame is null || _api is null || _saveFile is null)
+        {
+            return;
+        }
+
+        StatusText = await GameManifestSource.SaveAsync(_api, SelectedGame.Id, asAdmin: true, _saveFile, _apiBaseUrl)
+                     ?? StatusText;
+    }
 
     [RelayCommand]
     private void AddDlc(AdminGameItem? parent)

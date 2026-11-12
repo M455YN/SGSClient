@@ -301,7 +301,7 @@
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Border Width="56" Height="56" CornerRadius="8" Background="#1AFFFFFF">
-                          <Image Source="{Binding IconUrl}" Stretch="UniformToFill"
+                          <Image Source="{Binding IconUrl}" Stretch="UniformToFill" Opacity="{Binding IconOpacity}"
                                  Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}" />
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">

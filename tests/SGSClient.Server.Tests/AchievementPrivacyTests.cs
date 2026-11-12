@@ -80,6 +80,59 @@ public class AchievementPrivacyTests
         Assert.Empty(other.Achievements);
     }
 
+    [Fact]
+    public async Task PublicProfile_ListsPlayedGamesNewestFirst_WithoutDraftsOrUnplayed()
+    {
+        await using var db = await SeedAsync();
+        db.Games.AddRange(
+            new GameEntity { Id = 2, UserId = Creator, Title = "Second", Symbol = "second", HeaderUrl = "/h.jpg" },
+            new GameEntity { Id = 3, UserId = Creator, Title = "Draft", Symbol = "draft", DraftP = true },
+            new GameEntity { Id = 4, UserId = Creator, Title = "Unplayed", Symbol = "unplayed" });
+        var now = DateTimeOffset.UtcNow;
+        db.UserGamePlaytimes.AddRange(
+            new UserGamePlaytimeEntity { UserId = Player, GameId = 1, TotalSeconds = 3600, LastPlayedUtc = now.AddDays(-2) },
+            new UserGamePlaytimeEntity { UserId = Player, GameId = 2, TotalSeconds = 600, LastPlayedUtc = now.AddDays(-1) },
+            new UserGamePlaytimeEntity { UserId = Player, GameId = 3, TotalSeconds = 900, LastPlayedUtc = now },
+            new UserGamePlaytimeEntity { UserId = Player, GameId = 4, TotalSeconds = 0 });
+        await db.SaveChangesAsync();
+
+        var profile = await CreateProfiles(db).GetPublicProfileAsync(Player, Stranger);
+
+        Assert.False(profile.GameActivityHidden);
+        Assert.Equal(["Second", "Demo"], profile.Games.Select(g => g.Title));
+        Assert.Equal("/h.jpg", profile.Games[0].HeaderUrl);
+        Assert.Equal((2, 4200L), (profile.GamesCount, profile.TotalPlaytimeSeconds));
+    }
+
+    [Fact]
+    public async Task PublicProfile_HiddenGameActivityIsEmptyForOthersButVisibleToTheOwner()
+    {
+        await using var db = await SeedAsync();
+        db.UserGamePlaytimes.Add(new UserGamePlaytimeEntity
+        {
+            UserId = Player,
+            GameId = 1,
+            TotalSeconds = 3600,
+            LastPlayedUtc = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
+        var updated = await CreateUsers(db).UpdateProfileAsync(
+            "sub-player",
+            new UpdateProfileRequestDto { HideGameActivity = true });
+        Assert.True(updated!.HideGameActivity);
+        Assert.False(updated.HideAchievements);
+        var sut = CreateProfiles(db);
+
+        var asStranger = await sut.GetPublicProfileAsync(Player, Stranger);
+        var asOwner = await sut.GetPublicProfileAsync(Player, Player);
+
+        Assert.True(asStranger.GameActivityHidden);
+        Assert.Empty(asStranger.Games);
+        Assert.Equal((0, 0L), (asStranger.GamesCount, asStranger.TotalPlaytimeSeconds));
+        Assert.Single(asStranger.Achievements);
+        Assert.Single(asOwner.Games);
+    }
+
     private static EfProfileCommentService CreateProfiles(SgsServerDbContext db) =>
         new(db, new EfAchievementService(
             db,

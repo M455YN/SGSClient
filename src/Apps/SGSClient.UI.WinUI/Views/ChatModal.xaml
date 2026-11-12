@@ -1,0 +1,84 @@
+<UserControl
+    x:Class="SGSClient.UI.WinUI.Views.ChatModal"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:SGSClient.UI.WinUI.Localization"
+    xmlns:local="using:SGSClient.UI.WinUI.Views"
+    Width="480" Height="560">
+
+  <UserControl.Resources>
+    <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <local:InverseBoolToVisibilityConverter x:Key="BoolToVisInv" />
+  </UserControl.Resources>
+
+  <Grid RowSpacing="12">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <PersonPicture Width="40" Height="40" Initials="{Binding Initials}" DisplayName="{Binding Title}" />
+      <TextBlock Text="{Binding Title}" Style="{StaticResource SubtitleTextBlockStyle}"
+                 VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+    </StackPanel>
+
+    <Grid Grid.Row="1">
+      <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Messages}" Padding="0,0,8,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Grid Margin="0,0,0,6">
+                <Border Padding="10,8" CornerRadius="8" MaxWidth="320" HorizontalAlignment="Right"
+                        Background="{ThemeResource AccentFillColorDefaultBrush}"
+                        Visibility="{Binding IsMine, Converter={StaticResource BoolToVis}}">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Meta}" FontSize="10" Opacity="0.75"
+                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                  </StackPanel>
+                </Border>
+                <Border Padding="10,8" CornerRadius="8" MaxWidth="320" HorizontalAlignment="Left"
+                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                        Visibility="{Binding IsMine, Converter={StaticResource BoolToVisInv}}">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Meta}" FontSize="10" Opacity="0.6" />
+                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6"
+                  Visibility="{Binding HasMessages, Converter={StaticResource BoolToVisInv}}">
+        <FontIcon Glyph="&#xE8BD;" FontSize="48" Opacity="0.35" />
+        <TextBlock Text="{loc:Tr Key='Trochę tu pusto…'}" HorizontalAlignment="Center" />
+        <TextBlock Text="{loc:Tr Key='Wpisz wiadomość, aby rozpocząć konwersację'}" HorizontalAlignment="Center"
+                   Opacity="0.6" TextWrapping="Wrap" TextAlignment="Center" />
+      </StackPanel>
+    </Grid>
+
+    <StackPanel Grid.Row="2" Spacing="6">
+      <TextBlock Text="{Binding Status}" Style="{StaticResource CaptionTextBlockStyle}"
+                 Foreground="{ThemeResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" />
+      <Grid ColumnSpacing="8">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBox x:Name="DraftBox" PlaceholderText="{loc:Tr Key='Wyślij wiadomość'}" MaxLength="2000"
+                 Text="{Binding Draft, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 KeyDown="Draft_KeyDown" />
+        <Button Grid.Column="1" Style="{StaticResource AccentButtonStyle}" Command="{Binding SendCommand}"
+                ToolTipService.ToolTip="{loc:Tr Key='Wyślij'}">
+          <FontIcon Glyph="&#xE724;" FontSize="14" />
+        </Button>
+      </Grid>
+    </StackPanel>
+  </Grid>
+</UserControl>

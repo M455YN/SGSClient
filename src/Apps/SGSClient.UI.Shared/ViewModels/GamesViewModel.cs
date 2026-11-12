@@ -390,7 +390,7 @@ public partial class GamesViewModel : ObservableObject
 
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            await library.UpsertAsync(new GameLibraryItem
+            await library.UpsertClaimedAsync(new GameLibraryItem
             {
                 GameId = item.Id,
                 BuildId = item.BuildId,
@@ -583,7 +583,7 @@ public partial class GamesViewModel : ObservableObject
         {
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            foreach (var item in await library.GetAllAsync())
+            foreach (var item in await library.GetOwnedAsync())
             {
                 ids.Add(item.GameId);
             }

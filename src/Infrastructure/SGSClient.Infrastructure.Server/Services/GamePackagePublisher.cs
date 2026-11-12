@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using SGSClient.Core.Achievements;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
@@ -59,6 +60,17 @@ public sealed class GamePackagePublisher(
                 return GamePackagePublishResult.Fail(manifestCheck.Errors);
             }
 
+            // Must run before anything is written: the files below replace the owner's package and media.
+            var existingOwnerId = await db.Games.AsNoTracking()
+                .Where(g => g.Symbol == manifest.Game.Symbol)
+                .Select(g => (int?)g.UserId)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (existingOwnerId is not null && !allowOverwriteForeignGame && existingOwnerId != ownerUserId && ownerUserId > 0)
+            {
+                return GamePackagePublishResult.Fail(
+                    "Ta gra należy do innego autora. Nie możesz nadpisać cudzej paczki.");
+            }
+
             SgsPackageRules.TryParsePlatform(manifest.Build.Platform, out var platform);
             SgsPackageRules.TryNormalizeEntryPath(manifest.Build.Executable, out var exePath, out _);
 
@@ -70,6 +82,7 @@ public sealed class GamePackagePublisher(
             Directory.CreateDirectory(absoluteDir);
             var absoluteZip = Path.Combine(absoluteDir, fileName);
 
+            WrapExecutableWithStub(tempZip, exePath, storage.LauncherStubPath);
             File.Copy(tempZip, absoluteZip, overwrite: true);
 
             var publicBase = storage.PublicBaseUrl.TrimEnd('/');
@@ -83,6 +96,12 @@ public sealed class GamePackagePublisher(
             if (!mediaResult.Success)
             {
                 return GamePackagePublishResult.Fail(mediaResult.Errors);
+            }
+
+            using (var archive = ZipFile.OpenRead(tempZip))
+            {
+                // Icons dropped into sdk_sgs/achievements/ need no "icon" entry in the manifest.
+                SgsPackageRules.ApplyAchievementIconConvention(manifest, archive.Entries.Select(e => e.FullName));
             }
 
             var (iconUrls, iconError) = ExtractAchievementIcons(tempZip, manifest, storage);
@@ -147,12 +166,6 @@ public sealed class GamePackagePublisher(
             }
             else
             {
-                if (!allowOverwriteForeignGame && game.UserId != ownerUserId && ownerUserId > 0)
-                {
-                    return GamePackagePublishResult.Fail(
-                        "Ta gra należy do innego autora. Nie możesz nadpisać cudzej paczki.");
-                }
-
                 if (game.Kind != contentKind)
                 {
                     return GamePackagePublishResult.Fail(
@@ -202,7 +215,8 @@ public sealed class GamePackagePublisher(
                     game.IntroUrl = mediaResult.IntroUrl;
                 }
 
-                if (game.Screenshots.Count > 0)
+                // Paczka bez screenshotów zachowuje dotychczasowe.
+                if (mediaResult.Screenshots.Count > 0 && game.Screenshots.Count > 0)
                 {
                     db.GameScreenshots.RemoveRange(game.Screenshots);
                     game.Screenshots.Clear();
@@ -276,16 +290,19 @@ public sealed class GamePackagePublisher(
 
             if (manifest.Achievements is not null)
             {
-                // The manifest was validated up front, so this cannot fail on content.
+                string? ResolveIcon(string? icon) =>
+                    SgsPackageAchievement.IsUrl(icon) ? icon : icon is null ? null : iconUrls.GetValueOrDefault(icon);
+
+                // The manifest was validated up front (stats included), so this cannot fail on content.
                 await achievements.SyncDefinitionsAsync(
                     game.Id,
                     ownerUserId,
                     new SyncGameAchievementsRequest
                     {
                         Items = manifest.Achievements
-                            .Select(a => a.ToDefinition(
-                                a.IconIsUrl ? a.Icon : a.Icon is null ? null : iconUrls.GetValueOrDefault(a.Icon)))
-                            .ToList()
+                            .Select(a => a.ToDefinition(ResolveIcon(a.Icon), ResolveIcon(a.LockedIcon)))
+                            .ToList(),
+                        Stats = manifest.Stats?.ToList()
                     },
                     isAdmin: allowOverwriteForeignGame,
                     cancellationToken);
@@ -512,7 +529,8 @@ public sealed class GamePackagePublisher(
             return (urls, null);
         }
 
-        var mediaRoot = Path.Combine(storage.StoragePath, manifest.Game.Symbol, "media");
+        // Same folder as icons uploaded in the Creator panel: {symbol}/sdk_sgs/achievements.
+        var mediaRoot = Path.Combine([storage.StoragePath, manifest.Game.Symbol, .. AchievementRules.IconFolder.Split('/')]);
         Directory.CreateDirectory(mediaRoot);
         var mediaBase = storage.MediaPublicBaseUrl.TrimEnd('/');
 
@@ -521,7 +539,7 @@ public sealed class GamePackagePublisher(
             using var archive = ZipFile.OpenRead(zipPath);
             foreach (var path in paths)
             {
-                var extracted = ExtractOne(archive, path, mediaRoot, mediaBase, manifest.Game.Symbol);
+                var extracted = ExtractOne(archive, path, mediaRoot, mediaBase, $"{manifest.Game.Symbol}/{AchievementRules.IconFolder}");
                 if (!extracted.Success)
                 {
                     return (null, extracted.Error);
@@ -571,6 +589,52 @@ public sealed class GamePackagePublisher(
 
         var url = $"{mediaBase}/{symbol}/{safeName}".Replace('\\', '/');
         return (true, url, null);
+    }
+
+    /// <summary>
+    /// Renames the game exe inside the ZIP to .sgs-payload and injects the launcher stub in its place.
+    /// </summary>
+    private static void WrapExecutableWithStub(string zipPath, string exeEntryPath, string? stubPath)
+    {
+        if (string.IsNullOrWhiteSpace(stubPath) || !File.Exists(stubPath))
+        {
+            return;
+        }
+
+        var payloadEntry = Path.ChangeExtension(exeEntryPath, ".sgs-payload");
+        var stubBytes = File.ReadAllBytes(stubPath);
+
+        using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Update);
+
+        var original = archive.Entries.FirstOrDefault(e =>
+            string.Equals(e.FullName.Replace('\\', '/'), exeEntryPath, StringComparison.OrdinalIgnoreCase));
+        if (original is null)
+        {
+            return;
+        }
+
+        // Read original exe bytes, remove it, write as payload.
+        byte[] originalBytes;
+        using (var stream = original.Open())
+        using (var ms = new MemoryStream())
+        {
+            stream.CopyTo(ms);
+            originalBytes = ms.ToArray();
+        }
+
+        original.Delete();
+
+        var payload = archive.CreateEntry(payloadEntry, CompressionLevel.Optimal);
+        using (var dest = payload.Open())
+        {
+            dest.Write(originalBytes);
+        }
+
+        var stub = archive.CreateEntry(exeEntryPath, CompressionLevel.Optimal);
+        using (var dest = stub.Open())
+        {
+            dest.Write(stubBytes);
+        }
     }
 
     private static ZipInspectResult InspectZip(string zipPath)

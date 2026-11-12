@@ -62,6 +62,7 @@ public partial class ShellSidebarViewModel : ObservableObject
             }
         };
         Notifications = notifications ?? new NotificationsViewModel();
+        LobbyJoin.Handler = JoinLobbyAsync;
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         RefreshProfile();
@@ -245,7 +246,7 @@ public partial class ShellSidebarViewModel : ObservableObject
 
             using var scope = _scopes.CreateScope();
             var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
-            var items = await library.GetAllAsync();
+            var items = await library.GetOwnedAsync();
             await SyncArtworkAsync(items, library);
 
             InstalledGames.Clear();
@@ -301,6 +302,44 @@ public partial class ShellSidebarViewModel : ObservableObject
                 await store.UpsertAsync(item);
             }
         }
+    }
+
+    /// <summary>
+    /// Starts the game with the lobby code so it joins the host. When the game is not installed
+    /// (or cannot start) the player lands on its page instead, to install it.
+    /// </summary>
+    public async Task JoinLobbyAsync(int gameId, string code)
+    {
+        try
+        {
+            if (_scopes is not null && _launcher is not null)
+            {
+                using var scope = _scopes.CreateScope();
+                var library = scope.ServiceProvider.GetService<ILocalLibraryStore>();
+                var item = library is null ? null : (await library.GetOwnedAsync()).FirstOrDefault(x => x.GameId == gameId);
+                if (item is { InstallState: InstallState.Installed } && !string.IsNullOrWhiteSpace(item.ExecutablePath))
+                {
+                    var result = await _launcher.LaunchAsync(new GameLaunchRequest
+                    {
+                        GameId = gameId,
+                        Title = item.Title,
+                        ExecutablePath = item.ExecutablePath,
+                        LobbyCode = code
+                    });
+                    if (result.Started)
+                    {
+                        await LoadInstalledAsync();
+                        return;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // fall through to the game page
+        }
+
+        _openDetails?.Invoke(gameId);
     }
 
     [RelayCommand]

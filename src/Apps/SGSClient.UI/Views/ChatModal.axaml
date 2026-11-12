@@ -1,0 +1,68 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             x:Class="SGSClient.UI.Views.ChatModal"
+             x:DataType="vm:ChatModalViewModel"
+             Width="480" Height="560">
+  <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <Border Width="40" Height="40" CornerRadius="20"
+              Background="{DynamicResource AccentFillColorDefaultBrush}">
+        <TextBlock Text="{Binding Initials}" FontWeight="SemiBold" HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+      </Border>
+      <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"
+                 TextTrimming="CharacterEllipsis"/>
+    </StackPanel>
+
+    <Panel Grid.Row="1">
+      <ScrollViewer x:Name="Scroller" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding Messages}" Margin="0,0,8,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ChatMessageItem">
+              <Panel Margin="0,0,0,6">
+                <Border Padding="10,8" CornerRadius="8" MaxWidth="320" HorizontalAlignment="Right"
+                        Background="{DynamicResource AccentFillColorDefaultBrush}" IsVisible="{Binding IsMine}">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Meta}" FontSize="10" Opacity="0.75"
+                               Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                    <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap"
+                                         Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                  </StackPanel>
+                </Border>
+                <Border Padding="10,8" CornerRadius="8" MaxWidth="320" HorizontalAlignment="Left"
+                        Background="#22FFFFFF" IsVisible="{Binding !IsMine}">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Meta}" FontSize="10" Opacity="0.6"/>
+                    <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+              </Panel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6"
+                  IsVisible="{Binding !HasMessages}">
+        <TextBlock Text="&#xE8BD;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="48"
+                   Opacity="0.35" HorizontalAlignment="Center"/>
+        <TextBlock Text="{loc:Tr Key='Trochę tu pusto…'}" HorizontalAlignment="Center"/>
+        <TextBlock Text="{loc:Tr Key='Wpisz wiadomość, aby rozpocząć konwersację'}" HorizontalAlignment="Center"
+                   Opacity="0.6" TextWrapping="Wrap" TextAlignment="Center"/>
+      </StackPanel>
+    </Panel>
+
+    <StackPanel Grid.Row="2" Spacing="6">
+      <TextBlock Text="{Binding Status}" FontSize="12" Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                 TextWrapping="Wrap"/>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox x:Name="DraftBox" Text="{Binding Draft}" PlaceholderText="{loc:Tr Key='Wyślij wiadomość'}"
+                 MaxLength="2000" KeyDown="Draft_OnKeyDown"/>
+        <Button Grid.Column="1" Classes="accent" Command="{Binding SendCommand}"
+                ToolTip.Tip="{loc:Tr Key='Wyślij'}" Content="{loc:Tr Key='Wyślij'}"/>
+      </Grid>
+    </StackPanel>
+  </Grid>
+</UserControl>

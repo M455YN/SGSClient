@@ -37,6 +37,8 @@ public static class DependencyInjection
         services.AddScoped<IPlaytimeService, PlaytimeService>();
         services.AddScoped<IEntitlementService, EfEntitlementService>();
         services.AddScoped<IAchievementService, EfAchievementService>();
+        services.AddSingleton<LobbyStore>();
+        services.AddScoped<ILobbyService, LobbyService>();
         services.AddSingleton<IAchievementTokenService, AchievementTokenService>();
         services.AddScoped<IWishlistService, EfWishlistService>();
         services.AddScoped<IGameReviewService, EfGameReviewService>();

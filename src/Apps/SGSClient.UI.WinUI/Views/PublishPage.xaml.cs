@@ -30,6 +30,9 @@ public sealed partial class PublishPage : Page
             // Reserved "@" modes can't collide with kebab-case parent symbols.
             switch (parameter)
             {
+                case var v when TryParseVersion(v, out var gameId, out var asAdmin):
+                    ViewModel.PrepareForNewVersion(gameId, asAdmin);
+                    break;
                 case "@game": ViewModel.PrepareForNewGame(); break;
                 case "@app": ViewModel.PrepareForApp(); break;
                 case "@dlc": ViewModel.PrepareForDlc(string.Empty); break;
@@ -40,6 +43,18 @@ public sealed partial class PublishPage : Page
         ViewModel.RefreshAuthHint();
         PushFormFromViewModel();
         RefreshUi();
+    }
+
+    /// <summary>"@version:{id}" (Studio) or "@adminversion:{id}" (Admin).</summary>
+    public static string VersionParameter(int gameId, bool asAdmin) =>
+        $"{(asAdmin ? "@adminversion" : "@version")}:{gameId}";
+
+    private static bool TryParseVersion(string parameter, out int gameId, out bool asAdmin)
+    {
+        gameId = 0;
+        asAdmin = parameter.StartsWith("@adminversion:", StringComparison.Ordinal);
+        return (asAdmin || parameter.StartsWith("@version:", StringComparison.Ordinal))
+               && int.TryParse(parameter[(parameter.IndexOf(':') + 1)..], out gameId);
     }
 
     private void RefreshUi()
