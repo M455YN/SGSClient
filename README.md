@@ -77,6 +77,28 @@ dotnet publish src/Apps/SGSClient.UI.WinUI -c Release -r win-x64 -p:PublishProfi
 
 Obraz API i pliki compose: `deploy/`.
 
+### Microsoft Store
+
+Do Store idzie klient WinUI. Paczkę do Partner Center buduje jedna komenda (wymaga Visual Studio z MSBuild i Windows App SDK):
+
+```powershell
+.\deploy\build-msixbundle.ps1                                # x64, arm64
+.\deploy\build-msixbundle.ps1 -Platforms "x64|arm64|x86"
+```
+
+Wynik trafia do `artifacts/msix/`: jeden plik `*.msixbundle`, który wgrywasz w Partner Center (**Pakiety**). Store podpisuje paczkę sam, więc skrypt niczego nie podpisuje. Skrypt czyści wyjścia `Release` projektu WinUI (stare manifesty z VS psują bundla). Wyjść `Debug` nie rusza, więc działający klient może zostać otwarty.
+
+Paczka Store (warunek `UapAppxPackageBuildMode=StoreUpload` w `.csproj`) zawiera .NET, bo Store go nie doinstaluje, oraz natywne biblioteki tylko dla swojej platformy. Windows App SDK jest zależnością frameworkową (`Microsoft.WindowsAppRuntime.1.8`), którą Store instaluje sam. Windows ML (`onnxruntime`, `DirectML`) jest wyłączony z paczki, bo klient go nie używa. Buildy Debug i paczka zip bez MSIX zostają bez zmian.
+
+WACK (Windows App Certification Kit) wymaga konsoli jako administrator i podpisanej paczki, którą da się zainstalować. Najprościej uruchomić go z Visual Studio: **Spakuj i opublikuj → Utwórz pakiety aplikacji → Microsoft Store** i na końcu kreatora **Uruchom zestaw certyfikacji**. Partner Center i tak przeprowadza te same testy przy zgłoszeniu.
+
+Przed wysyłką:
+
+- **Tożsamość** (`Identity Name`, `Publisher`, `PublisherDisplayName` w `src/Apps/SGSClient.UI.WinUI/Package.appxmanifest`) musi zgadzać się z Partner Center, **Zarządzanie produktem → Tożsamość produktu**.
+- **Wersja** w `Package.appxmanifest` ma format `x.y.z.0` i każde zgłoszenie musi ją podnieść.
+- **`appsettings.local.json`** w projekcie WinUI musi istnieć: z niego paczka bierze ustawienia logowania B2C. Skrypt przerywa budowanie, jeśli go brakuje.
+- **`runFullTrust`**: przy zgłoszeniu Partner Center pyta o uzasadnienie. Przykład: „SGSClient to launcher gier w Windows App SDK (aplikacja desktopowa). Pełne zaufanie jest potrzebne, żeby instalować gry w folderach wybranych przez użytkownika i uruchamiać je jako osobne procesy.”
+
 ## Dokumentacja
 
 Wiki dla graczy, twórców i deweloperów gier: [`docs/README.md`](docs/README.md).
