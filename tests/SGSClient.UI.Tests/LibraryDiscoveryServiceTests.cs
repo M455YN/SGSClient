@@ -135,6 +135,74 @@ public class LibraryDiscoveryServiceTests
         }
     }
 
+    [Fact]
+    public async Task ScanAsync_TwoBuildsUnderOneGameId_KeepsTheLatestInstall()
+    {
+        var libraryRoot = Path.Combine(Path.GetTempPath(), $"sgs-dup-scan-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(libraryRoot);
+        await WriteLibraryMarkerAsync(libraryRoot, "dup-content-id");
+        var now = DateTimeOffset.UtcNow;
+        // game-2-build-3.json sorts after game-2-build-10.json, so a last-write-wins scan picked the older install.
+        await WriteInstallAsync(libraryRoot, gameId: 2, buildId: 10, "atorth", "1.0.5", now);
+        await WriteInstallAsync(libraryRoot, gameId: 2, buildId: 3, "sky-arena", "1.0.0", now.AddHours(-1));
+
+        var dbPath = Path.Combine(Path.GetTempPath(), $"sgsclient-dup-{Guid.NewGuid():N}.db");
+        try
+        {
+            var services = new ServiceCollection();
+            services.AddClientInfrastructure(sqliteDatabasePath: dbPath);
+            services.AddSingleton<ILibraryPathProvider>(new FixedLibraryPathProvider(libraryRoot));
+            await using var provider = services.BuildServiceProvider();
+            await SgsClientDbInitializer.InitializeAsync(provider);
+
+            await using var scope = provider.CreateAsyncScope();
+            var result = await scope.ServiceProvider.GetRequiredService<ILibraryDiscoveryService>().ScanAsync();
+
+            Assert.Equal(1, result.DiscoveredInstalls);
+            var item = await scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>().GetByGameIdAsync(2);
+            Assert.Equal(("atorth", 10, "1.0.5"), (item!.Symbol, item.BuildId, item.InstalledVersion));
+        }
+        finally
+        {
+            if (Directory.Exists(libraryRoot))
+            {
+                Directory.Delete(libraryRoot, recursive: true);
+            }
+
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (File.Exists(dbPath))
+            {
+                File.Delete(dbPath);
+            }
+        }
+    }
+
+    private static async Task WriteInstallAsync(
+        string libraryRoot, int gameId, int buildId, string symbol, string version, DateTimeOffset installedUtc)
+    {
+        var installDir = InstallPathHelper.GetInstallDirectory(libraryRoot, symbol, version);
+        Directory.CreateDirectory(installDir);
+        await File.WriteAllTextAsync(Path.Combine(installDir, "game.exe"), "stub");
+        var json = JsonSerializer.Serialize(new SgsInstallRecord
+        {
+            GameId = gameId,
+            BuildId = buildId,
+            Symbol = symbol,
+            Title = symbol,
+            Platform = GamePlatform.Windows,
+            Version = version,
+            Executable = "game.exe",
+            InstalledUtc = installedUtc,
+            LibraryRoot = libraryRoot,
+            InstallPath = installDir
+        }, SgsInstallRecord.JsonOptions);
+        await File.WriteAllTextAsync(Path.Combine(installDir, SgsInstallRecord.FileName), json);
+
+        var manifests = SgsLibraryLayout.GetManifestsRoot(libraryRoot);
+        Directory.CreateDirectory(manifests);
+        await File.WriteAllTextAsync(Path.Combine(manifests, $"game-{gameId}-build-{buildId}.json"), json);
+    }
+
     private static async Task WriteLibraryMarkerAsync(string libraryRoot, string contentId)
     {
         var marker = new SgsLibraryFolderMarker

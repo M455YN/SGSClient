@@ -40,6 +40,20 @@ public sealed class LibraryDiscoveryService(
                 .ConfigureAwait(false);
         }
 
+        foreach (var (item, _) in counters.Found.Values)
+        {
+            var existing = await library.GetByGameIdAsync(item.GameId, cancellationToken).ConfigureAwait(false);
+            await library.UpsertAsync(item, cancellationToken).ConfigureAwait(false);
+            if (existing is null)
+            {
+                counters.Discovered++;
+            }
+            else
+            {
+                counters.Updated++;
+            }
+        }
+
         var all = await library.GetAllAsync(cancellationToken).ConfigureAwait(false);
         foreach (var entry in all.Where(x => x.InstallState == InstallState.Installed))
         {
@@ -73,6 +87,9 @@ public sealed class LibraryDiscoveryService(
     {
         public int Discovered;
         public int Updated;
+
+        /// <summary>One install per game; the library store is keyed by game id.</summary>
+        public readonly Dictionary<int, (GameLibraryItem Item, DateTimeOffset InstalledUtc)> Found = [];
     }
 
     private async Task ScanCentralManifestsAsync(
@@ -90,14 +107,13 @@ public sealed class LibraryDiscoveryService(
         foreach (var manifestFile in Directory.EnumerateFiles(manifestsRoot, "game-*-build-*.json"))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var item = await FromInstallRecordFileAsync(manifestFile, cancellationToken).ConfigureAwait(false);
-            if (item is null || item.BuildId <= 0)
+            var found = await FromInstallRecordFileAsync(manifestFile, cancellationToken).ConfigureAwait(false);
+            if (found is null || found.Value.Item.BuildId <= 0)
             {
                 continue;
             }
 
-            await UpsertDiscoveredAsync(item, seenBuildIds, counters, cancellationToken)
-                .ConfigureAwait(false);
+            Collect(found.Value, seenBuildIds, counters);
         }
     }
 
@@ -138,15 +154,14 @@ public sealed class LibraryDiscoveryService(
                     continue;
                 }
 
-                var item = await TryDiscoverInstallAsync(versionDir, symbol, version, libraryRoot, cancellationToken)
+                var found = await TryDiscoverInstallAsync(versionDir, symbol, version, libraryRoot, cancellationToken)
                     .ConfigureAwait(false);
-                if (item is null || item.BuildId <= 0)
+                if (found is null || found.Value.Item.BuildId <= 0)
                 {
                     continue;
                 }
 
-                await UpsertDiscoveredAsync(item, seenBuildIds, counters, cancellationToken)
-                    .ConfigureAwait(false);
+                Collect(found.Value, seenBuildIds, counters);
             }
         }
     }
@@ -164,31 +179,27 @@ public sealed class LibraryDiscoveryService(
             && !string.Equals(Path.GetFileName(parent), SgsLibraryLayout.CommonFolder, StringComparison.OrdinalIgnoreCase);
     }
 
-    private async Task UpsertDiscoveredAsync(
-        GameLibraryItem item,
+    private static void Collect(
+        (GameLibraryItem Item, DateTimeOffset InstalledUtc) found,
         HashSet<int> seenBuildIds,
-        ScanCounters counters,
-        CancellationToken cancellationToken)
+        ScanCounters counters)
     {
-        if (!seenBuildIds.Add(item.BuildId))
+        if (!seenBuildIds.Add(found.Item.BuildId))
         {
             return;
         }
 
-        var existing = await library.GetByGameIdAsync(item.GameId, cancellationToken).ConfigureAwait(false);
-        await library.UpsertAsync(item, cancellationToken).ConfigureAwait(false);
+        // Two builds under one game id (e.g. installs from different SGS servers): the latest install wins,
+        // otherwise whichever is scanned last overwrites the other and auto-update keeps reinstalling.
+        if (counters.Found.TryGetValue(found.Item.GameId, out var current) && current.InstalledUtc >= found.InstalledUtc)
+        {
+            return;
+        }
 
-        if (existing is null)
-        {
-            counters.Discovered++;
-        }
-        else
-        {
-            counters.Updated++;
-        }
+        counters.Found[found.Item.GameId] = found;
     }
 
-    private async Task<GameLibraryItem?> TryDiscoverInstallAsync(
+    private async Task<(GameLibraryItem Item, DateTimeOffset InstalledUtc)?> TryDiscoverInstallAsync(
         string versionDir,
         string symbol,
         string version,
@@ -203,16 +214,18 @@ public sealed class LibraryDiscoveryService(
         }
 
         var manifestPath = Path.Combine(versionDir, SgsPackageManifest.FileName);
-        if (File.Exists(manifestPath))
+        if (File.Exists(manifestPath)
+            && await FromManifestAsync(manifestPath, versionDir, symbol, version, libraryRoot, cancellationToken)
+                .ConfigureAwait(false) is { } item)
         {
-            return await FromManifestAsync(manifestPath, versionDir, symbol, version, libraryRoot, cancellationToken)
-                .ConfigureAwait(false);
+            // No install record, so no install time: loses to any recorded install of the same game.
+            return (item, DateTimeOffset.MinValue);
         }
 
         return null;
     }
 
-    private static async Task<GameLibraryItem?> FromInstallRecordFileAsync(
+    private static async Task<(GameLibraryItem Item, DateTimeOffset InstalledUtc)?> FromInstallRecordFileAsync(
         string recordPath,
         CancellationToken cancellationToken)
     {
@@ -233,10 +246,10 @@ public sealed class LibraryDiscoveryService(
             return null;
         }
 
-        return ToLibraryItem(record, record.InstallPath, executablePath);
+        return (ToLibraryItem(record, record.InstallPath, executablePath), record.InstalledUtc);
     }
 
-    private static async Task<GameLibraryItem?> FromInstallRecordAsync(
+    private static async Task<(GameLibraryItem Item, DateTimeOffset InstalledUtc)?> FromInstallRecordAsync(
         string recordPath,
         string installDir,
         string libraryRoot,
@@ -262,7 +275,7 @@ public sealed class LibraryDiscoveryService(
             return null;
         }
 
-        return ToLibraryItem(record, installDir, executablePath);
+        return (ToLibraryItem(record, installDir, executablePath), record.InstalledUtc);
     }
 
     private async Task<GameLibraryItem?> FromManifestAsync(
