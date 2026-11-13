@@ -254,11 +254,11 @@ public partial class GamesViewModel : ObservableObject
                     ? Loc.F("Offline — zapisany katalog z {0:g} ({1})", cacheAt, Games.Count)
                     : Loc.T("Offline — brak zapisanego katalogu sklepu.")
                 : HasGames
-                    ? $"{Games.Count} gier w sklepie"
+                    ? Loc.F("{0} gier w sklepie", Games.Count)
                     : HasActiveFilters
                         ? Loc.T("Brak gier pasujących do filtrów.")
                         : Loc.T("W sklepie nie ma jeszcze żadnych gier.");
-            CountText = HasGames ? $"liczba gier: {Games.Count}" : string.Empty;
+            CountText = HasGames ? Loc.F("liczba gier: {0}", Games.Count) : string.Empty;
         }
         catch (Exception ex)
         {

@@ -112,7 +112,7 @@ public static class GameStoreLabels
             badges.Add(AgeRating(game.AgeRating));
         }
 
-        badges.AddRange(game.Genres.Select(g => g.Name));
+        badges.AddRange(game.Genres.Select(g => Loc.T(g.Name)));
 
         badges.AddRange(game.Tags.Take(4));
         badges.AddRange(FeatureList(game.Features).Take(3));

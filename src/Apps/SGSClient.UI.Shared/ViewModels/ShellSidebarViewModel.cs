@@ -99,7 +99,7 @@ public partial class ShellSidebarViewModel : ObservableObject
     public partial bool HasAvatar { get; set; }
 
     [ObservableProperty]
-    public partial string InstalledHeader { get; set; } = "0 zainstalowanych";
+    public partial string InstalledHeader { get; set; } = Loc.F("{0} zainstalowanych", 0);
 
     [ObservableProperty]
     public partial bool HasInstalledGames { get; set; }
@@ -231,7 +231,7 @@ public partial class ShellSidebarViewModel : ObservableObject
         {
             InstalledGames.Clear();
             HasInstalledGames = false;
-            InstalledHeader = "0 zainstalowanych";
+            InstalledHeader = Loc.F("{0} zainstalowanych", 0);
             return;
         }
 
@@ -258,7 +258,7 @@ public partial class ShellSidebarViewModel : ObservableObject
             }
 
             HasInstalledGames = InstalledGames.Count > 0;
-            InstalledHeader = $"{InstalledGames.Count} zainstalowanych";
+            InstalledHeader = Loc.F("{0} zainstalowanych", InstalledGames.Count);
         }
         catch
         {

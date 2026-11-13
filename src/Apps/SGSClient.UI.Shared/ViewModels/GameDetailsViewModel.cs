@@ -227,7 +227,7 @@ public partial class GameDetailsViewModel : ObservableObject
         };
         ContextLabel = ReturnTag switch
         {
-            "Library" => "BIBLIOTEKA",
+            "Library" => Loc.T("BIBLIOTEKA"),
             "Wishlist" => Loc.T("LISTA ŻYCZEŃ"),
             _ => "SGS STORE"
         };

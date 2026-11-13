@@ -144,7 +144,7 @@ public partial class LibraryViewModel : ObservableObject
             HasGames = Games.Count > 0;
             ShowEmpty = !HasGames;
             StatusText = HasGames
-                ? $"{Games.Count} gier w bibliotece"
+                ? Loc.F("{0} gier w bibliotece", Games.Count)
                 : Loc.T("Biblioteka jest pusta. Dodaj gry ze Sklepu.");
 
             if (SelectedGame is not null)
