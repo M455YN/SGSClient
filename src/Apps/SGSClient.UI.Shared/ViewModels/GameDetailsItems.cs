@@ -8,6 +8,7 @@ using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Localization;
 using SGSClient.Core.Models;
 using SGSClient.Core.Playtime;
 
@@ -53,7 +54,7 @@ public sealed class VersionOptionItem
     public static VersionOptionItem FromCurrent(string version) => new()
     {
         Version = version,
-        DisplayText = $"v{version} (najnowsza)",
+        DisplayText = Loc.F("v{0} (najnowsza)", version),
         IsCurrent = true,
         PublishedAtUtc = DateTimeOffset.UtcNow
     };
@@ -62,7 +63,7 @@ public sealed class VersionOptionItem
     {
         Version = dto.Version,
         DisplayText = dto.IsCurrent
-            ? $"v{dto.Version} (najnowsza)"
+            ? Loc.F("v{0} (najnowsza)", dto.Version)
             : $"v{dto.Version} · {dto.PublishedAtUtc.LocalDateTime:g}",
         IsCurrent = dto.IsCurrent,
         PublishedAtUtc = dto.PublishedAtUtc

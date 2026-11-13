@@ -254,7 +254,7 @@ public partial class FriendsViewModel : ObservableObject
             ApplyOverview(overview);
             StatusText = overview.IncomingCount > 0
                 ? Loc.F("{0} oczekujących zaproszeń.", overview.IncomingCount)
-                : $"{overview.FriendsCount} znajomych";
+                : Loc.F("{0} znajomych", overview.FriendsCount);
         }
         catch (Exception ex)
         {

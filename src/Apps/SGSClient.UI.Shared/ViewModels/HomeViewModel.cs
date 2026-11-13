@@ -315,7 +315,7 @@ public partial class HomeViewModel : ObservableObject
             Categories.Add(new HomeCategoryItem
             {
                 Name = group.Key,
-                CountText = $"{group.Count()} gier"
+                CountText = Loc.F("{0} gier", group.Count())
             });
         }
 

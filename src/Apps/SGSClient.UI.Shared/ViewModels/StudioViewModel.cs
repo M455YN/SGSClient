@@ -253,8 +253,8 @@ public partial class StudioViewModel : ObservableObject
         }
 
         ListSummary = FilteredGames.Count == Games.Count
-            ? $"{Games.Count} gier"
-            : $"{FilteredGames.Count} z {Games.Count}";
+            ? Loc.F("{0} gier", Games.Count)
+            : Loc.F("{0} z {1} gier", FilteredGames.Count, Games.Count);
 
         if (selectedId is int id && FilteredGames.All(g => g.Id != id))
         {
