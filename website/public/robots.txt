@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sgs.m455yn.io/sitemap.xml
+Sitemap: https://sgs.m455yn.io/docs/sitemap.xml

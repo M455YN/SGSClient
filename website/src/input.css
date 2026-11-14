@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@source "../public";
+
+/* Self-hosted fonts (Fontsource, SIL OFL): no visitor IP goes to Google. Latin + latin-ext covers Polish. */
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(/fonts/montserrat-latin-ext-wght-normal.woff2) format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Montserrat";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url(/fonts/montserrat-latin-wght-normal.woff2) format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 800;
+  src: url(/fonts/open-sans-latin-ext-wght-normal.woff2) format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Open Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 800;
+  src: url(/fonts/open-sans-latin-wght-normal.woff2) format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@theme {
+  --font-display: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Open Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* SGS logo colours */
+  --color-sgs-green: #2ee07e;
+  --color-sgs-cyan: #72efe9;
+  --color-sgs-red: #ef4b4b;
+
+  --color-ink-950: #07090c;
+  --color-ink-900: #0d1117;
+  --color-ink-800: #151b23;
+  --color-ink-700: #1f2833;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Keyboard focus in the action colour, on everything focusable */
+:focus-visible {
+  outline: 2px solid var(--color-sgs-cyan);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Accessibility widget modes: classes on <html>, set by app.js. Font size is set inline on <html>
+   (utilities use rem, so scaling the root scales the page). Colour modes are mutually exclusive. */
+
+/* Usuń kolory / Odwrócony kontrast: filter the page, never the widget itself. */
+html.a11y-gray body > :not(#a11y) { filter: grayscale(1); }
+html.a11y-invert body > :not(#a11y) { filter: invert(1) hue-rotate(180deg); }
+html.a11y-invert body > :not(#a11y) img { filter: invert(1) hue-rotate(180deg); } /* photos stay natural */
+html.a11y-invert body { background: #fff; }
+
+/* Wysoki kontrast: black, white and yellow, the classic WCAG high-contrast set. */
+html.a11y-contrast {
+  --color-ink-950: #000;
+  --color-ink-900: #000;
+  --color-ink-800: #000;
+  --color-ink-700: #1a1a1a;
+  --color-slate-300: #fff;
+  --color-slate-400: #fff;
+  --color-sgs-cyan: #ffff00;
+}
+html.a11y-contrast [class*="border-white/"],
+html.a11y-contrast .divide-white\/10 > * + * { border-color: #fff; }
+
+/* Jasne tło: swap the ink scale for light greys; text tokens go dark. */
+html.a11y-light {
+  --color-ink-950: #ffffff;
+  --color-ink-900: #f3f4f6;
+  --color-ink-800: #ffffff;
+  --color-ink-700: #e5e7eb;
+  --color-white: #0b0d10;
+  --color-slate-300: #1f2937;
+  --color-slate-400: #374151;
+  --color-slate-600: #d1d5db;
+  --color-sgs-cyan: #0e7490;
+}
+
+html.a11y-links a { text-decoration: underline; text-underline-offset: 4px; }
+
+/* Czytelna czcionka: a wide, open system face with a little extra spacing. */
+html.a11y-font {
+  --font-sans: Verdana, Tahoma, "Segoe UI", sans-serif;
+  --font-display: Verdana, Tahoma, "Segoe UI", sans-serif;
+  letter-spacing: 0.02em;
+  word-spacing: 0.06em;
+}
+html.a11y-font body { line-height: 1.7; }
+
+/* Signature: the diagonal slice from the game-art collage, reused on section edges */
+.cut-bottom {
+  clip-path: polygon(0 0, 100% 0, 100% 82%, 0 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

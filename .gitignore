@@ -90,3 +90,7 @@ dist/
 
 # Zensical docs build output
 /site/
+
+# Website (Tailwind build output)
+website/node_modules/
+website/public/styles.css

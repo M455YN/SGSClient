@@ -1,7 +1,7 @@
 [project]
 site_name = "SGSClient: dokumentacja"
 site_description = "Klient SGS, publikowanie gier i integracja z platformą"
-site_url = "https://m455yn.github.io/SGSClient/"
+site_url = "https://sgs.m455yn.io/docs/"
 repo_url = "https://github.com/M455YN/SGSClient"
 repo_name = "M455YN/SGSClient"
 edit_uri = "edit/master/docs/"
@@ -34,6 +34,8 @@ nav = [
 # custom_dir = "overrides"
 # favicon = "images/favicon.png"
 language = "pl"
+# No Google Fonts: system fonts only, so readers' IPs are not sent to Google (GDPR).
+font = false
 features = [
   "announce.dismiss",
   # "content.action.edit",

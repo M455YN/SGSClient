@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pl" class="bg-ink-950">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gry | Szyr Game Studio</title>
+  <meta name="description" content="Gry Szyr Game Studio: Atorth: Tales of Ulkimond i Doddani. Pobierz je w SGSClient.">
+  <link rel="canonical" href="https://sgs.m455yn.io/gry/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sgs.m455yn.io/gry/">
+  <meta property="og:site_name" content="Szyr Game Studio">
+  <meta property="og:locale" content="pl_PL">
+  <meta property="og:title" content="Gry | Szyr Game Studio">
+  <meta property="og:description" content="Atorth: Tales of Ulkimond i Doddani, gry Szyr Game Studio.">
+  <meta property="og:image" content="https://sgs.m455yn.io/images/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Kolaż grafik z gier Szyr Game Studio z logo studia">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#07090c">
+  <link rel="icon" href="/images/sgs-logo.png">
+  <link rel="preload" href="/fonts/montserrat-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/open-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <!-- Blocking on purpose: applies saved accessibility settings before first paint. External file so the CSP needs no 'unsafe-inline'. -->
+  <script src="/a11y-init.js"></script>
+  <script src="/app.js" defer></script>
+</head>
+<body class="min-h-screen bg-ink-950 font-sans text-slate-300 antialiased">
+  <a href="#tresc" class="sr-only rounded-md bg-sgs-cyan px-4 py-2 font-semibold text-ink-950 focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60]">Przejdź do treści</a>
+
+  <!-- Accessibility widget, pinned to the left edge. Colour filters skip it (see input.css), so it stays usable in every mode. -->
+  <div id="a11y" class="fixed top-24 left-0 z-[55] flex items-start">
+    <button type="button" id="a11y-toggle" aria-expanded="false" aria-controls="a11y-panel" aria-label="Dostępność"
+            class="flex size-12 items-center justify-center rounded-r-md bg-sgs-cyan text-ink-950 shadow-lg hover:bg-white">
+      <svg class="size-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="M4 7.5 12 9l8-1.5.5 2-6 1.5v3.5l2 7.5-2 .5-2.5-7-2.5 7-2-.5 2-7.5V11l-6-1.5z"/></svg>
+    </button>
+    <div id="a11y-panel" hidden class="w-64 rounded-r-md border border-l-0 border-white/15 bg-ink-800 py-3 text-sm shadow-xl">
+      <p class="px-4 pb-2 font-display text-base font-bold text-white">Dostępność</p>
+      <ul class="text-white">
+        <li><button type="button" data-a11y-font="1" class="disabled:cursor-not-allowed disabled:opacity-40 flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5M11 8v6M8 11h6"/></svg>Powiększ czcionkę</button></li>
+        <li><button type="button" data-a11y-font="-1" class="disabled:cursor-not-allowed disabled:opacity-40 flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5M8 11h6"/></svg>Zmniejsz czcionkę</button></li>
+        <li><button type="button" data-a11y-mode="a11y-gray" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5v14M6.5 5v14M9 5v14M13 5v14M15.5 5v14M19 5v14M21 5v14"/></svg>Usuń kolory</button></li>
+        <li><button type="button" data-a11y-mode="a11y-contrast" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>Wysoki kontrast</button></li>
+        <li><button type="button" data-a11y-mode="a11y-invert" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Odwrócony kontrast</button></li>
+        <li><button type="button" data-a11y-mode="a11y-light" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2z"/></svg>Jasne tło</button></li>
+        <li><button type="button" data-a11y-toggle="a11y-links" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Podkreślenie linków</button></li>
+        <li><button type="button" data-a11y-toggle="a11y-font" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7V4h16v3M12 4v16M9 20h6"/></svg>Czytelna czcionka</button></li>
+        <li><button type="button" data-a11y-reset class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.7 9.7 0 0 0-6.7 2.7L3 8M3 3v5h5"/></svg>Resetuj</button></li>
+      </ul>
+      <p class="sr-only" aria-live="polite" id="a11y-status"></p>
+    </div>
+  </div>
+
+  <!-- :focus-visible lives in src/input.css (compiled to styles.css). avoid-ai-design-ignore: K7 -->
+  <!-- Blur stays here only: the nav really does sit over scrolling content. avoid-ai-design-ignore: K3 -->
+  <header class="sticky top-0 z-50 border-b border-white/5 bg-ink-950/85 backdrop-blur">
+    <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <a href="/" class="flex items-center gap-3">
+        <img src="/images/sgs-logo.png" alt="" class="size-9 rounded-lg">
+        <span class="font-display text-base font-bold text-white">Szyr Game Studio</span>
+      </a>
+      <ul class="hidden items-center gap-8 text-sm font-semibold sm:flex">
+        <li><a href="/#sgsclient" class="transition-colors hover:text-sgs-cyan">SGSClient</a></li>
+        <li><a href="/gry/" aria-current="page" class="text-sgs-cyan transition-colors hover:text-sgs-cyan">Gry</a></li>
+        <li><a href="/docs/" class="transition-colors hover:text-sgs-cyan">Dokumentacja</a></li>
+        <li><a href="/#kontakt" class="transition-colors hover:text-sgs-cyan">Kontakt</a></li>
+      </ul>
+      <details class="relative sm:hidden" data-popover>
+        <summary class="cursor-pointer list-none rounded-md p-2 text-white hover:bg-white/10" aria-label="Menu">
+          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </summary>
+        <ul class="absolute right-0 mt-2 w-48 rounded-lg border border-white/10 bg-ink-800 p-2 text-sm font-semibold shadow-xl">
+          <li><a href="/#sgsclient" class="block rounded px-3 py-2 hover:bg-white/5">SGSClient</a></li>
+          <li><a href="/gry/" aria-current="page" class="block rounded px-3 py-2 text-sgs-cyan hover:bg-white/5">Gry</a></li>
+          <li><a href="/docs/" class="block rounded px-3 py-2 hover:bg-white/5">Dokumentacja</a></li>
+          <li><a href="/#kontakt" class="block rounded px-3 py-2 hover:bg-white/5">Kontakt</a></li>
+        </ul>
+      </details>
+    </nav>
+  </header>
+
+  <main id="tresc" tabindex="-1" class="outline-none">
+    <!-- Our games: alternating text and gallery; every thumbnail opens the shared preview dialog -->
+    <section id="gry">
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
+        <h1 class="font-display text-5xl font-extrabold tracking-tight text-white sm:text-7xl">Nasze gry</h1>
+        <p class="mt-6 max-w-2xl text-lg text-slate-400">Gry, które robimy po godzinach. Wszystkie pobierzesz i uruchomisz w SGSClient.</p>
+
+        <article class="mt-14 grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-center">
+          <div>
+            <h3 class="font-display text-3xl font-bold text-white">Atorth: Tales of Ulkimond</h3>
+            <p class="mt-2 text-sm font-semibold text-sgs-cyan">RPG, demo dostępne w SGSClient</p>
+            <p class="mt-5 text-lg text-slate-400">Od stuleci trwa wojna między czterema rasami. Przy granicach miast pobojowiska spływały krwią wielu niewinnych, a władcy zmuszali ludność do ciężkiej pracy.</p>
+            <a href="/#sgsclient" class="mt-8 inline-block rounded-md border border-white/20 px-5 py-3 text-sm font-semibold text-white transition-colors hover:border-sgs-cyan hover:text-sgs-cyan">Zagraj w SGSClient</a>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" data-lightbox class="block cursor-zoom-in rounded-md">
+              <img src="/images/games/atorth-1.webp" width="1600" height="900" alt="Atorth: kraina Ulkimond, drogi prowadzące do zamku i drewniany szyld z tytułem gry" class="aspect-video w-full rounded-md border border-white/10 object-cover" loading="lazy">
+              <span class="sr-only">Powiększ grafikę</span>
+            </button>
+            <button type="button" data-lightbox class="block cursor-zoom-in rounded-md">
+              <img src="/images/games/atorth-2.webp" width="1600" height="900" alt="Atorth: bohater w kamiennej twierdzy wśród strażników w hełmach" class="aspect-video w-full rounded-md border border-white/10 object-cover" loading="lazy">
+              <span class="sr-only">Powiększ grafikę</span>
+            </button>
+          </div>
+        </article>
+
+        <article class="mt-20 grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-center">
+          <div>
+            <h3 class="font-display text-3xl font-bold text-white">Doddani</h3>
+            <p class="mt-2 text-sm font-semibold text-sgs-cyan">Dostępna w SGSClient</p>
+            <p class="mt-5 text-lg text-slate-400">Wyrusz na wyprawę po najróżniejszych zakątkach świata pełnego magicznych stworzeń. Zdobywaj jajka, z których w przyszłości wyklują się przyjazne potwory.</p>
+            <a href="/#sgsclient" class="mt-8 inline-block rounded-md border border-white/20 px-5 py-3 text-sm font-semibold text-white transition-colors hover:border-sgs-cyan hover:text-sgs-cyan">Zagraj w SGSClient</a>
+          </div>
+          <div class="grid grid-cols-2 gap-3 lg:order-first">
+            <button type="button" data-lightbox class="block cursor-zoom-in rounded-md">
+              <img src="/images/games/doddani-1.webp" width="816" height="624" alt="Doddani: mapa okolicy z domem, areną, miastem i drogami na wyprawy" class="w-full rounded-md border border-white/10" loading="lazy">
+              <span class="sr-only">Powiększ grafikę</span>
+            </button>
+            <button type="button" data-lightbox class="block cursor-zoom-in rounded-md">
+              <img src="/images/games/doddani-2.webp" width="816" height="624" alt="Doddani: mapa świata z wulkanem, lasem, górami i jeziorem" class="w-full rounded-md border border-white/10" loading="lazy">
+              <span class="sr-only">Powiększ grafikę</span>
+            </button>
+            <button type="button" data-lightbox class="block cursor-zoom-in rounded-md">
+              <img src="/images/games/doddani-3.webp" width="816" height="624" alt="Doddani: pokój w domu z legowiskiem dla stworka" class="w-full rounded-md border border-white/10" loading="lazy">
+              <span class="sr-only">Powiększ grafikę</span>
+            </button>
+            <button type="button" data-lightbox class="block cursor-zoom-in rounded-md">
+              <img src="/images/games/doddani-4.webp" width="816" height="624" alt="Doddani: lecznica, gdzie odnowisz HP i MP i wskrzesisz stworka" class="w-full rounded-md border border-white/10" loading="lazy">
+              <span class="sr-only">Powiększ grafikę</span>
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Screenshot preview. Native dialog: Esc closes, focus is trapped and returns to the thumbnail. -->
+  <dialog id="lightbox" aria-labelledby="lightbox-caption" class="m-auto max-w-[95vw] bg-transparent p-0 text-slate-300 backdrop:bg-black/85">
+    <form method="dialog" class="flex justify-end">
+      <button class="mb-2 flex items-center gap-2 rounded-md bg-ink-800 px-3 py-2 text-sm font-semibold text-white hover:bg-ink-700" aria-label="Zamknij podgląd">
+        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        Zamknij
+      </button>
+    </form>
+    <img id="lightbox-img" src="" alt="" class="max-h-[80vh] w-auto max-w-full rounded-md">
+    <p id="lightbox-caption" class="mt-3 text-center text-sm"></p>
+  </dialog>
+
+  <a href="#" id="to-top" hidden class="fixed right-4 bottom-4 z-40 flex size-12 items-center justify-center rounded-full border border-white/15 bg-ink-800 text-white shadow-lg transition-colors hover:border-sgs-cyan hover:text-sgs-cyan" aria-label="Przewiń na górę strony">
+    <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+  </a>
+
+  <footer class="border-t border-white/5">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 py-10 text-sm sm:flex-row sm:px-6">
+      <p>© 2019–2026 Szyr Game Studio. Created by M455YN.</p>
+      <ul class="flex flex-wrap justify-center gap-6 font-semibold">
+        <li><a href="https://www.facebook.com/SzyrGameStudio" target="_blank" rel="noopener" class="hover:text-sgs-cyan">Facebook</a></li>
+        <li><a href="https://github.com/szyrgamestudio/" target="_blank" rel="noopener" class="hover:text-sgs-cyan">GitHub</a></li>
+        <li><a href="https://soundcloud.com/szyrgamestudio" target="_blank" rel="noopener" class="hover:text-sgs-cyan">SoundCloud</a></li>
+        <li><a href="https://www.youtube.com/channel/UC-Myop4lk64BMBWm_cUkBvQ" target="_blank" rel="noopener" class="hover:text-sgs-cyan">YouTube</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>
