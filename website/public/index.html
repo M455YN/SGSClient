@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pl" class="bg-ink-950">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Szyr Game Studio</title>
+  <meta name="description" content="Szyr Game Studio: amatorskie studio gier indie i twórcy SGSClient, launchera gier niezależnych twórców.">
+  <link rel="canonical" href="https://sgs.m455yn.io/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sgs.m455yn.io/">
+  <meta property="og:site_name" content="Szyr Game Studio">
+  <meta property="og:locale" content="pl_PL">
+  <meta property="og:title" content="Szyr Game Studio">
+  <meta property="og:description" content="Amatorskie studio gier indie i twórcy SGSClient.">
+  <meta property="og:image" content="https://sgs.m455yn.io/images/og.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Kolaż grafik z gier Szyr Game Studio z logo studia">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#07090c">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Szyr Game Studio",
+    "url": "https://sgs.m455yn.io/",
+    "logo": "https://sgs.m455yn.io/images/sgs-logo.png",
+    "email": "kontakt@szyrgamestudio.com",
+    "sameAs": [
+      "https://www.facebook.com/SzyrGameStudio",
+      "https://github.com/szyrgamestudio/",
+      "https://soundcloud.com/szyrgamestudio",
+      "https://www.youtube.com/channel/UC-Myop4lk64BMBWm_cUkBvQ"
+    ]
+  }
+  </script>
+  <link rel="icon" href="/images/sgs-logo.png">
+  <link rel="preload" href="/fonts/montserrat-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/open-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/images/art-hero.webp" as="image" type="image/webp">
+  <link rel="stylesheet" href="/styles.css">
+  <!-- Blocking on purpose: applies saved accessibility settings before first paint. External file so the CSP needs no 'unsafe-inline'. -->
+  <script src="/a11y-init.js"></script>
+  <script src="/app.js" defer></script>
+</head>
+<body class="min-h-screen bg-ink-950 font-sans text-slate-300 antialiased">
+  <a href="#tresc" class="sr-only rounded-md bg-sgs-cyan px-4 py-2 font-semibold text-ink-950 focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60]">Przejdź do treści</a>
+
+  <!-- Accessibility widget, pinned to the left edge. Colour filters skip it (see input.css), so it stays usable in every mode. -->
+  <div id="a11y" class="fixed top-24 left-0 z-[55] flex items-start">
+    <button type="button" id="a11y-toggle" aria-expanded="false" aria-controls="a11y-panel" aria-label="Dostępność"
+            class="flex size-12 items-center justify-center rounded-r-md bg-sgs-cyan text-ink-950 shadow-lg hover:bg-white">
+      <svg class="size-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="M4 7.5 12 9l8-1.5.5 2-6 1.5v3.5l2 7.5-2 .5-2.5-7-2.5 7-2-.5 2-7.5V11l-6-1.5z"/></svg>
+    </button>
+    <div id="a11y-panel" hidden class="w-64 rounded-r-md border border-l-0 border-white/15 bg-ink-800 py-3 text-sm shadow-xl">
+      <p class="px-4 pb-2 font-display text-base font-bold text-white">Dostępność</p>
+      <ul class="text-white">
+        <li><button type="button" data-a11y-font="1" class="disabled:cursor-not-allowed disabled:opacity-40 flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5M11 8v6M8 11h6"/></svg>Powiększ czcionkę</button></li>
+        <li><button type="button" data-a11y-font="-1" class="disabled:cursor-not-allowed disabled:opacity-40 flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.5-4.5M8 11h6"/></svg>Zmniejsz czcionkę</button></li>
+        <li><button type="button" data-a11y-mode="a11y-gray" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5v14M6.5 5v14M9 5v14M13 5v14M15.5 5v14M19 5v14M21 5v14"/></svg>Usuń kolory</button></li>
+        <li><button type="button" data-a11y-mode="a11y-contrast" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>Wysoki kontrast</button></li>
+        <li><button type="button" data-a11y-mode="a11y-invert" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Odwrócony kontrast</button></li>
+        <li><button type="button" data-a11y-mode="a11y-light" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2z"/></svg>Jasne tło</button></li>
+        <li><button type="button" data-a11y-toggle="a11y-links" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Podkreślenie linków</button></li>
+        <li><button type="button" data-a11y-toggle="a11y-font" aria-pressed="false" class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10 aria-pressed:text-sgs-cyan">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7V4h16v3M12 4v16M9 20h6"/></svg>Czytelna czcionka</button></li>
+        <li><button type="button" data-a11y-reset class="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-white/10">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.7 9.7 0 0 0-6.7 2.7L3 8M3 3v5h5"/></svg>Resetuj</button></li>
+      </ul>
+      <p class="sr-only" aria-live="polite" id="a11y-status"></p>
+    </div>
+  </div>
+
+  <!-- :focus-visible lives in src/input.css (compiled to styles.css). avoid-ai-design-ignore: K7 -->
+  <!-- Blur stays here only: the nav really does sit over scrolling content. avoid-ai-design-ignore: K3 -->
+  <header class="sticky top-0 z-50 border-b border-white/5 bg-ink-950/85 backdrop-blur">
+    <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <a href="/" class="flex items-center gap-3">
+        <img src="/images/sgs-logo.png" alt="" class="size-9 rounded-lg">
+        <span class="font-display text-base font-bold text-white">Szyr Game Studio</span>
+      </a>
+      <ul class="hidden items-center gap-8 text-sm font-semibold sm:flex">
+        <li><a href="/#sgsclient" class="transition-colors hover:text-sgs-cyan">SGSClient</a></li>
+        <li><a href="/gry/" class="transition-colors hover:text-sgs-cyan">Gry</a></li>
+        <li><a href="/docs/" class="transition-colors hover:text-sgs-cyan">Dokumentacja</a></li>
+        <li><a href="/#kontakt" class="transition-colors hover:text-sgs-cyan">Kontakt</a></li>
+      </ul>
+      <details class="relative sm:hidden" data-popover>
+        <summary class="cursor-pointer list-none rounded-md p-2 text-white hover:bg-white/10" aria-label="Menu">
+          <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </summary>
+        <ul class="absolute right-0 mt-2 w-48 rounded-lg border border-white/10 bg-ink-800 p-2 text-sm font-semibold shadow-xl">
+          <li><a href="/#sgsclient" class="block rounded px-3 py-2 hover:bg-white/5">SGSClient</a></li>
+          <li><a href="/gry/" class="block rounded px-3 py-2 hover:bg-white/5">Gry</a></li>
+          <li><a href="/docs/" class="block rounded px-3 py-2 hover:bg-white/5">Dokumentacja</a></li>
+          <li><a href="/#kontakt" class="block rounded px-3 py-2 hover:bg-white/5">Kontakt</a></li>
+        </ul>
+      </details>
+    </nav>
+  </header>
+
+  <main id="tresc" tabindex="-1" class="outline-none">
+    <!-- Hero: our own game art, cut on the same diagonal as the collage -->
+    <section>
+      <img src="/images/art-hero.webp" width="1600" height="900" fetchpriority="high" alt="Kolaż grafik z gier Szyr Game Studio, w tym Atorth: Tales of Ulkimond, z logo studia pośrodku"
+           class="cut-bottom h-[46vh] min-h-72 w-full object-cover sm:h-[62vh]">
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 pt-10 pb-20 sm:px-6 md:grid-cols-[1.4fr_1fr] md:items-end md:pt-14 md:pb-28">
+        <div>
+          <h1 class="font-display text-5xl leading-[0.95] font-extrabold tracking-tight text-white sm:text-7xl">Szyr Game Studio</h1>
+          <p class="mt-6 max-w-xl text-lg text-slate-400">
+            Amatorskie studio gier indie. Nasz główny projekt to SGSClient: launcher, w którym gracze i niezależni twórcy spotykają się, grają i dzielą się tym, co stworzyli.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-3 md:justify-end">
+          <a href="#sgsclient" class="rounded-md bg-sgs-cyan px-6 py-3 font-display text-sm font-bold text-ink-950 transition-colors hover:bg-white">Pobierz SGSClient</a>
+          <a href="/docs/" class="rounded-md border border-white/20 px-6 py-3 font-display text-sm font-bold text-white transition-colors hover:border-sgs-cyan hover:text-sgs-cyan">Dokumentacja</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SGSClient -->
+    <section id="sgsclient" class="scroll-mt-16 bg-ink-900">
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
+        <div class="grid gap-12 lg:grid-cols-[1fr_1.3fr] lg:items-center">
+          <div>
+            <h2 class="font-display text-4xl font-extrabold text-white sm:text-5xl">SGSClient 4.0</h2>
+            <p class="mt-6 text-lg text-slate-400">
+              Nasz launcher. Przeglądasz w nim, pobierasz, aktualizujesz i uruchamiasz gry niezależnych twórców. Wersja 4.0 to największa aktualizacja w historii aplikacji.
+            </p>
+            <p class="mt-6">
+              Nowe w 4.0: osiągnięcia i statystyki w grach, profile graczy i znajomych, czat, lobby i zaproszenia do gry, licznik czasu gry oraz publikowanie nie tylko gier, ale też muzyki, grafik i opowiadań.
+            </p>
+            <div class="mt-10 flex flex-wrap items-center gap-3">
+              <a href="https://apps.microsoft.com/detail/9NXTFH8495HH" target="_blank" rel="noopener" class="flex items-center gap-3 rounded-md bg-white px-5 py-3 text-sm font-semibold text-ink-950 transition-colors hover:bg-sgs-cyan">
+                <svg class="size-5" viewBox="0 0 24 24" aria-hidden="true"><path fill="#f25022" d="M2 2h9.5v9.5H2z"/><path fill="#7fba00" d="M12.5 2H22v9.5h-9.5z"/><path fill="#00a4ef" d="M2 12.5h9.5V22H2z"/><path fill="#ffb900" d="M12.5 12.5H22V22h-9.5z"/></svg>
+                <span>Microsoft Store<span class="block text-xs font-normal text-slate-600">Windows 10 i 11</span></span>
+              </a>
+              <a href="https://github.com/M455YN/SGSClient/releases/latest" target="_blank" rel="noopener" class="rounded-md border border-white/20 px-5 py-3 text-sm font-semibold text-white transition-colors hover:border-sgs-cyan hover:text-sgs-cyan">
+                Wersja Avalonia<span class="block text-xs font-normal text-slate-400">Windows, Linux, macOS</span>
+              </a>
+            </div>
+          </div>
+          <button type="button" data-lightbox class="block cursor-zoom-in rounded-md">
+            <img src="/docs/assets/screenshots/ekran-glowny.png" alt="Ekran główny SGSClient z wyróżnioną grą i listą ostatnio granych" class="w-full rounded-md border border-white/10" loading="lazy">
+            <span class="sr-only">Powiększ zrzut ekranu</span>
+          </button>
+        </div>
+
+        <div class="mt-16 grid gap-8 sm:grid-cols-3">
+          <figure>
+            <button type="button" data-lightbox class="block w-full cursor-zoom-in rounded-md">
+              <img src="/docs/assets/screenshots/sklep.png" alt="Sklep w SGSClient" class="aspect-video w-full rounded-md border border-white/10 object-cover object-top" loading="lazy">
+              <span class="sr-only">Powiększ zrzut ekranu</span>
+            </button>
+            <figcaption class="mt-3 text-sm"><span class="font-semibold text-white">Sklep.</span> Gry twórców z filtrami i listą życzeń.</figcaption>
+          </figure>
+          <figure>
+            <button type="button" data-lightbox class="block w-full cursor-zoom-in rounded-md">
+              <img src="/docs/assets/screenshots/biblioteka.png" alt="Biblioteka w SGSClient" class="aspect-video w-full rounded-md border border-white/10 object-cover object-top" loading="lazy">
+              <span class="sr-only">Powiększ zrzut ekranu</span>
+            </button>
+            <figcaption class="mt-3 text-sm"><span class="font-semibold text-white">Biblioteka.</span> Zainstalowane gry, czas gry i aktualizacje.</figcaption>
+          </figure>
+          <figure>
+            <button type="button" data-lightbox class="block w-full cursor-zoom-in rounded-md">
+              <img src="/docs/assets/screenshots/panel-tworcy.png" alt="Panel twórcy w SGSClient" class="aspect-video w-full rounded-md border border-white/10 object-cover object-top" loading="lazy">
+              <span class="sr-only">Powiększ zrzut ekranu</span>
+            </button>
+            <figcaption class="mt-3 text-sm"><span class="font-semibold text-white">Panel twórcy.</span> Strona w sklepie, buildy, DLC i osiągnięcia.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Docs: three audiences as rows, not three identical cards -->
+    <section id="dokumentacja" class="scroll-mt-16">
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
+        <div class="flex flex-wrap items-end justify-between gap-6">
+          <h2 class="font-display text-4xl font-extrabold text-white sm:text-5xl">Dokumentacja</h2>
+          <a href="/docs/" class="font-semibold text-sgs-cyan underline-offset-4 hover:underline">Cała dokumentacja</a>
+        </div>
+        <p class="mt-4 max-w-2xl text-lg text-slate-400">Poradniki i opisy funkcji SGSClient, podzielone według tego, kim jesteś.</p>
+        <ul class="mt-12 divide-y divide-white/10 border-y border-white/10">
+          <li>
+            <a href="/docs/users/start/" class="group grid gap-2 py-7 md:grid-cols-[14rem_1fr_auto] md:items-baseline md:gap-8">
+              <span class="font-display text-2xl font-bold text-white group-hover:text-sgs-cyan">Gracze</span>
+              <span>Pierwsze kroki, sklep i biblioteka, znajomi i czat, twórczość społeczności.</span>
+              <span class="text-sm font-semibold text-sgs-cyan group-hover:underline">Pierwsze kroki</span>
+            </a>
+          </li>
+          <li>
+            <a href="/docs/creators/" class="group grid gap-2 py-7 md:grid-cols-[14rem_1fr_auto] md:items-baseline md:gap-8">
+              <span class="font-display text-2xl font-bold text-white group-hover:text-sgs-cyan">Twórcy gier</span>
+              <span>Jak opublikować grę, grafiki do sklepu, osiągnięcia i lobby.</span>
+              <span class="text-sm font-semibold text-sgs-cyan group-hover:underline">Opublikuj grę</span>
+            </a>
+          </li>
+          <li>
+            <a href="/docs/developers/" class="group grid gap-2 py-7 md:grid-cols-[14rem_1fr_auto] md:items-baseline md:gap-8">
+              <span class="font-display text-2xl font-bold text-white group-hover:text-sgs-cyan">Deweloperzy</span>
+              <span>Integracja gry z SGSClient (Unity i Unreal Engine) i opis API.</span>
+              <span class="text-sm font-semibold text-sgs-cyan group-hover:underline">Zintegruj grę</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Contact: the address itself is the call to action -->
+    <section id="kontakt" class="scroll-mt-16 bg-ink-900">
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28">
+        <h2 class="font-display text-3xl font-extrabold text-white sm:text-4xl">Masz pytania? Chcesz nawiązać współpracę?</h2>
+        <p class="mt-4 text-lg text-slate-400">Napisz do nas:</p>
+        <a href="mailto:kontakt@szyrgamestudio.com" class="mt-3 inline-block font-display text-2xl font-bold break-all text-sgs-cyan underline-offset-8 hover:underline sm:text-4xl">kontakt@szyrgamestudio.com</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Screenshot preview. Native dialog: Esc closes, focus is trapped and returns to the thumbnail. -->
+  <dialog id="lightbox" aria-labelledby="lightbox-caption" class="m-auto max-w-[95vw] bg-transparent p-0 text-slate-300 backdrop:bg-black/85">
+    <form method="dialog" class="flex justify-end">
+      <button class="mb-2 flex items-center gap-2 rounded-md bg-ink-800 px-3 py-2 text-sm font-semibold text-white hover:bg-ink-700" aria-label="Zamknij podgląd">
+        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        Zamknij
+      </button>
+    </form>
+    <img id="lightbox-img" src="" alt="" class="max-h-[80vh] w-auto max-w-full rounded-md">
+    <p id="lightbox-caption" class="mt-3 text-center text-sm"></p>
+  </dialog>
+
+  <a href="#" id="to-top" hidden class="fixed right-4 bottom-4 z-40 flex size-12 items-center justify-center rounded-full border border-white/15 bg-ink-800 text-white shadow-lg transition-colors hover:border-sgs-cyan hover:text-sgs-cyan" aria-label="Przewiń na górę strony">
+    <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+  </a>
+
+  <footer class="border-t border-white/5">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 px-4 py-10 text-sm sm:flex-row sm:px-6">
+      <p>© 2019–2026 Szyr Game Studio. Created by M455YN.</p>
+      <ul class="flex flex-wrap justify-center gap-6 font-semibold">
+        <li><a href="https://www.facebook.com/SzyrGameStudio" target="_blank" rel="noopener" class="hover:text-sgs-cyan">Facebook</a></li>
+        <li><a href="https://github.com/szyrgamestudio/" target="_blank" rel="noopener" class="hover:text-sgs-cyan">GitHub</a></li>
+        <li><a href="https://soundcloud.com/szyrgamestudio" target="_blank" rel="noopener" class="hover:text-sgs-cyan">SoundCloud</a></li>
+        <li><a href="https://www.youtube.com/channel/UC-Myop4lk64BMBWm_cUkBvQ" target="_blank" rel="noopener" class="hover:text-sgs-cyan">YouTube</a></li>
+      </ul>
+    </div>
+  </footer>
+</body>
+</html>

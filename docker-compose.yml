@@ -38,6 +38,17 @@ services:
       - frontend
     restart: unless-stopped
 
+  # Studio website + docs. In NPM: sgs.m455yn.io -> http://sgs-web:80
+  sgs-web:
+    image: ${SGS_WEB_IMAGE:-sgs-website:local}
+    build:
+      context: .
+      dockerfile: website/Dockerfile
+    container_name: sgs-web
+    networks:
+      - frontend
+    restart: unless-stopped
+
 networks:
   frontend:
     external: true

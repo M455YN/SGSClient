@@ -7,3 +7,4 @@
 **/appsettings.local.json
 winui.binlog
 *.log
+**/node_modules
