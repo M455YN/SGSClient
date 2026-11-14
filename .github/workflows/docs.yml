@@ -1,3 +1,5 @@
+# The docs now live at https://sgs.m455yn.io/docs/ (website/Dockerfile). GitHub Pages only keeps
+# the old links alive: every page is a redirect stub to the same path on the new host.
 name: Documentation (GitHub Pages)
 on:
   push:
@@ -7,6 +9,7 @@ on:
       - docs/**
       - zensical.toml
       - .github/workflows/docs.yml
+      - .github/pages-redirect/**
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,9 +28,11 @@ jobs:
         with:
           python-version: 3.x
       - run: pip install zensical==0.0.74
+      # Built only to learn which pages exist; what gets published are the redirect stubs.
       - run: zensical build --clean
+      - run: bash .github/pages-redirect/build.sh site redirect
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: site
+          path: redirect
       - uses: actions/deploy-pages@v5
         id: deployment
