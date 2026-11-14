@@ -1,0 +1,85 @@
+name: Avalonia client release
+# Builds the Avalonia client for Windows, Linux and macOS and publishes a GitHub release.
+# Run: push a tag like v4.0.0, or start it by hand (Actions > Avalonia client release > Run workflow).
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version without the v prefix, e.g. 4.0.0"
+        required: true
+permissions:
+  contents: write
+env:
+  VERSION: ${{ inputs.version || github.ref_name }}
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+          - rid: osx-x64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Publish
+        shell: bash
+        run: |
+          v="${VERSION#v}"
+          # Plain folder, not single-file: VLC finds its plugins next to libvlc, which self-extract would break.
+          dotnet publish src/Apps/SGSClient.UI/SGSClient.UI.csproj -c Release -r ${{ matrix.rid }} --self-contained \
+            -p:Version="$v" -p:DebugType=none -o "out/SGSClient"
+          # dev-only config and native debug symbols (~100 MB from SkiaSharp) must not ship
+          rm -f out/SGSClient/appsettings.Development.json out/SGSClient/appsettings.example.json
+          find out/SGSClient -name '*.pdb' -delete
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $v = "$env:VERSION".TrimStart('v')
+          Compress-Archive -Path out/SGSClient -DestinationPath "SGSClient-Avalonia-$v-${{ matrix.rid }}.zip"
+      - name: Package (Linux / macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          v="${VERSION#v}"
+          # tar keeps the executable bit, which zip on these runners would drop
+          tar -czf "SGSClient-Avalonia-$v-${{ matrix.rid }}.tar.gz" -C out SGSClient
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}
+          path: SGSClient-Avalonia-*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag="v${VERSION#v}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* --target "$GITHUB_SHA" --title "SGSClient $tag" \
+              --notes "Avalonia client: Windows (zip), Linux and macOS (tar.gz). Unzip and run SGSClient. The Microsoft Store version: https://apps.microsoft.com/detail/9NXTFH8495HH"
+          fi

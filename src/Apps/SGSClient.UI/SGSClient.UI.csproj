@@ -12,6 +12,12 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
+  <!-- Publishing for one runtime: ship only that runtime's VLC natives (~100 MB each) and no Windows VLC on Linux/macOS. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <VlcWindowsX64Enabled Condition="'$(RuntimeIdentifier)' != 'win-x64'">false</VlcWindowsX64Enabled>
+    <VlcWindowsX86Enabled Condition="'$(RuntimeIdentifier)' != 'win-x86'">false</VlcWindowsX86Enabled>
+  </PropertyGroup>
+
   <ItemGroup>
     <Folder Include="Models\" />
     <AvaloniaResource Include="Assets\**" />
