@@ -325,9 +325,9 @@ public partial class GameDetailsViewModel : ObservableObject
             Badges.Add(badge);
         }
 
-        if (!string.IsNullOrWhiteSpace(game.StudioName))
+        if (!string.IsNullOrWhiteSpace(game.CreatorName))
         {
-            Badges.Insert(0, game.StudioName);
+            Badges.Insert(0, game.CreatorName);
         }
 
         Badges.Add(Loc.T("Sklep SGS"));

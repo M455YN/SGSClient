@@ -21,6 +21,12 @@ public sealed class GameLibraryItem
     /// </summary>
     public string? TargetVersion { get; set; }
 
+    /// <summary>
+    /// The user picked an older version in properties: <see cref="TargetVersion"/> must survive catalog syncs
+    /// and this game is skipped by auto-update.
+    /// </summary>
+    public bool VersionPinned { get; set; }
+
     /// <summary>Optional capsule/cover art URL from the store catalog.</summary>
     public string? CoverUrl { get; set; }
 

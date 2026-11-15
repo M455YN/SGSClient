@@ -88,6 +88,16 @@ public static class SgsClientDbInitializer
         }
 
         await MigrateLocalInstallsPrimaryKeyAsync(db, cancellationToken);
+
+        // After the PK rebuild above, which recreates the table without this column.
+        if (!await ColumnExistsAsync(db, "local_installs", "VersionPinned", cancellationToken))
+        {
+            await ExecuteNonQueryAsync(
+                db,
+                "ALTER TABLE local_installs ADD COLUMN VersionPinned INTEGER NOT NULL DEFAULT 0;",
+                cancellationToken);
+        }
+
         await EnsureInstallQueueTableAsync(db, cancellationToken);
         await EnsureCachedPayloadsTableAsync(db, cancellationToken);
     }

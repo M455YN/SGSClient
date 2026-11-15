@@ -31,7 +31,18 @@ public sealed class EfEntitlementService(SgsServerDbContext db) : IEntitlementSe
             .Select(GameProjections.ToDto())
             .ToListAsync(cancellationToken);
 
-        var order = gameIds.Select((id, index) => (id, index)).ToDictionary(x => x.id, x => x.index);
+        // Author display name only, never the e-mail (same as the public catalog).
+        var ownerIds = games.Select(g => g.UserId).Distinct().ToList();
+        var names = await db.Users.AsNoTracking()
+            .Where(u => ownerIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.DisplayName })
+            .ToDictionaryAsync(u => u.Id, u => u.DisplayName, cancellationToken);
+        foreach (var game in games)
+        {
+            game.OwnerDisplayName = names.GetValueOrDefault(game.UserId);
+        }
+
+        var order =gameIds.Select((id, index) => (id, index)).ToDictionary(x => x.id, x => x.index);
         return games.OrderBy(g => order.GetValueOrDefault(g.Id, int.MaxValue)).ToList();
     }
 

@@ -73,10 +73,24 @@ public sealed partial class GamePropertiesDialog : UserControl
         UpdatesInstalledText.Text = ViewModel.InstalledVersionText;
         UpdatesLatestText.Text = ViewModel.LatestVersionText;
         UpdateNowButton.IsEnabled = ViewModel.CanUpdateNow;
-        if (AutoUpdateSwitch.IsOn != ViewModel.AutoUpdateEnabled)
+        InstallSelectedButton.Visibility = ViewModel.CanInstallSelected ? Visibility.Visible : Visibility.Collapsed;
+        InstallSelectedButton.Content = ViewModel.InstallSelectedLabel;
+        VersionStatusTitle.Text = ViewModel.VersionStatusTitle;
+        VersionStatusText.Text = ViewModel.PinnedNoticeText;
+        ReturnToLatestButton.Visibility = ViewModel.VersionPinned ? Visibility.Visible : Visibility.Collapsed;
+        VersionStatusCard.Background = ViewModel.VersionPinned
+            ? (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["SystemFillColorCautionBackgroundBrush"]
+            : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"];
+        // A pinned game is never auto-updated, so show the switch off and locked until the pin is removed.
+        var autoOn = ViewModel.AutoUpdateEnabled && !ViewModel.VersionPinned;
+        if (AutoUpdateSwitch.IsOn != autoOn)
         {
-            AutoUpdateSwitch.IsOn = ViewModel.AutoUpdateEnabled;
+            _refreshingSwitch = true;
+            AutoUpdateSwitch.IsOn = autoOn;
+            _refreshingSwitch = false;
         }
+
+        AutoUpdateSwitch.IsEnabled = !ViewModel.VersionPinned;
         DlcList.ItemsSource = ViewModel.FilteredDlcRows;
         DlcStatusText.Text = ViewModel.DlcStatusText;
         if (DlcSearchBox.Text != ViewModel.DlcSearchText)
@@ -153,6 +167,22 @@ public sealed partial class GamePropertiesDialog : UserControl
         }
     }
 
+    private async void InstallSelected_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.InstallSelectedCommand.ExecuteAsync(null);
+        RefreshUi();
+    }
+
+    private void ReturnToLatest_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Versions.FirstOrDefault(v => v.IsCurrent) is { } latest)
+        {
+            ViewModel.SelectVersionCommand.Execute(latest);
+            VersionsList.SelectedItem = latest;
+            RefreshUi();
+        }
+    }
+
     private async void PickCustomCover_Click(object sender, RoutedEventArgs e)
     {
         if (App.MainWindow is null)
@@ -204,8 +234,15 @@ public sealed partial class GamePropertiesDialog : UserControl
         App.MainWindow?.NavigateTo(typeof(GameDetailsPage), ViewModel.GameId, "Games");
     }
 
+    private bool _refreshingSwitch;
+
     private void AutoUpdateSwitch_Toggled(object sender, RoutedEventArgs e)
     {
+        if (_refreshingSwitch)
+        {
+            return;
+        }
+
         ViewModel.AutoUpdateEnabled = AutoUpdateSwitch.IsOn;
     }
 

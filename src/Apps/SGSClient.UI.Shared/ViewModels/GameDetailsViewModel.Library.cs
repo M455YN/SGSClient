@@ -65,6 +65,7 @@ public partial class GameDetailsViewModel
                 InstallState = InstallState.NotInstalled,
                 InstalledVersion = null,
                 TargetVersion = selectedVersion,
+                VersionPinned = preferred.SelectedVersion is { IsCurrent: false },
                 CoverUrl = _coverUrl,
                 LogoUrl = _logoUrl,
                 ExecutablePath = null,

@@ -24,6 +24,7 @@ public partial class LibraryViewModel : ObservableObject
     private readonly ISgsApiService? _api;
     private readonly IAuthSession? _auth;
     private readonly string _apiBaseUrl;
+    private readonly Dictionary<int, string> _creators = [];
     private Action<LibraryGameItem>? _openProperties;
     private Action<int>? _openDetails;
 
@@ -133,7 +134,9 @@ public partial class LibraryViewModel : ObservableObject
             Games.Clear();
             foreach (var item in items.OrderBy(x => x.Title))
             {
-                Games.Add(LibraryGameItem.FromModel(item, _apiBaseUrl));
+                var row = LibraryGameItem.FromModel(item, _apiBaseUrl);
+                row.Creator = _creators.GetValueOrDefault(item.GameId);
+                Games.Add(row);
             }
 
             await EnrichCoversAsync(library);
@@ -202,6 +205,14 @@ public partial class LibraryViewModel : ObservableObject
                 return;
             }
 
+            foreach (var game in remote)
+            {
+                if (game.CreatorName is { } creator)
+                {
+                    _creators[game.Id] = creator;
+                }
+            }
+
             var local = await library.GetAllAsync();
             var remoteById = remote.ToDictionary(g => g.Id);
             var localById = local.ToDictionary(x => x.GameId);
@@ -229,12 +240,14 @@ public partial class LibraryViewModel : ObservableObject
                 if (localById.TryGetValue(game.Id, out var existing))
                 {
                     var nextBuildId = buildId > 0 ? buildId : existing.BuildId;
+                    // A pinned (older) version is the user's choice; the catalog's latest must not replace it.
+                    var pinned = existing.VersionPinned;
                     var changed = existing.Title != game.Title
                         || existing.CoverUrl != game.ThumbnailUrl
                         || existing.LogoUrl != game.LogoUrl
                         || existing.Symbol != game.Symbol
                         || (buildId > 0 && existing.BuildId != buildId)
-                        || (targetVersion is not null && existing.TargetVersion != targetVersion);
+                        || (!pinned && targetVersion is not null && existing.TargetVersion != targetVersion);
 
                     if (!changed)
                     {
@@ -253,7 +266,8 @@ public partial class LibraryViewModel : ObservableObject
                         InstallPath = existing.InstallPath,
                         ExecutablePath = existing.ExecutablePath,
                         InstalledVersion = existing.InstalledVersion,
-                        TargetVersion = targetVersion ?? existing.TargetVersion,
+                        TargetVersion = pinned ? existing.TargetVersion : targetVersion ?? existing.TargetVersion,
+                        VersionPinned = pinned,
                         CoverUrl = game.ThumbnailUrl ?? existing.CoverUrl,
                         LogoUrl = game.LogoUrl ?? existing.LogoUrl,
                         CustomCoverPath = existing.CustomCoverPath,
@@ -703,6 +717,9 @@ public partial class LibraryGameItem : ObservableObject
     public required int BuildId { get; init; }
     public required string Title { get; init; }
     public required string Symbol { get; init; }
+
+    /// <summary>Studio or uploader name from the last catalog sync; null when unknown (e.g. offline).</summary>
+    public string? Creator { get; set; }
 
     public DateTimeOffset? LastPlayedUtc { get; private set; }
     public string? CoverUrl { get; private set; }

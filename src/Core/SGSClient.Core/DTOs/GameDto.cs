@@ -59,6 +59,13 @@ public sealed class GameDto
     public long PackageSizeBytes { get; init; }
 
     public string? StudioName { get; init; }
+
+    /// <summary>Who to show as the author: the studio when set, otherwise the uploading user.</summary>
+    public string? CreatorName =>
+        !string.IsNullOrWhiteSpace(StudioName) ? StudioName
+        : !string.IsNullOrWhiteSpace(OwnerDisplayName) ? OwnerDisplayName
+        : null;
+
     public string? WebsiteUrl { get; init; }
     public string? DiscordUrl { get; init; }
     public string? SupportUrl { get; init; }

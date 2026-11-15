@@ -335,7 +335,7 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         foreach (var item in items.Where(x => x.InstallState == InstallState.Installed))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (IsQueuedOrActive(item.GameId))
+            if (item.VersionPinned || IsQueuedOrActive(item.GameId))
             {
                 continue;
             }

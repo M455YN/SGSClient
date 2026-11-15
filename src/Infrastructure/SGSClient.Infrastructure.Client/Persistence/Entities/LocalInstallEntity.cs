@@ -15,6 +15,7 @@ public sealed class LocalInstallEntity
     public string? ExecutablePath { get; set; }
     public string? InstalledVersion { get; set; }
     public string? TargetVersion { get; set; }
+    public bool VersionPinned { get; set; }
     public string? CoverUrl { get; set; }
     public string? LogoUrl { get; set; }
     public string? CustomCoverPath { get; set; }

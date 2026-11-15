@@ -121,6 +121,7 @@ public sealed class LocalLibraryService(
                 ExecutablePath = item.ExecutablePath,
                 InstalledVersion = item.InstalledVersion,
                 TargetVersion = item.TargetVersion,
+                VersionPinned = item.VersionPinned,
                 CoverUrl = item.CoverUrl,
                 LogoUrl = item.LogoUrl,
                 CustomCoverPath = item.CustomCoverPath,
@@ -139,6 +140,7 @@ public sealed class LocalLibraryService(
             entity.ExecutablePath = item.ExecutablePath;
             entity.InstalledVersion = item.InstalledVersion;
             entity.TargetVersion = item.TargetVersion;
+            entity.VersionPinned = item.VersionPinned;
             entity.CoverUrl = item.CoverUrl;
             entity.LogoUrl = item.LogoUrl;
             entity.CustomCoverPath = item.CustomCoverPath;
@@ -178,6 +180,7 @@ public sealed class LocalLibraryService(
         ExecutablePath = entity.ExecutablePath,
         InstalledVersion = entity.InstalledVersion,
         TargetVersion = entity.TargetVersion,
+        VersionPinned = entity.VersionPinned,
         CoverUrl = entity.CoverUrl,
         LogoUrl = entity.LogoUrl,
         CustomCoverPath = entity.CustomCoverPath,

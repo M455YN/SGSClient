@@ -89,6 +89,52 @@ public partial class GamePropertiesViewModel : ObservableObject
     [ObservableProperty]
     public partial bool AutoUpdateEnabled { get; set; } = true;
 
+    /// <summary>An older version is chosen for this game: it stays on it and auto-update skips it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PinnedNoticeText))]
+    [NotifyPropertyChangedFor(nameof(VersionStatusTitle))]
+    public partial bool VersionPinned { get; set; }
+
+    /// <summary>The chosen version is not what is installed (or nothing is installed yet).</summary>
+    [ObservableProperty]
+    public partial bool CanInstallSelected { get; set; }
+
+    public string InstallSelectedLabel => SelectedVersion is { } v
+        ? Loc.F("Zainstaluj wersję {0}", v.VersionText)
+        : Loc.T("Zainstaluj");
+
+    private void RefreshInstallSelected()
+    {
+        var installed = InstalledVersionText is "—" or "" ? null : InstalledVersionText.TrimStart('v', 'V');
+        CanInstallSelected = _queue is not null
+            && GameId > 0
+            && SelectedVersion is { } v
+            && !_queue.IsQueuedOrActive(GameId)
+            && (!IsInstalled || !string.Equals(installed, v.Version.TrimStart('v', 'V'), StringComparison.OrdinalIgnoreCase));
+        OnPropertyChanged(nameof(InstallSelectedLabel));
+    }
+
+    [RelayCommand]
+    private async Task InstallSelectedAsync()
+    {
+        if (_queue is null || GameId <= 0 || SelectedVersion is not { } v)
+        {
+            return;
+        }
+
+        await _queue.EnqueueInstallAsync(GameId, v.Version);
+        CanInstallSelected = false;
+        StatusText = Loc.F("Dodano do kolejki instalacji: {0}", v.VersionText);
+    }
+
+    public string VersionStatusTitle => VersionPinned && SelectedVersion is { } v
+        ? Loc.F("Używasz starszej wersji ({0})", v.VersionText)
+        : Loc.T("Używasz najnowszej wersji");
+
+    public string PinnedNoticeText => VersionPinned
+        ? Loc.T("Ta gra nie będzie aktualizowana automatycznie, dopóki nie wrócisz do najnowszej wersji.")
+        : Loc.T("Gra aktualizuje się automatycznie zgodnie z ustawieniem w sekcji Aktualizacje.");
+
     [ObservableProperty]
     public partial bool CanUpdateNow { get; set; }
 
@@ -211,6 +257,9 @@ public partial class GamePropertiesViewModel : ObservableObject
             return;
         }
 
+        VersionPinned = !value.IsCurrent;
+        OnPropertyChanged(nameof(VersionStatusTitle));
+        RefreshInstallSelected();
         _ = PersistTargetVersionAsync(value);
     }
 
@@ -236,6 +285,7 @@ public partial class GamePropertiesViewModel : ObservableObject
             DlcSearchText = string.Empty;
             DlcStatusText = string.Empty;
             _latestVersion = null;
+            VersionPinned = false;
             LatestVersionText = "—";
             UpdateAvailable = false;
             CanUpdateNow = false;
@@ -251,6 +301,7 @@ public partial class GamePropertiesViewModel : ObservableObject
                 var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
                 var item = await library.GetByGameIdAsync(gameId);
                 savedTarget = item?.TargetVersion;
+                VersionPinned = item?.VersionPinned ?? false;
                 CustomCoverPath = item?.CustomCoverPath;
                 if (item is not null && item.BuildId > 0)
                 {
@@ -313,6 +364,7 @@ public partial class GamePropertiesViewModel : ObservableObject
                     ?? Versions.FirstOrDefault();
             }
 
+            RefreshInstallSelected();
             StatusText = string.Empty;
         }
         catch (Exception ex)
@@ -584,6 +636,22 @@ public partial class GamePropertiesViewModel : ObservableObject
         if (_queue is null || GameId <= 0)
         {
             return;
+        }
+
+        if (VersionPinned && _scopes is not null)
+        {
+            // Moving to the latest version ends the pin, so auto-update works for this game again.
+            using var scope = _scopes.CreateScope();
+            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            if (await library.GetByGameIdAsync(GameId) is { } model)
+            {
+                model.VersionPinned = false;
+                model.TargetVersion = _latestVersion ?? model.TargetVersion;
+                await library.UpsertAsync(model);
+            }
+
+            VersionPinned = false;
+            SelectedVersion = Versions.FirstOrDefault(v => v.IsCurrent) ?? SelectedVersion;
         }
 
         await _queue.EnqueueUpdateAsync(GameId);
@@ -912,7 +980,10 @@ public partial class GamePropertiesViewModel : ObservableObject
             }
 
             model.TargetVersion = selected.Version;
+            model.VersionPinned = !selected.IsCurrent;
             await library.UpsertAsync(model);
+            VersionPinned = model.VersionPinned;
+            OnPropertyChanged(nameof(VersionStatusTitle));
             StatusText = selected.IsCurrent
                 ? Loc.T("Ustawiono domyślną wersję publiczną.")
                 : Loc.F("Wybrano wersję {0}.", selected.Version);
@@ -947,6 +1018,9 @@ public sealed class BetaVersionItem
     public required string UpdatedText { get; init; }
     public bool IsCurrent { get; init; }
     public DateTimeOffset PublishedAtUtc { get; init; }
+
+    public string VersionText => "v" + Version.TrimStart('v', 'V');
+    public string ChipText => IsCurrent ? Loc.T("NAJNOWSZA") : Loc.T("STARSZA");
 
     public static BetaVersionItem CreatePublicDefault(string version) => new()
     {

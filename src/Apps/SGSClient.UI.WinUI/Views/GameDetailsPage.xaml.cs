@@ -147,7 +147,8 @@ public sealed partial class GameDetailsPage : Page, ILoadingPage
         BuildsList.ItemsSource = ViewModel.Builds;
 
         HardwarePanel.Visibility = ViewModel.ShowHardware ? Visibility.Visible : Visibility.Collapsed;
-        BuildsPanel.Visibility = ViewModel.ShowBuilds ? Visibility.Visible : Visibility.Collapsed;
+        // In the library the version is chosen in Properties; the picker here is only for the store.
+        BuildsPanel.Visibility = ViewModel.ShowBuilds && !ViewModel.InLibrary ? Visibility.Visible : Visibility.Collapsed;
         OtherPanel.Visibility = ViewModel.ShowOther ? Visibility.Visible : Visibility.Collapsed;
 
         DetailsPanel.Visibility = ViewModel.ShowDetailsTab ? Visibility.Visible : Visibility.Collapsed;

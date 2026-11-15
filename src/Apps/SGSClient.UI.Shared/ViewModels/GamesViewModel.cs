@@ -683,7 +683,7 @@ public partial class GameListItem : ObservableObject
                 ? Loc.T("Brak opisu.")
                 : dto.Description!,
             Featured = dto.FeaturedP,
-            StudioName = dto.StudioName,
+            StudioName = dto.CreatorName,
             GenresText = string.Join(" · ", dto.Genres.Take(3).Select(g => g.Name)),
             EnginesText = string.Join(" · ", dto.Engines.Select(e => e.Name)),
             PosterImageUrl = ToImageSourceUrl(InstallPathHelper.TryResolveDownloadUrl(apiBaseUrl, dto.ThumbnailUrl)),

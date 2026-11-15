@@ -151,6 +151,9 @@
                         <StackPanel Margin="12,10" Spacing="2">
                           <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
                                      Foreground="White" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Creator}"
+                                     Style="{StaticResource CaptionTextBlockStyle}"
+                                     Foreground="#CCFFFFFF" TextTrimming="CharacterEllipsis" />
                           <TextBlock Text="{Binding LastPlayedText}"
                                      Style="{StaticResource CaptionTextBlockStyle}"
                                      Foreground="#CCFFFFFF" />
@@ -206,8 +209,12 @@
                                 Loaded="PosterCaption_Loaded"
                                 Unloaded="PosterCaption_Unloaded" />
                         <Border Background="#A6000000" IsHitTestVisible="False" />
-                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
-                                   Margin="8,8" Foreground="White" TextTrimming="CharacterEllipsis" />
+                        <StackPanel Margin="8,8">
+                          <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                     Foreground="White" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Creator}" FontSize="11"
+                                     Foreground="#CCFFFFFF" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
                       </Grid>
                     </Grid>
                   </Border>

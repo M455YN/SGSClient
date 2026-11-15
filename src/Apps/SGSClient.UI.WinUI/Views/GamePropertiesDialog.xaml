@@ -38,47 +38,61 @@
     <ScrollViewer Grid.Column="1" Padding="24,20">
       <StackPanel Spacing="16">
         <StackPanel x:Name="BetasPanel" Spacing="12">
-          <TextBlock Text="{loc:Tr Key='Wersje i bety gry'}" Style="{StaticResource SubtitleTextBlockStyle}" />
-          <TextBlock Text="{loc:Tr Key='Wybrana wersja gry'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-          <TextBlock Text="{loc:Tr Key='Wersje są udostępniane przez twórców. Starsze buildy mogą być niestabilne.'}"
-                     Style="{StaticResource CaptionTextBlockStyle}"
-                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                     TextWrapping="Wrap" />
+          <TextBlock Text="{loc:Tr Key='Wersja gry'}" Style="{StaticResource SubtitleTextBlockStyle}" />
 
-          <Grid Margin="0,4,0,0">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="*" />
-              <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBlock Text="{loc:Tr Key='Tytuł i opis'}"
-                       Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock Grid.Column="1"
-                       Text="{loc:Tr Key='Ostatnia aktualizacja'}"
-                       Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-          </Grid>
+          <Border x:Name="VersionStatusCard" Padding="16" CornerRadius="8"
+                  Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                  BorderThickness="1">
+            <Grid ColumnSpacing="16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Spacing="4">
+                <TextBlock x:Name="VersionStatusTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock x:Name="VersionStatusText"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <Button x:Name="ReturnToLatestButton" Grid.Column="1"
+                      VerticalAlignment="Center"
+                      Content="{loc:Tr Key='Wróć do najnowszej'}"
+                      Click="ReturnToLatest_Click" />
+            </Grid>
+          </Border>
+
+          <TextBlock Text="{loc:Tr Key='Dostępne wersje'}"
+                     Style="{StaticResource BodyStrongTextBlockStyle}" Margin="0,8,0,0" />
 
           <ListView x:Name="VersionsList"
                     SelectionMode="Single"
                     SelectionChanged="Version_SelectionChanged"
                     Background="Transparent"
                     BorderThickness="0"
-                    MaxHeight="260">
+                    MaxHeight="300">
             <ListView.ItemTemplate>
               <DataTemplate>
-                <Grid Padding="4,8" ColumnSpacing="12">
+                <Grid Padding="4,10" ColumnSpacing="12">
                   <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" MinWidth="90" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
-                  <StackPanel Spacing="2">
-                    <TextBlock Text="{Binding Title}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                  <TextBlock Text="{Binding VersionText}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                             VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Border Padding="7,2" CornerRadius="4"
+                            Background="{ThemeResource ControlAltFillColorSecondaryBrush}">
+                      <TextBlock Text="{Binding ChipText}" FontSize="11" FontWeight="SemiBold" />
+                    </Border>
                     <TextBlock Text="{Binding Description}"
                                Style="{StaticResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               VerticalAlignment="Center" />
                   </StackPanel>
-                  <TextBlock Grid.Column="1"
+                  <TextBlock Grid.Column="2"
                              Text="{Binding UpdatedText}"
                              VerticalAlignment="Center"
                              Style="{StaticResource CaptionTextBlockStyle}"
@@ -88,11 +102,16 @@
             </ListView.ItemTemplate>
           </ListView>
 
-          <InfoBar IsOpen="True"
-                   IsClosable="False"
-                   Severity="Informational"
-                   Title="{loc:Tr Key='Wersje prywatne'}"
-                   Message="Prywatne wersje beta — wkrótce." />
+          <Button x:Name="InstallSelectedButton"
+                  Style="{StaticResource AccentButtonStyle}"
+                  Padding="16,8"
+                  Visibility="Collapsed"
+                  Click="InstallSelected_Click" />
+
+          <TextBlock Text="{loc:Tr Key='Wersje są udostępniane przez twórców. Starsze buildy mogą być niestabilne.'}"
+                     Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                     TextWrapping="Wrap" />
         </StackPanel>
 
         <StackPanel x:Name="FilesPanel" Spacing="14" Visibility="Collapsed">

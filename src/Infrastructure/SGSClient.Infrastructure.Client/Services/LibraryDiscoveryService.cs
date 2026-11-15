@@ -56,6 +56,11 @@ public sealed class LibraryDiscoveryService(
                 item.CoverUrl ??= existing.CoverUrl;
                 item.LogoUrl ??= existing.LogoUrl;
                 item.TargetVersion ??= existing.TargetVersion;
+                item.VersionPinned = existing.VersionPinned;
+                if (existing.VersionPinned)
+                {
+                    item.TargetVersion = existing.TargetVersion;
+                }
             }
 
             await library.UpsertAsync(item, cancellationToken).ConfigureAwait(false);
