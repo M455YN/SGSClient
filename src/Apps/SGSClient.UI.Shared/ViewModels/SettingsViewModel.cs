@@ -199,8 +199,13 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsBusy { get; set; }
 
+    // Adres serwera sklepu widzą tylko administratorzy.
+    [ObservableProperty]
+    public partial bool ShowStoreServer { get; set; }
+
     public void RefreshAccountStatus()
     {
+        ShowStoreServer = _auth?.CurrentUser?.IsAdmin == true;
         if (_auth?.IsAvailable != true)
         {
             AccountStatus = _accountStatusFallback;

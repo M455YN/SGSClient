@@ -17,7 +17,7 @@ public sealed partial class SettingsPage : Page
         InitializeComponent();
         ViewModel.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(SettingsViewModel.AccountStatus) or nameof(SettingsViewModel.StatusText)
+            if (e.PropertyName is nameof(SettingsViewModel.AccountStatus) or nameof(SettingsViewModel.ShowStoreServer) or nameof(SettingsViewModel.StatusText)
                 or nameof(SettingsViewModel.IsBusy) or nameof(SettingsViewModel.LanguageHint))
             {
                 RefreshUi();
@@ -79,6 +79,7 @@ public sealed partial class SettingsPage : Page
     private void RefreshUi()
     {
         AccountStatusText.Text = ViewModel.AccountStatus;
+        StoreServerRow.Visibility = ViewModel.ShowStoreServer ? Visibility.Visible : Visibility.Collapsed;
         StatusText.Text = ViewModel.StatusText;
         LanguageHintText.Text = ViewModel.LanguageHint;
         LanguageHintText.Visibility = string.IsNullOrEmpty(ViewModel.LanguageHint) ? Visibility.Collapsed : Visibility.Visible;

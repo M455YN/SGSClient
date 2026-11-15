@@ -174,7 +174,7 @@
                 <TextBlock Grid.Column="1" Classes="value" Text="{Binding AccountStatus}"/>
               </Grid>
             </Border>
-            <Border Classes="row">
+            <Border Classes="row" IsVisible="{Binding ShowStoreServer}">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                 <TextBlock Text="{loc:Tr Key='Serwer sklepu'}" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="1" Classes="value" Text="{Binding StoreStatus}"/>

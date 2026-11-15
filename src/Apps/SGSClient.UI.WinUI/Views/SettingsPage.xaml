@@ -168,7 +168,7 @@
                 <TextBlock x:Name="AccountStatusText" Grid.Column="1" Style="{StaticResource RowValue}" />
               </Grid>
             </Border>
-            <Border Style="{StaticResource SettingsRow}">
+            <Border x:Name="StoreServerRow" Style="{StaticResource SettingsRow}">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                 <TextBlock Text="{loc:Tr Key='Serwer sklepu'}" VerticalAlignment="Center" />
                 <TextBlock x:Name="StoreStatusText" Grid.Column="1" Style="{StaticResource RowValue}" />
