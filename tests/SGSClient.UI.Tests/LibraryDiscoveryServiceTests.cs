@@ -63,6 +63,16 @@ public class LibraryDiscoveryServiceTests
             Assert.Equal(InstallState.Installed, item.InstallState);
             Assert.Equal(exePath, item.ExecutablePath);
             Assert.Equal("Discovered Game", item.Title);
+
+            // A rescan must keep what only the library knows (tray order, custom cover).
+            var playedAt = new DateTimeOffset(2026, 11, 15, 12, 0, 0, TimeSpan.Zero);
+            item.LastPlayedUtc = playedAt;
+            item.CustomCoverPath = "C:\\covers\\mine.png";
+            await store.UpsertAsync(item);
+            await discovery.ScanAsync();
+            var rescanned = await store.GetByGameIdAsync(99);
+            Assert.Equal(playedAt, rescanned!.LastPlayedUtc);
+            Assert.Equal("C:\\covers\\mine.png", rescanned.CustomCoverPath);
         }
         finally
         {

@@ -48,6 +48,16 @@ public sealed class LibraryDiscoveryService(
         foreach (var (item, _) in counters.Found.Values)
         {
             var existing = await library.GetByGameIdAsync(item.GameId, cancellationToken).ConfigureAwait(false);
+            if (existing is not null)
+            {
+                // The install record does not know these; upserting without them wiped them on every scan.
+                item.LastPlayedUtc = existing.LastPlayedUtc;
+                item.CustomCoverPath = existing.CustomCoverPath;
+                item.CoverUrl ??= existing.CoverUrl;
+                item.LogoUrl ??= existing.LogoUrl;
+                item.TargetVersion ??= existing.TargetVersion;
+            }
+
             await library.UpsertAsync(item, cancellationToken).ConfigureAwait(false);
             if (existing is null)
             {
@@ -95,6 +105,9 @@ public sealed class LibraryDiscoveryService(
 
         /// <summary>One install per game; the library store is keyed by game id.</summary>
         public readonly Dictionary<int, (GameLibraryItem Item, DateTimeOffset InstalledUtc)> Found = [];
+
+        /// <summary>Store catalog, fetched at most once per scan (it used to be fetched for every manifest-only install).</summary>
+        public IReadOnlyList<GameDto>? Catalog;
     }
 
     private async Task ScanCentralManifestsAsync(
@@ -159,7 +172,7 @@ public sealed class LibraryDiscoveryService(
                     continue;
                 }
 
-                var found = await TryDiscoverInstallAsync(versionDir, symbol, version, libraryRoot, cancellationToken)
+                var found = await TryDiscoverInstallAsync(versionDir, symbol, version, libraryRoot, counters, cancellationToken)
                     .ConfigureAwait(false);
                 if (found is null || found.Value.Item.BuildId <= 0)
                 {
@@ -209,6 +222,7 @@ public sealed class LibraryDiscoveryService(
         string symbol,
         string version,
         string libraryRoot,
+        ScanCounters counters,
         CancellationToken cancellationToken)
     {
         var installRecordPath = Path.Combine(versionDir, SgsInstallRecord.FileName);
@@ -220,7 +234,7 @@ public sealed class LibraryDiscoveryService(
 
         var manifestPath = Path.Combine(versionDir, SgsPackageManifest.FileName);
         if (File.Exists(manifestPath)
-            && await FromManifestAsync(manifestPath, versionDir, symbol, version, libraryRoot, cancellationToken)
+            && await FromManifestAsync(manifestPath, versionDir, symbol, version, libraryRoot, counters, cancellationToken)
                 .ConfigureAwait(false) is { } item)
         {
             // No install record, so no install time: loses to any recorded install of the same game.
@@ -289,6 +303,7 @@ public sealed class LibraryDiscoveryService(
         string symbol,
         string version,
         string libraryRoot,
+        ScanCounters counters,
         CancellationToken cancellationToken)
     {
         await using var stream = File.OpenRead(manifestPath);
@@ -312,7 +327,7 @@ public sealed class LibraryDiscoveryService(
             return null;
         }
 
-        var resolved = await TryResolveFromApiAsync(symbol, version, platform, architecture, cancellationToken)
+        var resolved = await TryResolveFromApiAsync(symbol, version, platform, architecture, counters, cancellationToken)
             .ConfigureAwait(false);
 
         if (resolved is null || resolved.Value.GameId <= 0 || resolved.Value.BuildId <= 0)
@@ -355,6 +370,7 @@ public sealed class LibraryDiscoveryService(
         string version,
         GamePlatform platform,
         string architecture,
+        ScanCounters counters,
         CancellationToken cancellationToken)
     {
         if (api is null)
@@ -364,7 +380,7 @@ public sealed class LibraryDiscoveryService(
 
         try
         {
-            var games = await api.GetGamesAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+            var games = counters.Catalog ??= await api.GetGamesAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
             var game = games.FirstOrDefault(g => string.Equals(g.Symbol, symbol, StringComparison.OrdinalIgnoreCase));
             if (game is null)
             {
