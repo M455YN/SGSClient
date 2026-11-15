@@ -1,0 +1,18 @@
+name: Tests
+# Runs the three test projects on every push to master and on pull requests.
+# windows-latest: some tests use Windows paths (DPAPI, backslash paths).
+on:
+  push:
+    branches: [master]
+  pull_request:
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet test tests/SGSClient.Core.Tests
+      - run: dotnet test tests/SGSClient.Server.Tests
+      - run: dotnet test tests/SGSClient.UI.Tests
