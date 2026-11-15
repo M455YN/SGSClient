@@ -166,7 +166,7 @@ public partial class LoginGateViewModel : ObservableObject
         var name = asm.GetCustomAttribute<AssemblyProductAttribute>()?.Product
             ?? asm.GetName().Name
             ?? "SGSClient";
-        var version = asm.GetName().Version?.ToString() ?? "4.0.1.0";
+        var version = asm.GetName().Version?.ToString() ?? "4.0.2.0";
         return $"{name} {version}";
     }
 
