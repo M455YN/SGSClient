@@ -43,6 +43,30 @@ public sealed class GamePackagePublisherTests : IDisposable
         Assert.Equal("owner cover", await File.ReadAllTextAsync(ownerCover));
     }
 
+    [Fact]
+    public async Task PublishZip_RejectedRepublish_DoesNotReplaceTheLivePackage()
+    {
+        await using var db = new SgsServerDbContext(new DbContextOptionsBuilder<SgsServerDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
+            .Options);
+        db.Games.Add(new GameEntity { Id = 1, UserId = Owner, Title = "Demo", Symbol = "demo" });
+        db.Games.Add(new GameEntity { Id = 2, UserId = Owner, Title = "Base", Symbol = "base" });
+        await db.SaveChangesAsync();
+
+        var livePackage = Path.Combine(_storageRoot, "demo", "1.0.0", "windows-x64.zip");
+        Directory.CreateDirectory(Path.GetDirectoryName(livePackage)!);
+        await File.WriteAllTextAsync(livePackage, "live package");
+
+        // Same owner, same version, but the game turns into a DLC: rejected only after files used to be written.
+        using var zip = BuildPackage(kind: "dlc", parentSymbol: "base");
+        var result = await CreatePublisher(db).PublishZipAsync(zip, zip.Length, Owner);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Errors, e => e.Contains("rodzaju"));
+        Assert.Equal("live package", await File.ReadAllTextAsync(livePackage));
+        Assert.False(File.Exists(livePackage + ".publishing"));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_storageRoot))
@@ -62,7 +86,7 @@ public sealed class GamePackagePublisherTests : IDisposable
     }
 
     /// <summary>A valid package for the symbol and version the owner already published.</summary>
-    private static MemoryStream BuildPackage()
+    private static MemoryStream BuildPackage(string? kind = null, string? parentSymbol = null)
     {
         var manifest = new SgsPackageManifest
         {
@@ -71,6 +95,8 @@ public sealed class GamePackagePublisherTests : IDisposable
             {
                 Title = "Demo",
                 Symbol = "demo",
+                Kind = kind,
+                ParentSymbol = parentSymbol,
                 Description = "Replaced",
                 Genre = "action",
                 Engine = "custom",

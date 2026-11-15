@@ -40,6 +40,7 @@ public sealed class GamePackagePublisher(
         var stagingDir = Path.Combine(storage.StoragePath, ".tmp");
         Directory.CreateDirectory(stagingDir);
         var tempZip = Path.Combine(stagingDir, $"sgs-upload-{Guid.NewGuid():N}.zip");
+        string? stagedZip = null;
         try
         {
             await using (var fs = File.Create(tempZip))
@@ -74,20 +75,45 @@ public sealed class GamePackagePublisher(
             SgsPackageRules.TryParsePlatform(manifest.Build.Platform, out var platform);
             SgsPackageRules.TryNormalizeEntryPath(manifest.Build.Executable, out var exePath, out _);
 
-            Directory.CreateDirectory(storage.StoragePath);
+            // Every check that can still reject the package runs before anything is written to storage:
+            // a rejected publish used to have already replaced the live zip of that version.
+            var contentKind = Enum.Parse<GameContentKind>(
+                SgsPackageRules.NormalizeContentKind(manifest.Game.Kind)!, ignoreCase: true);
+            var isDlc = contentKind == GameContentKind.Dlc;
+            int? parentGameId = null;
+            if (isDlc)
+            {
+                var parent = await db.Games.AsNoTracking()
+                    .FirstOrDefaultAsync(
+                        g => g.Symbol == manifest.Game.ParentSymbol
+                             && g.Kind == GameContentKind.Game,
+                        cancellationToken);
+                if (parent is null)
+                {
+                    return GamePackagePublishResult.Fail(
+                        $"Nie znaleziono gry bazowej o symbolu '{manifest.Game.ParentSymbol}'.");
+                }
 
-            var fileName = $"{SgsPackageRules.ToManifestPlatform(platform)}-{(manifest.Build.Architecture ?? "x64")}.zip";
-            var relativeDir = Path.Combine(manifest.Game.Symbol, manifest.Build.Version);
-            var absoluteDir = Path.Combine(storage.StoragePath, relativeDir);
-            Directory.CreateDirectory(absoluteDir);
-            var absoluteZip = Path.Combine(absoluteDir, fileName);
+                parentGameId = parent.Id;
+            }
 
-            WrapExecutableWithStub(tempZip, exePath, storage.LauncherStubPath);
-            File.Copy(tempZip, absoluteZip, overwrite: true);
+            var game = await db.Games
+                .Include(g => g.Builds)
+                .Include(g => g.Screenshots)
+                .Include(g => g.Genres)
+                .Include(g => g.Engines)
+                .FirstOrDefaultAsync(g => g.Symbol == manifest.Game.Symbol, cancellationToken);
+            if (game is not null && game.Kind != contentKind)
+            {
+                return GamePackagePublishResult.Fail(
+                    "Nie można zmienić rodzaju pozycji (np. gra ↔ DLC) przy republishu.");
+            }
 
-            var publicBase = storage.PublicBaseUrl.TrimEnd('/');
-            var zipLink = $"{publicBase}/{manifest.Game.Symbol}/{manifest.Build.Version}/{fileName}"
-                .Replace('\\', '/');
+            if (game is not null && isDlc && game.ParentGameId != parentGameId)
+            {
+                return GamePackagePublishResult.Fail(
+                    "Nie można zmienić gry bazowej DLC przy republishu.");
+            }
 
             var genres = await ResolveTaxonomyAsync(db.GameGenres, manifest.Game.Genres, g => g.Symbol, cancellationToken);
             var engines = await ResolveTaxonomyAsync(db.GameEngines, manifest.Game.Engines, e => e.Symbol, cancellationToken);
@@ -110,34 +136,24 @@ public sealed class GamePackagePublisher(
                 return GamePackagePublishResult.Fail(iconError!);
             }
 
-            var contentKind = Enum.Parse<GameContentKind>(
-                SgsPackageRules.NormalizeContentKind(manifest.Game.Kind)!, ignoreCase: true);
-            var isDlc = contentKind == GameContentKind.Dlc;
-            int? parentGameId = null;
-            if (isDlc)
-            {
-                var parent = await db.Games.AsNoTracking()
-                    .FirstOrDefaultAsync(
-                        g => g.Symbol == manifest.Game.ParentSymbol
-                             && g.Kind == GameContentKind.Game,
-                        cancellationToken);
-                if (parent is null)
-                {
-                    return GamePackagePublishResult.Fail(
-                        $"Nie znaleziono gry bazowej o symbolu '{manifest.Game.ParentSymbol}'.");
-                }
+            Directory.CreateDirectory(storage.StoragePath);
 
-                parentGameId = parent.Id;
-            }
+            var fileName = $"{SgsPackageRules.ToManifestPlatform(platform)}-{(manifest.Build.Architecture ?? "x64")}.zip";
+            var relativeDir = Path.Combine(manifest.Game.Symbol, manifest.Build.Version);
+            var absoluteDir = Path.Combine(storage.StoragePath, relativeDir);
+            Directory.CreateDirectory(absoluteDir);
+            var absoluteZip = Path.Combine(absoluteDir, fileName);
 
-            var packageSize = new FileInfo(absoluteZip).Length;
+            // Staged next to the target and swapped in only after the database accepted the build.
+            WrapExecutableWithStub(tempZip, exePath, storage.LauncherStubPath);
+            stagedZip = absoluteZip + ".publishing";
+            File.Copy(tempZip, stagedZip, overwrite: true);
 
-            var game = await db.Games
-                .Include(g => g.Builds)
-                .Include(g => g.Screenshots)
-                .Include(g => g.Genres)
-                .Include(g => g.Engines)
-                .FirstOrDefaultAsync(g => g.Symbol == manifest.Game.Symbol, cancellationToken);
+            var publicBase = storage.PublicBaseUrl.TrimEnd('/');
+            var zipLink = $"{publicBase}/{manifest.Game.Symbol}/{manifest.Build.Version}/{fileName}"
+                .Replace('\\', '/');
+
+            var packageSize = new FileInfo(stagedZip).Length;
 
             if (game is null)
             {
@@ -166,18 +182,6 @@ public sealed class GamePackagePublisher(
             }
             else
             {
-                if (game.Kind != contentKind)
-                {
-                    return GamePackagePublishResult.Fail(
-                        "Nie można zmienić rodzaju pozycji (np. gra ↔ DLC) przy republishu.");
-                }
-
-                if (isDlc && game.ParentGameId != parentGameId)
-                {
-                    return GamePackagePublishResult.Fail(
-                        "Nie można zmienić gry bazowej DLC przy republishu.");
-                }
-
                 game.Title = manifest.Game.Title.Trim();
                 game.Description = manifest.Game.Description;
                 game.HardwareRequirements = manifest.Game.HardwareRequirements;
@@ -277,6 +281,8 @@ public sealed class GamePackagePublisher(
             }
 
             await db.SaveChangesAsync(cancellationToken);
+            File.Move(stagedZip, absoluteZip, overwrite: true);
+            stagedZip = null;
 
             await versionService.RecordPublishedVersionAsync(
                 build,
@@ -318,6 +324,10 @@ public sealed class GamePackagePublisher(
         finally
         {
             TryDelete(tempZip);
+            if (stagedZip is not null)
+            {
+                TryDelete(stagedZip);
+            }
         }
     }
 
