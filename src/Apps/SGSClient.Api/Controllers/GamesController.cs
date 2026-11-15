@@ -661,10 +661,11 @@ public sealed class GamesController(
         CancellationToken cancellationToken)
     {
         if (!SgsPackageRules.IsSafeStorageSegment(symbol)
-            || string.IsNullOrWhiteSpace(version)
+            || !SgsPackageRules.IsSafeStorageSegment(version)
             || string.IsNullOrWhiteSpace(fileName)
             || fileName.Contains("..", StringComparison.Ordinal)
             || fileName.Contains('/')
+        // version is a path segment too: unchecked, an encoded "../other-game" skipped the entitlement check below.
             || fileName.Contains('\\'))
         {
             return NotFound();
@@ -694,7 +695,7 @@ public sealed class GamesController(
 
         var root = Path.GetFullPath(storageOptions.Value.StoragePath);
         var path = Path.GetFullPath(Path.Combine(root, symbol, version, fileName));
-        if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
+        if (!SgsPackageRules.IsInsideRoot(root, path) || !System.IO.File.Exists(path))
         {
             return NotFound();
         }
@@ -739,7 +740,7 @@ public sealed class GamesController(
 
         var root = Path.GetFullPath(storageOptions.Value.StoragePath);
         var path = Path.GetFullPath(Path.Combine([root, symbol, .. folder, fileName]));
-        if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
+        if (!SgsPackageRules.IsInsideRoot(root, path) || !System.IO.File.Exists(path))
         {
             return NotFound();
         }

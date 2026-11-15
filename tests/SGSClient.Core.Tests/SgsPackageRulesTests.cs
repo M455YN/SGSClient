@@ -179,4 +179,24 @@ public sealed class SgsPackageRulesTests
         Assert.Contains("controller", manifest.Game.Features!);
         Assert.Contains("wrestling", manifest.Game.Tags!);
     }
+
+    [Theory]
+    [InlineData("games/demo/1.0.0/windows-x64.zip", true)]
+    [InlineData("games", false)]                 // the root itself
+    [InlineData("games2/demo/x.zip", false)]     // sibling sharing the prefix
+    [InlineData("games/../secret.txt", false)]
+    public void IsInsideRoot_OnlyAcceptsPathsStrictlyInsideTheRoot(string relative, bool expected)
+    {
+        var baseDir = Path.Combine(Path.GetTempPath(), "sgs-root-test");
+        var root = Path.Combine(baseDir, "games");
+        Assert.Equal(expected, SgsPackageRules.IsInsideRoot(root, Path.Combine(baseDir, relative)));
+    }
+
+    [Theory]
+    [InlineData("1.0.5", true)]
+    [InlineData("..", false)]
+    [InlineData("../other-game", false)]
+    [InlineData(@"..\other-game", false)]
+    public void IsSafeStorageSegment_RejectsTraversalInVersion(string version, bool expected) =>
+        Assert.Equal(expected, SgsPackageRules.IsSafeStorageSegment(version));
 }

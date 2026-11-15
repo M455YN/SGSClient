@@ -217,7 +217,7 @@ public sealed class MeController(
 
         var root = Path.GetFullPath(Path.Combine(storageOptions.Value.StoragePath, "users", userId.ToString()));
         var path = Path.GetFullPath(Path.Combine(root, fileName));
-        if (!path.StartsWith(root, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(path))
+        if (!SgsPackageRules.IsInsideRoot(root, path) || !System.IO.File.Exists(path))
         {
             return NotFound();
         }

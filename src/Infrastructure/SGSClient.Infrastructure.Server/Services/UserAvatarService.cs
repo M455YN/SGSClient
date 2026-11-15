@@ -112,7 +112,7 @@ public sealed class UserAvatarService(
 
         var root = GetUserRoot(userId);
         var path = Path.GetFullPath(Path.Combine(root, fileName));
-        if (path.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        if (SgsPackageRules.IsInsideRoot(root, path))
         {
             TryDeletePath(path);
         }

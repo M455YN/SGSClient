@@ -108,6 +108,16 @@ public static partial class SgsPackageRules
         && !value.Contains('\\')
         && SafeStorageSegmentRegex().IsMatch(value);
 
+    /// <summary>
+    /// True when <paramref name="path"/> lies inside <paramref name="root"/>: not the root itself and not a sibling
+    /// that merely shares the prefix (a plain StartsWith lets "games2" pass for "games").
+    /// </summary>
+    public static bool IsInsideRoot(string root, string path)
+    {
+        var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)) + Path.DirectorySeparatorChar;
+        return Path.GetFullPath(path).StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase);
+    }
+
     public static bool IsValidVersion(string? version) =>
         !string.IsNullOrWhiteSpace(version)
         && version.Length <= MaxVersionLength

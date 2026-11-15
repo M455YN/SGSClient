@@ -506,7 +506,7 @@ public sealed class EfGameRepository(
         {
             var root = Path.GetFullPath(storageOptions.Value.StoragePath);
             var path = Path.GetFullPath(Path.Combine(root, symbol));
-            if (path.StartsWith(root, StringComparison.OrdinalIgnoreCase) && Directory.Exists(path))
+            if (SgsPackageRules.IsInsideRoot(root, path) && Directory.Exists(path))
             {
                 Directory.Delete(path, recursive: true);
             }
