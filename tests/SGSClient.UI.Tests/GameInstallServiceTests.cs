@@ -207,27 +207,74 @@ public class GameInstallServiceTests
         }
     }
 
+    [Theory]
+    [InlineData("https://localhost:7142/api/games/packages/demo/1.0.0/windows-x64.zip", true)]
+    [InlineData("https://cdn.example.com/demo/1.0.0/windows-x64.zip", false)]
+    [InlineData("http://localhost:7142/api/games/packages/demo/1.0.0/windows-x64.zip", false)]
+    public async Task Download_SendsTheTokenOnlyToTheApiHost(string url, bool expectToken)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"sgs-token-{Guid.NewGuid():N}.zip");
+        try
+        {
+            var handler = new RangeHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent("ZIP"u8.ToArray())
+            });
+
+            await RunDownloadAsync(handler, path, new SignedInAuth(), url);
+
+            Assert.Equal(expectToken, handler.Authorization is not null);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     // DownloadAsync is private; going through InstallAsync would also drop a desktop shortcut on the machine running the tests.
-    private static Task RunDownloadAsync(HttpMessageHandler handler, string path)
+    private static Task RunDownloadAsync(
+        HttpMessageHandler handler,
+        string path,
+        IAuthSession? auth = null,
+        string url = "https://localhost/x.zip")
     {
         var service = new GameInstallService(
             new HttpClient(handler),
             new NullSgsApiService(),
-            auth: null,
+            auth,
             Options.Create(new ApiClientSettings { BaseUrl = "https://localhost:7142/" }),
             new FixedLibraryPathProvider(Path.GetTempPath()),
             new NullLibraryStore());
         var method = typeof(GameInstallService).GetMethod("DownloadAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
-        return (Task)method.Invoke(service, ["https://localhost/x.zip", path, null, CancellationToken.None])!;
+        return (Task)method.Invoke(service, [url, path, null, CancellationToken.None])!;
+    }
+
+    private sealed class SignedInAuth : IAuthSession
+    {
+        public bool IsAvailable => true;
+        public bool IsLoggedIn => true;
+        public UserProfileDto? CurrentUser => null;
+        public string? LastError => null;
+        public Task<bool> TrySilentLoginAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public Task<bool> LoginAsync(nint parentWindowHandle = 0, CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public Task<bool> SignUpAsync(nint parentWindowHandle = 0, CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public Task LogoutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<string?> GetAccessTokenAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>("tok");
+        public void SetCurrentUser(UserProfileDto? user)
+        {
+        }
     }
 
     private sealed class RangeHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
     {
         public string? RangeHeader { get; private set; }
 
+        public string? Authorization { get; private set; }
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             RangeHeader = request.Headers.Range?.ToString();
+            Authorization = request.Headers.Authorization?.ToString();
             return Task.FromResult(respond(request));
         }
     }

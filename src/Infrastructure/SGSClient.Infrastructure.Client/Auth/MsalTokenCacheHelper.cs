@@ -50,6 +50,11 @@ public static class MsalTokenCacheHelper
 
             var data = args.TokenCache.SerializeMsalV3();
             File.WriteAllBytes(CacheFilePath, Protect(data));
+            if (!OperatingSystem.IsWindows())
+            {
+                // No DPAPI here, so the refresh token is stored as is: keep it readable by this user only.
+                File.SetUnixFileMode(CacheFilePath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            }
         }
     }
 

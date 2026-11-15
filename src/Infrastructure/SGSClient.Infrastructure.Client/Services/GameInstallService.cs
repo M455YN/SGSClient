@@ -373,6 +373,14 @@ public sealed class GameInstallService(
         }
     }
 
+    // The token is for our API only: a package link on another host (a CDN) or over plain http must not receive it.
+    private bool IsApiUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var target)
+        && Uri.TryCreate(_apiBaseUrl, UriKind.Absolute, out var api)
+        && target.Scheme == api.Scheme
+        && string.Equals(target.Host, api.Host, StringComparison.OrdinalIgnoreCase)
+        && target.Port == api.Port;
+
     private async Task DownloadAsync(
         string url,
         string destinationPath,
@@ -386,7 +394,7 @@ public sealed class GameInstallService(
             request.Headers.Range = new RangeHeaderValue(existing, null);
         }
 
-        if (auth is { IsAvailable: true, IsLoggedIn: true })
+        if (auth is { IsAvailable: true, IsLoggedIn: true } && IsApiUrl(url))
         {
             var token = await auth.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(token))
