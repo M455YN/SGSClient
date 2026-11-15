@@ -1,20 +1,24 @@
 # SGSClient
 
-Klient sklepu i biblioteki gier oraz API katalogu, oparte na .NET 10. Dwie powłoki desktopowe (Avalonia, WinUI 3) współdzielą ViewModele. Interfejs jest po polsku.
+SGSClient: sklep, biblioteka i launcher gier SGS. Pobieraj i uruchamiaj gry, zdobywaj osiągnięcia i graj ze znajomymi.
 
 [![Zwiastun SGSClient 4.0](docs/assets/zwiastun-pl.jpg)](https://youtu.be/Tn1czMhqsKs)
 
-- **Dla graczy, twórców i deweloperów:** [dokumentacja](https://sgs.m455yn.io/docs/)
-- **Jak opublikować grę:** [przewodnik](docs/creators/how-to-publish.md) i [szablon do pobrania](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/sample-game-package.zip)
-- **Architektura, dane, paczka Microsoft Store:** [docs/developers/architecture.md](docs/developers/architecture.md)
+## Co potrafi
 
-## Szybki start
+- **Sklep:** katalog gier z filtrami, stronami gier, zrzutami ekranu i zwiastunami oraz lista życzeń.
+- **Biblioteka:** wszystkie Twoje gry w jednym miejscu. Instalacja, aktualizacje, wybór wersji, uruchamianie jednym kliknięciem i licznik czasu gry.
+- **Pobrania:** kolejka instalacji z postępem, pauzą i wznawianiem.
+- **Znajomi:** zaproszenia, czat, profil z osiągnięciami i lobby do wspólnej gry.
+- **Osiągnięcia i statystyki:** zdobywane w grach zintegrowanych z SGS i widoczne na profilu.
+- **Twórczość:** grafiki, muzyka i opowiadania od społeczności.
+- **Dla twórców gier:** Panel twórcy do wysyłania gier i kolejnych wersji prosto z klienta.
 
-Wymagany jest [.NET 10 SDK](https://dotnet.microsoft.com/download). API potrzebuje SQL Server, a WinUI potrzebuje Windows App SDK.
+Interfejs jest po polsku. Logowanie przez konto Microsoft/Azure AD B2C, a klient nie przechowuje Twojego hasła.
 
-```bash
-dotnet build SGSClient.slnx
-dotnet test SGSClient.slnx
-dotnet run --project src/Apps/SGSClient.Api
-dotnet run --project src/Apps/SGSClient.UI
-```
+## Dokumentacja
+
+- [Dokumentacja](https://sgs.m455yn.io/docs/) dla graczy, twórców i deweloperów
+- [Pierwsze kroki](docs/users/start.md)
+- [Jak opublikować grę](docs/creators/how-to-publish.md) i [szablon do pobrania](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/sample-game-package.zip)
+- [Architektura i budowanie](docs/developers/architecture.md)
