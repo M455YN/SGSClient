@@ -659,28 +659,7 @@ public sealed partial class MainWindow : Window
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             return hwnd;
         });
-        gate.SetOnAuthenticated(async () =>
-        {
-            HideLoginGate();
-            var auth = App.Services.GetService<IAuthSession>();
-            if (auth?.CurrentUser is { } profile)
-            {
-                SetAdminNavVisible(profile.IsAdmin);
-            }
-
-            RefreshSidebar();
-            var library = App.Services.GetService<LibraryViewModel>();
-            if (library is not null)
-            {
-                await library.LoadAsync();
-            }
-
-            await Sidebar.ViewModel.Notifications.StartAsync();
-            if (auth?.CurrentUser?.NeedsPlayerTag == true)
-            {
-                NavigateTo(typeof(AccountPage), selectTag: "Account");
-            }
-        });
+        // After sign-in the gate calls App.EnterAuthenticatedShellAsync (wired at startup), the one path into the shell.
         if (signUp)
         {
             await gate.SignUpCommand.ExecuteAsync(null);

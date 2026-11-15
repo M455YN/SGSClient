@@ -12,7 +12,8 @@ public sealed class LibraryPathProvider(
 {
     public IReadOnlyList<string> GetLibraryFolders()
     {
-        folderService.EnsureInitializedAsync().GetAwaiter().GetResult();
+        // Called synchronously, often from the UI thread: run off its context so the awaits inside cannot deadlock it.
+        Task.Run(() => folderService.EnsureInitializedAsync()).GetAwaiter().GetResult();
 
         var registry = registryStore.Load();
         if (registry.Folders.Count > 0)

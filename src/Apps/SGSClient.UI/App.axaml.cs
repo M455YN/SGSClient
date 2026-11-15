@@ -223,14 +223,18 @@ public partial class App : Application
 
         Services = services.BuildServiceProvider();
 
-        SgsClientDbInitializer.InitializeAsync(Services).GetAwaiter().GetResult();
+        // Startup waits on these from the UI thread; Task.Run keeps their continuations off it (a deadlock hung the splash).
+        Task.Run(() => SgsClientDbInitializer.InitializeAsync(Services)).GetAwaiter().GetResult();
 
-        Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync().GetAwaiter().GetResult();
+        Task.Run(() => Services.GetRequiredService<ILibraryFolderService>().EnsureInitializedAsync()).GetAwaiter().GetResult();
         Services.GetService<IInstallQueueService>()?.RestorePersistedAsync().GetAwaiter().GetResult();
         Services.GetService<PresenceHeartbeatService>()?.Start();
         (Services.GetRequiredService<IGameLauncherService>() as ProcessGameLauncherService)?.StartMonitoring();
         Services.GetService<AchievementBridge>()?.Start();
-        Services.GetService<INetworkStatusService>()?.StartAsync().GetAwaiter().GetResult();
+        if (Services.GetService<INetworkStatusService>() is { } network)
+        {
+            Task.Run(() => network.StartAsync()).GetAwaiter().GetResult();
+        }
 
         using (var scope = Services.CreateScope())
         {
