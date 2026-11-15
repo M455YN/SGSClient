@@ -94,3 +94,6 @@ dist/
 # Website (Tailwind build output)
 website/node_modules/
 website/public/styles.css
+
+# Claude Code local settings
+.claude/
