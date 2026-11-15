@@ -162,8 +162,8 @@ public sealed partial class MainWindow : Window
         void Refresh()
         {
             OfflineBanner.Visibility = network.IsOnline ? Visibility.Collapsed : Visibility.Visible;
-            MaintenanceBanner.Visibility = network.IsMaintenance ? Visibility.Visible : Visibility.Collapsed;
-            MaintenanceBannerText.Text = MaintenanceNotice.Text(App.Services.GetService<IAuthSession>());
+            MaintenanceBanner.Visibility = MaintenanceNotice.IsVisible(network.IsMaintenance, App.Services.GetService<IAuthSession>()) ? Visibility.Visible : Visibility.Collapsed;
+            MaintenanceBannerText.Text = MaintenanceNotice.Text();
         }
 
         network.Changed += (_, _) =>

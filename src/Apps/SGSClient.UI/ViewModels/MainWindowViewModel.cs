@@ -99,8 +99,8 @@ public partial class MainWindowViewModel : ViewModelBase
             void RefreshBanners()
             {
                 IsOffline = !_network.IsOnline;
-                IsMaintenance = _network.IsMaintenance;
-                MaintenanceText = MaintenanceNotice.Text(auth);
+                IsMaintenance = MaintenanceNotice.IsVisible(_network.IsMaintenance, auth);
+                MaintenanceText = MaintenanceNotice.Text();
             }
 
             RefreshBanners();
