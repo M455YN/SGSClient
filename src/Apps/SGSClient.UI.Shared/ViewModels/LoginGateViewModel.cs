@@ -28,21 +28,24 @@ public partial class LoginGateViewModel : ObservableObject
         IAuthSession? auth,
         IUserApiClient? users,
         IClientUserSettingsStore? settings = null,
-        ILibraryFolderService? folders = null)
+        ILibraryFolderService? folders = null,
+        string? defaultGamesRoot = null)
     {
         _auth = auth;
         _users = users;
         _settings = settings;
         _folders = folders;
+        _defaultGamesRoot = defaultGamesRoot ?? ClientInstallSettings.GetDefaultGamesRoot();
         IsAuthConfigured = auth?.IsAvailable == true;
         RequiresLogin = IsAuthConfigured;
         StatusText = string.Empty;
         IsFirstRun = IsSetupPending;
-        GamesFolder = ClientInstallSettings.GetDefaultGamesRoot();
+        GamesFolder = _defaultGamesRoot;
     }
 
     private readonly IClientUserSettingsStore? _settings;
     private readonly ILibraryFolderService? _folders;
+    private readonly string _defaultGamesRoot;
     private Func<Task>? _onSetupCompleted;
 
     public bool IsAuthConfigured { get; }
@@ -94,7 +97,7 @@ public partial class LoginGateViewModel : ObservableObject
     {
         try
         {
-            var defaultRoot = Path.GetFullPath(ClientInstallSettings.GetDefaultGamesRoot());
+            var defaultRoot = Path.GetFullPath(_defaultGamesRoot);
             if (string.Equals(defaultRoot, Path.GetFullPath(chosen), StringComparison.OrdinalIgnoreCase)
                 || !Directory.Exists(defaultRoot)
                 || Directory.EnumerateFiles(defaultRoot, "*", SearchOption.AllDirectories)
