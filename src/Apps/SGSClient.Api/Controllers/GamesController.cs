@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using SGSClient.Api.Auth;
 using SGSClient.Core.Achievements;
@@ -506,7 +507,11 @@ public sealed class GamesController(
         return updated is null ? NotFound() : Ok(updated);
     }
 
+    /// <summary>Rate limiter policy for package uploads, registered in Program.cs.</summary>
+    public const string PackageUploadPolicy = "package-upload";
+
     [HttpPost("uploads")]
+    [EnableRateLimiting(PackageUploadPolicy)]
     [RequestSizeLimit(SgsPackageRules.MaxZipBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = SgsPackageRules.MaxZipBytes)]
     [ProducesResponseType(typeof(GameDto), StatusCodes.Status200OK)]
@@ -660,12 +665,12 @@ public sealed class GamesController(
         string fileName,
         CancellationToken cancellationToken)
     {
+        // version is a path segment too: unchecked, an encoded "../other-game" skipped the entitlement check below.
         if (!SgsPackageRules.IsSafeStorageSegment(symbol)
             || !SgsPackageRules.IsSafeStorageSegment(version)
             || string.IsNullOrWhiteSpace(fileName)
             || fileName.Contains("..", StringComparison.Ordinal)
             || fileName.Contains('/')
-        // version is a path segment too: unchecked, an encoded "../other-game" skipped the entitlement check below.
             || fileName.Contains('\\'))
         {
             return NotFound();
@@ -700,10 +705,15 @@ public sealed class GamesController(
             return NotFound();
         }
 
+        // A paused download resumes with Range requests; count only the request that starts the file.
+        var range = Request.GetTypedHeaders().Range;
         try
         {
-            var platformKey = Path.GetFileNameWithoutExtension(fileName);
-            await games.RecordDownloadAsync(symbol, version, platformKey, cancellationToken);
+            if (range is null || range.Ranges.FirstOrDefault()?.From == 0)
+            {
+                var platformKey = Path.GetFileNameWithoutExtension(fileName);
+                await games.RecordDownloadAsync(symbol, version, platformKey, cancellationToken);
+            }
         }
         catch
         {

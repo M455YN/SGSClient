@@ -1,6 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SGSClient.Api.Auth;
@@ -104,9 +106,25 @@ else
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    // Traefik / nginx / Portainer proxy sits in another container.
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
+    // Traefik / nginx / Portainer proxy sits in another container. Trust forwarded headers only from private
+    // (Docker) networks and loopback, so a client on the internet cannot fake its address or scheme.
+    foreach (var network in new[] { "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16" })
+    {
+        options.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(network));
+    }
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    // One package at a time: each is copied to disk (up to 2 GB) before it is checked, and two uploads of a new
+    // symbol raced past the owner check. The limiter runs before the body is read, so waiting uploads use no disk.
+    options.AddConcurrencyLimiter(SGSClient.Api.Controllers.GamesController.PackageUploadPolicy, limiter =>
+    {
+        limiter.PermitLimit = 1;
+        limiter.QueueLimit = 4;
+        limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
 });
 
 builder.Services.AddCors(options =>
@@ -130,6 +148,7 @@ if (httpsRedirect)
 }
 
 app.UseCors();
+app.UseRateLimiter();
 
 app.MapGet("/health", (IOptionsMonitor<MaintenanceSettings> maintenance) =>
     Results.Ok(new { status = "ok", maintenance = maintenance.CurrentValue.Enabled }));
