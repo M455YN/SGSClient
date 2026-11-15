@@ -14,7 +14,12 @@ public sealed class LibraryDiscoveryService(
     ILocalLibraryStore library,
     ISgsApiService? api = null) : ILibraryDiscoveryService
 {
-    public async Task<LibraryScanResult> ScanAsync(CancellationToken cancellationToken = default)
+    // Startup blocks on this from the UI thread, and the API client it may call awaits without ConfigureAwait(false);
+    // off the UI context those continuations cannot wait for the thread that is waiting for them (splash screen hang).
+    public Task<LibraryScanResult> ScanAsync(CancellationToken cancellationToken = default) =>
+        Task.Run(() => ScanCoreAsync(cancellationToken), cancellationToken);
+
+    private async Task<LibraryScanResult> ScanCoreAsync(CancellationToken cancellationToken)
     {
         var counters = new ScanCounters();
         var seenBuildIds = new HashSet<int>();

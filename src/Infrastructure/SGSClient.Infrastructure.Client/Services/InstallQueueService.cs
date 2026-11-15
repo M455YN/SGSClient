@@ -74,7 +74,12 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         remove => _progressChanged -= value;
     }
 
-    public async Task RestorePersistedAsync(CancellationToken cancellationToken = default)
+    // Startup blocks on this from the UI thread. The library store awaits without ConfigureAwait(false), so run it off the
+    // UI context or its continuations wait for a thread that is waiting for them.
+    public Task RestorePersistedAsync(CancellationToken cancellationToken = default) =>
+        Task.Run(() => RestorePersistedCoreAsync(cancellationToken), cancellationToken);
+
+    private async Task RestorePersistedCoreAsync(CancellationToken cancellationToken)
     {
         using var scope = _scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<SgsClientDbContext>();
