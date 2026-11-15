@@ -351,7 +351,7 @@ public partial class SettingsViewModel : ObservableObject
     private static string ReadVersion()
     {
         var asm = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
-        return asm.GetName().Version?.ToString() ?? "4.0.0.1";
+        return asm.GetName().Version?.ToString() ?? "4.0.1.0";
     }
 }
 
