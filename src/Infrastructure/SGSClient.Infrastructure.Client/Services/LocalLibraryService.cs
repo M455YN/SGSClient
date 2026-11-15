@@ -102,9 +102,10 @@ public sealed class LocalLibraryService(
     public async Task UpsertAsync(GameLibraryItem item, CancellationToken cancellationToken = default)
     {
         var entity = await db.Installs.FirstOrDefaultAsync(x => x.GameId == item.GameId, cancellationToken);
+        // LastPlayedUtc counts too: the tray menu orders games by it.
         var stateChanged = entity is null
             ? item.InstallState == InstallState.Installed
-            : entity.InstallState != item.InstallState;
+            : entity.InstallState != item.InstallState || entity.LastPlayedUtc != item.LastPlayedUtc;
         if (entity is null)
         {
             db.Installs.Add(new LocalInstallEntity
