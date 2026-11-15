@@ -219,6 +219,21 @@ public sealed class LocalPlaytimeStore(
             return auth.CurrentUser.Id;
         }
 
+        // Signed in, but /api/me failed so the profile came from the ID token with no server id.
+        // Writing to bucket 0 hid those sessions once the id resolved, so reuse the last known user.
+        // shortcut: highest local user id wins, fine for one account per machine; store the id on login to do better.
+        if (auth?.CurrentUser is not null)
+        {
+            var known = db.Playtimes.AsNoTracking()
+                .Where(x => x.UserId > 0)
+                .Select(x => (int?)x.UserId)
+                .Max();
+            if (known > 0)
+            {
+                return known.Value;
+            }
+        }
+
         // Local-dev (Azure AD off) uses the same owner id as the API fallback.
         if (auth is null || !auth.IsAvailable)
         {

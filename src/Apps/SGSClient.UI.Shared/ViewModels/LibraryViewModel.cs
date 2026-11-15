@@ -54,6 +54,11 @@ public partial class LibraryViewModel : ObservableObject
             ?? new ApiClientSettings().BaseUrl;
         StatusText = Loc.T("Ładowanie biblioteki…");
 
+        if (_launcher is not null)
+        {
+            _launcher.SessionEnded += gameId => _ = RefreshPlaytimeAsync(gameId);
+        }
+
         if (_queue is not null)
         {
             _queue.Changed += (_, _) => _ = SyncQueueProgressAsync();
@@ -329,6 +334,36 @@ public partial class LibraryViewModel : ObservableObject
         row.ApplyInstallState(e.State);
         row.IsInstalling = e.State is InstallState.Queued or InstallState.Downloading
             or InstallState.Installing or InstallState.Updating;
+    }
+
+    /// <summary>A play session just ended: show the new total and last-played time without a manual reload.</summary>
+    private async Task RefreshPlaytimeAsync(int gameId)
+    {
+        if (_scopes is null || Games.FirstOrDefault(g => g.GameId == gameId) is not { } row)
+        {
+            return;
+        }
+
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var store = scope.ServiceProvider.GetService<IPlaytimeStore>();
+            var record = store is null ? null : await store.GetAsync(gameId);
+            if (record is null)
+            {
+                return;
+            }
+
+            row.PlaytimeText = record.TotalSeconds > 0 ? PlaytimeFormat.ToPolishTotal(record.TotalSeconds) : string.Empty;
+            if (record.LastPlayedUtc is { } last)
+            {
+                row.LastPlayedText = last.LocalDateTime.ToString("g");
+            }
+        }
+        catch
+        {
+            // display only; the stored time is already saved
+        }
     }
 
     private async Task SyncQueueProgressAsync()

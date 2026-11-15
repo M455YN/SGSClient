@@ -14,6 +14,8 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
     private CancellationTokenSource? _monitorCts;
     private Task? _monitorLoop;
 
+    public event Action<int>? SessionEnded;
+
     public bool IsRunning(int gameId) =>
         _byGameId.TryGetValue(gameId, out var session) && !session.Completed;
 
@@ -225,6 +227,7 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
                     using var scope = scopes.CreateScope();
                     var playtime = scope.ServiceProvider.GetRequiredService<IPlaytimeStore>();
                     await playtime.RecordSessionAsync(session.GameId, duration, ended);
+                    SessionEnded?.Invoke(session.GameId);
                 }
                 catch
                 {
@@ -310,18 +313,40 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
         && _byGameId.TryGetValue(gameId, out var session)
         && !session.Completed;
 
+    /// <summary>
+    /// Games packed with the launcher stub start <c>name.exe</c> only to spawn <c>name.sgs-payload</c> and exit,
+    /// so the real game is the payload process; watching just the exe ended every session after seconds.
+    /// </summary>
     private static bool IsExeRunningOnOs(string exe)
     {
-        var name = Path.GetFileNameWithoutExtension(exe);
+        if (IsImageRunning(exe))
+        {
+            return true;
+        }
+
+        var payload = Path.ChangeExtension(exe, ".sgs-payload");
+        return File.Exists(payload) && IsImageRunning(payload);
+    }
+
+    private static bool IsImageRunning(string candidate)
+    {
+        var name = Path.GetFileNameWithoutExtension(candidate);
         if (string.IsNullOrWhiteSpace(name))
         {
             return false;
         }
 
+        // Windows names a process after its file; .NET only strips ".exe", so a payload keeps its extension.
+        var fullName = Path.GetFileName(candidate);
+
         Process[] processes;
         try
         {
-            processes = Process.GetProcessesByName(name);
+            processes = Process.GetProcessesByName(name)
+                .Concat(string.Equals(fullName, name, StringComparison.Ordinal)
+                    ? []
+                    : Process.GetProcessesByName(fullName))
+                .ToArray();
         }
         catch
         {
@@ -336,7 +361,7 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
                 {
                     var path = process.MainModule?.FileName;
                     if (!string.IsNullOrWhiteSpace(path)
-                        && string.Equals(Normalize(path), Normalize(exe), StringComparison.OrdinalIgnoreCase))
+                        && string.Equals(Normalize(path), Normalize(candidate), StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
@@ -450,6 +475,7 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
                     using var scope = scopes.CreateScope();
                     var playtime = scope.ServiceProvider.GetRequiredService<IPlaytimeStore>();
                     await playtime.RecordSessionAsync(session.GameId, duration, ended);
+                    SessionEnded?.Invoke(session.GameId);
                 }
                 catch { }
             }
