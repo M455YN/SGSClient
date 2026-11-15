@@ -99,7 +99,7 @@ Gotowy folder i ZIP jako szablon (atrapa exe i opisane grafiki): [`sample-game/`
 4. Sprawdź tytuł, symbol, multimedia i ścieżkę exe.
 5. Spakuj i wyślij.
 
-Klient buduje ZIP i wysyła go na `POST /api/Games/uploads`. Serwer sprawdza manifest jeszcze raz.
+Klient buduje ZIP i wysyła go na serwer. Serwer sprawdza manifest jeszcze raz.
 
 Nowa gra zaczyna jako **szkic** i nie jest widoczna w sklepie. W przeglądzie Panelu twórcy włącz **W sklepie**, gdy strona i grafika są gotowe.
 
