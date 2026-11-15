@@ -159,53 +159,8 @@ public sealed partial class ShellSidebar : UserControl
         }
     }
 
-    private static void HighlightNav(Button button, bool selected)
-    {
-        button.Background = selected
-            ? TryGetBrush("SubtleFillColorSecondaryBrush")
-            : new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-
-        var fg = selected
-            ? TryGetBrush("AccentTextFillColorPrimaryBrush")
-            : TryGetBrush("TextFillColorPrimaryBrush");
-
-        if (button.Content is StackPanel panel)
-        {
-            foreach (var child in panel.Children)
-            {
-                if (child is FontIcon icon)
-                {
-                    icon.Foreground = fg;
-                }
-                else if (child is TextBlock text)
-                {
-                    text.Foreground = fg;
-                }
-            }
-        }
-        else if (button.Content is FontIcon alone)
-        {
-            alone.Foreground = fg;
-        }
-    }
-
-    private static Brush TryGetBrush(string key)
-    {
-        if (Application.Current?.Resources.TryGetValue(key, out var value) == true)
-        {
-            if (value is Brush brush)
-            {
-                return brush;
-            }
-
-            if (value is Windows.UI.Color color)
-            {
-                return new SolidColorBrush(color);
-            }
-        }
-
-        return new SolidColorBrush(Microsoft.UI.Colors.White);
-    }
+    private void HighlightNav(Button button, bool selected) =>
+        button.Style = (Style)Resources[selected ? "NavButtonSelectedStyle" : "NavButtonStyle"];
 
     private void RefreshInstalledList()
     {

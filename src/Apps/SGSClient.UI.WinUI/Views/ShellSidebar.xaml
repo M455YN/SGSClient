@@ -16,7 +16,13 @@
       <Setter Property="MinHeight" Value="40" />
       <Setter Property="CornerRadius" Value="4" />
       <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
       <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <!-- Styles (not code-set brushes) so ThemeResource follows the element's theme, not the system one. -->
+    <Style x:Key="NavButtonSelectedStyle" TargetType="Button" BasedOn="{StaticResource NavButtonStyle}">
+      <Setter Property="Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+      <Setter Property="Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}" />
     </Style>
   </UserControl.Resources>
 
@@ -141,7 +147,7 @@
         <Button x:Name="NavStudio" Tag="Studio" Click="Nav_Click" Style="{StaticResource NavButtonStyle}"
                 ToolTipService.ToolTip="Panel twórcy">
           <StackPanel Orientation="Horizontal" Spacing="12">
-            <FontIcon Glyph="&#xE7C3;" FontSize="16" />
+            <FontIcon Glyph="&#xE8F1;" FontSize="16" />
             <TextBlock x:Name="NavStudioLabel" Text="{loc:Tr Key='Panel twórcy'}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
@@ -208,11 +214,11 @@
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
                             VerticalAlignment="Center">
-                  <Button FontFamily="Segoe Fluent Icons" Content="&#xE768;"
+                  <Button FontFamily="{ThemeResource SymbolThemeFontFamily}" Content="&#xE768;"
                           Tag="{x:Bind}" Click="Play_Click" Padding="8"
                           ToolTipService.ToolTip="Uruchom"
                           IsEnabled="{x:Bind CanLaunch}" />
-                  <Button FontFamily="Segoe Fluent Icons" Content="&#xE712;"
+                  <Button FontFamily="{ThemeResource SymbolThemeFontFamily}" Content="&#xE712;"
                           Tag="{x:Bind}" Click="More_Click" Padding="8"
                           ToolTipService.ToolTip="Więcej">
                     <Button.Flyout>

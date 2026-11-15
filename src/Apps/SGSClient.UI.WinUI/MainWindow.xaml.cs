@@ -28,6 +28,8 @@ public sealed partial class MainWindow : Window
         SetTitleBar(AppTitleBar);
         AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
         AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+        ApplyCaptionColors();
+        ((FrameworkElement)Content).ActualThemeChanged += (_, _) => ApplyCaptionColors();
         Activated += (_, e) =>
             AppTitleText.Opacity = e.WindowActivationState == WindowActivationState.Deactivated ? 0.5 : 1;
 
@@ -41,6 +43,21 @@ public sealed partial class MainWindow : Window
         WireNotificationsStatusBar();
         WireOfflineBanner();
         WireTray();
+    }
+
+    // Caption glyphs follow the system theme by default, so a light app theme on a dark system gives white-on-white buttons.
+    private void ApplyCaptionColors()
+    {
+        var dark = ((FrameworkElement)Content).ActualTheme == ElementTheme.Dark;
+        var fg = dark ? Colors.White : Colors.Black;
+        var bar = AppWindow.TitleBar;
+        bar.ButtonForegroundColor = fg;
+        bar.ButtonHoverForegroundColor = fg;
+        bar.ButtonPressedForegroundColor = fg;
+        bar.ButtonInactiveForegroundColor = dark ? Colors.Gray : Colors.DimGray;
+        bar.ButtonHoverBackgroundColor = dark
+            ? Windows.UI.Color.FromArgb(0x19, 0xFF, 0xFF, 0xFF)
+            : Windows.UI.Color.FromArgb(0x14, 0x00, 0x00, 0x00);
     }
 
     /// <summary>Closing the window hides it to the notification area; "Exit" in the tray menu really quits.</summary>

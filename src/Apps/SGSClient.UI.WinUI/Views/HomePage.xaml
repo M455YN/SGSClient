@@ -100,7 +100,7 @@
   <Grid>
     <Grid x:Name="HeroBackdropHost"
           Visibility="{Binding HasHero, Converter={StaticResource BoolToVis}}" />
-    <Border Background="#C0101014" IsHitTestVisible="False" />
+    <Border Background="#80101014" IsHitTestVisible="False" />
 
     <ProgressBar VerticalAlignment="Top" Height="3"
                  IsIndeterminate="True"
@@ -120,9 +120,9 @@
           <StackPanel Spacing="4" VerticalAlignment="Center">
             <TextBlock Text="{Binding DateText}"
                        Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                       Foreground="#B3FFFFFF" />
             <TextBlock Text="{Binding Greeting}"
-                       Style="{StaticResource TitleTextBlockStyle}" />
+                       Style="{StaticResource TitleTextBlockStyle}" Foreground="White" />
           </StackPanel>
 
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -171,7 +171,7 @@
         <StackPanel Spacing="10" Visibility="{Binding HasHero, Converter={StaticResource BoolToVis}}">
           <TextBlock Text="{loc:Tr Key='WYRÓŻNIONE I POLECANE'}"
                      FontSize="11" FontWeight="SemiBold" Opacity="0.7"
-                     CharacterSpacing="80" />
+                     Foreground="White" CharacterSpacing="80" />
           <Grid Height="340" ColumnSpacing="8">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="Auto" />
@@ -430,11 +430,18 @@
 
         <StackPanel Spacing="12" Visibility="{Binding HasContinue, Converter={StaticResource BoolToVis}}">
           <Grid>
-            <TextBlock Text="{loc:Tr Key='Kontynuuj'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+            <TextBlock Foreground="White" Text="{loc:Tr Key='Kontynuuj'}" Style="{StaticResource SubtitleTextBlockStyle}" />
             <HyperlinkButton Content="{loc:Tr Key='Biblioteka'}"
                              Click="OpenLibrary_Click"
                              HorizontalAlignment="Right"
-                             Padding="8,4" />
+                             Padding="8,4">
+              <!-- Sits on the dark overlay, so the theme's accent link colour is too dark in light theme. -->
+              <HyperlinkButton.Resources>
+                <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#FF9CC9FF" />
+                <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#FFC4DFFF" />
+                <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="#FF7DB5F5" />
+              </HyperlinkButton.Resources>
+            </HyperlinkButton>
           </Grid>
           <ListView ItemsSource="{Binding ContinuePlaying}"
                     ItemTemplate="{StaticResource PosterTemplate}"
@@ -458,7 +465,7 @@
         </StackPanel>
 
         <StackPanel Spacing="12" Visibility="{Binding HasReadyToInstall, Converter={StaticResource BoolToVis}}">
-          <TextBlock Text="{loc:Tr Key='Gotowe do instalacji'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock Foreground="White" Text="{loc:Tr Key='Gotowe do instalacji'}" Style="{StaticResource SubtitleTextBlockStyle}" />
           <ListView ItemsSource="{Binding ReadyToInstall}"
                     ItemTemplate="{StaticResource PosterTemplate}"
                     ItemContainerStyle="{StaticResource RailItem}"
@@ -481,7 +488,7 @@
         </StackPanel>
 
         <StackPanel Spacing="12" Visibility="{Binding HasFeatured, Converter={StaticResource BoolToVis}}">
-          <TextBlock Text="{loc:Tr Key='Wyróżnione'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock Foreground="White" Text="{loc:Tr Key='Wyróżnione'}" Style="{StaticResource SubtitleTextBlockStyle}" />
           <ListView ItemsSource="{Binding Featured}"
                     ItemTemplate="{StaticResource WideCardTemplate}"
                     ItemContainerStyle="{StaticResource RailItem}"
@@ -504,7 +511,7 @@
         </StackPanel>
 
         <StackPanel Spacing="12" Visibility="{Binding HasCategories, Converter={StaticResource BoolToVis}}">
-          <TextBlock Text="{loc:Tr Key='Kategorie'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock Foreground="White" Text="{loc:Tr Key='Kategorie'}" Style="{StaticResource SubtitleTextBlockStyle}" />
           <ListView ItemsSource="{Binding Categories}"
                     ItemContainerStyle="{StaticResource RailItem}"
                     SelectionMode="None"
@@ -557,11 +564,18 @@
 
         <StackPanel Spacing="12" Visibility="{Binding HasCatalog, Converter={StaticResource BoolToVis}}">
           <Grid>
-            <TextBlock Text="{loc:Tr Key='Nowe w sklepie'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+            <TextBlock Foreground="White" Text="{loc:Tr Key='Nowe w sklepie'}" Style="{StaticResource SubtitleTextBlockStyle}" />
             <HyperlinkButton Content="{loc:Tr Key='Sklep'}"
                              Click="OpenStore_Click"
                              HorizontalAlignment="Right"
-                             Padding="8,4" />
+                             Padding="8,4">
+              <!-- Sits on the dark overlay, so the theme's accent link colour is too dark in light theme. -->
+              <HyperlinkButton.Resources>
+                <SolidColorBrush x:Key="HyperlinkButtonForeground" Color="#FF9CC9FF" />
+                <SolidColorBrush x:Key="HyperlinkButtonForegroundPointerOver" Color="#FFC4DFFF" />
+                <SolidColorBrush x:Key="HyperlinkButtonForegroundPressed" Color="#FF7DB5F5" />
+              </HyperlinkButton.Resources>
+            </HyperlinkButton>
           </Grid>
           <ListView ItemsSource="{Binding Catalog}"
                     ItemTemplate="{StaticResource WideCardTemplate}"
@@ -588,11 +602,11 @@
                     HorizontalAlignment="Left"
                     MaxWidth="480"
                     Visibility="{Binding ShowEmpty, Converter={StaticResource BoolToVis}}">
-          <TextBlock Text="{loc:Tr Key='Nic tu jeszcze nie ma'}"
+          <TextBlock Foreground="White" Text="{loc:Tr Key='Nic tu jeszcze nie ma'}"
                      Style="{StaticResource SubtitleTextBlockStyle}" />
           <TextBlock Text="{loc:Tr Key='Wyróżnione gry pojawią się tutaj, gdy sklep będzie dostępny.'}"
                      Style="{StaticResource BodyTextBlockStyle}"
-                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                     Foreground="#B3FFFFFF"
                      TextWrapping="Wrap" />
           <Button Content="{loc:Tr Key='Przeglądaj sklep'}"
                   Click="OpenStore_Click"
