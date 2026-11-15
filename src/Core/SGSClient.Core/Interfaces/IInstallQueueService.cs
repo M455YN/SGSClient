@@ -43,6 +43,10 @@ public sealed class InstallQueueEntry
     public bool IsUpdate { get; init; }
     public InstallState State { get; set; } = InstallState.Queued;
     public string? Title { get; set; }
+
+    /// <summary>Raw (possibly relative) cover URL from the library row; resolved against the API address by the UI.</summary>
+    public string? CoverUrl { get; set; }
+
     public string? Error { get; set; }
     public int SortOrder { get; set; }
 }

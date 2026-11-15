@@ -114,7 +114,8 @@ public partial class App : Application
             sp.GetService<IAuthSession>()));
         services.AddSingleton(sp => new DownloadsViewModel(
             sp.GetService<IInstallQueueService>(),
-            sp.GetService<IClientUserSettingsStore>()));
+            sp.GetService<IClientUserSettingsStore>(),
+            configuration.GetSection(SGSClient.Core.Configuration.ApiClientSettings.SectionName).Get<SGSClient.Core.Configuration.ApiClientSettings>()?.BaseUrl));
         services.AddTransient(sp => new WishlistViewModel(
             sp.GetService<ISgsApiService>(),
             sp.GetRequiredService<IServiceScopeFactory>(),

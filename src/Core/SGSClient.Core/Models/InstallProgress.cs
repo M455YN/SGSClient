@@ -15,10 +15,22 @@ public sealed class InstallProgress
     public double Fraction { get; init; }
     public string? Message { get; init; }
 
-    public static InstallProgress Of(InstallPhase phase, double fraction, string? message = null) => new()
+    /// <summary>Bytes of the package received so far; 0 outside the download phase or when the size is unknown.</summary>
+    public long BytesReceived { get; init; }
+
+    public long TotalBytes { get; init; }
+
+    public static InstallProgress Of(
+        InstallPhase phase,
+        double fraction,
+        string? message = null,
+        long bytesReceived = 0,
+        long totalBytes = 0) => new()
     {
         Phase = phase,
         Fraction = Math.Clamp(fraction, 0, 1),
-        Message = message
+        Message = message,
+        BytesReceived = bytesReceived,
+        TotalBytes = totalBytes
     };
 }

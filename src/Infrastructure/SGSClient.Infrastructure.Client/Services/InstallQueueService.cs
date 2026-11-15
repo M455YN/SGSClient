@@ -377,6 +377,8 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         bool paused = false,
         int? sortOrder = null)
     {
+        // Title and cover for the downloads page; queued rows would otherwise show "Gra bez tytułu" until they start.
+        var known = await TryGetLibraryItemAsync(gameId).ConfigureAwait(false);
         InstallQueueEntry entry;
         lock (_gate)
         {
@@ -397,7 +399,9 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
                 Version = version,
                 IsUpdate = isUpdate,
                 State = paused ? InstallState.Paused : InstallState.Queued,
-                SortOrder = nextOrder
+                SortOrder = nextOrder,
+                Title = known?.Title,
+                CoverUrl = !string.IsNullOrWhiteSpace(known?.CoverUrl) ? known.CoverUrl : known?.LogoUrl
             };
             _entries.Add(entry);
         }
@@ -411,6 +415,20 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         if (!paused)
         {
             await EnsurePumpAsync().ConfigureAwait(false);
+        }
+    }
+
+    private async Task<GameLibraryItem?> TryGetLibraryItemAsync(int gameId)
+    {
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var library = scope.ServiceProvider.GetService<ILocalLibraryStore>();
+            return library is null ? null : await library.GetByGameIdAsync(gameId).ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
         }
     }
 
@@ -674,12 +692,14 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
             {
                 entry.State = InstallState.NotInstalled;
                 entry.Error = "Anulowano.";
+                await SettleLibraryStateAsync(entry.GameId, failed: false, discardPartial: true).ConfigureAwait(false);
             }
         }
         catch (Exception ex)
         {
             entry.State = InstallState.Failed;
             entry.Error = ex.Message;
+            await SettleLibraryStateAsync(entry.GameId, failed: true).ConfigureAwait(false);
         }
         finally
         {
@@ -692,14 +712,12 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
                 await RemovePersistedAsync(entry.GameId).ConfigureAwait(false);
                 lock (_gate)
                 {
-                await SettleLibraryStateAsync(entry.GameId, failed: false, discardPartial: true).ConfigureAwait(false);
                     if (entry.State is InstallState.Installed or InstallState.Failed or InstallState.NotInstalled)
                     {
                         _entries.Remove(entry);
                     }
                 }
             }
-            await SettleLibraryStateAsync(entry.GameId, failed: true).ConfigureAwait(false);
 
             lock (_gate)
             {

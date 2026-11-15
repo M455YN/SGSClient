@@ -493,7 +493,8 @@ public sealed class GameInstallService(
                 {
                     lastProgressReport = Stopwatch.GetTimestamp();
                     lastReportedFraction = fraction;
-                    progress.Report(InstallProgress.Of(InstallPhase.Downloading, fraction, Loc.T("Pobieranie paczki…")));
+                    progress.Report(InstallProgress.Of(
+                        InstallPhase.Downloading, fraction, Loc.T("Pobieranie paczki…"), readTotal, total.Value));
                 }
             }
         }

@@ -15,18 +15,17 @@ public sealed partial class DownloadsPage : Page
     {
         ViewModel = App.Services.GetRequiredService<DownloadsViewModel>();
         InitializeComponent();
+        DataContext = ViewModel;
+        // Bound once: the collection raises its own change events and rows update through their bindings.
+        DownloadsList.ItemsSource = ViewModel.UpNext;
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(DownloadsViewModel.DownloadMaxMbps))
             {
                 SyncBandwidthBox();
             }
-
-            RefreshUi();
         };
-        ViewModel.Items.CollectionChanged += (_, _) => RefreshUi();
         SyncBandwidthBox();
-        RefreshUi();
     }
 
     protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
@@ -34,7 +33,6 @@ public sealed partial class DownloadsPage : Page
         base.OnNavigatedTo(e);
         ViewModel.Refresh();
         SyncBandwidthBox();
-        RefreshUi();
     }
 
     private void SyncBandwidthBox()
@@ -50,15 +48,6 @@ public sealed partial class DownloadsPage : Page
         }
     }
 
-    private void RefreshUi()
-    {
-        StatusText.Text = ViewModel.StatusText;
-        EmptyText.Visibility = ViewModel.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
-        DownloadsList.Visibility = ViewModel.HasItems ? Visibility.Visible : Visibility.Collapsed;
-        DownloadsList.ItemsSource = null;
-        DownloadsList.ItemsSource = ViewModel.Items;
-    }
-
     private void BandwidthBox_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs args)
     {
         if (_suppressBandwidth || double.IsNaN(args.NewValue))
@@ -69,18 +58,13 @@ public sealed partial class DownloadsPage : Page
         ViewModel.DownloadMaxMbps = args.NewValue;
     }
 
-    private void Refresh_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.Refresh();
-        RefreshUi();
-    }
+    private void Refresh_Click(object sender, RoutedEventArgs e) => ViewModel.Refresh();
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: DownloadRowItem row })
         {
             ViewModel.CancelCommand.Execute(row);
-            RefreshUi();
         }
     }
 
@@ -89,7 +73,6 @@ public sealed partial class DownloadsPage : Page
         if (sender is Button { Tag: DownloadRowItem row })
         {
             ViewModel.PauseCommand.Execute(row);
-            RefreshUi();
         }
     }
 
@@ -98,7 +81,6 @@ public sealed partial class DownloadsPage : Page
         if (sender is Button { Tag: DownloadRowItem row })
         {
             ViewModel.ResumeCommand.Execute(row);
-            RefreshUi();
         }
     }
 
@@ -107,7 +89,6 @@ public sealed partial class DownloadsPage : Page
         if (sender is Button { Tag: DownloadRowItem row })
         {
             ViewModel.MoveUpCommand.Execute(row);
-            RefreshUi();
         }
     }
 
@@ -116,7 +97,6 @@ public sealed partial class DownloadsPage : Page
         if (sender is Button { Tag: DownloadRowItem row })
         {
             ViewModel.MoveDownCommand.Execute(row);
-            RefreshUi();
         }
     }
 
