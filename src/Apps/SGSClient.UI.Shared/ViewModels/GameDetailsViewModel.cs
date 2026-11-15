@@ -69,6 +69,10 @@ public partial class GameDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial string Title { get; set; } = string.Empty;
 
+    /// <summary>Studio or uploader name; empty when unknown.</summary>
+    [ObservableProperty]
+    public partial string Creator { get; set; } = string.Empty;
+
     [ObservableProperty]
     public partial string Symbol { get; set; } = string.Empty;
 
@@ -325,10 +329,7 @@ public partial class GameDetailsViewModel : ObservableObject
             Badges.Add(badge);
         }
 
-        if (!string.IsNullOrWhiteSpace(game.CreatorName))
-        {
-            Badges.Insert(0, game.CreatorName);
-        }
+        Creator = game.CreatorName ?? string.Empty;
 
         Badges.Add(Loc.T("Sklep SGS"));
         foreach (var platform in game.Builds

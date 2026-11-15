@@ -99,6 +99,8 @@ public sealed partial class GameDetailsPage : Page, ILoadingPage
         BackButton.Content = ViewModel.BackLabel;
         ContextLabelText.Text = ViewModel.ContextLabel;
         TitleText.Text = ViewModel.Title;
+        CreatorText.Text = ViewModel.Creator;
+        CreatorRow.Visibility = ViewModel.Creator.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         TaglineText.Text = ViewModel.Tagline;
         TileLabelText.Text = ViewModel.TileLabel;
 

@@ -336,17 +336,12 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
             return false;
         }
 
-        // Windows names a process after its file; .NET only strips ".exe", so a payload keeps its extension.
-        var fullName = Path.GetFileName(candidate);
+        var processName = ProcessNameOf(candidate);
 
         Process[] processes;
         try
         {
-            processes = Process.GetProcessesByName(name)
-                .Concat(string.Equals(fullName, name, StringComparison.Ordinal)
-                    ? []
-                    : Process.GetProcessesByName(fullName))
-                .ToArray();
+            processes = Process.GetProcessesByName(processName);
         }
         catch
         {
@@ -384,6 +379,44 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
         }
     }
 
+    /// <summary>.NET strips only ".exe" from process names, so a payload is listed with its extension.</summary>
+    private static string ProcessNameOf(string path) =>
+        string.Equals(Path.GetExtension(path), ".exe", StringComparison.OrdinalIgnoreCase)
+            ? Path.GetFileNameWithoutExtension(path)
+            : Path.GetFileName(path);
+
+    private static HashSet<string> RunningProcessNames()
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        Process[] processes;
+        try
+        {
+            processes = Process.GetProcesses();
+        }
+        catch
+        {
+            return names;
+        }
+
+        foreach (var process in processes)
+        {
+            try
+            {
+                names.Add(process.ProcessName);
+            }
+            catch
+            {
+                // exited while listing
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
+
+        return names;
+    }
+
     private void RemoveSession(ActiveSession session)
     {
         _byGameId.TryRemove(session.GameId, out _);
@@ -413,6 +446,10 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
                 if (library is null) continue;
 
                 var installed = await library.GetAllAsync(cancellationToken);
+
+                // One process listing per pass, however many games (and payloads) are installed;
+                // only games whose process name is present get the full path check.
+                var running = RunningProcessNames();
                 foreach (var item in installed)
                 {
                     if (item.InstallState != Core.Enums.InstallState.Installed) continue;
@@ -422,6 +459,12 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
                     string exe;
                     try { exe = Path.GetFullPath(item.ExecutablePath); }
                     catch { continue; }
+
+                    if (!running.Contains(ProcessNameOf(exe))
+                        && !running.Contains(ProcessNameOf(Path.ChangeExtension(exe, ".sgs-payload"))))
+                    {
+                        continue;
+                    }
 
                     if (!IsExeRunningOnOs(exe)) continue;
 
