@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
 using SGSClient.Core.Localization;
 using SGSClient.UI.ViewModels;
 
@@ -77,6 +78,7 @@ public sealed partial class AchievementsEditor : UserControl
 
         EditDialog.Title = item is null ? Loc.T("Nowe osiągnięcie") : Loc.T("Edytuj osiągnięcie");
         EditDialog.DataContext = draft;
+        EditDialog.SetBinding(ContentDialog.IsPrimaryButtonEnabledProperty, new Binding { Path = new PropertyPath("CanSave"), Source = draft });
         EditDialog.XamlRoot = XamlRoot;
         try
         {
@@ -164,6 +166,7 @@ public sealed partial class AchievementsEditor : UserControl
 
         StatDialog.Title = item is null ? Loc.T("Nowa statystyka") : Loc.T("Edytuj statystykę");
         StatDialog.DataContext = draft;
+        StatDialog.SetBinding(ContentDialog.IsPrimaryButtonEnabledProperty, new Binding { Path = new PropertyPath("CanSave"), Source = draft });
         StatDialog.XamlRoot = XamlRoot;
         try
         {

@@ -241,7 +241,7 @@
     <!-- ===== Add / edit dialog (DataContext = the working copy from BeginEdit) ===== -->
     <ContentDialog x:Name="EditDialog" x:DataType="vm:StudioAchievementItem"
                    PrimaryButtonText="{loc:Tr Key='Zapisz'}" CloseButtonText="{loc:Tr Key='Anuluj'}"
-                   DefaultButton="Primary" IsPrimaryButtonEnabled="{Binding CanSave}"
+                   DefaultButton="Primary"
                    PrimaryButtonClick="EditDialog_PrimaryButtonClick">
       <ContentDialog.Resources>
         <x:Double x:Key="ContentDialogMaxWidth">920</x:Double>
@@ -413,7 +413,7 @@
     <!-- ===== Add / edit stat dialog (DataContext = the working copy from BeginEditStat) ===== -->
     <ContentDialog x:Name="StatDialog" x:DataType="vm:StudioStatItem"
                    PrimaryButtonText="{loc:Tr Key='Zapisz'}" CloseButtonText="{loc:Tr Key='Anuluj'}"
-                   DefaultButton="Primary" IsPrimaryButtonEnabled="{Binding CanSave}"
+                   DefaultButton="Primary"
                    PrimaryButtonClick="StatDialog_PrimaryButtonClick">
       <ContentDialog.Resources>
         <x:Double x:Key="ContentDialogMaxWidth">720</x:Double>
