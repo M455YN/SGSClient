@@ -130,6 +130,13 @@ public partial class MainWindowViewModel : ViewModelBase
             _ = Sidebar.Notifications.StopAsync();
         });
         _loginGate.SetOnAuthenticated(EnterAuthenticatedShellAsync);
+        _loginGate.SetOnSetupCompleted(async () =>
+        {
+            ShowLoginGate = false;
+            // Rescan now that the chosen folder is the primary one.
+            await Sidebar.LoadInstalledAsync();
+            await _library.LoadAsync();
+        });
         _friends.SetOpenFullProfileHandler(OpenUserProfile);
         Sidebar.SelectNav("Home");
     }
@@ -522,7 +529,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async Task EnterAuthenticatedShellAsync()
     {
-        ShowLoginGate = false;
+        // First run: keep the gate up on its folder step; the shell loads behind it.
+        ShowLoginGate = _loginGate.BeginFolderStepIfPending();
         await _account.InitializeAsync();
         Sidebar.RefreshProfile();
         if (_account.NeedsPlayerTagSetup)

@@ -170,7 +170,9 @@ public partial class App : Application
             configuration));
         services.AddSingleton(sp => new LoginGateViewModel(
             sp.GetService<IAuthSession>(),
-            sp.GetService<IUserApiClient>()));
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<IClientUserSettingsStore>(),
+            sp.GetService<ILibraryFolderService>()));
         services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
         services.AddSingleton(sp => new FriendsViewModel(
             sp.GetService<IUserApiClient>(),

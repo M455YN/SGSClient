@@ -2,7 +2,9 @@ using SGSClient.Core.Localization;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SGSClient.Core.Configuration;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Library;
 
 namespace SGSClient.UI.ViewModels;
 
@@ -22,16 +24,136 @@ public partial class LoginGateViewModel : ObservableObject
     {
     }
 
-    public LoginGateViewModel(IAuthSession? auth, IUserApiClient? users)
+    public LoginGateViewModel(
+        IAuthSession? auth,
+        IUserApiClient? users,
+        IClientUserSettingsStore? settings = null,
+        ILibraryFolderService? folders = null)
     {
         _auth = auth;
         _users = users;
+        _settings = settings;
+        _folders = folders;
         IsAuthConfigured = auth?.IsAvailable == true;
         RequiresLogin = IsAuthConfigured;
         StatusText = string.Empty;
+        IsFirstRun = IsSetupPending;
+        GamesFolder = ClientInstallSettings.GetDefaultGamesRoot();
     }
 
+    private readonly IClientUserSettingsStore? _settings;
+    private readonly ILibraryFolderService? _folders;
+    private Func<Task>? _onSetupCompleted;
+
     public bool IsAuthConfigured { get; }
+
+    // First-run wizard: step 1 = sign in (this gate), step 2 = pick the games folder.
+    public bool IsSetupPending => _settings is not null && _folders is not null && !_settings.Load().SetupCompleted;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HeadingText), nameof(SubheadingText))]
+    private bool _isFirstRun;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLoginStep))]
+    private bool _isFolderStep;
+
+    [ObservableProperty]
+    private string _gamesFolder = string.Empty;
+
+    public bool IsLoginStep => !IsFolderStep;
+
+    public string HeadingText => IsFirstRun ? Loc.T("Witamy w SGSClient") : Loc.T("Zaloguj się");
+
+    public string SubheadingText => IsFirstRun ? Loc.T("Krok 1 z 2: zaloguj się kontem SGS.") : Loc.T("Użyj konta SGS.");
+
+    public string FolderStepTitle => IsAuthConfigured
+        ? Loc.T("Krok 2 z 2: wybierz folder na gry")
+        : Loc.T("Wybierz folder na gry");
+
+    public string FolderStepHint =>
+        Loc.T("Wybierz folder poza katalogiem aplikacji, aby gry zostały na dysku także po odinstalowaniu SGSClient. Możesz to zmienić później w Ustawieniach.");
+
+    public void SetOnSetupCompleted(Func<Task> onSetupCompleted) => _onSetupCompleted = onSetupCompleted;
+
+    /// <summary>Switches the gate to the folder step when the wizard has not been finished yet.</summary>
+    public bool BeginFolderStepIfPending()
+    {
+        if (!IsSetupPending)
+        {
+            return false;
+        }
+
+        IsFirstRun = true;
+        IsFolderStep = true;
+        return true;
+    }
+
+    // The app registers the default folder on first use, before the user has picked one; drop it again if it is still untouched.
+    private async Task RemoveEmptyDefaultFolderAsync(string chosen)
+    {
+        try
+        {
+            var defaultRoot = Path.GetFullPath(ClientInstallSettings.GetDefaultGamesRoot());
+            if (string.Equals(defaultRoot, Path.GetFullPath(chosen), StringComparison.OrdinalIgnoreCase)
+                || !Directory.Exists(defaultRoot)
+                || Directory.EnumerateFiles(defaultRoot, "*", SearchOption.AllDirectories)
+                    .Any(f => !string.Equals(Path.GetFileName(f), SgsLibraryFolderMarker.FileName, StringComparison.OrdinalIgnoreCase)))
+            {
+                return;
+            }
+
+            await _folders!.RemoveFolderAsync(defaultRoot);
+            Directory.Delete(defaultRoot, recursive: true);
+        }
+        catch
+        {
+            // best effort: a leftover empty folder is harmless
+        }
+    }
+
+    [RelayCommand]
+    private async Task ContinueSetupAsync()
+    {
+        if (_folders is null || _settings is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(GamesFolder))
+        {
+            StatusText = Loc.T("Wybierz folder na gry.");
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            await _folders.SetPrimaryFolderAsync(GamesFolder.Trim());
+            await RemoveEmptyDefaultFolderAsync(GamesFolder.Trim());
+            var settings = _settings.Load();
+            settings.SetupCompleted = true;
+            await _settings.SaveAsync(settings);
+        }
+        catch (Exception ex)
+        {
+            // Bad path / no permission: stay on the step so the user can pick another folder.
+            StatusText = ex.Message;
+            return;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+
+        StatusText = string.Empty;
+        IsFolderStep = false;
+        IsFirstRun = false;
+        if (_onSetupCompleted is not null)
+        {
+            await _onSetupCompleted();
+        }
+    }
 
     public string VersionText { get; } = BuildVersionText();
 

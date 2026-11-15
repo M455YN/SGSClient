@@ -550,6 +550,7 @@ public sealed partial class MainWindow : Window
             }
 
             gate.PropertyChanged += OnLoginGatePropertyChanged;
+            gate.SetOnSetupCompleted(OnSetupCompletedAsync);
             LoginGatePanel.DataContext = gate;
         }
 
@@ -561,7 +562,9 @@ public sealed partial class MainWindow : Window
     private void OnLoginGatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (sender is LoginGateViewModel gate
-            && e.PropertyName is nameof(LoginGateViewModel.StatusText) or nameof(LoginGateViewModel.IsBusy))
+            && e.PropertyName is nameof(LoginGateViewModel.StatusText) or nameof(LoginGateViewModel.IsBusy)
+                or nameof(LoginGateViewModel.IsFolderStep) or nameof(LoginGateViewModel.IsFirstRun)
+                or nameof(LoginGateViewModel.GamesFolder))
         {
             UpdateLoginGateUi(gate);
         }
@@ -571,6 +574,16 @@ public sealed partial class MainWindow : Window
     {
         LoginStatusText.Text = gate.StatusText;
         LoginVersionText.Text = gate.VersionText;
+        LoginHeadingText.Text = gate.IsFolderStep ? gate.FolderStepTitle : gate.HeadingText;
+        LoginSubheadingText.Text = gate.IsFolderStep ? string.Empty : gate.SubheadingText;
+        LoginSubheadingText.Visibility = gate.IsFolderStep ? Visibility.Collapsed : Visibility.Visible;
+        FolderStepPanel.Visibility = gate.IsFolderStep ? Visibility.Visible : Visibility.Collapsed;
+        LoginButton.Visibility = gate.IsFolderStep ? Visibility.Collapsed : Visibility.Visible;
+        SignUpPanel.Visibility = gate.IsFolderStep ? Visibility.Collapsed : Visibility.Visible;
+        GamesFolderHintText.Text = gate.FolderStepHint;
+        GamesFolderText.Text = gate.GamesFolder;
+        BrowseGamesFolderButton.IsEnabled = !gate.IsBusy;
+        ContinueSetupButton.IsEnabled = !gate.IsBusy;
         LoginButton.IsEnabled = !gate.IsBusy;
         SignUpLink.IsEnabled = !gate.IsBusy;
         LoginCancelLink.Visibility = gate.IsBusy ? Visibility.Visible : Visibility.Collapsed;
@@ -580,8 +593,44 @@ public sealed partial class MainWindow : Window
 
     public void HideLoginGate()
     {
+        // First run: after sign-in (or straight away when sign-in is off) ask where to keep the games.
+        var gate = App.Services.GetRequiredService<LoginGateViewModel>();
+        if (gate.BeginFolderStepIfPending())
+        {
+            ShowLoginGate(gate);
+            return;
+        }
+
         LoginGatePanel.Visibility = Visibility.Collapsed;
         ShellRoot.Visibility = Visibility.Visible;
+    }
+
+    private async Task OnSetupCompletedAsync()
+    {
+        HideLoginGate();
+        // The shell loaded while the wizard was open; rescan now that the chosen folder is the primary one.
+        await Sidebar.ViewModel.LoadInstalledAsync();
+        if (App.Services.GetService<LibraryViewModel>() is { } library)
+        {
+            await library.LoadAsync();
+        }
+    }
+
+    private async void BrowseGamesFolder_OnClick(object sender, RoutedEventArgs e)
+    {
+        var path = await WinUiFilePicker.PickFolderAsync(this, commitLabel: Loc.T("Wybierz folder"));
+        if (!string.IsNullOrWhiteSpace(path) && LoginGatePanel.DataContext is LoginGateViewModel gate)
+        {
+            gate.GamesFolder = path;
+        }
+    }
+
+    private async void ContinueSetup_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (LoginGatePanel.DataContext is LoginGateViewModel gate)
+        {
+            await gate.ContinueSetupCommand.ExecuteAsync(null);
+        }
     }
 
     private async void LoginButton_OnClick(object sender, RoutedEventArgs e) =>

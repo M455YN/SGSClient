@@ -174,6 +174,20 @@ public sealed class LibraryFolderService(
         return entry;
     }
 
+    public async Task SetPrimaryFolderAsync(string folderPath, CancellationToken cancellationToken = default)
+    {
+        var entry = await AddFolderAsync(folderPath, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var registry = registryStore.Load();
+        var index = registry.Folders.FindIndex(f =>
+            string.Equals(Path.GetFullPath(f.Path), Path.GetFullPath(entry.Path), StringComparison.OrdinalIgnoreCase));
+        if (index > 0)
+        {
+            registry.Folders.RemoveAt(index);
+            registry.Folders.Insert(0, entry);
+            await registryStore.SaveAsync(registry, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     public async Task RemoveFolderAsync(string folderPath, CancellationToken cancellationToken = default)
     {
         var normalized = Path.GetFullPath(folderPath);

@@ -23,4 +23,7 @@ public sealed class ClientUserSettings
 
     /// <summary>When true, closing the main window hides it to the tray instead of quitting.</summary>
     public bool CloseToTray { get; set; } = true;
+
+    /// <summary>False until the first-run wizard (sign in, pick the games folder) has been finished once.</summary>
+    public bool SetupCompleted { get; set; }
 }

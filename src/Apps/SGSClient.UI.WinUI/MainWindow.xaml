@@ -273,10 +273,25 @@
         </StackPanel>
 
         <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="8">
-          <TextBlock Text="{loc:Tr Key='Zaloguj się'}" Style="{StaticResource TitleTextBlockStyle}" />
-          <TextBlock Text="{loc:Tr Key='Użyj konta SGS.'}"
-                     Style="{StaticResource BodyTextBlockStyle}"
+          <TextBlock x:Name="LoginHeadingText" Text="{loc:Tr Key='Zaloguj się'}" Style="{StaticResource TitleTextBlockStyle}" />
+          <TextBlock x:Name="LoginSubheadingText" Text="{loc:Tr Key='Użyj konta SGS.'}"
+                     Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+          <StackPanel x:Name="FolderStepPanel" Spacing="8" Margin="0,16,0,0" Visibility="Collapsed">
+            <TextBlock x:Name="GamesFolderHintText" TextWrapping="Wrap"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <TextBlock x:Name="GamesFolderText" TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                       Style="{StaticResource BodyStrongTextBlockStyle}" />
+            <Button x:Name="BrowseGamesFolderButton" Content="{loc:Tr Key='Zmień folder…'}"
+                    HorizontalAlignment="Stretch" MinHeight="36"
+                    Click="BrowseGamesFolder_OnClick" />
+            <Button x:Name="ContinueSetupButton" Content="{loc:Tr Key='Dalej'}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    HorizontalAlignment="Stretch" MinHeight="36" Margin="0,8,0,0"
+                    Click="ContinueSetup_OnClick" />
+          </StackPanel>
 
           <Button x:Name="LoginButton"
                   Content="{loc:Tr Key='Zaloguj się'}"
@@ -286,7 +301,7 @@
                   Margin="0,24,0,0"
                   Click="LoginButton_OnClick" />
 
-          <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+          <StackPanel x:Name="SignUpPanel" Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
             <TextBlock Text="{loc:Tr Key='Nie masz konta?'}" VerticalAlignment="Center"
                        Style="{StaticResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />

@@ -21,11 +21,31 @@
       </StackPanel>
 
       <StackPanel Grid.Row="1" VerticalAlignment="Center" Spacing="8">
-        <TextBlock Text="{loc:Tr Key='Zaloguj się'}" FontSize="28" FontWeight="SemiBold"/>
-        <TextBlock Text="{loc:Tr Key='Użyj konta SGS.'}" FontSize="14"
+        <TextBlock Text="{Binding HeadingText}" FontSize="28" FontWeight="SemiBold"
+                   IsVisible="{Binding IsLoginStep}"/>
+        <TextBlock Text="{Binding SubheadingText}" FontSize="14" TextWrapping="Wrap"
+                   IsVisible="{Binding IsLoginStep}"
                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
 
+        <StackPanel Spacing="8" IsVisible="{Binding IsFolderStep}">
+          <TextBlock Text="{Binding FolderStepTitle}" FontSize="28" FontWeight="SemiBold"
+                     TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding FolderStepHint}" FontSize="12" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+          <TextBlock Text="{Binding GamesFolder}" FontWeight="SemiBold" TextWrapping="Wrap"
+                     Margin="0,8,0,0"/>
+          <Button Content="{loc:Tr Key='Zmień folder…'}" Click="BrowseGamesFolder_OnClick"
+                  IsEnabled="{Binding !IsBusy}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="36"/>
+          <Button Content="{loc:Tr Key='Dalej'}" Classes="accent"
+                  Command="{Binding ContinueSetupCommand}"
+                  IsEnabled="{Binding !IsBusy}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="36"
+                  Margin="0,8,0,0"/>
+        </StackPanel>
+
         <Button Content="{loc:Tr Key='Zaloguj się'}"
+                IsVisible="{Binding IsLoginStep}"
                 Classes="accent"
                 Command="{Binding LoginCommand}"
                 IsEnabled="{Binding !IsBusy}"
@@ -34,7 +54,8 @@
                 MinHeight="36"
                 Margin="0,24,0,0"/>
 
-        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0">
+        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,4,0,0"
+                    IsVisible="{Binding IsLoginStep}">
           <TextBlock Text="{loc:Tr Key='Nie masz konta?'}" FontSize="12" VerticalAlignment="Center"
                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
           <Button Command="{Binding SignUpCommand}"
