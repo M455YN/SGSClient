@@ -51,16 +51,7 @@ public sealed class AdminAuthorization(
             && string.Equals(allowedEmail, normalized, StringComparison.OrdinalIgnoreCase));
     }
 
-    public UserRole ResolveRole(UserRole storedRole, string? email)
-    {
-        // Only bootstrap owners are forced to SuperAdmin. Do not elevate everyone when
-        // Azure is off — that masked stored roles and made admin role edits look like
-        // they never saved (DB updated, response always came back as SuperAdmin).
-        if (IsBootstrapEmail(email))
-        {
-            return UserRole.SuperAdmin;
-        }
-
-        return storedRole;
-    }
+    // The email in a token is not proof of identity (a sign-up flow may not verify it), so it never raises a role here.
+    // The owner email only seeds the first super admin when an account is created or signs in (EfUserService).
+    public UserRole ResolveRole(UserRole storedRole, string? email) => storedRole;
 }

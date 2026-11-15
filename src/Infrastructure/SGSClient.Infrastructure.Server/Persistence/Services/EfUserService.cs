@@ -30,7 +30,7 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
                 DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Player" : displayName,
                 Email = normalizedEmail,
                 AvatarUrl = avatarUrl,
-                Role = adminAuth.IsBootstrapEmail(normalizedEmail) ? UserRole.SuperAdmin : UserRole.User,
+                Role = UserRole.User,
                 CreatedAtUtc = now,
                 LastLoginUtc = now
             };
@@ -50,12 +50,16 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
                 user.AvatarUrl = avatarUrl;
             }
 
-            if (adminAuth.IsBootstrapEmail(user.Email) && user.Role != UserRole.SuperAdmin)
-            {
-                user.Role = UserRole.SuperAdmin;
-            }
-
             user.LastLoginUtc = now;
+        }
+
+        // The owner email only seeds the first super admin. Once one exists, someone signing up later with the
+        // same (possibly unverified) address gets nothing from it.
+        if (user.Role != UserRole.SuperAdmin
+            && adminAuth.IsBootstrapEmail(user.Email)
+            && !await db.Users.AnyAsync(u => u.Role == UserRole.SuperAdmin && u.Id != user.Id, cancellationToken))
+        {
+            user.Role = UserRole.SuperAdmin;
         }
 
         await db.SaveChangesAsync(cancellationToken);
@@ -215,7 +219,7 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
             return null;
         }
 
-        if (adminAuth.IsBootstrapEmail(user.Email))
+        if (IsOwner(user))
         {
             throw new InvalidOperationException("Konto właściciela ma stałą rolę superadmina.");
         }
@@ -250,11 +254,13 @@ public sealed class EfUserService(SgsServerDbContext db, IAdminAuthorization adm
         Email = user.Email,
         PlayerTag = user.PlayerTag,
         Role = adminAuth.ResolveRole(user.Role, user.Email),
-        IsRoleLocked = adminAuth.IsBootstrapEmail(user.Email),
+        IsRoleLocked = IsOwner(user),
         CreatedAtUtc = user.CreatedAtUtc,
         LastLoginUtc = user.LastLoginUtc,
         OwnedGamesCount = ownedGamesCount
     };
+
+    private bool IsOwner(UserEntity user) => user.Role == UserRole.SuperAdmin && adminAuth.IsBootstrapEmail(user.Email);
 
     private UserProfileDto Map(UserEntity user) => new()
     {

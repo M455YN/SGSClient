@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
 using SGSClient.Api.Auth;
 using SGSClient.Core.Configuration;
@@ -17,8 +18,22 @@ public sealed class AdminController(
     IGameMediaService media,
     IUserService users,
     IAdminAuthorization adminAuth,
-    IOptions<AzureAdSettings> azureOptions) : ControllerBase
+    IOptions<AzureAdSettings> azureOptions) : ControllerBase, IAsyncActionFilter
 {
+    // Every action here is admin-only. Checked once for the whole controller, so a new action cannot forget it
+    // (the actions stay [AllowAnonymous] only so a missing token reaches this check instead of a bare challenge).
+    [NonAction]
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        if (!await EnsureAdminAsync(context.HttpContext.RequestAborted))
+        {
+            context.Result = ForbidOrUnauthorized();
+            return;
+        }
+
+        await next();
+    }
+
     [HttpGet("games")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<GameDto>), StatusCodes.Status200OK)]
@@ -26,11 +41,6 @@ public sealed class AdminController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<GameDto>>> GetGames(CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         var result = await games.GetAllGamesForAdminAsync(cancellationToken);
         return Ok(result);
     }
@@ -47,11 +57,6 @@ public sealed class AdminController(
         [FromBody] UpdateGameRequestDto request,
         CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         try
         {
             var updated = await games.UpdateGameAsAdminAsync(id, request, cancellationToken);
@@ -71,11 +76,6 @@ public sealed class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GameStatsDto>> GetGameStats(int id, CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         var stats = await games.GetGameStatsAsync(id, cancellationToken);
         return stats is null ? NotFound() : Ok(stats);
     }
@@ -89,11 +89,6 @@ public sealed class AdminController(
         int id,
         CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         var versions = await games.GetVersionHistoryAsync(id, cancellationToken);
         return Ok(versions);
     }
@@ -111,11 +106,6 @@ public sealed class AdminController(
         [FromBody] UpdateVersionNotesRequestDto request,
         CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         try
         {
             var updated = await games.UpdateVersionNotesAsAdminAsync(
@@ -140,11 +130,6 @@ public sealed class AdminController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteGame(int id, CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         try
         {
             var deleted = await games.DeleteGameAsAdminAsync(id, cancellationToken);
@@ -163,11 +148,6 @@ public sealed class AdminController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<AdminUserDto>>> GetUsers(CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         var result = await users.GetAllUsersAsync(cancellationToken);
         return Ok(result);
     }
@@ -184,11 +164,6 @@ public sealed class AdminController(
         [FromBody] UpdateUserRoleRequestDto request,
         CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         if (!Enum.IsDefined(request.Role))
         {
             return BadRequest(new { errors = new[] { "Nieznana rola." } });
@@ -339,11 +314,6 @@ public sealed class AdminController(
         int screenshotId,
         CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         var updated = await media.RemoveScreenshotAsync(id, screenshotId, requireOwnerUserId: null, cancellationToken);
         return updated is null ? NotFound() : Ok(updated);
     }
@@ -354,11 +324,6 @@ public sealed class AdminController(
         AdminMediaKind kind,
         CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         if (file is null || file.Length == 0)
         {
             return BadRequest(new { errors = new[] { "Dodaj plik media." } });
@@ -388,11 +353,6 @@ public sealed class AdminController(
         AdminMediaKind kind,
         CancellationToken cancellationToken)
     {
-        if (!await EnsureAdminAsync(cancellationToken))
-        {
-            return ForbidOrUnauthorized();
-        }
-
         var updated = kind switch
         {
             AdminMediaKind.Cover => await media.ClearCoverAsync(id, requireOwnerUserId: null, cancellationToken),
