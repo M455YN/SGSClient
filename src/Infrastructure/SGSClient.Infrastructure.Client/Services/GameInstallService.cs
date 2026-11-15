@@ -102,8 +102,9 @@ public sealed class GameInstallService(
         progress?.Report(InstallProgress.Of(InstallPhase.Downloading, 0, Loc.T("Pobieranie paczki…")));
 
         var libraryRoot = libraryPaths.GetPrimaryLibraryFolder();
-        var tempZip = Path.Combine(Path.GetTempPath(), $"sgs-dl-{item.Symbol}-{targetVersion}-{Guid.NewGuid():N}.zip");
+        var tempZip = InstallPathHelper.GetPartialDownloadPath(item.Symbol, targetVersion);
         var installDir = InstallPathHelper.GetInstallDirectory(libraryRoot, item.Symbol, targetVersion);
+        var keepPartial = false;
 
         try
         {
@@ -150,7 +151,9 @@ public sealed class GameInstallService(
         }
         catch (OperationCanceledException)
         {
+            // Keep the partial zip: a pause resumes from it. The queue deletes it when the download is cancelled for good.
             item.InstallState = InstallState.NotInstalled;
+            keepPartial = true;
             throw;
         }
         catch (Exception ex)
@@ -159,7 +162,10 @@ public sealed class GameInstallService(
         }
         finally
         {
-            TryDelete(tempZip);
+            if (!keepPartial)
+            {
+                TryDelete(tempZip);
+            }
         }
     }
 
@@ -373,7 +379,13 @@ public sealed class GameInstallService(
         IProgress<InstallProgress>? progress,
         CancellationToken cancellationToken)
     {
+        var existing = File.Exists(destinationPath) ? new FileInfo(destinationPath).Length : 0;
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (existing > 0)
+        {
+            request.Headers.Range = new RangeHeaderValue(existing, null);
+        }
+
         if (auth is { IsAvailable: true, IsLoggedIn: true })
         {
             var token = await auth.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
@@ -402,14 +414,33 @@ public sealed class GameInstallService(
             throw new InvalidOperationException(Loc.T("Paczka nie została znaleziona na serwerze (404)."));
         }
 
+        if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+        {
+            // Either the partial file is already the whole package, or it does not match the server's file.
+            if (response.Content.Headers.ContentRange?.Length == existing)
+            {
+                return;
+            }
+
+            TryDelete(destinationPath);
+            await DownloadAsync(url, destinationPath, progress, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         response.EnsureSuccessStatusCode();
 
-        var total = response.Content.Headers.ContentLength;
+        // 206 = the server honoured Range and we append; a plain 200 means it sent everything, so start over.
+        var resumed = existing > 0 && response.StatusCode == HttpStatusCode.PartialContent;
+        var total = resumed
+            ? response.Content.Headers.ContentRange?.Length ?? response.Content.Headers.ContentLength + existing
+            : response.Content.Headers.ContentLength;
         await using var network = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        await using var file = File.Create(destinationPath);
+        await using Stream file = resumed
+            ? new FileStream(destinationPath, FileMode.Append, FileAccess.Write)
+            : File.Create(destinationPath);
 
         var buffer = new byte[81920];
-        long readTotal = 0;
+        long readTotal = resumed ? existing : 0;
         int read;
         var maxKbps = 0;
         try

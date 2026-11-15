@@ -88,6 +88,40 @@ public class InstallQueueServiceTests
         Assert.Equal([2], installer.StartedOrder);
     }
 
+    [Fact]
+    public async Task Cancel_ResetsTheLibraryRowSoTheGameIsNotStuckDownloading()
+    {
+        var installer = new BlockingInstaller();
+        var library = new InMemoryLibrary();
+        library.Items[1] = MakeItem(1, "One");
+
+        var services = new ServiceCollection();
+        services.AddSingleton<ILocalLibraryStore>(library);
+        services.AddSingleton<IGameInstallService>(installer);
+        await using var provider = services.BuildServiceProvider();
+
+        var queue = new InstallQueueService(
+            provider.GetRequiredService<IServiceScopeFactory>(),
+            Options.Create(new ClientInstallSettings { AutoUpdateEnabled = false }),
+            new FakeUserSettings());
+
+        await queue.EnqueueInstallAsync(1);
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (DateTime.UtcNow < deadline && !installer.Started)
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.Equal(InstallState.Downloading, library.Items[1].InstallState);
+        queue.Cancel(1);
+        while (DateTime.UtcNow < deadline && library.Items[1].InstallState == InstallState.Downloading)
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.Equal(InstallState.NotInstalled, library.Items[1].InstallState);
+    }
+
     private static GameLibraryItem Installed(GameLibraryItem item, string symbol) => new()
     {
         GameId = item.GameId,
@@ -136,6 +170,35 @@ public class InstallQueueServiceTests
         public Task<GameInstallResult> UninstallAsync(
             GameLibraryItem item,
             CancellationToken cancellationToken = default) =>
+            Task.FromResult(GameInstallResult.Ok(item));
+
+        public Task<GameInstallResult> MoveAsync(
+            GameLibraryItem item,
+            string destinationLibraryRoot,
+            IProgress<InstallProgress>? progress = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(GameInstallResult.Ok(item));
+    }
+
+    // Never finishes on its own and, unlike the real installer, leaves the item state alone when cancelled.
+    private sealed class BlockingInstaller : IGameInstallService
+    {
+        public volatile bool Started;
+
+        public string ResolveDownloadUrl(GameBuildDto build) => build.ZipLink;
+
+        public async Task<GameInstallResult> InstallAsync(
+            GameLibraryItem item,
+            string? version = null,
+            IProgress<InstallProgress>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            Started = true;
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            return GameInstallResult.Ok(item);
+        }
+
+        public Task<GameInstallResult> UninstallAsync(GameLibraryItem item, CancellationToken cancellationToken = default) =>
             Task.FromResult(GameInstallResult.Ok(item));
 
         public Task<GameInstallResult> MoveAsync(

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SGSClient.Core.Configuration;
 using SGSClient.Core.Enums;
+using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
 using SGSClient.Core.Models;
 using SGSClient.Infrastructure.Client.Persistence;
@@ -90,6 +91,19 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
             .ThenBy(x => x.EnqueuedAtUtc)
             .ToList();
 
+        // A cancel or crash used to leave the library row in an in-flight state with no queue entry, so the game
+        // stayed "downloading" forever with every button disabled. Nothing runs at startup, so such rows are stale.
+        var queuedIds = rows.Select(r => r.GameId).ToHashSet();
+        var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+        foreach (var item in await library.GetAllAsync(cancellationToken).ConfigureAwait(false))
+        {
+            if (!queuedIds.Contains(item.GameId) && IsInFlight(item.InstallState))
+            {
+                item.InstallState = SettledState(item, failed: false);
+                await library.UpsertAsync(item, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         foreach (var row in rows)
         {
             await EnqueueCoreAsync(
@@ -100,6 +114,43 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
                     paused: row.IsPaused,
                     sortOrder: row.SortOrder)
                 .ConfigureAwait(false);
+        }
+    }
+
+    private static bool IsInFlight(InstallState state) =>
+        state is InstallState.Queued or InstallState.Downloading or InstallState.Installing or InstallState.Updating;
+
+    // A cancelled update keeps the old, still working install.
+    private static InstallState SettledState(GameLibraryItem item, bool failed) =>
+        !string.IsNullOrWhiteSpace(item.ExecutablePath) && File.Exists(item.ExecutablePath)
+            ? InstallState.Installed
+            : failed ? InstallState.Failed : InstallState.NotInstalled;
+
+    private async Task SettleLibraryStateAsync(int gameId, bool failed, bool discardPartial = false)
+    {
+        try
+        {
+            using var scope = _scopes.CreateScope();
+            var library = scope.ServiceProvider.GetRequiredService<ILocalLibraryStore>();
+            if (await library.GetByGameIdAsync(gameId).ConfigureAwait(false) is not { } item)
+            {
+                return;
+            }
+
+            if (discardPartial)
+            {
+                InstallPathHelper.DeletePartialDownloads(item.Symbol);
+            }
+
+            if (IsInFlight(item.InstallState))
+            {
+                item.InstallState = SettledState(item, failed);
+                await library.UpsertAsync(item).ConfigureAwait(false);
+            }
+        }
+        catch
+        {
+            // best effort: the startup pass fixes a row we could not reset here
         }
     }
 
@@ -120,9 +171,11 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
 
     public void Cancel(int gameId)
     {
+        bool wasActive;
         lock (_gate)
         {
-            if (_activeGameId == gameId)
+            wasActive = _activeGameId == gameId;
+            if (wasActive)
             {
                 _pauseRequested = false;
                 _activeCts?.Cancel();
@@ -142,6 +195,12 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
         }
 
         _ = RemovePersistedAsync(gameId);
+        // The active download settles itself when its cancellation lands; a paused or queued one has nothing running to do that.
+        if (!wasActive)
+        {
+            _ = SettleLibraryStateAsync(gameId, failed: false, discardPartial: true);
+        }
+
         RaiseChanged();
         _ = EnsurePumpAsync();
     }
@@ -633,12 +692,14 @@ public sealed class InstallQueueService : IInstallQueueService, IDisposable
                 await RemovePersistedAsync(entry.GameId).ConfigureAwait(false);
                 lock (_gate)
                 {
+                await SettleLibraryStateAsync(entry.GameId, failed: false, discardPartial: true).ConfigureAwait(false);
                     if (entry.State is InstallState.Installed or InstallState.Failed or InstallState.NotInstalled)
                     {
                         _entries.Remove(entry);
                     }
                 }
             }
+            await SettleLibraryStateAsync(entry.GameId, failed: true).ConfigureAwait(false);
 
             lock (_gate)
             {

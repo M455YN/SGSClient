@@ -159,6 +159,79 @@ public class GameInstallServiceTests
         }
     }
 
+    [Fact]
+    public async Task Download_ResumesFromPartialFile_WhenServerAnswers206()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"sgs-resume-{Guid.NewGuid():N}.zip");
+        await File.WriteAllTextAsync(path, "AAAA");
+        try
+        {
+            var handler = new RangeHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.PartialContent)
+            {
+                Content = new ByteArrayContent("BBBB"u8.ToArray())
+                {
+                    Headers = { ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(4, 7, 8) }
+                }
+            });
+
+            await RunDownloadAsync(handler, path);
+
+            Assert.Equal("bytes=4-", handler.RangeHeader);
+            Assert.Equal("AAAABBBB", await File.ReadAllTextAsync(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task Download_StartsOver_WhenServerIgnoresRange()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"sgs-resume-{Guid.NewGuid():N}.zip");
+        await File.WriteAllTextAsync(path, "AAAA");
+        try
+        {
+            var handler = new RangeHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent("CCCCCCCC"u8.ToArray())
+            });
+
+            await RunDownloadAsync(handler, path);
+
+            Assert.Equal("CCCCCCCC", await File.ReadAllTextAsync(path));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    // DownloadAsync is private; going through InstallAsync would also drop a desktop shortcut on the machine running the tests.
+    private static Task RunDownloadAsync(HttpMessageHandler handler, string path)
+    {
+        var service = new GameInstallService(
+            new HttpClient(handler),
+            new NullSgsApiService(),
+            auth: null,
+            Options.Create(new ApiClientSettings { BaseUrl = "https://localhost:7142/" }),
+            new FixedLibraryPathProvider(Path.GetTempPath()),
+            new NullLibraryStore());
+        var method = typeof(GameInstallService).GetMethod("DownloadAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+        return (Task)method.Invoke(service, ["https://localhost/x.zip", path, null, CancellationToken.None])!;
+    }
+
+    private sealed class RangeHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) : HttpMessageHandler
+    {
+        public string? RangeHeader { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RangeHeader = request.Headers.Range?.ToString();
+            return Task.FromResult(respond(request));
+        }
+    }
+
     private static GameInstallService CreateService(string gamesRoot) =>
         new(
             new HttpClient(),

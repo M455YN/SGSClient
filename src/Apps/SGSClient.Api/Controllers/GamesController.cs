@@ -709,7 +709,7 @@ public sealed class GamesController(
             // Statistics must never block a download.
         }
 
-        return PhysicalFile(path, "application/zip", fileName);
+        return PhysicalFile(path, "application/zip", fileName, enableRangeProcessing: true);
     }
 
     [HttpGet("media/{symbol}/{fileName}")]

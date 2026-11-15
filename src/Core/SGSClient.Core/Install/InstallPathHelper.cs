@@ -7,6 +7,26 @@ using SGSClient.Core.Library;
 public static class InstallPathHelper
 {
     /// <summary>New layout: {libraryRoot}/sgsapps/common/{symbol}/{version}/</summary>
+    /// <summary>Where a half-downloaded package waits so a paused download can resume instead of restarting.</summary>
+    public static string GetPartialDownloadPath(string symbol, string version) =>
+        Path.Combine(Path.GetTempPath(), $"sgs-dl-{symbol}__{version}.zip");
+
+    /// <summary>Drops every partial download of a game (any version); used when a download is cancelled for good.</summary>
+    public static void DeletePartialDownloads(string symbol)
+    {
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(Path.GetTempPath(), $"sgs-dl-{symbol}__*.zip"))
+            {
+                File.Delete(file);
+            }
+        }
+        catch
+        {
+            // best effort: a leftover temp file is harmless
+        }
+    }
+
     public static string GetInstallDirectory(string libraryRoot, string symbol, string version) =>
         Path.Combine(SgsLibraryLayout.GetCommonRoot(libraryRoot), symbol, version);
 
