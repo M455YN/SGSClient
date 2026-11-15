@@ -12,8 +12,8 @@ Jak opublikować grę w SGS i jak podłączyć ją do platformy.
 Schemat i przykład paczki:
 
 - [`schemas/sgs-manifest.v1.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/sgs-manifest.v1.json)
-- [`schemas/examples/demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json)
-- **Gotowy szablon do rozpakowania:** [`schemas/examples/sample-game-package.zip`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/sample-game-package.zip) (folder: [`sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game))
+- [`schemas/examples/demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/demo-runner.sgs-manifest.json)
+- **Gotowy szablon do rozpakowania:** [`schemas/examples/sample-game-package.zip`](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/sample-game-package.zip) (folder: [`sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game))
 - **Szablony gier z bazy (exe i wersja):** [`schemas/examples/catalog-templates/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/catalog-templates)
 
 Informacje o integracji technicznej znajdziesz w [Integracji z SGS](../developers/README.md).

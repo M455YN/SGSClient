@@ -65,3 +65,7 @@ media/screen-01.png
 ```
 
 Możesz też dodać grafiki po publikacji: **Panel twórcy** (lub **Admin**) → **Multimedia** → osobne sloty **Miniaturka**, **Okładka pozioma** i **Logo (kwadratowe)**. Puste sloty w edytorze nie pokazują zastępczej grafiki, więc od razu widać, czego brakuje.
+
+## Przykładowe grafiki do pobrania
+
+Atrapy z szablonu `sample-game` (do podejrzenia układu, nie do publikacji): [cover.png](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/sample-game/media/cover.png), [header.png](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/sample-game/media/header.png), [logo.png](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/sample-game/media/logo.png), [screen-01.png](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/sample-game/media/screen-01.png). Wszystko razem z manifestem: [sample-game-package.zip](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/sample-game-package.zip).

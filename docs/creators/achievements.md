@@ -74,7 +74,7 @@ Brak tablicy `achievements` zostawia osiągnięcia i statystyki gry bez zmian. O
 
 **Pobierz manifest** (Panel twórcy / Admin) zapisuje teraz w `sgs-manifest.json` także `achievements` i `stats` z serwera, a wgrane ikony pobiera obok niego do `sdk_sgs/achievements/`. Ikona, której nie udało się pobrać, zostaje w manifeście jako adres URL. Zapisz manifest w folderze gry i publikuj ten folder — osiągnięcia i ikony pojadą razem z buildem.
 
-Publikacja z formularza (**Opublikuj** / **Opublikuj nową wersję**) zachowuje `achievements` i `stats` z pliku w folderze (wcześniej przepisanie manifestu z formularza je gubiło) i ostrzega, że zastąpią listę z Panelu twórcy. Pełny przykład: [`demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json).
+Publikacja z formularza (**Opublikuj** / **Opublikuj nową wersję**) zachowuje `achievements` i `stats` z pliku w folderze (wcześniej przepisanie manifestu z formularza je gubiło) i ostrzega, że zastąpią listę z Panelu twórcy. Pełny przykład: [`demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/demo-runner.sgs-manifest.json).
 
 Flaga funkcji **Osiągnięcia** w sklepie włącza się automatycznie, gdy lista nie jest pusta.
 

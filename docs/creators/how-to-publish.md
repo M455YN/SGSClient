@@ -87,9 +87,9 @@ Przy nowej wersji istniejącej gry grafiki zostają, dopóki paczka ich nie zast
 
 Nie musisz przepisywać manifestu przy każdej wersji. Przycisk **Pobierz manifest** w **Panelu twórcy** lub w **Adminie** zapisuje `sgs-manifest.json` zbudowany z opublikowanej gry: dane, gatunki, tagi, obecną wersję i exe oraz osiągnięcia i statystyki (wgrane ikony osiągnięć trafiają obok do `sdk_sgs/achievements/`, patrz [Osiągnięcia](achievements.md)). Bez multimediów sklepu. **Opublikuj nową wersję** też wypełnia formularz z opublikowanej gry, gdy wybrany folder nie ma manifestu. Wpisujesz tylko numer nowej wersji i opis zmian.
 
-Pełny przykład manifestu: [`demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/demo-runner.sgs-manifest.json).
+Pełny przykład manifestu: [`demo-runner.sgs-manifest.json`](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/demo-runner.sgs-manifest.json).
 
-Gotowy folder i ZIP jako szablon (atrapa exe i opisane grafiki): [`sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game) i [`sample-game-package.zip`](https://github.com/M455YN/SGSClient/blob/master/schemas/examples/sample-game-package.zip).
+Gotowy folder i ZIP jako szablon (atrapa exe i opisane grafiki): [`sample-game/`](https://github.com/M455YN/SGSClient/tree/master/schemas/examples/sample-game) i [`sample-game-package.zip`](https://github.com/M455YN/SGSClient/raw/master/schemas/examples/sample-game-package.zip).
 
 ## 3. Wyślij z klienta
 
