@@ -261,7 +261,7 @@
               <StackPanel Spacing="10">
                 <TextBlock Text="{loc:Tr Key='Podstawowe'}" Style="{StaticResource BodyStrongTextBlockStyle}" />
                 <TextBox Header="{loc:Tr Key='Tytuł'}" Text="{Binding SelectedGame.EditTitle, Mode=TwoWay}" />
-                <TextBox Header="{loc:Tr Key='Opis'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"
+                <TextBox Header="{loc:Tr Key='Opis — **pogrubienie**, *kursywa*, - lista, # nagłówek'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="96"
                          Text="{Binding SelectedGame.EditDescription, Mode=TwoWay}" />
                 <TextBox Header="{loc:Tr Key='Wymagania sprzętowe'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64"
                          Text="{Binding SelectedGame.EditHardwareRequirements, Mode=TwoWay}" />
@@ -517,7 +517,7 @@
                             <TextBlock Text="{Binding Version}" FontWeight="SemiBold" />
                             <TextBlock Text="{Binding MetaText}" HorizontalAlignment="Right" Opacity="0.7" FontSize="12" />
                           </Grid>
-                          <TextBox Header="{loc:Tr Key='Notatki do tej wersji'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"
+                          <TextBox Header="{loc:Tr Key='Notatki do tej wersji — **pogrubienie**, *kursywa*, - lista, # nagłówek'}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"
                                    Text="{Binding EditNotes, Mode=TwoWay}" />
                           <Button Content="{loc:Tr Key='Zapisz opis zmian'}" Tag="{Binding}" Click="SaveNotes_Click"
                                   HorizontalAlignment="Left" Padding="12,6" />

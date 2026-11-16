@@ -8,6 +8,7 @@ using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Install;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Localization;
 using SGSClient.Core.Models;
 using SGSClient.Core.Playtime;
 
@@ -56,10 +57,14 @@ public partial class GameDetailsViewModel
             PlaytimeText = record is { TotalSeconds: > 0 }
                 ? PlaytimeFormat.ToPolishTotal(record.TotalSeconds)
                 : string.Empty;
+            LastPlayedText = record?.LastPlayedUtc is { } last
+                ? Loc.F("Ostatnio grano {0}", last.LocalDateTime.ToString("d MMM yyyy", Loc.Culture))
+                : string.Empty;
         }
         catch
         {
             PlaytimeText = string.Empty;
+            LastPlayedText = string.Empty;
         }
     }
 }

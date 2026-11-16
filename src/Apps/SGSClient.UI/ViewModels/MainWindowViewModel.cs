@@ -206,7 +206,6 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var busy = CurrentPage switch
         {
-            PublishViewModel p => p.IsBusy,
             AddMediaViewModel m => m.IsBusy,
             AddStoryViewModel s => s.IsBusy,
             _ => false

@@ -187,6 +187,31 @@ public partial class PublishViewModel : ObservableObject
         }
     }
 
+    /// <summary>Completes once no pack/upload is running; quitting the launcher waits on it instead of aborting the upload.</summary>
+    public Task WhenIdleAsync()
+    {
+        if (!IsBusy)
+        {
+            return Task.CompletedTask;
+        }
+
+        // async continuations: don't quit the app from inside the upload's own finally block
+        var idle = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(IsBusy) && !IsBusy)
+            {
+                PropertyChanged -= OnChanged;
+                idle.TrySetResult();
+            }
+        }
+
+        PropertyChanged += OnChanged;
+        return idle.Task;
+    }
+
+    private static string BusyNotice => Loc.T("Trwa wysyłka — kolejną grę lub wersję dodasz po jej zakończeniu.");
+
     public void RefreshAuthHint()
     {
         AuthHint = AuthHints.For(_auth);
@@ -196,6 +221,17 @@ public partial class PublishViewModel : ObservableObject
 
     public void PrepareForNewVersion(int gameId, bool asAdmin)
     {
+        if (IsBusy)
+        {
+            // a background pack/upload is running: keep its state, one upload at a time
+            if (!Issues.Contains(BusyNotice))
+            {
+                Issues.Add(BusyNotice);
+            }
+
+            return;
+        }
+
         PrepareForNewGame();
         _versionOfGameId = gameId;
         _versionAsAdmin = asAdmin;
@@ -204,6 +240,17 @@ public partial class PublishViewModel : ObservableObject
 
     public void PrepareForDlc(string parentSymbol)
     {
+        if (IsBusy)
+        {
+            // a background pack/upload is running: keep its state, one upload at a time
+            if (!Issues.Contains(BusyNotice))
+            {
+                Issues.Add(BusyNotice);
+            }
+
+            return;
+        }
+
         _versionOfGameId = null;
         Kind = "dlc";
         ParentSymbol = parentSymbol?.Trim() ?? string.Empty;
@@ -215,6 +262,17 @@ public partial class PublishViewModel : ObservableObject
 
     public void PrepareForNewGame()
     {
+        if (IsBusy)
+        {
+            // a background pack/upload is running: keep its state, one upload at a time
+            if (!Issues.Contains(BusyNotice))
+            {
+                Issues.Add(BusyNotice);
+            }
+
+            return;
+        }
+
         _versionOfGameId = null;
         Kind = "game";
         ParentSymbol = string.Empty;
@@ -223,6 +281,17 @@ public partial class PublishViewModel : ObservableObject
 
     public void PrepareForApp()
     {
+        if (IsBusy)
+        {
+            // a background pack/upload is running: keep its state, one upload at a time
+            if (!Issues.Contains(BusyNotice))
+            {
+                Issues.Add(BusyNotice);
+            }
+
+            return;
+        }
+
         _versionOfGameId = null;
         Kind = "app";
         ParentSymbol = string.Empty;
@@ -276,12 +345,12 @@ public partial class PublishViewModel : ObservableObject
         }
 
         IsBusy = true;
-        ShowProgress = false;
+        ShowProgress = true;
         Issues.Clear();
         CanPublish = false;
         HasSummary = false;
         CleanupPackedZip();
-        StatusText = Loc.T("Zapisuję dane i pakuję grę…");
+        StatusText = Loc.T("Pakuję grę… Możesz przejść gdzie indziej — dostaniesz powiadomienie.");
         try
         {
             var manifest = BuildManifestFromForm();
@@ -313,7 +382,10 @@ public partial class PublishViewModel : ObservableObject
         }
         finally
         {
+            Issues.Remove(BusyNotice);
             IsBusy = false;
+            ShowProgress = false;
+            NotificationsViewModel.PostLocal(StatusText, Issues.FirstOrDefault());
         }
     }
 
@@ -330,7 +402,9 @@ public partial class PublishViewModel : ObservableObject
         ShowProgress = true;
         Progress = 0;
         Issues.Clear();
-        StatusText = Loc.T("Wysyłanie do sklepu…");
+        StatusText = Loc.F(
+            "Wysyłanie do sklepu ({0:0.0} MB)… Możesz przejść gdzie indziej — dostaniesz powiadomienie. Nie zamykaj launchera.",
+            new FileInfo(_packedZipPath).Length / (1024d * 1024d));
         try
         {
             var progress = new Progress<double>(p => Progress = p);
@@ -346,6 +420,7 @@ public partial class PublishViewModel : ObservableObject
                 return;
             }
 
+            SGSClient.Core.Library.StoreCatalogNotifier.Raise();
             StatusText = Loc.F("Opublikowano: {0}. Znajdziesz ją w Sklepie.", result.Game.Title);
             CanPublish = false;
             CleanupPackedZip();
@@ -356,8 +431,10 @@ public partial class PublishViewModel : ObservableObject
         }
         finally
         {
+            Issues.Remove(BusyNotice);
             IsBusy = false;
             ShowProgress = false;
+            NotificationsViewModel.PostLocal(StatusText, Issues.FirstOrDefault());
         }
     }
 

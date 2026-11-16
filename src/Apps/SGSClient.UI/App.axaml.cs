@@ -127,7 +127,8 @@ public partial class App : Application
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IInstallQueueService>(),
             sp.GetService<IClientUserSettingsStore>()));
-        services.AddTransient(sp => new PublishViewModel(
+        // singleton: quitting waits on the same instance the shell shows
+        services.AddSingleton(sp => new PublishViewModel(
             sp.GetService<IGamePackagePacker>(),
             sp.GetService<IGameUploadClient>(),
             sp.GetService<IAuthSession>(),
@@ -265,8 +266,22 @@ public partial class App : Application
     private void SetUpTray(IClassicDesktopStyleApplicationLifetime desktop, Window window, MainWindowViewModel vm)
     {
         var exiting = false;
-        _exit = () =>
+        var exitPending = false;
+        _exit = async () =>
         {
+            if (exitPending)
+            {
+                return;
+            }
+
+            if (Services.GetService<PublishViewModel>() is { IsBusy: true } publish)
+            {
+                exitPending = true;
+                window.Hide();
+                NotificationsViewModel.PostLocal(Loc.T("Trwa wysyłka gry — launcher zamknie się sam po jej zakończeniu."));
+                await publish.WhenIdleAsync();
+            }
+
             exiting = true;
             desktop.Shutdown();
         };

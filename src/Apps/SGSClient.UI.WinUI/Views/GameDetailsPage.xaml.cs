@@ -22,6 +22,12 @@ public sealed partial class GameDetailsPage : Page, ILoadingPage
     {
         ViewModel = App.Services.GetRequiredService<GameDetailsViewModel>();
         InitializeComponent();
+        LayoutGrid.SizeChanged += (_, _) => ApplyLayout();
+        // Height changes only (tagline wraps, library buttons appear, thumbnails load) don't change the layout mode.
+        HeaderPanel.SizeChanged += (_, _) => FitHero();
+        TabsBar.SizeChanged += (_, _) => FitHero();
+        MediaThumbsList.SizeChanged += (_, _) => FitHero();
+        RightColumn.SizeChanged += (_, _) => FitHero();
         ViewModel.SetOpenPropertiesHandler(OpenProperties);
         ReviewSortBox.ItemsSource = ViewModel.ReviewSortOptions;
         ReviewFilterBox.ItemsSource = ViewModel.ReviewFilterOptions;
@@ -120,9 +126,22 @@ public sealed partial class GameDetailsPage : Page, ILoadingPage
         StatusText.Text = ViewModel.StatusText;
         PlaytimeText.Text = ViewModel.PlaytimeText;
         PlaytimeText.Visibility = ViewModel.HasPlaytime ? Visibility.Visible : Visibility.Collapsed;
-        DescriptionText.Text = ViewModel.Description;
+        LastPlayedText.Text = ViewModel.LastPlayedText;
+        LastPlayedText.Visibility = ViewModel.LastPlayedText.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        MarkdownInlines.Apply(DescriptionText, ViewModel.Description);
+        DescriptionText.MaxLines = ViewModel.DescriptionMaxLines;
+        DescriptionToggleButton.Content = ViewModel.DescriptionToggleLabel;
+        DescriptionToggleButton.Visibility = ViewModel.CanExpandDescription ? Visibility.Visible : Visibility.Collapsed;
         HardwareText.Text = ViewModel.HardwareRequirements;
         OtherText.Text = ViewModel.OtherInformation;
+        FeaturesText.Text = ViewModel.FeaturesText;
+        LanguagesText.Text = ViewModel.LanguagesText;
+        ChangelogList.ItemsSource = ViewModel.Changelog;
+        InfoPanel.Visibility = ViewModel.ShowInfo ? Visibility.Visible : Visibility.Collapsed;
+        ApplyLayout();
+        FeaturesPanel.Visibility = ViewModel.ShowFeatures ? Visibility.Visible : Visibility.Collapsed;
+        LanguagesPanel.Visibility = ViewModel.ShowLanguages ? Visibility.Visible : Visibility.Collapsed;
+        ChangelogPanel.Visibility = ViewModel.ShowChangelog ? Visibility.Visible : Visibility.Collapsed;
         PlatformsText.Text = ViewModel.PlatformsText;
         SymbolText.Text = ViewModel.Symbol;
 
@@ -132,13 +151,10 @@ public sealed partial class GameDetailsPage : Page, ILoadingPage
         WishlistButton.Content = ViewModel.WishlistLabel;
         WishlistButton.Visibility = ViewModel.CanToggleWishlist ? Visibility.Visible : Visibility.Collapsed;
 
-        LaunchButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
+        LibraryActionsPanel.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
         LaunchButton.IsEnabled = ViewModel.CanLaunch;
-        InstallButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
         InstallButton.IsEnabled = ViewModel.CanInstall;
-        UninstallButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
         UninstallButton.IsEnabled = ViewModel.CanUninstall;
-        PropertiesButton.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
 
         InstallProgressPanel.Visibility = ViewModel.IsInstalling ? Visibility.Visible : Visibility.Collapsed;
         InstallProgressText.Text = ViewModel.InstallProgressText;
@@ -146,11 +162,8 @@ public sealed partial class GameDetailsPage : Page, ILoadingPage
 
         BadgesList.ItemsSource = ViewModel.Badges;
         MediaThumbsList.ItemsSource = ViewModel.MediaThumbs;
-        BuildsList.ItemsSource = ViewModel.Builds;
 
         HardwarePanel.Visibility = ViewModel.ShowHardware ? Visibility.Visible : Visibility.Collapsed;
-        // In the library the version is chosen in Properties; the picker here is only for the store.
-        BuildsPanel.Visibility = ViewModel.ShowBuilds && !ViewModel.InLibrary ? Visibility.Visible : Visibility.Collapsed;
         OtherPanel.Visibility = ViewModel.ShowOther ? Visibility.Visible : Visibility.Collapsed;
 
         DetailsPanel.Visibility = ViewModel.ShowDetailsTab ? Visibility.Visible : Visibility.Collapsed;
@@ -526,6 +539,69 @@ public sealed partial class GameDetailsPage : Page, ILoadingPage
     {
         ViewModel.OpenPropertiesCommand.Execute(null);
     }
+
+    /// <summary>Below this content width the page stacks into one column.</summary>
+    private const double NarrowLayoutWidth = 1000;
+
+    // XAML starts in the wide + Details arrangement (tabs and content beside the media).
+    private (bool Narrow, bool Beside) _layout = (false, true);
+
+    /// <summary>
+    /// Wide + Details: tabs and content in the left column beside the media (no gap under a tall hero).
+    /// Wide + other tabs: content spans the full width under the header. Narrow: one column — header, media, tabs, content.
+    /// </summary>
+    private void ApplyLayout()
+    {
+        var narrow = LayoutGrid.ActualWidth > 0 && LayoutGrid.ActualWidth < NarrowLayoutWidth;
+        var layout = (narrow, !narrow && ViewModel.ShowDetailsTab);
+        if (layout == _layout)
+        {
+            return;
+        }
+
+        _layout = layout;
+        LeftHost.Children.Clear();
+        BelowHost.Children.Clear();
+        (narrow ? BelowHost : LeftHost).Children.Add(TabsBar);
+        (layout.Item2 ? LeftHost : BelowHost).Children.Add(TabContent);
+        BelowHost.Visibility = BelowHost.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        Grid.SetColumn(RightColumn, narrow ? 0 : 1);
+        Grid.SetRow(RightColumn, narrow ? 1 : 0);
+        Grid.SetColumnSpan(RightColumn, narrow ? 2 : 1);
+        Grid.SetColumnSpan(LeftColumn, narrow ? 2 : 1);
+        Grid.SetRow(BelowHost, narrow ? 2 : 1);
+        FitHero();
+    }
+
+    private const double HeroAspect = 920d / 430d;
+    private const double MinHeroHeight = 200;
+
+    /// <summary>
+    /// Wide layout: hero + thumbnails are never taller than header + tab bar, so full-width tab content
+    /// starts right under the tabs on every tab (no gap, nothing jumps when switching tabs).
+    /// </summary>
+    private void FitHero()
+    {
+        var column = RightColumn.ActualWidth;
+        var available = HeaderPanel.ActualHeight + LeftColumn.Spacing + TabsBar.ActualHeight
+                        - MediaThumbsList.ActualHeight - RightColumn.Spacing;
+        if (_layout.Narrow || column <= 0 || column / HeroAspect <= available)
+        {
+            HeroBorder.Width = double.NaN;
+            HeroBorder.Height = double.NaN;
+            HeroBorder.HorizontalAlignment = HorizontalAlignment.Stretch;
+            return;
+        }
+
+        var height = Math.Max(available, MinHeroHeight);
+        HeroBorder.Height = height;
+        HeroBorder.Width = Math.Min(column, height * HeroAspect);
+        HeroBorder.HorizontalAlignment = HorizontalAlignment.Left;
+    }
+
+    private void DescriptionToggle_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.ToggleDescriptionCommand.Execute(null);
 
     private void Tab_Click(object sender, RoutedEventArgs e)
     {

@@ -118,7 +118,8 @@ public partial class App : Application
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IInstallQueueService>(),
             sp.GetService<IClientUserSettingsStore>()));
-        services.AddTransient(sp => new PublishViewModel(
+        // singleton: a pack/upload keeps running (and stays visible) after the user leaves the page
+        services.AddSingleton(sp => new PublishViewModel(
             sp.GetService<IGamePackagePacker>(),
             sp.GetService<IGameUploadClient>(),
             sp.GetService<IAuthSession>(),

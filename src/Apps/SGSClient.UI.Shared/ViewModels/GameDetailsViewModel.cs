@@ -94,8 +94,29 @@ public partial class GameDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial string Tagline { get; set; } = string.Empty;
 
+    /// <summary>Creator description in <see cref="SimpleMarkdown"/>.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanExpandDescription), nameof(DescriptionMaxLines), nameof(DescriptionToggleLabel))]
     public partial string Description { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DescriptionMaxLines), nameof(DescriptionToggleLabel))]
+    public partial bool IsDescriptionExpanded { get; set; }
+
+    private const int CollapsedDescriptionLines = 8;
+
+    // shortcut: estimates wrapped lines (~85 chars per line in the left column of a ~1600 px window) instead of
+    // measuring the TextBlock; errs toward showing "Pokaż więcej". Measure the TextBlock if it misfires.
+    public bool CanExpandDescription =>
+        Description.Split('\n').Sum(l => Math.Max(1, (int)Math.Ceiling(l.Length / 85d))) > CollapsedDescriptionLines;
+
+    /// <summary>0 = no limit (WinUI and Avalonia both treat 0 as unlimited).</summary>
+    public int DescriptionMaxLines => CanExpandDescription && !IsDescriptionExpanded ? CollapsedDescriptionLines : 0;
+
+    public string DescriptionToggleLabel => IsDescriptionExpanded ? Loc.T("Pokaż mniej") : Loc.T("Pokaż więcej");
+
+    [RelayCommand]
+    private void ToggleDescription() => IsDescriptionExpanded = !IsDescriptionExpanded;
 
     [ObservableProperty]
     public partial string HardwareRequirements { get; set; } = string.Empty;
@@ -107,6 +128,26 @@ public partial class GameDetailsViewModel : ObservableObject
     public partial string PlatformsText { get; set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowFeatures))]
+    public partial string FeaturesText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowLanguages))]
+    public partial string LanguagesText { get; set; } = string.Empty;
+
+    /// <summary>Creator release notes of every version, newest first.</summary>
+    public ObservableCollection<ChangelogEntry> Changelog { get; } = [];
+
+    [ObservableProperty]
+    public partial bool ShowChangelog { get; set; }
+
+    public bool ShowFeatures => FeaturesText.Length > 0;
+    public bool ShowLanguages => LanguagesText.Length > 0;
+
+    /// <summary>The "Informacje" card (beside the media, Details tab only): short facts grouped instead of one heading each.</summary>
+    public bool ShowInfo => ShowDetailsTab && (ShowFeatures || ShowLanguages || ShowHardware || ShowOther);
+
+    [ObservableProperty]
     public partial string StatusText { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -115,6 +156,9 @@ public partial class GameDetailsViewModel : ObservableObject
     public bool HasPlaytime => !string.IsNullOrWhiteSpace(PlaytimeText);
 
     partial void OnPlaytimeTextChanged(string value) => OnPropertyChanged(nameof(HasPlaytime));
+
+    [ObservableProperty]
+    public partial string LastPlayedText { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial string SelectedTab { get; set; } = "Details";
@@ -139,9 +183,6 @@ public partial class GameDetailsViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool ShowOther { get; set; }
-
-    [ObservableProperty]
-    public partial bool ShowBuilds { get; set; }
 
     [ObservableProperty]
     public partial bool FromLibrary { get; set; }
@@ -213,6 +254,7 @@ public partial class GameDetailsViewModel : ObservableObject
         OnPropertyChanged(nameof(ShowReviewsTab));
         OnPropertyChanged(nameof(ShowMoreTab));
         OnPropertyChanged(nameof(ShowAchievementsTab));
+        OnPropertyChanged(nameof(ShowInfo));
     }
 
     public async Task LoadAsync(int gameId, bool fromLibrary = false, string? returnTag = null)
@@ -311,17 +353,25 @@ public partial class GameDetailsViewModel : ObservableObject
         TileLabel = string.IsNullOrWhiteSpace(game.Symbol)
             ? game.Title[..Math.Min(2, game.Title.Length)].ToUpperInvariant()
             : game.Symbol[..Math.Min(3, game.Symbol.Length)].ToUpperInvariant();
-        Tagline = string.IsNullOrWhiteSpace(game.Description)
-            ? string.Empty
-            : game.Description.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .FirstOrDefault() is { Length: > 0 } first
-                ? first + "."
-                : game.Description!;
+        // Tagline is plain text: first non-empty line of the Markdown description, cut at its first sentence.
+        var firstLine = SimpleMarkdown.Parse(game.Description)
+            .Select(l => string.Concat(l.Spans.Select(s => s.Text)).Trim())
+            .FirstOrDefault(t => t.Length > 0) ?? string.Empty;
+        Tagline = firstLine.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault() is { Length: > 0 } first && first.Length < firstLine.Length
+            ? first + "."
+            : firstLine;
+        IsDescriptionExpanded = false;
         Description = string.IsNullOrWhiteSpace(game.Description) ? Loc.T("Brak opisu.") : game.Description!;
         HardwareRequirements = game.HardwareRequirements ?? string.Empty;
         OtherInformation = game.OtherInformation ?? string.Empty;
         ShowHardware = HardwareRequirements.Length > 0;
         ShowOther = OtherInformation.Length > 0;
+        FeaturesText = string.Join(", ", GameStoreLabels.FeatureList(game.Features));
+        LanguagesText = string.Join(", ", game.Languages);
+        OnPropertyChanged(nameof(ShowInfo));
+        Changelog.Clear();
+        ShowChangelog = false;
 
         Badges.Clear();
         foreach (var badge in GameStoreLabels.CatalogBadges(game))
@@ -399,7 +449,6 @@ public partial class GameDetailsViewModel : ObservableObject
             Builds.Add(row);
         }
 
-        ShowBuilds = Builds.Count > 0;
         SelectedTab = "Details";
     }
 
@@ -410,6 +459,7 @@ public partial class GameDetailsViewModel : ObservableObject
             return;
         }
 
+        var notes = new List<GameBuildVersionDto>();
         foreach (var row in Builds)
         {
             var versions = await _api.GetBuildVersionsAsync(gameId, row.BuildId);
@@ -417,6 +467,8 @@ public partial class GameDetailsViewModel : ObservableObject
             {
                 continue;
             }
+
+            notes.AddRange(versions.Where(v => !string.IsNullOrWhiteSpace(v.ReleaseNotes)));
 
             row.Versions.Clear();
             foreach (var version in versions.OrderByDescending(v => v.IsCurrent).ThenByDescending(v => v.PublishedAtUtc))
@@ -427,6 +479,14 @@ public partial class GameDetailsViewModel : ObservableObject
             row.SelectedVersion = row.Versions.FirstOrDefault(v => v.IsCurrent) ?? row.Versions.FirstOrDefault();
             row.HasVersionPicker = row.Versions.Count > 0;
         }
+
+        // Same version is often published for several platforms with the same notes — show it once.
+        foreach (var v in notes.OrderByDescending(v => v.PublishedAtUtc).DistinctBy(v => (v.Version, v.ReleaseNotes!.Trim())))
+        {
+            Changelog.Add(new ChangelogEntry($"v{v.Version} · {v.PublishedAtUtc.LocalDateTime:d}", v.ReleaseNotes!.Trim()));
+        }
+
+        ShowChangelog = Changelog.Count > 0;
     }
 
     private void UpdateActionState(GameDto game)

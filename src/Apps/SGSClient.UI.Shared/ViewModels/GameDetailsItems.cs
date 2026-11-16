@@ -23,6 +23,9 @@ public sealed class MediaThumbItem
     public bool HasMedia => !string.IsNullOrWhiteSpace(ImageUrl);
 }
 
+/// <summary>One version in the store page changelog; Notes is <see cref="SimpleMarkdown"/>.</summary>
+public sealed record ChangelogEntry(string Header, string Notes);
+
 public partial class BuildRowItem : ObservableObject
 {
     public required int BuildId { get; init; }

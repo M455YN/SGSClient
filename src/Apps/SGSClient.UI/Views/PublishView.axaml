@@ -47,7 +47,7 @@
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="{loc:Tr Key='Opis'}" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Opis — **pogrubienie**, *kursywa*, - lista, # nagłówek'}" Opacity="0.55" FontSize="12"/>
             <TextBox Text="{Binding GameDescription}" AcceptsReturn="True" TextWrapping="Wrap"
                      MinHeight="88" PlaceholderText="{loc:Tr Key='Krótki opis widoczny w sklepie'}"/>
           </StackPanel>
@@ -173,7 +173,7 @@
           </Grid>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="{loc:Tr Key='Opis zmian (changelog)'}" Opacity="0.55" FontSize="12"/>
+            <TextBlock Text="{loc:Tr Key='Opis zmian (changelog) — **pogrubienie**, *kursywa*, - lista, # nagłówek'}" Opacity="0.55" FontSize="12"/>
             <TextBox Text="{Binding ReleaseNotes}" PlaceholderText="{loc:Tr Key='Co nowego w tej wersji'}"
                      AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72"/>
           </StackPanel>
@@ -209,8 +209,8 @@
       </Border>
 
       <StackPanel Spacing="8" IsVisible="{Binding ShowProgress}">
-        <TextBlock Text="{loc:Tr Key='Wysyłanie…'}" Opacity="0.7"/>
-        <ProgressBar Minimum="0" Maximum="1" Value="{Binding Progress}" Height="8"/>
+        <!-- indeterminate: neither packing nor the single-request upload reports real progress -->
+        <ProgressBar IsIndeterminate="True" Height="8"/>
       </StackPanel>
 
       <TextBlock Text="{Binding StatusText}" Opacity="0.75" TextWrapping="Wrap"/>

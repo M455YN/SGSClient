@@ -16,6 +16,7 @@ public sealed partial class MainWindow : Window
     private string _contentNavTag = "Home";
     private bool _socialOpen;
     private bool _exiting;
+    private bool _exitPending;
     private H.NotifyIcon.TaskbarIcon? _tray;
 
     public MainWindow()
@@ -135,8 +136,22 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>Really quits: closing the window only hides it to the tray.</summary>
-    public void ExitApplication()
+    public async void ExitApplication()
     {
+        if (_exitPending)
+        {
+            return;
+        }
+
+        var publish = App.Services.GetService<PublishViewModel>();
+        if (publish is { IsBusy: true })
+        {
+            _exitPending = true;
+            AppWindow.Hide();
+            NotificationsViewModel.PostLocal(Loc.T("Trwa wysyłka gry — launcher zamknie się sam po jej zakończeniu."));
+            await publish.WhenIdleAsync();
+        }
+
         _exiting = true;
         _tray?.Dispose();
         Application.Current.Exit();
@@ -302,7 +317,6 @@ public sealed partial class MainWindow : Window
     {
         var busy = ContentFrame.Content switch
         {
-            PublishPage p => p.ViewModel.IsBusy,
             AddMediaPage m => m.ViewModel.IsBusy,
             AddStoryPage s => s.ViewModel.IsBusy,
             _ => false

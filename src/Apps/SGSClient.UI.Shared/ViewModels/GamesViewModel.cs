@@ -58,6 +58,7 @@ public partial class GamesViewModel : ObservableObject
         GenreFilters.SelectionChanged += OnFilterChanged;
         EngineFilters.SelectionChanged += OnFilterChanged;
         FeatureFilters.SelectionChanged += OnFilterChanged;
+        SGSClient.Core.Library.StoreCatalogNotifier.Changed += () => _loaded = false;
     }
 
     private static readonly GameContentKind[] FilterKinds =

@@ -64,6 +64,8 @@ public partial class StudioView : UserControl
             TopLevel.GetTopLevel(this), ImageFiles, Loc.T("Wybierz obraz")));
         vm.SetPickVideoHandler(() => AvaloniaStoragePicker.PickSingleFileAsync(
             TopLevel.GetTopLevel(this), VideoFiles, Loc.T("Wybierz wideo")));
+        vm.SetPickImagesHandler(() => AvaloniaStoragePicker.PickMultipleFilesAsync(
+            TopLevel.GetTopLevel(this), ImageFiles, Loc.T("Wybierz screeny")));
         Debug.WriteLine("[SGS Media] StudioView pick handlers wired");
     }
 

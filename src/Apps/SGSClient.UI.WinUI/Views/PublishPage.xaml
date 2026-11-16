@@ -43,7 +43,7 @@
           </StackPanel>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="{loc:Tr Key='Opis'}" Opacity="0.55" FontSize="12" />
+            <TextBlock Text="{loc:Tr Key='Opis — **pogrubienie**, *kursywa*, - lista, # nagłówek'}" Opacity="0.55" FontSize="12" />
             <TextBox x:Name="GameDescriptionBox" AcceptsReturn="True" TextWrapping="Wrap"
                      MinHeight="88" PlaceholderText="{loc:Tr Key='Krótki opis widoczny w sklepie'}" />
           </StackPanel>
@@ -183,7 +183,7 @@
           </Grid>
 
           <StackPanel Spacing="4">
-            <TextBlock Text="{loc:Tr Key='Opis zmian (changelog)'}" Opacity="0.55" FontSize="12" />
+            <TextBlock Text="{loc:Tr Key='Opis zmian (changelog) — **pogrubienie**, *kursywa*, - lista, # nagłówek'}" Opacity="0.55" FontSize="12" />
             <TextBox x:Name="ReleaseNotesBox" PlaceholderText="{loc:Tr Key='Co nowego w tej wersji'}"
                      AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" />
           </StackPanel>
@@ -220,8 +220,8 @@
       </Border>
 
       <StackPanel x:Name="ProgressPanel" Spacing="8" Visibility="Collapsed">
-        <TextBlock Text="{loc:Tr Key='Wysyłanie…'}" Opacity="0.7" />
-        <ProgressBar x:Name="UploadProgress" Minimum="0" Maximum="1" Height="8" />
+        <!-- indeterminate: neither packing nor the single-request upload reports real progress -->
+        <ProgressBar IsIndeterminate="True" Height="8" />
       </StackPanel>
 
       <TextBlock x:Name="StatusText" Opacity="0.75" TextWrapping="Wrap" />

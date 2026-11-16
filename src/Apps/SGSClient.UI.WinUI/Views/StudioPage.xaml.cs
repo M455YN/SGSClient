@@ -28,6 +28,10 @@ public sealed partial class StudioPage : Page, ILoadingPage
         ViewModel.SetConfirmDeleteHandler(ConfirmDeleteAsync);
         ViewModel.SetPickImageHandler(() => PickFileAsync([".png", ".jpg", ".jpeg", ".webp", ".gif"]));
         ViewModel.SetPickVideoHandler(() => PickFileAsync([".mp4", ".webm"]));
+        ViewModel.SetPickImagesHandler(() => App.MainWindow is null
+            ? Task.FromResult<IReadOnlyList<string>>([])
+            : WinUiFilePicker.PickMultipleFilesAsync(
+                App.MainWindow, [".png", ".jpg", ".jpeg", ".webp", ".gif"], commitLabel: Loc.T("Dodaj")));
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(StudioViewModel.SelectedGame) or nameof(StudioViewModel.SelectedTab))

@@ -136,25 +136,29 @@ public sealed class GamePackagePacker : IGamePackagePacker
             }
 
             var root = Path.GetFullPath(folderPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            using (var archive = ZipFile.Open(tempZip, ZipArchiveMode.Create))
+            // off the UI thread: compressing a large game froze the launcher
+            await Task.Run(() =>
             {
-                foreach (var file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+                using (var archive = ZipFile.Open(tempZip, ZipArchiveMode.Create))
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var relative = Path.GetRelativePath(root, file).Replace('\\', '/');
-                    if (IsExcluded(relative, excludes))
+                    foreach (var file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
                     {
-                        continue;
-                    }
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var relative = Path.GetRelativePath(root, file).Replace('\\', '/');
+                        if (IsExcluded(relative, excludes))
+                        {
+                            continue;
+                        }
 
-                    if (!SgsPackageRules.TryNormalizeEntryPath(relative, out var normalized, out _))
-                    {
-                        continue;
-                    }
+                        if (!SgsPackageRules.TryNormalizeEntryPath(relative, out var normalized, out _))
+                        {
+                            continue;
+                        }
 
-                    archive.CreateEntryFromFile(file, normalized, CompressionLevel.Optimal);
+                        archive.CreateEntryFromFile(file, normalized, CompressionLevel.Optimal);
+                    }
                 }
-            }
+            }, cancellationToken);
 
             var info = new FileInfo(tempZip);
             if (info.Length == 0)

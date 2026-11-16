@@ -7,6 +7,7 @@ using SGSClient.Core.Configuration;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Enums;
 using SGSClient.Core.Interfaces;
+using SGSClient.Core.Library;
 using SGSClient.Core.Packaging;
 
 namespace SGSClient.UI.ViewModels;
@@ -23,6 +24,7 @@ public partial class StudioViewModel : ObservableObject
     private Func<StudioContentItem, Task<bool>>? _confirmDelete;
     private Func<Task<string?>>? _pickImage;
     private Func<Task<string?>>? _pickVideo;
+    private Func<Task<IReadOnlyList<string>>>? _pickImages;
     private int _selectedId;
     private readonly Dictionary<string, CreativeWorksViewModel> _works = [];
 
@@ -129,6 +131,7 @@ public partial class StudioViewModel : ObservableObject
         AchievementsEditor.SetPickImageHandler(pick);
     }
     public void SetPickVideoHandler(Func<Task<string?>> pick) => _pickVideo = pick;
+    public void SetPickImagesHandler(Func<Task<IReadOnlyList<string>>> pick) => _pickImages = pick;
 
     partial void OnSelectedTabChanged(string value)
     {
@@ -393,6 +396,7 @@ public partial class StudioViewModel : ObservableObject
             }
 
             item.ApplyDto(updated, _apiBaseUrl);
+            StoreCatalogNotifier.Raise();
             StatusText = Loc.F("Zapisano stronę sklepu: {0}", updated.Title);
         }
         catch (Exception ex)
@@ -421,6 +425,7 @@ public partial class StudioViewModel : ObservableObject
         }
 
         SelectedGame.ApplyDto(updated, _apiBaseUrl);
+        StoreCatalogNotifier.Raise();
         StatusText = published ? Loc.T("Gra jest widoczna w sklepie.") : Loc.T("Gra jest szkicem — ukryta w sklepie.");
     }
 
@@ -509,15 +514,48 @@ public partial class StudioViewModel : ObservableObject
                 Loc.T("Usunięto intro."));
 
     [RelayCommand]
-    private Task AddScreenshotAsync() =>
-        _api is null
-            ? Task.CompletedTask
-            : GameMediaActions.PickAsync(
-                _pickImage,
-                SelectedGame?.Id,
-                (id, path) => _api.AddGameScreenshotAsync(id, path, asAdmin: false),
-                ReloadAfterMediaAsync,
-                Loc.T("Dodano zrzut ekranu."));
+    private async Task AddScreenshotAsync()
+    {
+        if (_api is null || SelectedGame is null || _pickImages is null)
+        {
+            return;
+        }
+
+        var gameId = SelectedGame.Id;
+        IReadOnlyList<string> paths;
+        try
+        {
+            paths = await _pickImages();
+        }
+        catch (Exception ex)
+        {
+            await ReloadAfterMediaAsync(null, Loc.F("Błąd pickera: {0}", ex.Message));
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            for (var i = 0; i < paths.Count; i++)
+            {
+                StatusText = Loc.F("Wysyłanie zrzutów ekranu… {0}/{1}", i + 1, paths.Count);
+                var updated = await _api.AddGameScreenshotAsync(gameId, paths[i], asAdmin: false);
+                await ReloadAfterMediaAsync(updated, Loc.F("Dodano zrzuty ekranu: {0}/{1}", i + 1, paths.Count));
+                if (updated is null)
+                {
+                    return;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await ReloadAfterMediaAsync(null, Loc.F("Błąd uploadu: {0}", ex.Message));
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
 
     [RelayCommand]
     private async Task RemoveScreenshotAsync(StudioScreenshotItem? shot)
@@ -550,6 +588,7 @@ public partial class StudioViewModel : ObservableObject
             listed.ApplyDto(updated, _apiBaseUrl);
         }
 
+        StoreCatalogNotifier.Raise();
         StatusText = okText;
         SelectedTab = tab;
         return Task.CompletedTask;
@@ -597,6 +636,7 @@ public partial class StudioViewModel : ObservableObject
                 : Loc.T("Nie udało się usunąć (sprawdź uprawnienia lub powiązane DLC).");
             if (deleted)
             {
+                StoreCatalogNotifier.Raise();
                 if (SelectedGame?.Id == target.Id)
                 {
                     SelectedGame = null;

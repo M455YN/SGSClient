@@ -18,9 +18,13 @@ public sealed partial class PublishPage : Page
         PlatformCombo.ItemsSource = ViewModel.PlatformOptions;
         ArchitectureCombo.ItemsSource = ViewModel.ArchitectureOptions;
         ParentSymbolCombo.ItemsSource = ViewModel.ParentGameOptions;
-        ViewModel.PropertyChanged += (_, _) => RefreshUi();
+        // ViewModel is a singleton that outlives this page; detach so old pages don't leak or refresh.
+        Loaded += (_, _) => ViewModel.PropertyChanged += OnViewModelChanged;
+        Unloaded += (_, _) => ViewModel.PropertyChanged -= OnViewModelChanged;
         RefreshUi();
     }
+
+    private void OnViewModelChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => RefreshUi();
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
@@ -73,7 +77,6 @@ public sealed partial class PublishPage : Page
         PickFolderButton.IsEnabled = !ViewModel.IsBusy;
         PrepareButton.IsEnabled = !ViewModel.IsBusy && ViewModel.HasManifestForm;
         ProgressPanel.Visibility = ViewModel.ShowProgress ? Visibility.Visible : Visibility.Collapsed;
-        UploadProgress.Value = ViewModel.Progress;
         IssuesList.ItemsSource = ViewModel.Issues.ToList();
         ParentSymbolPanel.Visibility = ViewModel.ShowParentField ? Visibility.Visible : Visibility.Collapsed;
         ParentSymbolCombo.ItemsSource = ViewModel.ParentGameOptions;
