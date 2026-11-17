@@ -299,26 +299,37 @@ Get Object wysyła dane jako formularz, a nie JSON. Most przyjmuje od niego:
 - **wartość jako pole formularza** — akcja **Add POST data** z **Name** = `value` i **Value** = liczba, zamiast `{"value": 12}`,
 - **token na jeden z dwóch sposobów**:
   - w adresie: `?token=<SGS_ACHIEVEMENTS_TOKEN>` (najprościej, tak jest w przykładach niżej),
-  - albo w nagłówku: **Special Config → Set Custom Header** z nagłówkiem `X-SGS-Token` i wartością `Token$`. Ustaw go przed każdym **Get URL**. Wtedy `?token=` w adresie jest zbędny.
+  - albo w nagłówku: **Special Config → Set Custom Header** z nagłówkiem `X-SGS-Token` i wartością Global String B. Ustaw go przed każdym **Get URL**. Wtedy `?token=` w adresie jest zbędny.
 
 Get Object wysyła `POST` tylko wtedy, gdy przed **Get URL** dodasz jakieś dane POST. Dla `unlock` dodaj więc dowolne pole (most je pomija).
 
-**Kolejność akcji ma znaczenie.** **Add POST data** (okienka **Name** i **Value**) musi być w zdarzeniu *nad* **Get URL** (okienko **URL String**). Fusion wykonuje akcje w kolejności z listy, a Get URL wysyła zapytanie od razu, więc dane dodane po nim pojadą dopiero z następnym zapytaniem. Jeśli wstawiłeś je w złej kolejności, przeciągnij **Add POST data** wyżej w **Event List Editorze** (prawy klik na zdarzeniu → *Event List Editor*). W okienkach **Name**, **Value** i **URL String** wpisujesz tekst w cudzysłowie (`"value"`) albo wyrażenie (`Str$(Wygrane)`, `Url$ + "..."`).
+**Kolejność akcji ma znaczenie.** **Add POST data** (okienka **Name** i **Value**) musi być w zdarzeniu *nad* **Get URL** (okienko **URL String**). Fusion wykonuje akcje w kolejności z listy, a Get URL wysyła zapytanie od razu, więc dane dodane po nim pojadą dopiero z następnym zapytaniem. Jeśli wstawiłeś je w złej kolejności, przeciągnij **Add POST data** wyżej w **Event List Editorze** (prawy klik na zdarzeniu → *Event List Editor*). W okienkach **Name**, **Value** i **URL String** wpisujesz tekst w cudzysłowie (`"value"`) albo wyrażenie (`Str$(Wygrane)`, Global String A + `"..."`).
 
 **Special Config → Set Timeout** przyda się, żeby gra nie czekała długo, gdy klient SGS nie odpowiada. Most odpowiada od razu, także offline (`202`), więc wystarczy kilka sekund. **Set User**, **Set Password** i **Set User Agent** nie są potrzebne.
 
 ![Przykładowe zdarzenia w Fusion: Global Strings przy starcie, potem Add POST data i Get URL](../assets/fusion-get-object.svg)
 
-**1. Odczytaj zmienne przy starcie** (zdarzenie *Start of Frame*). Fusion nie ma wbudowanego wyrażenia na zmienne środowiskowe — użyj rozszerzenia, które je czyta (w Extension Managerze szukaj „environment”), i zapisz `SGS_API_URL` oraz `SGS_ACHIEVEMENTS_TOKEN` do dwóch zmiennych tekstowych (np. Global String albo Alterable String obiektu). Pusta wartość = gra uruchomiona poza SGS, pomiń osiągnięcia.
+**1. Zapisz adres i token przy starcie.** Dodaj zdarzenie *Start of Frame* i w nim dwie akcje:
 
-> **`Url$` i `Token$` w przykładach niżej to tylko skróty**, a nie gotowe wyrażenia Fusion. W ich miejsce wstaw swoją zmienną, wybierając ją w edytorze wyrażeń (klik na obiekt / Special → Global String), **bez cudzysłowów**. Wpisane w cudzysłowie (`"Url$"`) są zwykłym tekstem i Get URL wyśle dosłownie `Url$/api/...`. Dobrze: `GlobalString$(...) + "/api/sdk/..."`. Źle: `"Url$" + "/api/sdk/..."`.
+- Special → Change a global string → **Global String A** = wartość zmiennej `SGS_API_URL`,
+- Special → Change a global string → **Global String B** = wartość zmiennej `SGS_ACHIEVEMENTS_TOKEN`.
 
-**2. Odblokuj osiągnięcie** (gdy `Url$` nie jest puste):
+Wartości tych zmiennych środowiskowych musi zwrócić rozszerzenie. Fusion nie ma wbudowanego wyrażenia, które je czyta (w Extension Managerze szukaj „environment”). Pusty Global String A = gra uruchomiona poza SGS, pomiń osiągnięcia.
+
+**Jak ułożyć adres w Get URL.** Wyczyść okienko **URL String** i składaj wyrażenie klikaniem, niczego nie przepisuj:
+
+1. Kliknij ikonę z kółkami zębatymi (pierwsza na liście, *Special*) → *Global strings* → **Global String A**. Fusion sam wstawi poprawne wyrażenie.
+2. Dopisz ` + "/api/sdk/achievements/ach_twoje_osiagniecie/unlock?token=" + `
+3. Znowu kółka zębate → **Global String B**.
+
+Pasek „Syntax error” powinien zmienić się na zielone „Valid expression”. Nazw zmiennych nie bierz w cudzysłów: `"Global String A"` to zwykły tekst i Get URL wysłałby go dosłownie. W tabelach niżej **Global String A** i **B** oznaczają wyrażenia wstawione klikiem.
+
+**2. Odblokuj osiągnięcie** (gdy Global String A nie jest pusty):
 
 | Akcja Get Object | Name | Value / URL |
 |---|---|---|
 | Add POST data | `"unlock"` | `"1"` (dowolne) |
-| Get URL | | `Url$ + "/api/sdk/achievements/ACH_FIRST_BOSS/unlock?token=" + Token$` |
+| Get URL | | Global String A + `"/api/sdk/achievements/ACH_FIRST_BOSS/unlock?token="` + Global String B |
 
 Tak wygląda poprawne okienko **URL String** (Global String A i B wstawione klikiem, nie wpisane):
 
@@ -329,13 +340,13 @@ Tak wygląda poprawne okienko **URL String** (Global String A i B wstawione klik
 | Akcja Get Object | Name | Value / URL |
 |---|---|---|
 | Add POST data | `"value"` | `Str$(Wygrane)` |
-| Get URL | | `Url$ + "/api/sdk/stats/NUM_GAMES?token=" + Token$` |
+| Get URL | | Global String A + `"/api/sdk/stats/NUM_GAMES?token="` + Global String B |
 
 Licznik osiągnięcia (`progress`) tak samo, tylko adres `.../achievements/ACH_KILLS/progress?token=...`, a `value` musi być nieujemną liczbą całkowitą. Ułamki statystyk FLOAT pisz z kropką (`12.5`).
 
 **4. Odpowiedź** (opcjonalnie): w zdarzeniu **On Get Complete** wyrażenie z treścią odpowiedzi Get Object zawiera JSON z punktu 4. Gdy jest w nim `"justUnlocked":true`, pokaż własny komunikat (np. `Find(treść, "\"justUnlocked\":true", 0) >= 0`). Gracz i tak dostaje powiadomienie w kliencie SGS, więc ten krok możesz pominąć.
 
-Listę osiągnięć i zapisanych statystyk pobierzesz samym **Get URL** (bez danych POST, więc idzie `GET`): `Url$ + "/api/sdk/achievements?lang=pl&token=" + Token$`.
+Listę osiągnięć i zapisanych statystyk pobierzesz samym **Get URL** (bez danych POST, więc idzie `GET`): Global String A + `"/api/sdk/achievements?lang=pl&token="` + Global String B.
 
 Każdy inny silnik działa tak samo: odczytaj dwie zmienne, ustaw nagłówek (albo `?token=`) i wyślij `POST`.
 
