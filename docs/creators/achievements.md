@@ -318,7 +318,31 @@ Get Object wysyła `POST` tylko wtedy, gdy przed **Get URL** dodasz jakieś dane
 
 W okienku akcji ma być wyrażenie rozszerzenia z nazwą zmiennej, np. `GetEnv$("SGS_API_URL")` (nazwa wyrażenia zależy od rozszerzenia), a **nie** sam tekst `"SGS_API_URL"` — wtedy Global String dostałby dosłownie ten napis zamiast adresu. Adres (`http://127.0.0.1:<port>`) i token zmieniają się przy każdym uruchomieniu, więc nie da się ich wpisać na stałe.
 
-Wartości tych zmiennych środowiskowych musi zwrócić rozszerzenie. Fusion nie ma wbudowanego wyrażenia, które je czyta (w Extension Managerze szukaj „environment”). Pusty Global String A = gra uruchomiona poza SGS, pomiń osiągnięcia.
+Wartości tych zmiennych środowiskowych musi zwrócić rozszerzenie. Fusion nie ma wbudowanego wyrażenia, które je czyta. Pusty Global String A = gra uruchomiona poza SGS, pomiń osiągnięcia.
+
+#### Obiekt OS: skąd gra bierze adres i token (dla początkujących)
+
+**O co chodzi.** Gdy gracz klika **Graj** w kliencie SGS, klient daje grze dwie informacje: adres, pod który gra ma wysyłać osiągnięcia, i jednorazowy klucz (token). Przekazuje je jako tzw. **zmienne środowiskowe**, czyli niewidoczne „karteczki” przyczepione do uruchomionej gry. Są inne przy każdym uruchomieniu, więc nie da się ich wpisać na sztywno. Gra musi je odczytać sama.
+
+**Czym je odczytać.** Fusion sam tego nie potrafi. Służy do tego **obiekt OS** (rozszerzenie dołączone do **Clickteam Fusion 2.5 Developer**). W wersji Free i Standard go nie ma.
+
+**Krok po kroku:**
+
+1. **Dodaj obiekt OS do ramki.** Prawy klik na pustym miejscu ramki → *Insert an object* → wyszukaj „OS” → wstaw. Na ekranie gry nic nie widać, to obiekt „niewidzialny”.
+2. **Otwórz Event Editor** i dodaj zdarzenie *Start of Frame* (z ikony kółek zębatych, *Special*).
+3. **Pierwsza akcja:** w kolumnie kółek zębatych wybierz *Change a global string* → **Global String A**. W okienku z wyrażeniem kliknij ikonę **obiektu OS** na liście na dole i wybierz jego wyrażenie do zmiennych środowiskowych (ma w nazwie *environment* / *variable*). W nawiasie wpisz nazwę zmiennej **w cudzysłowie**: `"SGS_API_URL"`.
+4. **Druga akcja:** tak samo dla **Global String B** i zmiennej `"SGS_ACHIEVEMENTS_TOKEN"`.
+5. **Sprawdź, czy działa.** Wstaw tymczasowo obiekt tekstowy (*String*) i w *Start of Frame* każ mu wyświetlić Global String A. Uruchom grę **z klienta SGS** (przycisk **Graj**, nie podgląd w Fusion). Powinieneś zobaczyć coś w rodzaju `http://127.0.0.1:51234`. Potem usuń ten tekst.
+
+**Najczęstsze błędy:**
+
+| Co widzisz | Dlaczego | Co zrobić |
+|---|---|---|
+| Global String A jest pusty | Gra uruchomiona z Fusion (podgląd / *Run Application*), a nie z klienta SGS | Zbuduj exe, opublikuj albo podmień w folderze gry i uruchom z klienta |
+| Global String A to napis `SGS_API_URL` | W akcji wpisano sam tekst `"SGS_API_URL"`, bez wyrażenia obiektu OS | Wstaw wyrażenie obiektu OS, a nazwę zmiennej podaj w jego nawiasie |
+| Nie ma obiektu OS na liście | Edycja Fusion bez Developera | Obiekt OS jest tylko w Developerze |
+
+Dokładna nazwa wyrażenia w obiekcie OS może się różnić między wersjami. Szukaj tego, które przyjmuje nazwę zmiennej i zwraca tekst.
 
 **Jak ułożyć adres w Get URL.** Wyczyść okienko **URL String** i składaj wyrażenie klikaniem, niczego nie przepisuj:
 
