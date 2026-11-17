@@ -121,6 +121,8 @@ Gdy gracz uruchamia grę z klienta SGS, proces dostaje trzy zmienne środowiskow
 | `SGS_GAME_ID` | `12` | Id Twojej gry |
 | `SGS_ACHIEVEMENTS_TOKEN` | `3f9a…` | Losowy token na jedno uruchomienie, akceptowany tylko przez most |
 
+Adres mostu i token są inne przy każdym uruchomieniu (klient losuje wolny port), więc nie wpisuj ich na stałe — zawsze czytaj je ze zmiennych. `SGS_GAME_ID` nie jest potrzebne do osiągnięć: most rozpoznaje grę po tokenie.
+
 Most podpisuje wywołania logowaniem gracza, więc token nie wygasa w długiej sesji. Gdy gracz jest **offline**, most **kolejkuje wywołania** i odtwarza je później. Kolejka przeżywa restart klienta. Jeśli zmiennych nie ma (gra uruchomiona poza SGS), pomiń osiągnięcia. Gra ma działać dalej.
 
 Token wysyłaj w nagłówku `X-SGS-Token`.
@@ -313,6 +315,8 @@ Get Object wysyła `POST` tylko wtedy, gdy przed **Get URL** dodasz jakieś dane
 
 - Special → Change a global string → **Global String A** = wartość zmiennej `SGS_API_URL`,
 - Special → Change a global string → **Global String B** = wartość zmiennej `SGS_ACHIEVEMENTS_TOKEN`.
+
+W okienku akcji ma być wyrażenie rozszerzenia z nazwą zmiennej, np. `GetEnv$("SGS_API_URL")` (nazwa wyrażenia zależy od rozszerzenia), a **nie** sam tekst `"SGS_API_URL"` — wtedy Global String dostałby dosłownie ten napis zamiast adresu. Adres (`http://127.0.0.1:<port>`) i token zmieniają się przy każdym uruchomieniu, więc nie da się ich wpisać na stałe.
 
 Wartości tych zmiennych środowiskowych musi zwrócić rozszerzenie. Fusion nie ma wbudowanego wyrażenia, które je czyta (w Extension Managerze szukaj „environment”). Pusty Global String A = gra uruchomiona poza SGS, pomiń osiągnięcia.
 
