@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.AppNotifications.Builder;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
 using SGSClient.UI.ViewModels;
@@ -32,7 +34,10 @@ public sealed partial class MainWindow : Window
         ApplyCaptionColors();
         ((FrameworkElement)Content).ActualThemeChanged += (_, _) => ApplyCaptionColors();
         Activated += (_, e) =>
-            AppTitleText.Opacity = e.WindowActivationState == WindowActivationState.Deactivated ? 0.5 : 1;
+        {
+            _isActive = e.WindowActivationState != WindowActivationState.Deactivated;
+            AppTitleText.Opacity = _isActive ? 1 : 0.5;
+        };
 
         Sidebar.ViewModel.SetNavigateHandler(NavigateByTag);
         Sidebar.ViewModel.SetOpenDetailsHandler(OpenGameDetails);
@@ -44,6 +49,77 @@ public sealed partial class MainWindow : Window
         WireNotificationsStatusBar();
         WireOfflineBanner();
         WireTray();
+        NotificationsViewModel.OpenPublishForm = () =>
+        {
+            NotificationsFlyout.Hide();
+            ShowFromTray();
+            NavigateByTagPublic("Publish");
+        };
+        WireSystemNotifications();
+    }
+
+    private bool _isActive = true;
+
+    /// <summary>
+    /// Mirrors client-only notices (upload finished/failed, "closing after the upload") as Windows toasts
+    /// while the launcher is hidden or in the background. Toasts are a convenience: if registration fails, skip them.
+    /// </summary>
+    private void WireSystemNotifications()
+    {
+        try
+        {
+            AppNotificationManager.Default.NotificationInvoked += (_, args) => DispatcherQueue.TryEnqueue(() =>
+            {
+                if (args.Arguments.TryGetValue("action", out var action) && action == "publish")
+                {
+                    NotificationsViewModel.OpenPublishForm?.Invoke();
+                }
+                else
+                {
+                    ShowFromTray();
+                }
+            });
+            AppNotificationManager.Default.Register();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SGS] App notifications unavailable: {ex.Message}");
+            return;
+        }
+
+        NotificationsViewModel.LocalPosted += notice =>
+        {
+            if (!_isActive)
+            {
+                ShowToast(notice);
+            }
+        };
+    }
+
+    private static void ShowToast(NotificationDto notice)
+    {
+        try
+        {
+            var builder = new AppNotificationBuilder()
+                .AddText(notice.Title)
+                .SetTimeStamp(DateTime.Now);
+            if (!string.IsNullOrWhiteSpace(notice.Body))
+            {
+                builder.AddText(notice.Body);
+            }
+
+            if (notice.OpensPublishForm)
+            {
+                builder.AddArgument("action", "publish")
+                    .AddButton(new AppNotificationButton(Loc.T("Przejdź do formularza")).AddArgument("action", "publish"));
+            }
+
+            AppNotificationManager.Default.Show(builder.BuildNotification());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SGS] Toast failed: {ex.Message}");
+        }
     }
 
     // Caption glyphs follow the system theme by default, so a light app theme on a dark system gives white-on-white buttons.
@@ -148,12 +224,22 @@ public sealed partial class MainWindow : Window
         {
             _exitPending = true;
             AppWindow.Hide();
+            _isActive = false; // the Deactivated event can arrive after this notice; it must still become a toast
             NotificationsViewModel.PostLocal(Loc.T("Trwa wysyłka gry — launcher zamknie się sam po jej zakończeniu."));
             await publish.WhenIdleAsync();
         }
 
         _exiting = true;
         _tray?.Dispose();
+        try
+        {
+            AppNotificationManager.Default.Unregister();
+        }
+        catch
+        {
+            // never registered
+        }
+
         Application.Current.Exit();
     }
 

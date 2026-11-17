@@ -385,7 +385,7 @@ public partial class PublishViewModel : ObservableObject
             Issues.Remove(BusyNotice);
             IsBusy = false;
             ShowProgress = false;
-            NotificationsViewModel.PostLocal(StatusText, Issues.FirstOrDefault());
+            NotificationsViewModel.PostLocal(StatusText, Issues.FirstOrDefault(), SGSClient.Core.DTOs.NotificationDto.PublishKind);
         }
     }
 
@@ -434,7 +434,7 @@ public partial class PublishViewModel : ObservableObject
             Issues.Remove(BusyNotice);
             IsBusy = false;
             ShowProgress = false;
-            NotificationsViewModel.PostLocal(StatusText, Issues.FirstOrDefault());
+            NotificationsViewModel.PostLocal(StatusText, Issues.FirstOrDefault(), SGSClient.Core.DTOs.NotificationDto.PublishKind);
         }
     }
 

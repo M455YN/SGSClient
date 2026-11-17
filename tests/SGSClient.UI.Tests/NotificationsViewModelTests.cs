@@ -22,6 +22,30 @@ public sealed class NotificationsViewModelTests
     }
 
     [Fact]
+    public async Task UploadNotice_OpensPublishForm_OtherNoticesDont()
+    {
+        var vm = new NotificationsViewModel();
+        var opened = 0;
+        NotificationsViewModel.OpenPublishForm = () => opened++;
+        try
+        {
+            NotificationsViewModel.PostLocal("Opublikowano: Test", kind: SGSClient.Core.DTOs.NotificationDto.PublishKind);
+            NotificationsViewModel.PostLocal("Inne");
+
+            var upload = vm.Items.Single(n => n.OpensPublishForm);
+            var other = vm.Items.Single(n => !n.OpensPublishForm);
+            await vm.MarkReadCommand.ExecuteAsync(other);
+            Assert.Equal(0, opened);
+            await vm.MarkReadCommand.ExecuteAsync(upload);
+            Assert.Equal(1, opened);
+        }
+        finally
+        {
+            NotificationsViewModel.OpenPublishForm = null;
+        }
+    }
+
+    [Fact]
     public async Task QuitWaitsForUpload_UntilPublishIsIdle()
     {
         var publish = new PublishViewModel { IsBusy = true };

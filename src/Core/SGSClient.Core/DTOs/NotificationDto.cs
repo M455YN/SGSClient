@@ -3,6 +3,12 @@ namespace SGSClient.Core.DTOs;
 
 public sealed class NotificationDto
 {
+    /// <summary>Client-only notice about a game pack/upload; offers a jump back to the publish form.</summary>
+    public const string PublishKind = "publish";
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool OpensPublishForm => Kind == PublishKind;
+
     public long Id { get; init; }
     public required string Kind { get; init; }
     public required string Title { get => Loc.TS(_title); init => _title = value; }

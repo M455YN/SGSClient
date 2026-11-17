@@ -14,14 +14,18 @@ public partial class NotificationsViewModel : ObservableObject
     private readonly SocialRealtimeService? _realtime;
     private readonly List<NotificationDto> _local = [];
     private static long _localId;
-    private static event Action<NotificationDto>? LocalPosted;
+    /// <summary>Raised for every client-only notice; the WinUI shell mirrors it as a Windows toast.</summary>
+    public static event Action<NotificationDto>? LocalPosted;
+
+    /// <summary>Set by the shell: show the window and open the publish form (its view model keeps the upload state).</summary>
+    public static Action? OpenPublishForm { get; set; }
 
     /// <summary>Client-only notice (e.g. a background upload finished). Not stored on the server; gone after restart.</summary>
-    public static void PostLocal(string title, string? body = null) =>
+    public static void PostLocal(string title, string? body = null, string kind = "local") =>
         LocalPosted?.Invoke(new NotificationDto
         {
             Id = Interlocked.Decrement(ref _localId),
-            Kind = "local",
+            Kind = kind,
             Title = title,
             Body = body,
             CreatedAtUtc = DateTimeOffset.UtcNow
@@ -158,6 +162,12 @@ public partial class NotificationsViewModel : ObservableObject
             && TryReadInvite(item.DataJson, out var gameId, out var code))
         {
             await LobbyJoin.RequestAsync(gameId, code);
+        }
+
+        if (item.OpensPublishForm)
+        {
+            IsOpen = false;
+            OpenPublishForm?.Invoke();
         }
 
         if (item.Id < 0)

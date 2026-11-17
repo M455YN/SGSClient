@@ -313,6 +313,8 @@ public partial class App : Application
             window.Activate();
         }
 
+        NotificationsViewModel.OpenPublishForm = () => ShowAndNavigate("Publish");
+
         void ShowAndNavigate(string tag)
         {
             Show();

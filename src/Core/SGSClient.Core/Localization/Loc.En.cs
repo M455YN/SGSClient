@@ -305,6 +305,7 @@ public static partial class Loc
         ["Graj"] = "Play",
         ["Historia i opis zmian"] = "History and release notes",
         ["Historia zmian"] = "Changelog",
+        ["Przejdź do formularza"] = "Open the form",
         ["Informacje"] = "Details",
         ["Pokaż więcej"] = "Show more",
         ["Pokaż mniej"] = "Show less",
