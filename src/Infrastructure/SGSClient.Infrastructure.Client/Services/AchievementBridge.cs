@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Web;
 using Microsoft.Extensions.Options;
 using SGSClient.Core.Achievements;
 using SGSClient.Core.Configuration;
@@ -251,7 +252,8 @@ public sealed class AchievementBridge : IDisposable
                 return;
             }
 
-            if (!_sessions.TryGetValue(request.Headers[TokenHeader] ?? string.Empty, out var gameId))
+            // ?token= is for engines that cannot set headers (Clickteam Fusion's Get Object).
+            if (!_sessions.TryGetValue(request.Headers[TokenHeader] ?? request.QueryString["token"] ?? string.Empty, out var gameId))
             {
                 await RespondAsync(context, HttpStatusCode.Unauthorized, Error("Brak lub nieprawidłowy token gry."));
                 return;
@@ -330,15 +332,9 @@ public sealed class AchievementBridge : IDisposable
                 return;
             }
 
-            try
+            if (await ReadValueAsync(context.Request, cancellationToken) is double v && v == Math.Floor(v) && v <= int.MaxValue)
             {
-                using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
-                var body = JsonSerializer.Deserialize<SetAchievementProgressRequest>(
-                    await reader.ReadToEndAsync(cancellationToken), Web);
-                value = body?.Value;
-            }
-            catch (JsonException)
-            {
+                value = (int)v;
             }
 
             if (value is null or < 0)
@@ -382,17 +378,7 @@ public sealed class AchievementBridge : IDisposable
             return;
         }
 
-        double? value = null;
-        try
-        {
-            using var reader = new StreamReader(context.Request.InputStream, Encoding.UTF8);
-            value = JsonSerializer.Deserialize<SetStatRequest>(await reader.ReadToEndAsync(cancellationToken), Web)?.Value;
-        }
-        catch (JsonException)
-        {
-        }
-
-        if (value is not double v || !double.IsFinite(v))
+        if (await ReadValueAsync(context.Request, cancellationToken) is not double v || !double.IsFinite(v))
         {
             await RespondAsync(context, HttpStatusCode.BadRequest, Error("Podaj wartość statystyki: {\"value\": 5}."));
             return;
@@ -418,6 +404,37 @@ public sealed class AchievementBridge : IDisposable
             JsonSerializer.Serialize(new { key, value = v, achievements = Array.Empty<object>(), queued = true }, Web));
     }
 
+    /// <summary>{"value": 5} as JSON, or value=5 as a form field or in the query (Clickteam Fusion's Get Object).</summary>
+    private static async Task<double?> ReadValueAsync(HttpListenerRequest request, CancellationToken cancellationToken)
+    {
+        using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
+        var body = await reader.ReadToEndAsync(cancellationToken);
+        try
+        {
+            if (JsonSerializer.Deserialize<JsonElement>(body, Web) is { ValueKind: JsonValueKind.Object } json
+                && json.TryGetProperty("value", out var field)
+                && field.ValueKind == JsonValueKind.Number
+                && field.TryGetDouble(out var fromJson))
+            {
+                return fromJson;
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        var text = HttpUtility.ParseQueryString(body)["value"] ?? request.QueryString["value"];
+        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) ? parsed : null;
+    }
+
+    /// <summary>The game's query minus <c>token</c>: the per-launch token never leaves the machine.</summary>
+    private static string QueryWithoutToken(HttpListenerRequest request)
+    {
+        var query = HttpUtility.ParseQueryString(request.Url!.Query);
+        query.Remove("token");
+        return query.Count == 0 ? string.Empty : "?" + query;
+    }
+
     private async Task RelayListAsync(HttpListenerContext context, int gameId, CancellationToken cancellationToken)
     {
         var token = await TryGetBearerAsync(cancellationToken);
@@ -431,7 +448,7 @@ public sealed class AchievementBridge : IDisposable
         {
             using var request = new HttpRequestMessage(
                 HttpMethod.Get,
-                $"{_apiBase}api/games/{gameId}/achievements{context.Request.Url!.Query}");
+                $"{_apiBase}api/games/{gameId}/achievements{QueryWithoutToken(context.Request)}");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             using var response = await _http.SendAsync(request, cancellationToken);
             await RespondAsync(

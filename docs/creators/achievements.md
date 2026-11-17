@@ -292,7 +292,38 @@ void SgsSetStat(const FString& Key, double Value)
 // SgsSetStat(TEXT("NUM_GAMES"), GamesWon);
 ```
 
-Każdy inny silnik działa tak samo: odczytaj dwie zmienne, ustaw nagłówek i wyślij `POST`.
+### Clickteam Fusion 2.5 (Get Object)
+
+Get Object nie ustawia nagłówków ani nie wysyła JSON-a, więc most przyjmuje od niego dwie rzeczy inaczej:
+
+- **token w adresie** — `?token=<SGS_ACHIEVEMENTS_TOKEN>` zamiast nagłówka `X-SGS-Token`,
+- **wartość jako pole formularza** — akcja **Add POST data** z **Name** = `value` i **Value** = liczba, zamiast `{"value": 12}`.
+
+Get Object wysyła `POST` tylko wtedy, gdy przed **Get URL** dodasz jakieś dane POST. Dla `unlock` dodaj więc dowolne pole (most je pomija).
+
+**1. Odczytaj zmienne przy starcie** (zdarzenie *Start of Frame*). Fusion nie ma wbudowanego wyrażenia na zmienne środowiskowe — użyj rozszerzenia, które je czyta (w Extension Managerze szukaj „environment”), i zapisz `SGS_API_URL` oraz `SGS_ACHIEVEMENTS_TOKEN` do zmiennych tekstowych, np. `Url$` i `Token$`. Pusta wartość = gra uruchomiona poza SGS, pomiń osiągnięcia.
+
+**2. Odblokuj osiągnięcie** (gdy `Url$` nie jest puste):
+
+| Akcja Get Object | Name | Value / URL |
+|---|---|---|
+| Add POST data | `unlock` | `1` (dowolne) |
+| Get URL | | `Url$ + "/api/sdk/achievements/ACH_FIRST_BOSS/unlock?token=" + Token$` |
+
+**3. Ustaw statystykę** (wartość bezwzględna, jak `SetStat`):
+
+| Akcja Get Object | Name | Value / URL |
+|---|---|---|
+| Add POST data | `value` | `Str$(Wygrane)` |
+| Get URL | | `Url$ + "/api/sdk/stats/NUM_GAMES?token=" + Token$` |
+
+Licznik osiągnięcia (`progress`) tak samo, tylko adres `.../achievements/ACH_KILLS/progress?token=...`, a `value` musi być nieujemną liczbą całkowitą. Ułamki statystyk FLOAT pisz z kropką (`12.5`).
+
+**4. Odpowiedź** (opcjonalnie): w zdarzeniu **On Get Complete** wyrażenie z treścią odpowiedzi Get Object zawiera JSON z punktu 4. Gdy jest w nim `"justUnlocked":true`, pokaż własny komunikat (np. `Find(treść, "\"justUnlocked\":true", 0) >= 0`). Gracz i tak dostaje powiadomienie w kliencie SGS, więc ten krok możesz pominąć.
+
+Listę osiągnięć i zapisanych statystyk pobierzesz samym **Get URL** (bez danych POST, więc idzie `GET`): `Url$ + "/api/sdk/achievements?lang=pl&token=" + Token$`.
+
+Każdy inny silnik działa tak samo: odczytaj dwie zmienne, ustaw nagłówek (albo `?token=`) i wyślij `POST`.
 
 ### Pełny przykład: wygrane mecze → statystyka → osiągnięcie
 

@@ -16,6 +16,8 @@ Każde wywołanie wysyła nagłówek:
 X-SGS-Token: <wartość SGS_ACHIEVEMENTS_TOKEN>
 ```
 
+Silnik, który nie ustawia nagłówków (Clickteam Fusion z Get Object), może dopisać token do adresu: `?token=<wartość>`. Wtedy `value` dla `progress` i `stats` można też wysłać jako pole formularza (`value=12`) zamiast JSON-a. Most nie przekazuje tokenu dalej do API. Przykład: [Osiągnięcia → Clickteam Fusion](../creators/achievements.md#clickteam-fusion-25-get-object).
+
 Most odpowiada na zapytania `OPTIONS` (CORS preflight), więc działają buildy HTML5 i WebGL.
 
 ## Odpowiedzi

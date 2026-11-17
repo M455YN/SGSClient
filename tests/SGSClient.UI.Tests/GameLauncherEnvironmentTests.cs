@@ -141,6 +141,28 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
     }
 
     [Fact]
+    public async Task FusionGetObject_TokenInTheUrlAndFormFields_Work_AndTheTokenNeverReachesTheApi()
+    {
+        var (bridge, token) = StartSession(gameId: 7);
+        using var http = new HttpClient();
+
+        var stat = await http.PostAsync(
+            $"{bridge.Start()}/api/sdk/stats/NUM_GAMES?token={token}",
+            new FormUrlEncodedContent(new Dictionary<string, string> { ["value"] = "12" }));
+        var progress = await http.PostAsync(
+            $"{bridge.Start()}/api/sdk/achievements/kills/progress?token={token}",
+            new FormUrlEncodedContent(new Dictionary<string, string> { ["value"] = "5" }));
+        var list = await http.GetAsync($"{bridge.Start()}/api/sdk/achievements?token={token}&lang=pl");
+
+        Assert.Equal(HttpStatusCode.OK, stat.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, progress.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        Assert.Contains("\"value\":12", _api.Requests[0].Body);
+        Assert.Contains("\"value\":5", _api.Requests[1].Body);
+        Assert.Equal("https://api.example/api/games/7/achievements?lang=pl", _api.Requests[2].Url);
+    }
+
+    [Fact]
     public async Task Launch_PassesTheLobbyCodeToTheGame()
     {
         var output = await LaunchAsync(CreateBridge(), gameId: 7, lobbyCode: "ABC234");
