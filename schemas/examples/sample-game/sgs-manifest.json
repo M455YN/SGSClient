@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "game": {
+    "title": "Sample Game",
+    "symbol": "sample-game",
+    "kind": "game",
+    "description": "Szablon przykładowej gry do wrzucenia na launcher SGS. Podmień pliki bin/ i media/ oraz zaktualizuj ten manifest.",
+    "hardwareRequirements": "OS: Windows 10+\nRAM: 4 GB\nGPU: DirectX 11",
+    "otherInformation": "To jest paczka-demo. Nie uruchamia prawdziwej gry — SampleGame.exe to atrapa.",
+    "genre": "indie",
+    "engine": "custom",
+    "studioName": "Example Studio",
+    "websiteUrl": "https://example.com",
+    "discordUrl": "https://discord.gg/example",
+    "supportUrl": "https://example.com/support",
+    "releaseStatus": "released",
+    "releaseDate": "2024-06-15",
+    "ageRating": "pegi12",
+    "features": ["singleplayer", "multiplayer", "controller"],
+    "languages": ["Polski", "English"],
+    "tags": ["roguelike", "pixel art"],
+    "media": {
+      "cover": "media/cover.png",
+      "header": "media/header.png",
+      "logo": "media/logo.png",
+      "screenshots": [
+        "media/screen-01.png",
+        "media/screen-02.png"
+      ]
+    }
+  },
+  "build": {
+    "version": "1.0.0",
+    "platform": "windows",
+    "architecture": "x64",
+    "executable": "bin/SampleGame.exe",
+    "isDefault": true,
+    "releaseNotes": "Pierwsza wersja szablonu paczki."
+  },
+  "package": {
+    "include": [
+      "bin/**",
+      "data/**",
+      "media/**",
+      "sgs-manifest.json"
+    ],
+    "exclude": [
+      "**/*.pdb",
+      "**/*.obj",
+      "**/obj/**",
+      "**/.git/**",
+      "**/node_modules/**",
+      "README.md"
+    ]
+  }
+}

@@ -82,8 +82,11 @@ sgsclient-api-linux-amd64.tar
 winui_output_pretty.json
 App_Data
 
-## Generated / local package examples
-schemas/examples/
+## Generated / local package examples (the two manifests are tracked: tests and docs read them)
+schemas/examples/**
+!schemas/examples/demo-runner.sgs-manifest.json
+!schemas/examples/sample-game/
+!schemas/examples/sample-game/sgs-manifest.json
 
 # Dev publish output
 dist/
