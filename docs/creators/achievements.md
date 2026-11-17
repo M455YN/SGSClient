@@ -307,7 +307,9 @@ Get Object wysyła `POST` tylko wtedy, gdy przed **Get URL** dodasz jakieś dane
 
 **Special Config → Set Timeout** przyda się, żeby gra nie czekała długo, gdy klient SGS nie odpowiada. Most odpowiada od razu, także offline (`202`), więc wystarczy kilka sekund. **Set User**, **Set Password** i **Set User Agent** nie są potrzebne.
 
-**1. Odczytaj zmienne przy starcie** (zdarzenie *Start of Frame*). Fusion nie ma wbudowanego wyrażenia na zmienne środowiskowe — użyj rozszerzenia, które je czyta (w Extension Managerze szukaj „environment”), i zapisz `SGS_API_URL` oraz `SGS_ACHIEVEMENTS_TOKEN` do zmiennych tekstowych, np. `Url$` i `Token$`. Pusta wartość = gra uruchomiona poza SGS, pomiń osiągnięcia.
+**1. Odczytaj zmienne przy starcie** (zdarzenie *Start of Frame*). Fusion nie ma wbudowanego wyrażenia na zmienne środowiskowe — użyj rozszerzenia, które je czyta (w Extension Managerze szukaj „environment”), i zapisz `SGS_API_URL` oraz `SGS_ACHIEVEMENTS_TOKEN` do dwóch zmiennych tekstowych (np. Global String albo Alterable String obiektu). Pusta wartość = gra uruchomiona poza SGS, pomiń osiągnięcia.
+
+> **`Url$` i `Token$` w przykładach niżej to tylko skróty**, a nie gotowe wyrażenia Fusion. W ich miejsce wstaw swoją zmienną, wybierając ją w edytorze wyrażeń (klik na obiekt / Special → Global String), **bez cudzysłowów**. Wpisane w cudzysłowie (`"Url$"`) są zwykłym tekstem i Get URL wyśle dosłownie `Url$/api/...`. Dobrze: `GlobalString$(...) + "/api/sdk/..."`. Źle: `"Url$" + "/api/sdk/..."`.
 
 **2. Odblokuj osiągnięcie** (gdy `Url$` nie jest puste):
 
