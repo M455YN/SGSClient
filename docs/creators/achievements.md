@@ -296,6 +296,21 @@ void SgsSetStat(const FString& Key, double Value)
 
 ### Clickteam Fusion 2.5 (Get Object)
 
+**W skrócie: co wpisujesz, a co gra robi sama.** Adres, pod który gra wysyła osiągnięcie, składa się z trzech części:
+
+| Część | Skąd się bierze | Przykład |
+|---|---|---|
+| **API URL** — adres klienta SGS na komputerze gracza | Gra odczytuje go sama przy starcie (zmienna `SGS_API_URL`, obiekt OS → Global String A). **Nie wpisujesz.** | `http://127.0.0.1:51234` |
+| **Ścieżka z API name** | **To jedyne, co wpisujesz**, w cudzysłowie. API name bierzesz z kolumny **API name** w tabeli osiągnięć w Panelu twórcy (nie z kolumny ID ani z nazwy). | `"/api/sdk/achievements/ttt/unlock?token="` |
+| **Token** | Gra odczytuje go sama przy starcie (zmienna `SGS_ACHIEVEMENTS_TOKEN`, obiekt OS → Global String B). **Nie wpisujesz.** | `3f9a…` |
+
+Wynik w **Get URL**: `Global String A + "/api/sdk/achievements/ttt/unlock?token=" + Global String B`, czyli np. `http://127.0.0.1:51234/api/sdk/achievements/ttt/unlock?token=3f9a…`.
+
+- **API URL i token zmieniają się przy każdym uruchomieniu** (klient losuje port i klucz), dlatego nie da się ich przepisać na stałe.
+- **API URL to nie adres strony** `https://sgs.m455yn.io`. Gra rozmawia z klientem SGS na tym samym komputerze, a ten przekazuje wywołanie na serwer.
+- Konfigurujesz to **raz** (zdarzenie *Start of Frame* z obiektem OS, opisane niżej). Przy każdym kolejnym osiągnięciu zmieniasz już tylko API name w ścieżce, np. `ttt` → `ach_witamy_w_grojcu`.
+- Wielkość liter w API name nie ma znaczenia (`ttt` = `TTT`). Po zapisaniu osiągnięcia API name już się nie zmienia, więc od razu nadaj docelowe.
+
 Get Object wysyła dane jako formularz, a nie JSON. Most przyjmuje od niego:
 
 - **wartość jako pole formularza** — akcja **Add POST data** z **Name** = `value` i **Value** = liczba, zamiast `{"value": 12}`,
