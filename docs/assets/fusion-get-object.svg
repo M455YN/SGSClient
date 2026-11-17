@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" font-family="Segoe UI, Arial, sans-serif" font-size="14">
+  <rect width="960" height="560" fill="#f4f5f7"/>
+  <text x="24" y="38" font-size="20" font-weight="600" fill="#1f2328">Clickteam Fusion 2.5: odblokowanie osiągnięcia przez Get Object</text>
+  <text x="24" y="62" fill="#57606a">Event List Editor, wersja z tokenem w adresie (?token=), wymaga klienta SGS 4.0.4.0+</text>
+
+  <!-- Event 1 -->
+  <rect x="24" y="84" width="912" height="34" rx="4" fill="#dbe7f5" stroke="#9fb6d3"/>
+  <text x="36" y="106" font-weight="600" fill="#1f2328">1</text>
+  <text x="60" y="106" fill="#1f2328">Start of Frame</text>
+
+  <rect x="56" y="124" width="880" height="34" rx="4" fill="#fff" stroke="#d0d7de"/>
+  <text x="70" y="146" fill="#57606a">Special:</text>
+  <text x="132" y="146" fill="#1f2328">Set Global String A to</text>
+  <rect x="290" y="131" width="352" height="22" rx="11" fill="#e8f1ff" stroke="#3b82f6"/>
+  <text x="302" y="147" fill="#1d4ed8">SGS_API_URL (z rozszerzenia do zmiennych env)</text>
+
+  <rect x="56" y="162" width="880" height="34" rx="4" fill="#fff" stroke="#d0d7de"/>
+  <text x="70" y="184" fill="#57606a">Special:</text>
+  <text x="132" y="184" fill="#1f2328">Set Global String B to</text>
+  <rect x="290" y="169" width="430" height="22" rx="11" fill="#e8f1ff" stroke="#3b82f6"/>
+  <text x="302" y="185" fill="#1d4ed8">SGS_ACHIEVEMENTS_TOKEN (z rozszerzenia do zmiennych env)</text>
+
+  <!-- Event 2 -->
+  <rect x="24" y="222" width="912" height="56" rx="4" fill="#dbe7f5" stroke="#9fb6d3"/>
+  <text x="36" y="244" font-weight="600" fill="#1f2328">2</text>
+  <text x="60" y="244" fill="#1f2328">Twój warunek (np. gracz wszedł do Grójca) + Only one action when event loops</text>
+  <text x="60" y="266" fill="#1f2328">+ Global String A is different from ""</text>
+  <text x="300" y="266" fill="#57606a">(pusty = gra uruchomiona poza SGS)</text>
+
+  <rect x="56" y="284" width="880" height="34" rx="4" fill="#fff" stroke="#d0d7de"/>
+  <text x="70" y="306" fill="#57606a">Get Object:</text>
+  <text x="152" y="306" fill="#1f2328">Add POST data   Name =</text>
+  <text x="318" y="306" fill="#b45309" font-family="Consolas, monospace">"unlock"</text>
+  <text x="400" y="306" fill="#1f2328">Value =</text>
+  <text x="458" y="306" fill="#b45309" font-family="Consolas, monospace">"1"</text>
+  <text x="520" y="306" fill="#57606a">← najpierw (bez danych POST poleci GET)</text>
+
+  <rect x="56" y="322" width="880" height="58" rx="4" fill="#fff" stroke="#d0d7de"/>
+  <text x="70" y="344" fill="#57606a">Get Object:</text>
+  <text x="152" y="344" fill="#1f2328">Get URL   URL String =</text>
+  <rect x="152" y="353" width="126" height="22" rx="11" fill="#e8f1ff" stroke="#3b82f6"/>
+  <text x="164" y="369" fill="#1d4ed8">Global String A</text>
+  <text x="286" y="369" fill="#1f2328">+</text>
+  <text x="300" y="369" fill="#b45309" font-family="Consolas, monospace">"/api/sdk/achievements/ach_witamy_w_grojcu/unlock?token="</text>
+  <text x="768" y="369" fill="#1f2328">+</text>
+  <rect x="782" y="353" width="126" height="22" rx="11" fill="#e8f1ff" stroke="#3b82f6"/>
+  <text x="794" y="369" fill="#1d4ed8">Global String B</text>
+
+  <!-- Legend -->
+  <rect x="24" y="404" width="912" height="132" rx="6" fill="#fff" stroke="#d0d7de"/>
+  <text x="40" y="430" font-weight="600" fill="#1f2328">Jak czytać</text>
+  <rect x="40" y="442" width="126" height="22" rx="11" fill="#e8f1ff" stroke="#3b82f6"/>
+  <text x="52" y="458" fill="#1d4ed8">Global String A</text>
+  <text x="180" y="458" fill="#1f2328">wybierz klikiem w edytorze wyrażeń (kółka zębate → Global strings). Nie wpisuj tej nazwy ręcznie.</text>
+  <text x="40" y="490" fill="#b45309" font-family="Consolas, monospace">"tekst"</text>
+  <text x="180" y="490" fill="#1f2328">wpisz dokładnie tak, razem z cudzysłowem.</text>
+  <text x="40" y="520" fill="#1f2328">Statystyka: Name =</text>
+  <text x="172" y="520" fill="#b45309" font-family="Consolas, monospace">"value"</text>
+  <text x="236" y="520" fill="#1f2328">, Value = Str$(liczba), adres …/api/sdk/stats/NUM_GAMES?token= + Global String B</text>
+</svg>
