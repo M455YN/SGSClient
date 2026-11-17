@@ -303,6 +303,8 @@ Get Object wysyła dane jako formularz, a nie JSON. Most przyjmuje od niego:
 
 Get Object wysyła `POST` tylko wtedy, gdy przed **Get URL** dodasz jakieś dane POST. Dla `unlock` dodaj więc dowolne pole (most je pomija).
 
+**Kolejność akcji ma znaczenie.** **Add POST data** (okienka **Name** i **Value**) musi być w zdarzeniu *nad* **Get URL** (okienko **URL String**). Fusion wykonuje akcje w kolejności z listy, a Get URL wysyła zapytanie od razu, więc dane dodane po nim pojadą dopiero z następnym zapytaniem. Jeśli wstawiłeś je w złej kolejności, przeciągnij **Add POST data** wyżej w **Event List Editorze** (prawy klik na zdarzeniu → *Event List Editor*). W okienkach **Name**, **Value** i **URL String** wpisujesz tekst w cudzysłowie (`"value"`) albo wyrażenie (`Str$(Wygrane)`, `Url$ + "..."`).
+
 **Special Config → Set Timeout** przyda się, żeby gra nie czekała długo, gdy klient SGS nie odpowiada. Most odpowiada od razu, także offline (`202`), więc wystarczy kilka sekund. **Set User**, **Set Password** i **Set User Agent** nie są potrzebne.
 
 **1. Odczytaj zmienne przy starcie** (zdarzenie *Start of Frame*). Fusion nie ma wbudowanego wyrażenia na zmienne środowiskowe — użyj rozszerzenia, które je czyta (w Extension Managerze szukaj „environment”), i zapisz `SGS_API_URL` oraz `SGS_ACHIEVEMENTS_TOKEN` do zmiennych tekstowych, np. `Url$` i `Token$`. Pusta wartość = gra uruchomiona poza SGS, pomiń osiągnięcia.
@@ -311,14 +313,14 @@ Get Object wysyła `POST` tylko wtedy, gdy przed **Get URL** dodasz jakieś dane
 
 | Akcja Get Object | Name | Value / URL |
 |---|---|---|
-| Add POST data | `unlock` | `1` (dowolne) |
+| Add POST data | `"unlock"` | `"1"` (dowolne) |
 | Get URL | | `Url$ + "/api/sdk/achievements/ACH_FIRST_BOSS/unlock?token=" + Token$` |
 
 **3. Ustaw statystykę** (wartość bezwzględna, jak `SetStat`):
 
 | Akcja Get Object | Name | Value / URL |
 |---|---|---|
-| Add POST data | `value` | `Str$(Wygrane)` |
+| Add POST data | `"value"` | `Str$(Wygrane)` |
 | Get URL | | `Url$ + "/api/sdk/stats/NUM_GAMES?token=" + Token$` |
 
 Licznik osiągnięcia (`progress`) tak samo, tylko adres `.../achievements/ACH_KILLS/progress?token=...`, a `value` musi być nieujemną liczbą całkowitą. Ułamki statystyk FLOAT pisz z kropką (`12.5`).
