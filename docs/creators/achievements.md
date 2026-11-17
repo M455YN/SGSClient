@@ -294,12 +294,16 @@ void SgsSetStat(const FString& Key, double Value)
 
 ### Clickteam Fusion 2.5 (Get Object)
 
-Get Object nie ustawia nagłówków ani nie wysyła JSON-a, więc most przyjmuje od niego dwie rzeczy inaczej:
+Get Object wysyła dane jako formularz, a nie JSON. Most przyjmuje od niego:
 
-- **token w adresie** — `?token=<SGS_ACHIEVEMENTS_TOKEN>` zamiast nagłówka `X-SGS-Token`,
-- **wartość jako pole formularza** — akcja **Add POST data** z **Name** = `value` i **Value** = liczba, zamiast `{"value": 12}`.
+- **wartość jako pole formularza** — akcja **Add POST data** z **Name** = `value` i **Value** = liczba, zamiast `{"value": 12}`,
+- **token na jeden z dwóch sposobów**:
+  - w adresie: `?token=<SGS_ACHIEVEMENTS_TOKEN>` (najprościej, tak jest w przykładach niżej),
+  - albo w nagłówku: **Special Config → Set Custom Header** z nagłówkiem `X-SGS-Token` i wartością `Token$`. Ustaw go przed każdym **Get URL**. Wtedy `?token=` w adresie jest zbędny.
 
 Get Object wysyła `POST` tylko wtedy, gdy przed **Get URL** dodasz jakieś dane POST. Dla `unlock` dodaj więc dowolne pole (most je pomija).
+
+**Special Config → Set Timeout** przyda się, żeby gra nie czekała długo, gdy klient SGS nie odpowiada. Most odpowiada od razu, także offline (`202`), więc wystarczy kilka sekund. **Set User**, **Set Password** i **Set User Agent** nie są potrzebne.
 
 **1. Odczytaj zmienne przy starcie** (zdarzenie *Start of Frame*). Fusion nie ma wbudowanego wyrażenia na zmienne środowiskowe — użyj rozszerzenia, które je czyta (w Extension Managerze szukaj „environment”), i zapisz `SGS_API_URL` oraz `SGS_ACHIEVEMENTS_TOKEN` do zmiennych tekstowych, np. `Url$` i `Token$`. Pusta wartość = gra uruchomiona poza SGS, pomiń osiągnięcia.
 
