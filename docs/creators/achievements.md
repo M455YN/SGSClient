@@ -306,6 +306,8 @@ void SgsSetStat(const FString& Key, double Value)
 
 Wynik w **Get URL**: `Global String A + "/api/sdk/achievements/ttt/unlock?token=" + Global String B`, czyli np. `http://127.0.0.1:51234/api/sdk/achievements/ttt/unlock?token=3f9a…`.
 
+![Zdarzenie Fusion z Get URL: Global String A i B gra bierze sama, wpisujesz tylko ścieżkę z API name](../assets/screenshots/fusion-url-czesci.png)
+
 - **API URL i token zmieniają się przy każdym uruchomieniu** (klient losuje port i klucz), dlatego nie da się ich przepisać na stałe.
 - **API URL to nie adres strony** `https://sgs.m455yn.io`. Gra rozmawia z klientem SGS na tym samym komputerze, a ten przekazuje wywołanie na serwer.
 - Konfigurujesz to **raz** (zdarzenie *Start of Frame* z obiektem OS, opisane niżej). Przy każdym kolejnym osiągnięciu zmieniasz już tylko API name w ścieżce, np. `ttt` → `ach_witamy_w_grojcu`.
