@@ -320,6 +320,10 @@ Get Object wysyła `POST` tylko wtedy, gdy przed **Get URL** dodasz jakieś dane
 | Add POST data | `"unlock"` | `"1"` (dowolne) |
 | Get URL | | `Url$ + "/api/sdk/achievements/ACH_FIRST_BOSS/unlock?token=" + Token$` |
 
+Tak wygląda poprawne okienko **URL String** (Global String A i B wstawione klikiem, nie wpisane):
+
+![Okienko URL String w Get Object z poprawnym wyrażeniem](../assets/screenshots/fusion-get-url.png)
+
 **3. Ustaw statystykę** (wartość bezwzględna, jak `SetStat`):
 
 | Akcja Get Object | Name | Value / URL |
