@@ -1,41 +1,13 @@
-using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using SGSClient.Core.DTOs;
 using SGSClient.Core.Interfaces;
+using SGSClient.Infrastructure.Server.Persistence.Entities;
 
 namespace SGSClient.Infrastructure.Server.Persistence.Services;
 
-/// <summary>
-/// Lobbies live in memory: they are short-lived and only help friends find a host.
-/// shortcut: a restart drops them and several API instances do not share them, move to the database or a cache then.
-/// </summary>
-public sealed class LobbyStore
-{
-    public ConcurrentDictionary<string, LobbyRecord> Lobbies { get; } = new(StringComparer.OrdinalIgnoreCase);
-}
-
-public sealed class LobbyRecord
-{
-    public required string Code { get; init; }
-    public required int GameId { get; init; }
-    public required int HostUserId { get; init; }
-    public required int MaxPlayers { get; init; }
-    public required DateTimeOffset CreatedAtUtc { get; init; }
-    public string Address { get; set; } = string.Empty;
-    public int Players { get; set; }
-    public bool IsOpen { get; set; } = true;
-    public DateTimeOffset LastSeenUtc { get; set; }
-
-    // Host is always the first member. Join/leave set Players = Members.Count; a game-created lobby keeps
-    // only the host here and its game reports Players through PATCH as before. Lock the record to change it.
-    public List<int> Members { get; } = [];
-    public bool Started { get; set; }
-}
-
 public sealed class LobbyService(
     SgsServerDbContext db,
-    LobbyStore store,
     IFriendsService friends,
     INotificationService notifications) : ILobbyService
 {
@@ -74,38 +46,42 @@ public sealed class LobbyService(
             throw new ArgumentException($"Ta gra obsługuje najwyżej {declaredMax} graczy.");
         }
 
-        Purge();
+        await PurgeAsync(cancellationToken);
         // One open lobby per host and game: starting a new one replaces the old one.
-        foreach (var old in store.Lobbies.Values.Where(l => l.HostUserId == hostUserId && l.GameId == request.GameId))
-        {
-            store.Lobbies.TryRemove(old.Code, out _);
-        }
+        db.Lobbies.RemoveRange(await db.Lobbies
+            .Where(l => l.HostUserId == hostUserId && l.GameId == request.GameId)
+            .ToListAsync(cancellationToken));
 
-        var now = DateTimeOffset.UtcNow;
-        LobbyRecord record;
+        string newCode;
         do
         {
-            record = new LobbyRecord
-            {
-                Code = NewCode(),
-                GameId = request.GameId,
-                HostUserId = hostUserId,
-                MaxPlayers = request.MaxPlayers,
-                CreatedAtUtc = now,
-                Address = address,
-                Players = request.Players,
-                LastSeenUtc = now,
-                Members = { hostUserId }
-            };
+            newCode = NewCode();
         }
-        while (!store.Lobbies.TryAdd(record.Code, record));
+        while (await db.Lobbies.AnyAsync(l => l.Code == newCode, cancellationToken));
+
+        var now = DateTimeOffset.UtcNow;
+        var record = new LobbyEntity
+        {
+            Code = newCode,
+            GameId = request.GameId,
+            HostUserId = hostUserId,
+            MaxPlayers = request.MaxPlayers,
+            CreatedAtUtc = now,
+            Address = address,
+            Players = request.Players,
+            LastSeenUtc = now,
+            Members = [hostUserId],
+            Version = Guid.NewGuid()
+        };
+        db.Lobbies.Add(record);
+        await db.SaveChangesAsync(cancellationToken);
 
         return (await ToDtosAsync([record], cancellationToken))[0];
     }
 
     public async Task<LobbyDto?> GetAsync(string code, CancellationToken cancellationToken = default)
     {
-        var record = Find(code);
+        var record = await FindAsync(code, cancellationToken);
         return record is null ? null : (await ToDtosAsync([record], cancellationToken))[0];
     }
 
@@ -115,7 +91,7 @@ public sealed class LobbyService(
         UpdateLobbyRequest request,
         CancellationToken cancellationToken = default)
     {
-        var record = FindHosted(hostUserId, code);
+        var record = await FindHostedAsync(hostUserId, code, cancellationToken);
         if (request.Address is not null)
         {
             record.Address = NormalizeAddress(request.Address);
@@ -136,15 +112,15 @@ public sealed class LobbyService(
             record.IsOpen = open;
         }
 
-        record.LastSeenUtc = DateTimeOffset.UtcNow;
+        await SaveAsync(record, cancellationToken);
         return (await ToDtosAsync([record], cancellationToken))[0];
     }
 
-    public Task CloseAsync(int hostUserId, string code, CancellationToken cancellationToken = default)
+    public async Task CloseAsync(int hostUserId, string code, CancellationToken cancellationToken = default)
     {
-        var record = FindHosted(hostUserId, code);
-        store.Lobbies.TryRemove(record.Code, out _);
-        return Task.CompletedTask;
+        var record = await FindHostedAsync(hostUserId, code, cancellationToken);
+        db.Lobbies.Remove(record);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<NotificationDto> InviteAsync(
@@ -153,7 +129,7 @@ public sealed class LobbyService(
         int friendUserId,
         CancellationToken cancellationToken = default)
     {
-        var record = FindHosted(hostUserId, code);
+        var record = await FindHostedAsync(hostUserId, code, cancellationToken);
         var overview = await friends.GetOverviewAsync(hostUserId, cancellationToken);
         if (overview.Friends.All(f => f.Id != friendUserId))
         {
@@ -174,7 +150,8 @@ public sealed class LobbyService(
 
     public async Task<LobbyDto> JoinAsync(int userId, string code, CancellationToken cancellationToken = default)
     {
-        var record = Find(code) ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
+        var record = await FindAsync(code, cancellationToken)
+            ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
         if (!record.Members.Contains(userId))
         {
             var overview = await friends.GetOverviewAsync(record.HostUserId, cancellationToken);
@@ -184,58 +161,54 @@ public sealed class LobbyService(
             }
 
             await EnsureOwnsGameAsync(userId, record.GameId, "Nie masz tej gry w bibliotece.", cancellationToken);
-            lock (record)
+            if (record.Started)
             {
-                if (record.Started)
-                {
-                    throw new ArgumentException("Gra w tym lobby już wystartowała.");
-                }
-
-                if (!record.Members.Contains(userId))
-                {
-                    if (record.Members.Count >= record.MaxPlayers)
-                    {
-                        throw new ArgumentException("Lobby jest pełne.");
-                    }
-
-                    record.Members.Add(userId);
-                    record.Players = record.Members.Count;
-                }
+                throw new ArgumentException("Gra w tym lobby już wystartowała.");
             }
+
+            if (record.Members.Count >= record.MaxPlayers)
+            {
+                throw new ArgumentException("Lobby jest pełne.");
+            }
+
+            record.Members = [.. record.Members, userId];
+            record.Players = record.Members.Count;
         }
 
         record.LastSeenUtc = DateTimeOffset.UtcNow;
+        await SaveAsync(record, cancellationToken);
         return (await ToDtosAsync([record], cancellationToken))[0];
     }
 
     public async Task<LobbyDto?> LeaveAsync(int userId, string code, CancellationToken cancellationToken = default)
     {
-        var record = Find(code) ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
+        var record = await FindAsync(code, cancellationToken)
+            ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
         if (record.HostUserId == userId)
         {
-            store.Lobbies.TryRemove(record.Code, out _);
+            db.Lobbies.Remove(record);
+            await db.SaveChangesAsync(cancellationToken);
             return null;
         }
 
-        lock (record)
+        if (!record.Members.Contains(userId))
         {
-            if (!record.Members.Remove(userId))
-            {
-                throw new UnauthorizedAccessException("Nie jesteś w tym lobby.");
-            }
-
-            record.Players = record.Members.Count;
+            throw new UnauthorizedAccessException("Nie jesteś w tym lobby.");
         }
 
+        record.Members = record.Members.Where(id => id != userId).ToList();
+        record.Players = record.Members.Count;
+        await SaveAsync(record, cancellationToken);
         return (await ToDtosAsync([record], cancellationToken))[0];
     }
 
     public async Task<LobbyDto> StartAsync(int hostUserId, string code, CancellationToken cancellationToken = default)
     {
-        var record = FindHosted(hostUserId, code);
+        var record = await FindHostedAsync(hostUserId, code, cancellationToken);
         record.Started = true;
         record.IsOpen = false;
         record.LastSeenUtc = DateTimeOffset.UtcNow;
+        await SaveAsync(record, cancellationToken);
         return (await ToDtosAsync([record], cancellationToken))[0];
     }
 
@@ -244,13 +217,9 @@ public sealed class LobbyService(
         string code,
         CancellationToken cancellationToken = default)
     {
-        var record = FindHosted(hostUserId, code);
+        var record = await FindHostedAsync(hostUserId, code, cancellationToken);
         var overview = await friends.GetOverviewAsync(hostUserId, cancellationToken);
-        List<int> members;
-        lock (record)
-        {
-            members = record.Members.ToList();
-        }
+        var members = record.Members;
 
         var candidates = overview.Friends.Where(f => !members.Contains(f.Id)).ToList();
         var ids = candidates.Select(f => f.Id).ToList();
@@ -272,13 +241,13 @@ public sealed class LobbyService(
         int userId,
         CancellationToken cancellationToken = default)
     {
-        Purge();
+        await PurgeAsync(cancellationToken);
         var overview = await friends.GetOverviewAsync(userId, cancellationToken);
-        var friendIds = overview.Friends.Select(f => f.Id).ToHashSet();
-        var visible = store.Lobbies.Values
+        var friendIds = overview.Friends.Select(f => f.Id).ToList();
+        var visible = await db.Lobbies.AsNoTracking()
             .Where(l => friendIds.Contains(l.HostUserId) && l.IsOpen && !l.Started && l.Players < l.MaxPlayers)
             .OrderByDescending(l => l.CreatedAtUtc)
-            .ToList();
+            .ToListAsync(cancellationToken);
         return await ToDtosAsync(visible, cancellationToken);
     }
 
@@ -300,35 +269,61 @@ public sealed class LobbyService(
         }
     }
 
-    private LobbyRecord? Find(string code)
+    private async Task<LobbyEntity?> FindAsync(string code, CancellationToken cancellationToken)
     {
-        Purge();
-        return store.Lobbies.TryGetValue((code ?? string.Empty).Trim(), out var record) ? record : null;
+        await PurgeAsync(cancellationToken);
+        var key = (code ?? string.Empty).Trim().ToUpperInvariant();
+        return await db.Lobbies.FirstOrDefaultAsync(l => l.Code == key, cancellationToken);
     }
 
-    private LobbyRecord FindHosted(int hostUserId, string code)
+    private async Task<LobbyEntity> FindHostedAsync(int hostUserId, string code, CancellationToken cancellationToken)
     {
-        var record = Find(code) ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
+        var record = await FindAsync(code, cancellationToken)
+            ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
         return record.HostUserId == hostUserId
             ? record
             : throw new UnauthorizedAccessException("To nie jest Twoje lobby.");
     }
 
-    private void Purge()
+    private async Task PurgeAsync(CancellationToken cancellationToken)
     {
         var cutoff = DateTimeOffset.UtcNow - ILobbyService.Lifetime;
-        foreach (var stale in store.Lobbies.Values.Where(l => l.LastSeenUtc < cutoff))
+        var stale = await db.Lobbies.Where(l => l.LastSeenUtc < cutoff).ToListAsync(cancellationToken);
+        if (stale.Count > 0)
         {
-            store.Lobbies.TryRemove(stale.Code, out _);
+            db.Lobbies.RemoveRange(stale);
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Another request purged or touched the same rows; the next call cleans up what is left.
+                db.ChangeTracker.Clear();
+            }
+        }
+    }
+
+    /// <summary>Saves a changed lobby; a concurrent change (two players taking the last slot) fails instead of overfilling it.</summary>
+    private async Task SaveAsync(LobbyEntity record, CancellationToken cancellationToken)
+    {
+        record.Version = Guid.NewGuid();
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            throw new ArgumentException("Lobby zmieniło się w tym samym momencie. Spróbuj ponownie.");
         }
     }
 
     private async Task<IReadOnlyList<LobbyDto>> ToDtosAsync(
-        IReadOnlyList<LobbyRecord> records,
+        IReadOnlyList<LobbyEntity> records,
         CancellationToken cancellationToken)
     {
         var gameIds = records.Select(r => r.GameId).Distinct().ToList();
-        var members = records.ToDictionary(r => r.Code, r => { lock (r) { return r.Members.ToList(); } });
+        var members = records.ToDictionary(r => r.Code, r => r.Members);
         var userIds = members.Values.SelectMany(m => m).Concat(records.Select(r => r.HostUserId)).Distinct().ToList();
         var titles = await db.Games.AsNoTracking()
             .Where(g => gameIds.Contains(g.Id))

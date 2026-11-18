@@ -139,7 +139,14 @@ public partial class MainWindowViewModel : ViewModelBase
         });
         _friends.SetOpenFullProfileHandler(OpenUserProfile);
         Sidebar.Lobby.SetViewHandlers(
-            () => ShowAddScreen(Sidebar.Lobby, "Library"),
+            () =>
+            {
+                // The lobby stays open; the sidebar's "W lobby" row brings it back after the upload.
+                if (!BlockedByUpload())
+                {
+                    ShowAddScreen(Sidebar.Lobby, "Library");
+                }
+            },
             () =>
             {
                 if (CurrentPage == Sidebar.Lobby)

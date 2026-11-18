@@ -136,5 +136,5 @@ curl -X POST "$SGS_API_URL/api/sdk/lobbies" \
 ## Ograniczenia
 
 - **SGS nie przechodzi przez NAT.** Przekazuje tylko `address`, który mu wysłałeś. Zwykły IP zadziała w LAN albo u hosta z otwartym portem. Przez internet wpisz do `address` kod relaya silnika (Unity Relay, Steam Networking, EOS, Photon), patrz [wyżej](#przez-internet-relay-silnika).
-- Lobby żyją w pamięci API. Restart API je kasuje, a kilka instancji API ich nie współdzieli.
+- Lobby są zapisywane w bazie, więc przeżywają restart API. Przy kilku instancjach API zdarzenie `LobbyUpdated` dociera tylko do klientów połączonych z tą samą instancją, dopóki SignalR nie dostanie wspólnego backplane'u (np. Redis).
 - Każdy zalogowany, kto zna kod, może odczytać lobby, bo kod jest sekretem. Zaproszenie i widok na liście mają tylko znajomi hosta.

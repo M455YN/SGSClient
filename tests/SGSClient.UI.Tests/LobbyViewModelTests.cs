@@ -87,8 +87,36 @@ public sealed class LobbyViewModelTests
         await vm.JoinAsync("ABC234");
 
         Assert.True(vm.NeedsInstall);
-        vm.Apply(Lobby(hostId: 5, members: [5, Me], max: 4, started: true));
+        var notices = new List<string>();
+        void OnPosted(NotificationDto n) => notices.Add(n.Title);
+        NotificationsViewModel.LocalPosted += OnPosted;
+        try
+        {
+            vm.Apply(Lobby(hostId: 5, members: [5, Me], max: 4, started: true));
+        }
+        finally
+        {
+            NotificationsViewModel.LocalPosted -= OnPosted;
+        }
+
         Assert.False(launched);
+        Assert.Contains("Gra wystartowała bez Ciebie", notices);
+    }
+
+    [Fact]
+    public async Task AnError_StaysVisible_WhenSomeoneJoins()
+    {
+        var api = FakeApi.Create();
+        api.Lobby = Lobby(hostId: Me, members: [Me], max: 4);
+        var vm = new LobbyViewModel(api.Proxy, new Auth(), null, null);
+        await vm.JoinAsync("ABC234");
+
+        await vm.StartCommand.ExecuteAsync(null); // the fake API returns no lobby, so Start fails
+        var error = vm.StatusText;
+        vm.Apply(Lobby(hostId: Me, members: [Me, 5], max: 4));
+
+        Assert.Equal("Nie udało się wystartować.", error);
+        Assert.Equal(error, vm.StatusText);
     }
 
     private static LobbyDto Lobby(int hostId, int[] members, int max, bool started = false) => new()

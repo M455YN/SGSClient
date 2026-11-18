@@ -22,7 +22,7 @@ public class LobbyServiceTests
     public async Task HostCanCreateReadUpdateAndCloseALobby()
     {
         await using var db = CreateDb();
-        var (sut, _) = CreateSut(db);
+        var sut = CreateSut(db);
 
         var lobby = await sut.CreateAsync(Host, Request());
 
@@ -42,7 +42,7 @@ public class LobbyServiceTests
     public async Task Create_RejectsUnownedGamesAndBadInput_AndReplacesTheHostsOldLobby()
     {
         await using var db = CreateDb();
-        var (sut, _) = CreateSut(db);
+        var sut = CreateSut(db);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sut.CreateAsync(Stranger, Request()));
         await Assert.ThrowsAsync<KeyNotFoundException>(() => sut.CreateAsync(Host, Request(gameId: 99)));
@@ -61,7 +61,7 @@ public class LobbyServiceTests
     public async Task Create_RespectsTheGamesDeclaredLobbyMaxPlayers()
     {
         await using var db = CreateDb();
-        var (sut, _) = CreateSut(db);
+        var sut = CreateSut(db);
         (await db.Games.SingleAsync(g => g.Id == GameId)).LobbyMaxPlayers = 3;
         await db.SaveChangesAsync();
 
@@ -73,7 +73,7 @@ public class LobbyServiceTests
     public async Task OnlyTheHostChangesALobby_AndStaleOnesExpire()
     {
         await using var db = CreateDb();
-        var (sut, store) = CreateSut(db);
+        var sut = CreateSut(db);
         var lobby = await sut.CreateAsync(Host, Request());
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
@@ -82,7 +82,8 @@ public class LobbyServiceTests
         await Assert.ThrowsAsync<ArgumentException>(() =>
             sut.UpdateAsync(Host, lobby.Code, new UpdateLobbyRequest { Players = 0 }));
 
-        store.Lobbies[lobby.Code].LastSeenUtc = DateTimeOffset.UtcNow - ILobbyService.Lifetime - TimeSpan.FromSeconds(1);
+        (await db.Lobbies.SingleAsync(l => l.Code == lobby.Code)).LastSeenUtc = DateTimeOffset.UtcNow - ILobbyService.Lifetime - TimeSpan.FromSeconds(1);
+        await db.SaveChangesAsync();
 
         Assert.Null(await sut.GetAsync(lobby.Code));
         await Assert.ThrowsAsync<KeyNotFoundException>(() => sut.UpdateAsync(Host, lobby.Code, new UpdateLobbyRequest()));
@@ -92,7 +93,7 @@ public class LobbyServiceTests
     public async Task Invite_NotifiesAFriendWithTheCode_AndRefusesStrangers()
     {
         await using var db = CreateDb();
-        var (sut, _) = CreateSut(db);
+        var sut = CreateSut(db);
         var lobby = await sut.CreateAsync(Host, Request());
 
         var notification = await sut.InviteAsync(Host, lobby.Code, Friend);
@@ -110,7 +111,7 @@ public class LobbyServiceTests
     public async Task FriendLobbies_ListOnlyOpenLobbiesWithAFreeSlotThatFriendsHost()
     {
         await using var db = CreateDb();
-        var (sut, _) = CreateSut(db);
+        var sut = CreateSut(db);
         var lobby = await sut.CreateAsync(Host, Request());
 
         Assert.Equal(lobby.Code, Assert.Single(await sut.ListFriendLobbiesAsync(Friend)).Code);
@@ -127,7 +128,7 @@ public class LobbyServiceTests
     public async Task Join_AddsAFriendWhoOwnsTheGame_AndRefusesOthers()
     {
         await using var db = CreateDb();
-        var (sut, _) = CreateSut(db);
+        var sut = CreateSut(db);
         var lobby = await sut.CreateAsync(Host, new CreateLobbyRequest { GameId = GameId, MaxPlayers = 2 });
         Assert.Equal(string.Empty, lobby.Address);
 
@@ -145,7 +146,7 @@ public class LobbyServiceTests
     public async Task Start_IsHostOnly_AndHidesTheLobby_AndHostLeavingClosesIt()
     {
         await using var db = CreateDb();
-        var (sut, _) = CreateSut(db);
+        var sut = CreateSut(db);
         var lobby = await sut.CreateAsync(Host, new CreateLobbyRequest { GameId = GameId });
         await sut.JoinAsync(Friend, lobby.Code);
 
@@ -167,7 +168,7 @@ public class LobbyServiceTests
     public async Task Invite_RefusesAFriendWithoutTheGame_AndInvitableListsOnlyOwnersNotInTheLobby()
     {
         await using var db = CreateDb();
-        var (sut, _) = CreateSut(db);
+        var sut = CreateSut(db);
         var lobby = await sut.CreateAsync(Host, new CreateLobbyRequest { GameId = GameId });
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sut.InviteAsync(Host, lobby.Code, FriendWithoutGame));
@@ -178,10 +179,30 @@ public class LobbyServiceTests
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sut.ListInvitableAsync(Friend, lobby.Code));
     }
 
+    [Fact]
+    public async Task Lobbies_SurviveANewServiceInstance_AndTheLastSlotGoesToOnePlayer()
+    {
+        var name = Guid.NewGuid().ToString("N");
+        await using var db = CreateDb(name);
+        var sut = CreateSut(db);
+        var lobby = await sut.CreateAsync(Host, new CreateLobbyRequest { GameId = GameId, MaxPlayers = 2 });
+
+        // A second API instance (or one after a restart) sees the same lobby.
+        await using var otherDb = CreateDb(name);
+        var other = new LobbyService(otherDb, new FriendsService(otherDb, new EfNotificationService(otherDb)), new EfNotificationService(otherDb));
+        Assert.Equal(Host, (await other.GetAsync(lobby.Code))!.HostUserId);
+
+        // Both instances read the lobby with one free slot; only the first join may take it.
+        await other.GetAsync(lobby.Code);
+        await sut.JoinAsync(Friend, lobby.Code);
+        await Assert.ThrowsAsync<ArgumentException>(() => other.JoinAsync(SecondFriend, lobby.Code));
+        Assert.Equal([Host, Friend], (await sut.GetAsync(lobby.Code))!.Members.Select(m => m.UserId));
+    }
+
     private static CreateLobbyRequest Request(int gameId = GameId, string address = "192.168.0.5:7777", int players = 1) =>
         new() { GameId = gameId, Address = address, MaxPlayers = 4, Players = players };
 
-    private static (LobbyService Sut, LobbyStore Store) CreateSut(SgsServerDbContext db)
+    private static LobbyService CreateSut(SgsServerDbContext db)
     {
         db.Users.AddRange(
             new UserEntity { Id = Host, AzureSub = "h", DisplayName = "Host" },
@@ -208,12 +229,11 @@ public class LobbyServiceTests
         db.SaveChanges();
 
         var notifications = new EfNotificationService(db);
-        var store = new LobbyStore();
-        return (new LobbyService(db, store, new FriendsService(db, notifications), notifications), store);
+        return new LobbyService(db, new FriendsService(db, notifications), notifications);
     }
 
-    private static SgsServerDbContext CreateDb() =>
+    private static SgsServerDbContext CreateDb(string? name = null) =>
         new(new DbContextOptionsBuilder<SgsServerDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
+            .UseInMemoryDatabase(name ?? Guid.NewGuid().ToString("N"))
             .Options);
 }

@@ -33,9 +33,30 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
     public DbSet<StoryEntity> Stories => Set<StoryEntity>();
     public DbSet<StoryChapterEntity> StoryChapters => Set<StoryChapterEntity>();
     public DbSet<CreativeCommentEntity> CreativeComments => Set<CreativeCommentEntity>();
+    public DbSet<LobbyEntity> Lobbies => Set<LobbyEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<LobbyEntity>(entity =>
+        {
+            entity.ToTable("lobbies");
+            entity.HasKey(x => x.Code);
+            entity.Property(x => x.Code).HasMaxLength(16);
+            entity.Property(x => x.Address).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Members)
+                .HasMaxLength(200)
+                .HasConversion(
+                    v => string.Join(',', v),
+                    s => s.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList(),
+                    new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<int>>(
+                        (a, b) => a!.SequenceEqual(b!),
+                        v => v.Aggregate(0, (h, x) => HashCode.Combine(h, x)),
+                        v => v.ToList()));
+            entity.Property(x => x.Version).IsConcurrencyToken();
+            entity.HasIndex(x => new { x.HostUserId, x.GameId });
+            entity.HasIndex(x => x.LastSeenUtc);
+        });
+
         modelBuilder.Entity<UserEntity>(entity =>
         {
             entity.ToTable("users");

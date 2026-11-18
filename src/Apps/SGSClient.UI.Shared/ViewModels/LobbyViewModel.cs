@@ -23,6 +23,7 @@ public partial class LobbyViewModel : ObservableObject
     private readonly IUiTimer? _keepAlive;
     private Action? _show;
     private Action? _close;
+    private string? _error;
 
     public LobbyViewModel()
         : this(null, null, null, null)
@@ -207,11 +208,18 @@ public partial class LobbyViewModel : ObservableObject
         {
             var host = IsHost || IsMe(dto.HostUserId);
             var canLaunch = !NeedsInstall;
+            var title = GameTitle;
             Reset();
             _close?.Invoke();
             if (canLaunch)
             {
                 _ = LaunchGame?.Invoke(dto.GameId, dto.Code, host);
+            }
+            else
+            {
+                NotificationsViewModel.PostLocal(
+                    Loc.T("Gra wystartowała bez Ciebie"),
+                    Loc.F("Zainstaluj {0}, żeby zagrać ze znajomymi następnym razem.", title));
             }
 
             return;
@@ -237,7 +245,8 @@ public partial class LobbyViewModel : ObservableObject
         var max = Math.Max(dto.MaxPlayers, dto.Members.Count);
         PlayersText = $"{dto.Members.Count} / {max}";
         SidebarText = Loc.F("W lobby: {0} {1}/{2}", GameTitle, dto.Members.Count, max);
-        StatusText = IsHost ? Loc.T("Zaproś znajomych i naciśnij Start") : Loc.T("Czekamy na gospodarza…");
+        // A lobby update (someone joining) must not wipe an error the player has not acted on yet.
+        StatusText = _error ?? (IsHost ? Loc.T("Zaproś znajomych i naciśnij Start") : Loc.T("Czekamy na gospodarza…"));
 
         Slots.Clear();
         for (var i = 0; i < max; i++)
@@ -296,10 +305,11 @@ public partial class LobbyViewModel : ObservableObject
         if (ok)
         {
             friend.IsInvited = true;
+            ShowError(null);
         }
         else
         {
-            StatusText = error ?? Loc.T("Nie udało się wysłać zaproszenia.");
+            ShowError(error ?? Loc.T("Nie udało się wysłać zaproszenia."));
         }
     }
 
@@ -314,11 +324,19 @@ public partial class LobbyViewModel : ObservableObject
         var (started, error) = await _api.StartLobbyAsync(lobby.Code);
         if (started is null)
         {
-            StatusText = error ?? Loc.T("Nie udało się wystartować.");
+            ShowError(error ?? Loc.T("Nie udało się wystartować."));
             return;
         }
 
+        ShowError(null);
         Apply(started);
+    }
+
+    /// <summary>Shows an error until the next successful action; null goes back to the normal status.</summary>
+    private void ShowError(string? error)
+    {
+        _error = error;
+        StatusText = error ?? (IsHost ? Loc.T("Zaproś znajomych i naciśnij Start") : Loc.T("Czekamy na gospodarza…"));
     }
 
     [RelayCommand]
@@ -374,6 +392,7 @@ public partial class LobbyViewModel : ObservableObject
         HasFriends = false;
         SidebarText = string.Empty;
         GameTitle = string.Empty;
+        _error = null;
     }
 
     private async Task KeepAliveAsync()

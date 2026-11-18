@@ -311,6 +311,8 @@ public static partial class Loc
         ["W lobby: {0} {1}/{2}"] = "In lobby: {0} {1}/{2}",
         ["Zaproś znajomych i naciśnij Start"] = "Invite friends and press Start",
         ["Czekamy na gospodarza…"] = "Waiting for the host…",
+        ["Gra wystartowała bez Ciebie"] = "The game started without you",
+        ["Zainstaluj {0}, żeby zagrać ze znajomymi następnym razem."] = "Install {0} to play with your friends next time.",
         ["Wolne miejsce"] = "Free slot",
         ["Nie udało się wysłać zaproszenia."] = "Could not send the invite.",
         ["Nie udało się wystartować."] = "Could not start.",
