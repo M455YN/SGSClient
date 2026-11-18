@@ -154,12 +154,7 @@ public sealed class LobbyService(
             ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
         if (!record.Members.Contains(userId))
         {
-            var overview = await friends.GetOverviewAsync(record.HostUserId, cancellationToken);
-            if (overview.Friends.All(f => f.Id != userId))
-            {
-                throw new UnauthorizedAccessException("Dołączyć można tylko do lobby znajomego.");
-            }
-
+            // The code works like an invite (e.g. pasted on Discord): owning the game is enough, no friendship needed.
             await EnsureOwnsGameAsync(userId, record.GameId, "Nie masz tej gry w bibliotece.", cancellationToken);
             if (record.Started)
             {
@@ -184,20 +179,26 @@ public sealed class LobbyService(
     {
         var record = await FindAsync(code, cancellationToken)
             ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
-        if (record.HostUserId == userId)
+        if (!record.Members.Contains(userId) && record.HostUserId != userId)
+        {
+            throw new UnauthorizedAccessException("Nie jesteś w tym lobby.");
+        }
+
+        RemoveMember(record, userId);
+        if (record.Members.Count == 0)
         {
             db.Lobbies.Remove(record);
             await db.SaveChangesAsync(cancellationToken);
             return null;
         }
 
-        if (!record.Members.Contains(userId))
+        if (record.HostUserId == userId)
         {
-            throw new UnauthorizedAccessException("Nie jesteś w tym lobby.");
+            // The party stays together: the guest who joined first becomes the host.
+            record.HostUserId = record.Members[0];
+            record.Ready = record.Ready.Where(id => id != record.HostUserId).ToList();
         }
 
-        record.Members = record.Members.Where(id => id != userId).ToList();
-        record.Players = record.Members.Count;
         await SaveAsync(record, cancellationToken);
         return (await ToDtosAsync([record], cancellationToken))[0];
     }
@@ -205,11 +206,73 @@ public sealed class LobbyService(
     public async Task<LobbyDto> StartAsync(int hostUserId, string code, CancellationToken cancellationToken = default)
     {
         var record = await FindHostedAsync(hostUserId, code, cancellationToken);
+        if (record.Members.Any(id => id != record.HostUserId && !record.Ready.Contains(id)))
+        {
+            throw new ArgumentException("Nie wszyscy gracze są gotowi.");
+        }
+
         record.Started = true;
         record.IsOpen = false;
         record.LastSeenUtc = DateTimeOffset.UtcNow;
         await SaveAsync(record, cancellationToken);
         return (await ToDtosAsync([record], cancellationToken))[0];
+    }
+
+    public async Task<LobbyDto> SetReadyAsync(int userId, string code, bool ready, CancellationToken cancellationToken = default)
+    {
+        var record = await FindAsync(code, cancellationToken)
+            ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
+        if (!record.Members.Contains(userId))
+        {
+            throw new UnauthorizedAccessException("Nie jesteś w tym lobby.");
+        }
+
+        if (record.HostUserId != userId)
+        {
+            record.Ready = ready
+                ? record.Ready.Contains(userId) ? record.Ready : [.. record.Ready, userId]
+                : record.Ready.Where(id => id != userId).ToList();
+            await SaveAsync(record, cancellationToken);
+        }
+
+        return (await ToDtosAsync([record], cancellationToken))[0];
+    }
+
+    public async Task<LobbyDto> KickAsync(int hostUserId, string code, int userId, CancellationToken cancellationToken = default)
+    {
+        var record = await FindHostedAsync(hostUserId, code, cancellationToken);
+        if (userId == hostUserId)
+        {
+            throw new ArgumentException("Nie możesz wyrzucić siebie. Wyjdź z lobby.");
+        }
+
+        if (!record.Members.Contains(userId))
+        {
+            throw new KeyNotFoundException("Tego gracza nie ma w lobby.");
+        }
+
+        RemoveMember(record, userId);
+        await SaveAsync(record, cancellationToken);
+        return (await ToDtosAsync([record], cancellationToken))[0];
+    }
+
+    public async Task<LobbyDto> FinishAsync(int hostUserId, string code, CancellationToken cancellationToken = default)
+    {
+        var record = await FindHostedAsync(hostUserId, code, cancellationToken);
+        record.Started = false;
+        record.IsOpen = true;
+        record.Address = string.Empty;
+        record.Ready = [];
+        record.LastSeenUtc = DateTimeOffset.UtcNow;
+        await SaveAsync(record, cancellationToken);
+        return (await ToDtosAsync([record], cancellationToken))[0];
+    }
+
+    private static void RemoveMember(LobbyEntity record, int userId)
+    {
+        record.Members = record.Members.Where(id => id != userId).ToList();
+        record.Ready = record.Ready.Where(id => id != userId).ToList();
+        record.Players = record.Members.Count;
     }
 
     public async Task<IReadOnlyList<InvitableFriendDto>> ListInvitableAsync(
@@ -345,7 +408,12 @@ public sealed class LobbyService(
             IsOpen = r.IsOpen,
             CreatedAtUtc = r.CreatedAtUtc,
             Members = members[r.Code]
-                .Select(id => new LobbyMemberDto { UserId = id, DisplayName = names.GetValueOrDefault(id) })
+                .Select(id => new LobbyMemberDto
+                {
+                    UserId = id,
+                    DisplayName = names.GetValueOrDefault(id),
+                    IsReady = id == r.HostUserId || r.Ready.Contains(id)
+                })
                 .ToList(),
             Started = r.Started
         }).ToList();

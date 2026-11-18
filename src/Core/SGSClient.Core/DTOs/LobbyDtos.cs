@@ -28,6 +28,9 @@ public sealed class LobbyMemberDto
 {
     public int UserId { get; init; }
     public string? DisplayName { get; init; }
+
+    /// <summary>The guest pressed "Gotowy"; always true for the host.</summary>
+    public bool IsReady { get; init; }
 }
 
 /// <summary>A friend of the host who owns the game and is not in the lobby yet.</summary>
@@ -55,6 +58,16 @@ public sealed class UpdateLobbyRequest
     public string? Address { get; set; }
     public int? Players { get; set; }
     public bool? IsOpen { get; set; }
+}
+
+public sealed class LobbyReadyRequest
+{
+    public bool Ready { get; set; }
+}
+
+public sealed class KickLobbyRequest
+{
+    public int UserId { get; set; }
 }
 
 public sealed class InviteLobbyRequest

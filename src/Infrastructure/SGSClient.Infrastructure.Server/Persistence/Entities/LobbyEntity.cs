@@ -18,6 +18,9 @@ public sealed class LobbyEntity
     // only the host here and its game reports Players through PATCH as before. Stored as one comma list.
     public List<int> Members { get; set; } = [];
 
+    /// <summary>Guests who pressed "Gotowy"; the host can start only when every guest is here. Cleared after a match.</summary>
+    public List<int> Ready { get; set; } = [];
+
     /// <summary>Changed on every save, so two players joining the last slot at once cannot both get in.</summary>
     public Guid Version { get; set; }
 }

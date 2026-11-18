@@ -747,6 +747,11 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                     b.Property<int>("Players")
                         .HasColumnType("int");
 
+                    b.Property<string>("Ready")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<bool>("Started")
                         .HasColumnType("bit");
 

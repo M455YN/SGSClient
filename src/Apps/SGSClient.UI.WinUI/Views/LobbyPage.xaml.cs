@@ -24,6 +24,14 @@ public sealed partial class LobbyPage : Page
         Clipboard.SetContent(package);
     }
 
+    private void Kick_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: LobbySlotItem slot })
+        {
+            ViewModel.KickCommand.Execute(slot);
+        }
+    }
+
     private void Invite_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { Tag: LobbyFriendItem friend })

@@ -68,6 +68,11 @@ public partial class ShellSidebarViewModel : ObservableObject
         Lobby.LaunchGame = (gameId, code, host) => LaunchInLobbyAsync(gameId, code, host);
         Lobby.IsGameInstalled = async gameId => await FindInstalledAsync(gameId) is not null;
         Lobby.OpenGameDetails = gameId => _openDetails?.Invoke(gameId);
+        LobbyJoin.CodeHandler = Lobby.JoinByCodeAsync;
+        if (_launcher is not null)
+        {
+            _launcher.SessionEnded += gameId => _ = Lobby.GameEndedAsync(gameId);
+        }
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         RefreshProfile();

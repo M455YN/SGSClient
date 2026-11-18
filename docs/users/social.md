@@ -43,7 +43,8 @@ Lobby nie przechodzi przez NAT: połączenie z hostem działa w tej samej sieci 
 Jeśli gra to obsługuje, na jej stronie w bibliotece jest przycisk **Graj ze znajomymi**.
 
 1. Kliknij go. Klient otworzy lobby z listą graczy.
-2. Zaproś znajomych, którzy mają grę. Dołączą przez zaproszenie albo **Dołącz** na liście znajomych. W czasie oczekiwania pasek boczny pokazuje **W lobby**.
-3. Gdy wszyscy są, host klika **Start**. Gra uruchamia się u każdego i łączy graczy sama.
+2. Zaproś znajomych, którzy mają grę. Dołączą przez zaproszenie albo **Dołącz** na liście znajomych. Możesz też podać komuś kod lobby: wpisuje go w polu **Kod lobby** w zakładce **Znajomi**. W czasie oczekiwania pasek boczny pokazuje **W lobby**.
+3. Każdy gość klika **Gotowy**. Host może wyrzucić gracza przyciskiem ✕ przy jego nazwie.
+4. Gdy wszyscy są gotowi, host klika **Start**. Gra uruchamia się u każdego i łączy graczy sama.
 
-Po meczu lobby się zamyka. Na kolejną rundę utwórz nowe.
+Po meczu wszyscy wracają do lobby w tym samym składzie, więc kolejną rundę zaczyna się bez ponownego zapraszania. Jeśli host wyjdzie, gospodarzem zostaje kolejny gracz.

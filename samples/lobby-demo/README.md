@@ -15,6 +15,7 @@ Kodu lobby **nigdzie nie wpisujesz**. Gdy host w kliencie kliknie **Start**, kli
 1. **Host** uruchamia serwer TCP i wysyła swój adres: `PATCH /api/sdk/lobbies/{code}` z `{"address":"192.168.0.5:53265"}`. Potem co 2 minuty wysyła pusty `PATCH`, żeby lobby nie wygasło.
 2. **Gość** odpytuje `GET /api/sdk/lobbies/{code}`, aż pole `address` przestanie być puste, i łączy się z tym adresem.
 3. Dalej gra działa już bez SGS. Host liczy wyniki i rozsyła je do wszystkich graczy.
+4. Gdy host zamknie grę (`q`), klient SGS sam przywraca wszystkich do lobby na kolejną rundę. Gra nie musi wywoływać `finish`.
 
 Nazwa gracza pochodzi z `GET /api/sdk/me`.
 

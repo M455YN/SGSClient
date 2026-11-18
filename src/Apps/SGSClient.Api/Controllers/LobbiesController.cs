@@ -90,6 +90,41 @@ public sealed class LobbiesController(
     public Task<ActionResult<LobbyDto>> Start(string code, CancellationToken cancellationToken) =>
         RunAsync((userId, ct) => BroadcastAsync(lobbies.StartAsync(userId, code, ct), ct), cancellationToken);
 
+    [HttpPost("lobbies/{code}/ready")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LobbyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<LobbyDto>> Ready(
+        string code,
+        [FromBody] LobbyReadyRequest request,
+        CancellationToken cancellationToken) =>
+        RunAsync((userId, ct) => BroadcastAsync(lobbies.SetReadyAsync(userId, code, request.Ready, ct), ct), cancellationToken);
+
+    [HttpPost("lobbies/{code}/kick")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LobbyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<LobbyDto>> Kick(
+        string code,
+        [FromBody] KickLobbyRequest request,
+        CancellationToken cancellationToken) =>
+        RunAsync((userId, ct) => BroadcastAsync(lobbies.KickAsync(userId, code, request.UserId, ct), ct), cancellationToken);
+
+    /// <summary>The host's game ends the match; every member's client shows the lobby again.</summary>
+    [HttpPost("lobbies/{code}/finish")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LobbyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<LobbyDto>> Finish(string code, CancellationToken cancellationToken) =>
+        RunAsync((userId, ct) => BroadcastAsync(lobbies.FinishAsync(userId, code, ct), ct), cancellationToken);
+
     [HttpGet("lobbies/{code}/invitable")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<InvitableFriendDto>), StatusCodes.Status200OK)]

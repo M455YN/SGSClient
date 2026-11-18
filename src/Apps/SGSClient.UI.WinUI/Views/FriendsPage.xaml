@@ -164,6 +164,18 @@
         </Grid>
 
         <StackPanel x:Name="FriendsPanel" Spacing="8">
+          <Grid ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox PlaceholderText="{loc:Tr Key='Kod lobby, np. K7M4QX'}" MaxLength="6" CharacterCasing="Upper"
+                     AutomationProperties.Name="{loc:Tr Key='Kod lobby'}"
+                     Text="{x:Bind ViewModel.LobbyCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Button Grid.Column="1" Content="{loc:Tr Key='Dołącz'}" Command="{x:Bind ViewModel.JoinByCodeCommand}" />
+          </Grid>
+          <TextBlock Text="{x:Bind ViewModel.LobbyCodeError, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}"
+                     Foreground="{ThemeResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" />
           <TextBlock x:Name="EmptyFriendsText" Text="{loc:Tr Key='Nie masz jeszcze znajomych. Wpisz nazwę lub @tag, żeby kogoś znaleźć.'}"
                      Style="{StaticResource CaptionTextBlockStyle}"
                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />

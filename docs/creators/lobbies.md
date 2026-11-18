@@ -32,11 +32,14 @@ Gra deklaruje lobby w manifeście. Bez flagi `lobby` nic się nie zmienia.
 Przebieg:
 
 1. Host klika **Graj ze znajomymi**. Klient tworzy lobby i pokazuje listę graczy oraz zaproszenia znajomych, którzy mają grę.
-2. Znajomi wchodzą przez zaproszenie albo **Dołącz** na liście znajomych. Na pasku bocznym widzą **W lobby**.
-3. Host klika **Start**. Klient każdego członka uruchamia grę z `SGS_LOBBY_CODE`, a host dostaje też `SGS_LOBBY_HOST=1`.
-4. **Host:** gra startuje serwer i wysyła `PATCH /api/sdk/lobbies/{code}` z `{"address":"…"}`. Powtarzaj PATCH co kilka minut, żeby lobby nie wygasło.
-5. **Gość:** gra wywołuje `GET /api/sdk/lobbies/{code}`, aż `address` nie będzie pusty, i łączy się pod ten adres.
-6. Po meczu lobby się zamyka. Nie ma powrotu do lobby.
+2. Gracze wchodzą przez zaproszenie, **Dołącz** na liście znajomych albo wpisując kod lobby (np. z Discorda). Po kodzie może dołączyć każdy, kto ma grę, także spoza znajomych hosta. Na pasku bocznym widzą **W lobby**.
+3. Każdy gość klika **Gotowy**. Gość bez zainstalowanej gry nie może tego zrobić. Host może wyrzucić gracza (✕ przy nazwie).
+4. Gdy wszyscy są gotowi, host klika **Start**. Klient każdego członka uruchamia grę z `SGS_LOBBY_CODE`, a host dostaje też `SGS_LOBBY_HOST=1`.
+5. **Host:** gra startuje serwer i wysyła `PATCH /api/sdk/lobbies/{code}` z `{"address":"…"}`. Powtarzaj PATCH co kilka minut, żeby lobby nie wygasło.
+6. **Gość:** gra wywołuje `GET /api/sdk/lobbies/{code}`, aż `address` nie będzie pusty, i łączy się pod ten adres.
+7. **Po meczu wszyscy wracają do lobby** w tym samym składzie. Dzieje się to samo, gdy gra hosta się zamknie, więc gra nie musi nic robić. Gra, która chce wrócić do lobby bez zamykania się (np. po rundzie), wywołuje `POST /api/sdk/lobbies/{code}/finish` (tylko host).
+
+Jeśli host wyjdzie z lobby, gospodarzem zostaje gracz, który dołączył najwcześniej. Lobby zamyka się dopiero, gdy wyjdą wszyscy.
 
 Gra nie wywołuje `POST`, `invite` ani nie potrzebuje własnego UI lobby.
 

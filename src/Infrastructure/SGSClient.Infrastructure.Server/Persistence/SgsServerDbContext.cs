@@ -43,15 +43,19 @@ public sealed class SgsServerDbContext(DbContextOptions<SgsServerDbContext> opti
             entity.HasKey(x => x.Code);
             entity.Property(x => x.Code).HasMaxLength(16);
             entity.Property(x => x.Address).HasMaxLength(100).IsRequired();
-            entity.Property(x => x.Members)
-                .HasMaxLength(200)
-                .HasConversion(
-                    v => string.Join(',', v),
-                    s => s.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList(),
-                    new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<int>>(
-                        (a, b) => a!.SequenceEqual(b!),
-                        v => v.Aggregate(0, (h, x) => HashCode.Combine(h, x)),
-                        v => v.ToList()));
+            foreach (var ids in new[] { nameof(LobbyEntity.Members), nameof(LobbyEntity.Ready) })
+            {
+                entity.Property<List<int>>(ids)
+                    .HasMaxLength(200)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        s => s.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList(),
+                        new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<int>>(
+                            (a, b) => a!.SequenceEqual(b!),
+                            v => v.Aggregate(0, (h, x) => HashCode.Combine(h, x)),
+                            v => v.ToList()));
+            }
+
             entity.Property(x => x.Version).IsConcurrencyToken();
             entity.HasIndex(x => new { x.HostUserId, x.GameId });
             entity.HasIndex(x => x.LastSeenUtc);

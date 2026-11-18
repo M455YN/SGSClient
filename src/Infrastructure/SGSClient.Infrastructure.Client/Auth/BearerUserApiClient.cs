@@ -246,6 +246,29 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
     public Task<(LobbyDto? Lobby, string? Error)> StartLobbyAsync(string code, CancellationToken cancellationToken = default) =>
         SendResultAsync<LobbyDto>(HttpMethod.Post, $"api/lobbies/{Uri.EscapeDataString(code)}/start", body: null, cancellationToken);
 
+    public Task<(LobbyDto? Lobby, string? Error)> SetLobbyReadyAsync(
+        string code,
+        bool ready,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<LobbyDto>(
+            HttpMethod.Post,
+            $"api/lobbies/{Uri.EscapeDataString(code)}/ready",
+            new LobbyReadyRequest { Ready = ready },
+            cancellationToken);
+
+    public Task<(LobbyDto? Lobby, string? Error)> KickFromLobbyAsync(
+        string code,
+        int userId,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<LobbyDto>(
+            HttpMethod.Post,
+            $"api/lobbies/{Uri.EscapeDataString(code)}/kick",
+            new KickLobbyRequest { UserId = userId },
+            cancellationToken);
+
+    public Task<(LobbyDto? Lobby, string? Error)> FinishLobbyAsync(string code, CancellationToken cancellationToken = default) =>
+        SendResultAsync<LobbyDto>(HttpMethod.Post, $"api/lobbies/{Uri.EscapeDataString(code)}/finish", body: null, cancellationToken);
+
     public Task<(bool Ok, string? Error)> InviteToLobbyAsync(
         string code,
         int friendUserId,

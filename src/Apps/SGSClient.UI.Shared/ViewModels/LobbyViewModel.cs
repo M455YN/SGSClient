@@ -80,14 +80,34 @@ public partial class LobbyViewModel : ObservableObject
     public bool IsActive => Lobby is not null;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanStart))]
+    [NotifyPropertyChangedFor(nameof(CanStart), nameof(CanToggleReady), nameof(IsGuest))]
     public partial bool IsHost { get; private set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanStart))]
+    [NotifyPropertyChangedFor(nameof(CanStart), nameof(CanToggleReady))]
     public partial bool NeedsInstall { get; private set; }
 
-    public bool CanStart => IsHost && !NeedsInstall;
+    /// <summary>Every guest pressed "Gotowy".</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanStart))]
+    public partial bool AllReady { get; private set; }
+
+    /// <summary>This player (a guest) pressed "Gotowy".</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ReadyLabel))]
+    public partial bool IsReady { get; private set; }
+
+    /// <summary>The match is running: the lobby stays, hidden, until the host's game ends.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanStart), nameof(CanToggleReady))]
+    public partial bool InGame { get; private set; }
+
+    public bool IsGuest => !IsHost;
+    public bool CanStart => IsHost && AllReady && !NeedsInstall && !InGame;
+
+    // Without the game a guest cannot be ready, so the host never starts without them.
+    public bool CanToggleReady => !IsHost && !NeedsInstall && !InGame;
+    public string ReadyLabel => IsReady ? Loc.T("Nie jestem gotowy") : Loc.T("Gotowy");
 
     [ObservableProperty]
     public partial string GameTitle { get; private set; } = string.Empty;
@@ -157,6 +177,27 @@ public partial class LobbyViewModel : ObservableObject
         await EnterAsync(lobby, null);
     }
 
+    /// <summary>
+    /// Looks the code up first, so a game without the client lobby (it runs its own) is launched with the
+    /// code like before, through the same path as an invite.
+    /// </summary>
+    public async Task JoinByCodeAsync(string code)
+    {
+        if (_api is null)
+        {
+            return;
+        }
+
+        var lobby = await _api.GetLobbyAsync(code.Trim());
+        if (lobby is null)
+        {
+            NotificationsViewModel.PostLocal(Loc.T("Nie znaleziono lobby"), Loc.T("Sprawdź kod. Lobby mogło już wygasnąć."));
+            return;
+        }
+
+        await LobbyJoin.RequestAsync(lobby.GameId, lobby.Code);
+    }
+
     /// <summary>Brings the lobby view back, e.g. from the sidebar.</summary>
     [RelayCommand]
     private void Show()
@@ -204,28 +245,7 @@ public partial class LobbyViewModel : ObservableObject
             return;
         }
 
-        if (dto.Started)
-        {
-            var host = IsHost || IsMe(dto.HostUserId);
-            var canLaunch = !NeedsInstall;
-            var title = GameTitle;
-            Reset();
-            _close?.Invoke();
-            if (canLaunch)
-            {
-                _ = LaunchGame?.Invoke(dto.GameId, dto.Code, host);
-            }
-            else
-            {
-                NotificationsViewModel.PostLocal(
-                    Loc.T("Gra wystartowała bez Ciebie"),
-                    Loc.F("Zainstaluj {0}, żeby zagrać ze znajomymi następnym razem.", title));
-            }
-
-            return;
-        }
-
-        if (!dto.IsOpen)
+        if (!dto.IsOpen && !dto.Started)
         {
             Reset();
             _close?.Invoke();
@@ -233,6 +253,17 @@ public partial class LobbyViewModel : ObservableObject
             return;
         }
 
+        if (_auth?.CurrentUser is { } me && dto.Members.All(m => m.UserId != me.Id))
+        {
+            var code = dto.Code;
+            Reset();
+            _close?.Invoke();
+            _ = _realtime?.SetLobbyGroupAsync(code, join: false);
+            NotificationsViewModel.PostLocal(Loc.T("Host usunął Cię z lobby"));
+            return;
+        }
+
+        var wasHost = IsHost;
         var joinedNow = dto.Members.Count > current.Members.Count;
         Lobby = dto;
         Code = dto.Code;
@@ -242,17 +273,51 @@ public partial class LobbyViewModel : ObservableObject
         }
 
         IsHost = IsMe(dto.HostUserId);
+        if (IsHost && !wasHost)
+        {
+            // The host left and this player took over: keep the lobby alive from here on.
+            _keepAlive?.Start();
+        }
+
+        IsReady = dto.Members.Any(m => IsMe(m.UserId) && m.IsReady);
+        AllReady = dto.Members.All(m => m.IsReady);
         var max = Math.Max(dto.MaxPlayers, dto.Members.Count);
         PlayersText = $"{dto.Members.Count} / {max}";
-        SidebarText = Loc.F("W lobby: {0} {1}/{2}", GameTitle, dto.Members.Count, max);
-        // A lobby update (someone joining) must not wipe an error the player has not acted on yet.
-        StatusText = _error ?? (IsHost ? Loc.T("Zaproś znajomych i naciśnij Start") : Loc.T("Czekamy na gospodarza…"));
+
+        if (dto.Started && !InGame)
+        {
+            StartGame(dto);
+        }
+        else if (!dto.Started && InGame)
+        {
+            // The host's game ended: same party, back in the lobby for another round.
+            InGame = false;
+            _show?.Invoke();
+        }
+
+        if (Lobby is null)
+        {
+            return;
+        }
+
+        SidebarText = InGame
+            ? Loc.F("W grze: {0} {1}/{2}", GameTitle, dto.Members.Count, max)
+            : Loc.F("W lobby: {0} {1}/{2}", GameTitle, dto.Members.Count, max);
+        StatusText = _error ?? DefaultStatus();
 
         Slots.Clear();
         for (var i = 0; i < max; i++)
         {
             Slots.Add(i < dto.Members.Count
-                ? new LobbySlotItem(dto.Members[i].DisplayName ?? Loc.T("Gracz"), IsHost: i == 0, IsFree: false)
+                ? new LobbySlotItem(
+                    dto.Members[i].DisplayName ?? Loc.T("Gracz"),
+                    IsHost: dto.Members[i].UserId == dto.HostUserId,
+                    IsFree: false)
+                {
+                    UserId = dto.Members[i].UserId,
+                    IsReady = dto.Members[i].IsReady,
+                    CanKick = IsHost && !IsMe(dto.Members[i].UserId) && !InGame
+                }
                 : new LobbySlotItem(Loc.T("Wolne miejsce"), IsHost: false, IsFree: true));
         }
 
@@ -260,6 +325,84 @@ public partial class LobbyViewModel : ObservableObject
         {
             _ = RefreshFriendsAsync();
         }
+    }
+
+    private void StartGame(LobbyDto dto)
+    {
+        _close?.Invoke();
+        if (NeedsInstall)
+        {
+            // Reachable only if the game was uninstalled after pressing "Gotowy".
+            NotificationsViewModel.PostLocal(
+                Loc.T("Gra wystartowała bez Ciebie"),
+                Loc.F("Zainstaluj {0}, żeby zagrać ze znajomymi następnym razem.", GameTitle));
+            _ = LeaveCurrentAsync();
+            return;
+        }
+
+        InGame = true;
+        _ = LaunchGame?.Invoke(dto.GameId, dto.Code, IsHost);
+    }
+
+    /// <summary>
+    /// Called when a play session ends. The host's game closing ends the match for everyone,
+    /// so games need no code of their own to bring the party back.
+    /// </summary>
+    public async Task GameEndedAsync(int gameId)
+    {
+        if (_api is null || !InGame || !IsHost || Lobby is not { } lobby || lobby.GameId != gameId)
+        {
+            return;
+        }
+
+        var (finished, _) = await _api.FinishLobbyAsync(lobby.Code);
+        if (finished is not null)
+        {
+            Post(() => Apply(finished));
+        }
+    }
+
+    private string DefaultStatus() =>
+        InGame ? Loc.T("Trwa mecz")
+        : IsHost ? (AllReady ? Loc.T("Wszyscy gotowi, naciśnij Start") : Loc.T("Czekamy, aż wszyscy będą gotowi…"))
+        : IsReady ? Loc.T("Czekamy na gospodarza…") : Loc.T("Naciśnij Gotowy, gdy będziesz gotowy");
+
+    [RelayCommand]
+    private async Task ToggleReadyAsync()
+    {
+        if (_api is null || Lobby is not { } lobby || !CanToggleReady)
+        {
+            return;
+        }
+
+        var (updated, error) = await _api.SetLobbyReadyAsync(lobby.Code, !IsReady);
+        if (updated is null)
+        {
+            ShowError(error ?? Loc.T("Nie udało się zmienić gotowości."));
+            return;
+        }
+
+        _error = null;
+        Apply(updated);
+    }
+
+    [RelayCommand]
+    private async Task KickAsync(LobbySlotItem? slot)
+    {
+        if (_api is null || Lobby is not { } lobby || slot is not { CanKick: true })
+        {
+            return;
+        }
+
+        var (updated, error) = await _api.KickFromLobbyAsync(lobby.Code, slot.UserId);
+        if (updated is null)
+        {
+            ShowError(error ?? Loc.T("Nie udało się wyrzucić gracza."));
+            return;
+        }
+
+        _error = null;
+        Apply(updated);
     }
 
     [RelayCommand]
@@ -336,7 +479,7 @@ public partial class LobbyViewModel : ObservableObject
     private void ShowError(string? error)
     {
         _error = error;
-        StatusText = error ?? (IsHost ? Loc.T("Zaproś znajomych i naciśnij Start") : Loc.T("Czekamy na gospodarza…"));
+        StatusText = error ?? DefaultStatus();
     }
 
     [RelayCommand]
@@ -387,6 +530,9 @@ public partial class LobbyViewModel : ObservableObject
         Lobby = null;
         IsHost = false;
         NeedsInstall = false;
+        InGame = false;
+        IsReady = false;
+        AllReady = false;
         Slots.Clear();
         Friends.Clear();
         HasFriends = false;
@@ -427,8 +573,12 @@ public partial class LobbyViewModel : ObservableObject
 
 public sealed record LobbySlotItem(string Name, bool IsHost, bool IsFree)
 {
+    public int UserId { get; init; }
+    public bool IsReady { get; init; }
+    public bool CanKick { get; init; }
     public bool IsTaken => !IsFree;
     public double Opacity => IsFree ? 0.5 : 1;
+    public string ReadyText => IsFree || IsHost ? string.Empty : IsReady ? Loc.T("gotowy") : Loc.T("czeka");
 }
 
 public sealed partial class LobbyFriendItem(int userId, string displayName, bool isOnline) : ObservableObject

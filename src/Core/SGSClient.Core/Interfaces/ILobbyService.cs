@@ -50,5 +50,14 @@ public interface ILobbyService
         CancellationToken cancellationToken = default);
 
     /// <summary>Open, not started lobbies with a free slot that the user's friends host.</summary>
+    /// <summary>A guest marks themselves ready (or not) to start.</summary>
+    Task<LobbyDto> SetReadyAsync(int userId, string code, bool ready, CancellationToken cancellationToken = default);
+
+    /// <summary>The host removes a guest from the lobby.</summary>
+    Task<LobbyDto> KickAsync(int hostUserId, string code, int userId, CancellationToken cancellationToken = default);
+
+    /// <summary>The host's game reports the match is over: the same party is back in the lobby, nobody ready.</summary>
+    Task<LobbyDto> FinishAsync(int hostUserId, string code, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<LobbyDto>> ListFriendLobbiesAsync(int userId, CancellationToken cancellationToken = default);
 }

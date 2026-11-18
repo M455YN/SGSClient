@@ -71,6 +71,19 @@ public interface IUserApiClient
 
     Task<(LobbyDto? Lobby, string? Error)> StartLobbyAsync(string code, CancellationToken cancellationToken = default);
 
+    Task<(LobbyDto? Lobby, string? Error)> SetLobbyReadyAsync(
+        string code,
+        bool ready,
+        CancellationToken cancellationToken = default);
+
+    Task<(LobbyDto? Lobby, string? Error)> KickFromLobbyAsync(
+        string code,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Host only: the match is over and the party is back in the lobby.</summary>
+    Task<(LobbyDto? Lobby, string? Error)> FinishLobbyAsync(string code, CancellationToken cancellationToken = default);
+
     Task<(bool Ok, string? Error)> InviteToLobbyAsync(
         string code,
         int friendUserId,

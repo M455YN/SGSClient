@@ -45,10 +45,15 @@ public sealed class LobbyViewModelTests
 
         Assert.True(host.CanStart);
         Assert.Equal(4, api.Created!.MaxPlayers);
+
+        host.Apply(Lobby(hostId: Me, members: [Me, 5], max: 4));
+        Assert.False(host.CanStart); // guest 5 has not pressed Ready
+        host.Apply(Lobby(hostId: Me, members: [Me, 5], max: 4, ready: [5]));
+        Assert.True(host.CanStart);
     }
 
     [Fact]
-    public async Task Started_LaunchesTheGameOnceWithTheCodeAndHostFlag_AndClosesTheView()
+    public async Task Started_LaunchesOnce_KeepsTheLobbyInGame_AndFinishShowsItAgain()
     {
         var api = FakeApi.Create();
         api.Lobby = Lobby(hostId: Me, members: [Me, 5], max: 4);
@@ -69,7 +74,36 @@ public sealed class LobbyViewModelTests
 
         Assert.Equal([(7, "ABC234", true)], launches);
         Assert.Equal(1, closed);
-        Assert.False(vm.IsActive);
+        Assert.True(vm.IsActive);
+        Assert.True(vm.InGame);
+
+        var shown = 0;
+        vm.SetViewHandlers(() => shown++, () => closed++);
+        vm.Apply(Lobby(hostId: Me, members: [Me, 5], max: 4)); // the host's game ended
+        Assert.False(vm.InGame);
+        Assert.Equal(1, shown);
+    }
+
+    [Fact]
+    public async Task AKickedPlayer_LeavesTheLobby_AndAGuestBecomesHostWhenTheHostLeaves()
+    {
+        var api = FakeApi.Create();
+        api.Lobby = Lobby(hostId: 5, members: [5, 6, Me], max: 4);
+        var vm = new LobbyViewModel(api.Proxy, new Auth(), null, null);
+        await vm.JoinAsync("ABC234");
+
+        vm.Apply(Lobby(hostId: 6, members: [6, Me], max: 4)); // 5 left, 6 took over
+        Assert.False(vm.IsHost);
+        Assert.True(vm.Slots[0].IsHost);
+
+        vm.Apply(Lobby(hostId: Me, members: [Me], max: 4)); // 6 left too
+        Assert.True(vm.IsHost);
+
+        api.Lobby = Lobby(hostId: 5, members: [5, Me], max: 4);
+        var guest = new LobbyViewModel(api.Proxy, new Auth(), null, null);
+        await guest.JoinAsync("ABC234");
+        guest.Apply(Lobby(hostId: 5, members: [5], max: 4)); // kicked
+        Assert.False(guest.IsActive);
     }
 
     [Fact]
@@ -113,13 +147,13 @@ public sealed class LobbyViewModelTests
 
         await vm.StartCommand.ExecuteAsync(null); // the fake API returns no lobby, so Start fails
         var error = vm.StatusText;
-        vm.Apply(Lobby(hostId: Me, members: [Me, 5], max: 4));
+        vm.Apply(Lobby(hostId: Me, members: [Me, 5], max: 4, ready: [5]));
 
         Assert.Equal("Nie udało się wystartować.", error);
         Assert.Equal(error, vm.StatusText);
     }
 
-    private static LobbyDto Lobby(int hostId, int[] members, int max, bool started = false) => new()
+    private static LobbyDto Lobby(int hostId, int[] members, int max, bool started = false, int[]? ready = null) => new()
     {
         Code = "ABC234",
         GameId = 7,
@@ -130,7 +164,12 @@ public sealed class LobbyViewModelTests
         Players = members.Length,
         IsOpen = true,
         Started = started,
-        Members = members.Select(id => new LobbyMemberDto { UserId = id, DisplayName = $"P{id}" }).ToList()
+        Members = members.Select(id => new LobbyMemberDto
+        {
+            UserId = id,
+            DisplayName = $"P{id}",
+            IsReady = id == hostId || (ready ?? []).Contains(id)
+        }).ToList()
     };
 
     private sealed class Auth : IAuthSession

@@ -121,7 +121,7 @@ async Task HostAsync()
 
     Console.WriteLine($"Enter = rzut kością. Pierwszy do {Goal} wygrywa. q = wyjście.");
     while (Console.ReadLine() is { } input && input != "q") Roll(name);
-    if (http is not null && code is not null) await http.DeleteAsync($"api/sdk/lobbies/{code}");
+    // No DELETE here: when this process exits the SGS client brings everyone back to the lobby for another round.
 }
 
 async Task GuestAsync(string address)
