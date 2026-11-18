@@ -1,0 +1,87 @@
+<UserControl xmlns:loc="using:SGSClient.UI.Localization" xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SGSClient.UI.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             x:Class="SGSClient.UI.Views.LobbyView"
+             x:DataType="vm:LobbyViewModel">
+  <Grid Margin="28,24" RowDefinitions="Auto,*,Auto" RowSpacing="18">
+    <StackPanel Spacing="6">
+      <TextBlock Text="{Binding GameTitle}" FontSize="28" FontWeight="SemiBold"/>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="{loc:Tr Key='Kod lobby:'}" VerticalAlignment="Center" Opacity="0.7"/>
+        <SelectableTextBlock Text="{Binding Code}" VerticalAlignment="Center" FontWeight="SemiBold"/>
+        <Button Click="CopyCode_OnClick" Padding="8,4" ToolTip.Tip="{loc:Tr Key='Kopiuj kod'}">
+          <ui:FASymbolIcon Symbol="Copy" FontSize="14"/>
+        </Button>
+      </StackPanel>
+      <TextBlock Text="{Binding StatusText}" Opacity="0.8" TextWrapping="Wrap"/>
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="24">
+      <Grid RowDefinitions="Auto,*" RowSpacing="10">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{loc:Tr Key='Gracze'}" FontSize="20" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding PlayersText}" VerticalAlignment="Center" Opacity="0.7"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1">
+          <ItemsControl ItemsSource="{Binding Slots}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:LobbySlotItem">
+                <Grid Margin="0,0,0,8" ColumnDefinitions="*,Auto">
+                  <Border Grid.ColumnSpan="2" CornerRadius="6" Background="#22FFFFFF" Opacity="{Binding Opacity}"/>
+                  <StackPanel Orientation="Horizontal" Spacing="10" Margin="14,10">
+                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                    <Border IsVisible="{Binding IsHost}" Padding="8,2" CornerRadius="4"
+                            Background="{DynamicResource SystemAccentColor}">
+                      <TextBlock Text="{loc:Tr Key='Gospodarz'}" FontSize="11" Foreground="White"/>
+                    </Border>
+                    <TextBlock Text="{Binding ReadyText}" VerticalAlignment="Center" Opacity="0.7" FontSize="12"/>
+                  </StackPanel>
+                  <Button Grid.Column="1" Content="✕" Padding="8,4" Margin="0,0,10,0" VerticalAlignment="Center"
+                          IsVisible="{Binding CanKick}"
+                          ToolTip.Tip="{loc:Tr Key='Wyrzuć z lobby'}"
+                          AutomationProperties.Name="{loc:Tr Key='Wyrzuć z lobby'}"
+                          Command="{Binding $parent[UserControl].((vm:LobbyViewModel)DataContext).KickCommand}"
+                          CommandParameter="{Binding}"/>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+
+      <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="10">
+        <TextBlock Text="{loc:Tr Key='Zaproś znajomych'}" FontSize="20" FontWeight="SemiBold"/>
+        <ScrollViewer Grid.Row="1">
+          <StackPanel>
+            <TextBlock Text="{loc:Tr Key='Brak znajomych z tą grą.'}" Opacity="0.6" IsVisible="{Binding !HasFriends}"/>
+            <ItemsControl ItemsSource="{Binding Friends}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:LobbyFriendItem">
+                  <Grid Margin="0,0,0,8" ColumnDefinitions="*,Auto" Opacity="{Binding Opacity}">
+                    <Border Grid.ColumnSpan="2" CornerRadius="6" Background="#22FFFFFF"/>
+                    <TextBlock Margin="14,8" Text="{Binding DisplayName}" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Margin="8" Padding="12,4"
+                            Content="{Binding InviteLabel}" IsEnabled="{Binding CanInvite}"
+                            Command="{Binding $parent[UserControl].((vm:LobbyViewModel)DataContext).InviteCommand}"
+                            CommandParameter="{Binding}"/>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+    </Grid>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+      <Button Content="{loc:Tr Key='Wyjdź z lobby'}" Command="{Binding LeaveCommand}" Padding="18,10"/>
+      <Button Content="{loc:Tr Key='Zainstaluj'}" Command="{Binding InstallCommand}" Padding="18,10"
+              IsVisible="{Binding NeedsInstall}" Classes="accent"/>
+      <Button Content="{Binding ReadyLabel}" Command="{Binding ToggleReadyCommand}" Padding="18,10" MinWidth="140"
+              IsVisible="{Binding IsGuest}" IsEnabled="{Binding CanToggleReady}" Classes="accent"/>
+      <Button Content="{loc:Tr Key='Start'}" Command="{Binding StartCommand}" Padding="18,10" MinWidth="140"
+              IsVisible="{Binding IsHost}" IsEnabled="{Binding CanStart}" Classes="accent"/>
+    </StackPanel>
+  </Grid>
+</UserControl>

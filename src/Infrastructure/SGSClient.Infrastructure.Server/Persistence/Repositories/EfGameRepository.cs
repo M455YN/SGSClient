@@ -625,7 +625,15 @@ public sealed class EfGameRepository(
 
         if (request.Features is not null)
         {
+            if (request.Features.Value.HasFlag(GameFeatures.Lobby)
+                && request.LobbyMaxPlayers is not (>= SgsPackageRules.MinLobbyPlayers and <= SgsPackageRules.MaxLobbyPlayers))
+            {
+                throw new ArgumentException(
+                    $"Lobby wymaga liczby graczy w zakresie {SgsPackageRules.MinLobbyPlayers}-{SgsPackageRules.MaxLobbyPlayers}.");
+            }
+
             game.Features = request.Features.Value;
+            game.LobbyMaxPlayers = game.Features.HasFlag(GameFeatures.Lobby) ? request.LobbyMaxPlayers : null;
         }
 
         if (request.Languages is not null)

@@ -143,6 +143,16 @@
               <TextBlock x:Name="NavAdminLabel" Text="Admin" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
+          <Button Command="{Binding Lobby.ShowCommand}" IsVisible="{Binding Lobby.IsActive}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                  MinHeight="40" Padding="12,10" CornerRadius="4" BorderThickness="0" Background="Transparent"
+                  ToolTip.Tip="{Binding Lobby.SidebarText}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <ui:FASymbolIcon Symbol="People" FontSize="16" />
+              <TextBlock x:Name="LobbyLabel" Text="{Binding Lobby.SidebarText}" VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </Button>
         </StackPanel>
 
         <Grid x:Name="InstalledSection" Grid.Row="1" RowDefinitions="Auto,*" Margin="4,8,4,0">

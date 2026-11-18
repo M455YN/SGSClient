@@ -38,6 +38,7 @@ public static class SgsPackageManifestFactory
                 ReleaseDate = game.ReleaseDateUtc?.ToString("yyyy-MM-dd"),
                 AgeRating = SgsPackageRules.ToManifestAgeRating(game.AgeRating),
                 Features = SgsPackageRules.ToManifestFeatures(game.Features).ToList(),
+                LobbyMaxPlayers = game.LobbyMaxPlayers,
                 Languages = game.Languages.ToList(),
                 Tags = game.Tags.ToList()
             },

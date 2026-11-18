@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "game": {
+    "title": "Lobby Demo",
+    "symbol": "lobby-demo",
+    "description": "Najmniejsza gra pokazuj\u0105ca lobby w kliencie SGS: wy\u015Bcig w rzucie ko\u015Bci\u0105, pierwszy do 30 wygrywa.",
+    "hardwareRequirements": null,
+    "otherInformation": null,
+    "kind": "game",
+    "parentSymbol": null,
+    "genre": "casual",
+    "genres": [
+      "casual"
+    ],
+    "engine": "custom",
+    "engines": [
+      "custom"
+    ],
+    "studioName": "SGS Demo Studio",
+    "websiteUrl": null,
+    "discordUrl": null,
+    "supportUrl": null,
+    "releaseStatus": "released",
+    "releaseDate": null,
+    "ageRating": "pegi3",
+    "features": [
+      "multiplayer",
+      "lobby"
+    ],
+    "lobbyMaxPlayers": 4,
+    "languages": [
+      "Polski"
+    ],
+    "tags": [
+      "demo",
+      "sample"
+    ],
+    "media": null
+  },
+  "build": {
+    "version": "0.1.0",
+    "platform": "windows",
+    "architecture": "x64",
+    "executable": "bin/LobbyDemo.exe",
+    "isDefault": true,
+    "releaseNotes": null
+  },
+  "package": {
+    "include": [
+      "bin/**",
+      "sgs-manifest.json"
+    ],
+    "exclude": [
+      "**/*.pdb"
+    ]
+  },
+  "achievements": null,
+  "stats": null
+}

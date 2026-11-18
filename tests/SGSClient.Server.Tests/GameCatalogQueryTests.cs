@@ -52,6 +52,26 @@ public class GameCatalogQueryTests
         Assert.Equal("Beta Blast", newest[0].Title);
     }
 
+    [Fact]
+    public async Task UpdateGameAsAdminAsync_ValidatesAndClearsLobbyMaxPlayers()
+    {
+        await using var db = CreateDb();
+        db.Games.Add(MakeGame(1, "Alpha Quest", "alpha", featured: false, genres: [], createdOffsetDays: 1));
+        await db.SaveChangesAsync();
+        var repo = new EfGameRepository(db, Options.Create(new GameStorageSettings { StoragePath = "." }));
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            repo.UpdateGameAsAdminAsync(1, new UpdateGameRequestDto { Features = GameFeatures.Lobby }));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            repo.UpdateGameAsAdminAsync(1, new UpdateGameRequestDto { Features = GameFeatures.Lobby, LobbyMaxPlayers = 17 }));
+
+        await repo.UpdateGameAsAdminAsync(1, new UpdateGameRequestDto { Features = GameFeatures.Lobby, LobbyMaxPlayers = 8 });
+        Assert.Equal(8, (await db.Games.SingleAsync()).LobbyMaxPlayers);
+
+        await repo.UpdateGameAsAdminAsync(1, new UpdateGameRequestDto { Features = GameFeatures.Vr, LobbyMaxPlayers = 8 });
+        Assert.Null((await db.Games.SingleAsync()).LobbyMaxPlayers);
+    }
+
     private static GameEntity MakeGame(
         int id,
         string title,

@@ -31,6 +31,12 @@
           <TextBlock Text="{Binding MaintenanceText}"
                      Foreground="White" FontSize="13" HorizontalAlignment="Center" TextWrapping="Wrap"/>
         </Border>
+        <Border IsVisible="{Binding IsDevelopment}"
+                Background="#CCB45309"
+                Padding="12,8">
+          <TextBlock Text="{Binding DevelopmentText}"
+                     Foreground="White" FontSize="13" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+        </Border>
       </StackPanel>
       <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
         <views:ShellSidebar x:Name="Sidebar" Grid.Column="0"

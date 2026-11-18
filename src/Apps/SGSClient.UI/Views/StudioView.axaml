@@ -223,6 +223,13 @@
                   <CheckBox Content="{loc:Tr Key='Mody'}" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasModding, Mode=TwoWay}"/>
                   <CheckBox Content="VR" Margin="0,0,12,6" IsChecked="{Binding SelectedGame.HasVr, Mode=TwoWay}"/>
                 </WrapPanel>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <CheckBox Content="Lobby" IsChecked="{Binding SelectedGame.HasLobby, Mode=TwoWay}"/>
+                  <NumericUpDown Minimum="1" Maximum="16" Increment="1" FormatString="0" Width="140"
+                                 PlaceholderText="{loc:Tr Key='Maks. graczy w lobby'}"
+                                 Value="{Binding SelectedGame.EditLobbyMaxPlayers, Mode=TwoWay}"
+                                 IsVisible="{Binding SelectedGame.HasLobby}"/>
+                </StackPanel>
                 <TextBox PlaceholderText="{loc:Tr Key='Języki, np. Polski, English'}" Text="{Binding SelectedGame.EditLanguages, Mode=TwoWay}"/>
                 <TextBox PlaceholderText="{loc:Tr Key='Tagi, np. roguelike, pixel art'}" Text="{Binding SelectedGame.EditTags, Mode=TwoWay}"/>
               </StackPanel>

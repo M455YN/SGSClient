@@ -24,6 +24,8 @@ public partial class GameDetailsViewModel : ObservableObject
     private string? _coverUrl;
     private string? _logoUrl;
     private GameLibraryItem? _libraryItem;
+    private GameDto? _game;
+    private readonly LobbyViewModel? _lobby;
     private Action? _close;
     private Action? _openAccount;
     private Action<GameLibraryItem>? _openProperties;
@@ -38,8 +40,10 @@ public partial class GameDetailsViewModel : ObservableObject
         IServiceScopeFactory? scopes,
         IConfiguration? configuration = null,
         IInstallQueueService? queue = null,
-        IAuthSession? auth = null)
+        IAuthSession? auth = null,
+        LobbyViewModel? lobby = null)
     {
+        _lobby = lobby;
         _api = api;
         _scopes = scopes;
         _queue = queue;
@@ -194,7 +198,15 @@ public partial class GameDetailsViewModel : ObservableObject
     public partial string ContextLabel { get; set; } = "SGS STORE";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanPlayWithFriends))]
     public partial bool CanLaunch { get; set; }
+
+    /// <summary>"Graj ze znajomymi": the game has the Lobby feature and is installed here.</summary>
+    public bool CanPlayWithFriends => CanLaunch && _lobby is not null && _game?.Features.HasFlag(GameFeatures.Lobby) == true;
+
+    [RelayCommand]
+    private Task PlayWithFriendsAsync() =>
+        CanPlayWithFriends ? _lobby!.CreateAsync(_game!) : Task.CompletedTask;
 
     [ObservableProperty]
     public partial bool IsDlc { get; set; }
@@ -340,6 +352,8 @@ public partial class GameDetailsViewModel : ObservableObject
 
     private void ApplyGame(GameDto game)
     {
+        _game = game;
+        OnPropertyChanged(nameof(CanPlayWithFriends));
         Title = game.Title;
         Symbol = game.Symbol;
         IsDlc = game.Kind == GameContentKind.Dlc;

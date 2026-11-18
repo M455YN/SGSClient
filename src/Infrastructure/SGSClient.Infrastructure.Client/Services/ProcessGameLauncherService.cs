@@ -68,7 +68,7 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
 
         _byExe[Normalize(exe)] = request.GameId;
 
-        var sdkEnvironment = BuildSdkEnvironment(request.GameId, request.LobbyCode);
+        var sdkEnvironment = BuildSdkEnvironment(request.GameId, request.LobbyCode, request.IsLobbyHost);
 
         Process? process;
         try
@@ -97,7 +97,7 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
     /// Gives a starting game the address of the local achievement bridge and a per-launch token.
     /// Nothing here touches the network, so it works offline; with no bridge the game just starts without it.
     /// </summary>
-    private IReadOnlyDictionary<string, string>? BuildSdkEnvironment(int gameId, string? lobbyCode)
+    private IReadOnlyDictionary<string, string>? BuildSdkEnvironment(int gameId, string? lobbyCode, bool isLobbyHost)
     {
         try
         {
@@ -108,7 +108,13 @@ public sealed class ProcessGameLauncherService(IServiceScopeFactory scopes) : IG
                 return environment;
             }
 
-            return new Dictionary<string, string>(environment) { ["SGS_LOBBY_CODE"] = lobbyCode.Trim() };
+            var withLobby = new Dictionary<string, string>(environment) { ["SGS_LOBBY_CODE"] = lobbyCode.Trim() };
+            if (isLobbyHost)
+            {
+                withLobby["SGS_LOBBY_HOST"] = "1";
+            }
+
+            return withLobby;
         }
         catch
         {

@@ -33,6 +33,26 @@ public sealed class SocialRealtimeService : IAsyncDisposable
     public event Action<NotificationDto>? NotificationReceived;
     public event Action? NotificationsChanged;
     public event Action<bool>? ConnectionChanged;
+    public event Action<LobbyDto>? LobbyUpdated;
+
+    /// <summary>Subscribes to (or drops) <c>LobbyUpdated</c> for one lobby. A no-op while offline.</summary>
+    public async Task SetLobbyGroupAsync(string code, bool join)
+    {
+        await EnsureConnectedAsync().ConfigureAwait(false);
+        if (_connection is not { State: HubConnectionState.Connected } connection)
+        {
+            return;
+        }
+
+        try
+        {
+            await connection.InvokeAsync(join ? "JoinLobbyGroup" : "LeaveLobbyGroup", code).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "SignalR lobby group change failed");
+        }
+    }
 
     public Task StartAsync(CancellationToken cancellationToken = default) =>
         EnsureConnectedAsync(cancellationToken);
@@ -124,6 +144,7 @@ public sealed class SocialRealtimeService : IAsyncDisposable
         connection.On<ChatMessageDto>("ReceiveMessage", msg => MessageReceived?.Invoke(msg));
         connection.On<NotificationDto>("ReceiveNotification", n => NotificationReceived?.Invoke(n));
         connection.On("NotificationsChanged", () => NotificationsChanged?.Invoke());
+        connection.On<LobbyDto>("LobbyUpdated", lobby => LobbyUpdated?.Invoke(lobby));
         connection.Reconnected += _ =>
         {
             ConnectionChanged?.Invoke(true);

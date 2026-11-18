@@ -150,8 +150,14 @@ if (httpsRedirect)
 app.UseCors();
 app.UseRateLimiter();
 
-app.MapGet("/health", (IOptionsMonitor<MaintenanceSettings> maintenance) =>
-    Results.Ok(new { status = "ok", maintenance = maintenance.CurrentValue.Enabled }));
+// DevelopmentBanner=true (setting or env var) on a test API makes clients show a "development version" bar.
+app.MapGet("/health", (IOptionsMonitor<MaintenanceSettings> maintenance, IConfiguration config) =>
+    Results.Ok(new
+    {
+        status = "ok",
+        maintenance = maintenance.CurrentValue.Enabled,
+        development = config.GetValue<bool>("DevelopmentBanner")
+    }));
 
 LogLegacyApi(
     app,

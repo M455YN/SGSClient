@@ -498,6 +498,7 @@ public sealed class AchievementBridge : IDisposable
             (3, "POST") => "api/lobbies",
             (4, "GET" or "PATCH" or "DELETE") when IsLobbyCode(segments[3]) => $"api/lobbies/{segments[3]}",
             (5, "POST") when IsLobbyCode(segments[3]) && segments[4] == "invite" => $"api/lobbies/{segments[3]}/invite",
+            (5, "POST") when IsLobbyCode(segments[3]) && segments[4] == "finish" => $"api/lobbies/{segments[3]}/finish",
             _ => null
         };
         if (path is null)

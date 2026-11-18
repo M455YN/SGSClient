@@ -34,6 +34,30 @@ public interface ILobbyService
         int friendUserId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Open lobbies with a free slot that the user's friends host.</summary>
+    /// <summary>Adds a friend of the host who owns the game to the lobby's members.</summary>
+    Task<LobbyDto> JoinAsync(int userId, string code, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes a member; the host leaving closes the lobby (returns null then).</summary>
+    Task<LobbyDto?> LeaveAsync(int userId, string code, CancellationToken cancellationToken = default);
+
+    /// <summary>Host only: marks the lobby started and closed to new members.</summary>
+    Task<LobbyDto> StartAsync(int hostUserId, string code, CancellationToken cancellationToken = default);
+
+    /// <summary>Host only: the host's friends who own the game and are not members yet.</summary>
+    Task<IReadOnlyList<InvitableFriendDto>> ListInvitableAsync(
+        int hostUserId,
+        string code,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Open, not started lobbies with a free slot that the user's friends host.</summary>
+    /// <summary>A guest marks themselves ready (or not) to start.</summary>
+    Task<LobbyDto> SetReadyAsync(int userId, string code, bool ready, CancellationToken cancellationToken = default);
+
+    /// <summary>The host removes a guest from the lobby.</summary>
+    Task<LobbyDto> KickAsync(int hostUserId, string code, int userId, CancellationToken cancellationToken = default);
+
+    /// <summary>The host's game reports the match is over: the same party is back in the lobby, nobody ready.</summary>
+    Task<LobbyDto> FinishAsync(int hostUserId, string code, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<LobbyDto>> ListFriendLobbiesAsync(int userId, CancellationToken cancellationToken = default);
 }

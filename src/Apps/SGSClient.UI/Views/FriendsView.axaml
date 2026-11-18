@@ -150,6 +150,13 @@
         </Grid>
 
         <StackPanel Spacing="8" IsVisible="{Binding ShowFriendsTab}">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBox Text="{Binding LobbyCode}" PlaceholderText="{loc:Tr Key='Kod lobby, np. K7M4QX'}" MaxLength="6"
+                     AutomationProperties.Name="{loc:Tr Key='Kod lobby'}"/>
+            <Button Grid.Column="1" Content="{loc:Tr Key='Dołącz'}" Command="{Binding JoinByCodeCommand}"/>
+          </Grid>
+          <TextBlock Text="{Binding LobbyCodeError}" FontSize="12" Foreground="#E5484D" TextWrapping="Wrap"
+                     IsVisible="{Binding LobbyCodeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
           <TextBlock Text="{loc:Tr Key='Nie masz jeszcze znajomych. Wpisz nazwę lub @tag, żeby kogoś znaleźć.'}"
                      FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                      TextWrapping="Wrap" IsVisible="{Binding ShowEmptyFriends}"/>

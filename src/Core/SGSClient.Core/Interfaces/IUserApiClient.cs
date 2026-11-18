@@ -59,6 +59,46 @@ public interface IUserApiClient
 
     Task<IReadOnlyList<ChatThreadDto>> GetChatThreadsAsync(CancellationToken cancellationToken = default);
 
+    Task<(LobbyDto? Lobby, string? Error)> CreateLobbyAsync(
+        CreateLobbyRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<LobbyDto?> GetLobbyAsync(string code, CancellationToken cancellationToken = default);
+
+    Task<(LobbyDto? Lobby, string? Error)> JoinLobbyAsync(string code, CancellationToken cancellationToken = default);
+
+    Task<(bool Ok, string? Error)> LeaveLobbyAsync(string code, CancellationToken cancellationToken = default);
+
+    Task<(LobbyDto? Lobby, string? Error)> StartLobbyAsync(string code, CancellationToken cancellationToken = default);
+
+    Task<(LobbyDto? Lobby, string? Error)> SetLobbyReadyAsync(
+        string code,
+        bool ready,
+        CancellationToken cancellationToken = default);
+
+    Task<(LobbyDto? Lobby, string? Error)> KickFromLobbyAsync(
+        string code,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Host only: the match is over and the party is back in the lobby.</summary>
+    Task<(LobbyDto? Lobby, string? Error)> FinishLobbyAsync(string code, CancellationToken cancellationToken = default);
+
+    Task<(bool Ok, string? Error)> InviteToLobbyAsync(
+        string code,
+        int friendUserId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<InvitableFriendDto>> GetInvitableFriendsAsync(
+        string code,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>PATCH with only the changed fields; an empty request just keeps the lobby alive.</summary>
+    Task<(LobbyDto? Lobby, string? Error)> UpdateLobbyAsync(
+        string code,
+        UpdateLobbyRequest request,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Open lobbies with a free slot that friends host.</summary>
     Task<IReadOnlyList<LobbyDto>> GetFriendLobbiesAsync(CancellationToken cancellationToken = default);
 

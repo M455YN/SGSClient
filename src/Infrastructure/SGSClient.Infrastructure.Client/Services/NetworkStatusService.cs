@@ -13,6 +13,7 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
     private readonly object _gate = new();
     private bool _isOnline = true;
     private bool _isMaintenance;
+    private bool _isDevelopment;
     private CancellationTokenSource? _loopCts;
 
     public NetworkStatusService(IOptions<ApiClientSettings> apiOptions, IHttpClientFactory? httpFactory = null)
@@ -40,6 +41,17 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
             lock (_gate)
             {
                 return _isMaintenance;
+            }
+        }
+    }
+
+    public bool IsDevelopment
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _isDevelopment;
             }
         }
     }
@@ -91,6 +103,7 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
     {
         var online = NetworkInterface.GetIsNetworkAvailable();
         var maintenance = false;
+        var development = false;
         if (online)
         {
             try
@@ -106,7 +119,9 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
                         .ConfigureAwait(false);
                     online = response.IsSuccessStatusCode
                         || (int)response.StatusCode is >= 400 and < 500;
-                    maintenance = online && await ReadMaintenanceAsync(baseUrl, cancellationToken).ConfigureAwait(false);
+                    var health = online ? await ReadHealthAsync(baseUrl, cancellationToken).ConfigureAwait(false) : null;
+                    maintenance = health?.Maintenance == true;
+                    development = health?.Development == true;
                 }
             }
             catch
@@ -115,31 +130,31 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
             }
         }
 
-        SetStatus(online, maintenance);
+        SetStatus(online, maintenance, development);
     }
 
-    private async Task<bool> ReadMaintenanceAsync(string baseUrl, CancellationToken cancellationToken)
+    private async Task<HealthResponse?> ReadHealthAsync(string baseUrl, CancellationToken cancellationToken)
     {
         try
         {
-            var health = await _http.GetFromJsonAsync<HealthResponse>($"{baseUrl}/health", cancellationToken)
+            return await _http.GetFromJsonAsync<HealthResponse>($"{baseUrl}/health", cancellationToken)
                 .ConfigureAwait(false);
-            return health?.Maintenance == true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
-            return false;
+            return null;
         }
     }
 
-    private void SetStatus(bool online, bool maintenance)
+    private void SetStatus(bool online, bool maintenance, bool development)
     {
         bool changed;
         lock (_gate)
         {
-            changed = _isOnline != online || _isMaintenance != maintenance;
+            changed = _isOnline != online || _isMaintenance != maintenance || _isDevelopment != development;
             _isOnline = online;
             _isMaintenance = maintenance;
+            _isDevelopment = development;
         }
 
         // Raised on every probe during maintenance so the banner picks up a sign-in made after it appeared.
@@ -149,5 +164,5 @@ public sealed class NetworkStatusService : INetworkStatusService, IDisposable
         }
     }
 
-    private sealed record HealthResponse(bool Maintenance);
+    private sealed record HealthResponse(bool Maintenance, bool Development);
 }

@@ -102,7 +102,8 @@ public partial class App : Application
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration: configuration,
             queue: sp.GetService<IInstallQueueService>(),
-            auth: sp.GetService<IAuthSession>()));
+            auth: sp.GetService<IAuthSession>(),
+            lobby: sp.GetService<LobbyViewModel>()));
         services.AddTransient(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
             sp.GetService<IGameLauncherService>(),
@@ -199,6 +200,12 @@ public partial class App : Application
             sp.GetService<NotificationsViewModel>(),
             sp.GetService<ISgsApiService>(),
             sp.GetService<ICatalogCacheStore>(),
+            sp.GetService<IUiDispatcher>(),
+            sp.GetService<LobbyViewModel>()));
+        services.AddSingleton(sp => new LobbyViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<IAuthSession>(),
+            sp.GetService<SocialRealtimeService>(),
             sp.GetService<IUiDispatcher>()));
         services.AddTransient(sp => new MainWindowViewModel(
             sp.GetRequiredService<HomeViewModel>(),

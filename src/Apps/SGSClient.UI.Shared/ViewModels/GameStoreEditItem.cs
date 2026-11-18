@@ -62,6 +62,8 @@ public abstract partial class GameStoreEditItem : ObservableObject
     [ObservableProperty] public partial bool HasAchievements { get; set; }
     [ObservableProperty] public partial bool HasModding { get; set; }
     [ObservableProperty] public partial bool HasVr { get; set; }
+    [ObservableProperty] public partial bool HasLobby { get; set; }
+    [ObservableProperty] public partial double EditLobbyMaxPlayers { get; set; } = 4;
 
     public ObservableCollection<StudioScreenshotItem> ScreenshotItems { get; } = [];
     public ObservableCollection<StudioBuildItem> Builds { get; } = [];
@@ -94,6 +96,7 @@ public abstract partial class GameStoreEditItem : ObservableObject
             if (HasAchievements) value |= GameFeatures.Achievements;
             if (HasModding) value |= GameFeatures.Modding;
             if (HasVr) value |= GameFeatures.Vr;
+            if (HasLobby) value |= GameFeatures.Lobby;
             return value;
         }
     }
@@ -116,6 +119,7 @@ public abstract partial class GameStoreEditItem : ObservableObject
         ClearReleaseDate = EditReleaseDate is null,
         AgeRating = GameStoreLabels.AgeRatingFromIndex(EditAgeRatingIndex),
         Features = EditedFeatures,
+        LobbyMaxPlayers = HasLobby ? (int)EditLobbyMaxPlayers : null,
         Languages = CsvList.Split(EditLanguages),
         Tags = CsvList.Split(EditTags)
     };
@@ -163,6 +167,8 @@ public abstract partial class GameStoreEditItem : ObservableObject
         HasAchievements = game.Features.HasFlag(GameFeatures.Achievements);
         HasModding = game.Features.HasFlag(GameFeatures.Modding);
         HasVr = game.Features.HasFlag(GameFeatures.Vr);
+        HasLobby = game.Features.HasFlag(GameFeatures.Lobby);
+        EditLobbyMaxPlayers = game.LobbyMaxPlayers ?? 4;
     }
 
     protected void ApplyMedia(GameDto game, string apiBaseUrl)

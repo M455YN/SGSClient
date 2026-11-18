@@ -51,7 +51,88 @@ public sealed class LobbiesController(
         string code,
         [FromBody] UpdateLobbyRequest request,
         CancellationToken cancellationToken) =>
-        RunAsync((userId, ct) => lobbies.UpdateAsync(userId, code, request, ct), cancellationToken);
+        RunAsync((userId, ct) => BroadcastAsync(lobbies.UpdateAsync(userId, code, request, ct), ct), cancellationToken);
+
+    [HttpPost("lobbies/{code}/join")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LobbyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<LobbyDto>> Join(string code, CancellationToken cancellationToken) =>
+        RunAsync((userId, ct) => BroadcastAsync(lobbies.JoinAsync(userId, code, ct), ct), cancellationToken);
+
+    [HttpPost("lobbies/{code}/leave")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Leave(string code, CancellationToken cancellationToken)
+    {
+        var result = await RunAsync(async (userId, ct) =>
+        {
+            var before = await lobbies.GetAsync(code, ct);
+            var after = await lobbies.LeaveAsync(userId, code, ct);
+            await SendUpdatedAsync(after ?? Closed(before), ct);
+            return true;
+        }, cancellationToken);
+        return result.Result is OkObjectResult ? NoContent() : result.Result!;
+    }
+
+    [HttpPost("lobbies/{code}/start")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LobbyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<LobbyDto>> Start(string code, CancellationToken cancellationToken) =>
+        RunAsync((userId, ct) => BroadcastAsync(lobbies.StartAsync(userId, code, ct), ct), cancellationToken);
+
+    [HttpPost("lobbies/{code}/ready")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LobbyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<LobbyDto>> Ready(
+        string code,
+        [FromBody] LobbyReadyRequest request,
+        CancellationToken cancellationToken) =>
+        RunAsync((userId, ct) => BroadcastAsync(lobbies.SetReadyAsync(userId, code, request.Ready, ct), ct), cancellationToken);
+
+    [HttpPost("lobbies/{code}/kick")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LobbyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<LobbyDto>> Kick(
+        string code,
+        [FromBody] KickLobbyRequest request,
+        CancellationToken cancellationToken) =>
+        RunAsync((userId, ct) => BroadcastAsync(lobbies.KickAsync(userId, code, request.UserId, ct), ct), cancellationToken);
+
+    /// <summary>The host's game ends the match; every member's client shows the lobby again.</summary>
+    [HttpPost("lobbies/{code}/finish")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(LobbyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<LobbyDto>> Finish(string code, CancellationToken cancellationToken) =>
+        RunAsync((userId, ct) => BroadcastAsync(lobbies.FinishAsync(userId, code, ct), ct), cancellationToken);
+
+    [HttpGet("lobbies/{code}/invitable")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<InvitableFriendDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<ActionResult<IReadOnlyList<InvitableFriendDto>>> Invitable(string code, CancellationToken cancellationToken) =>
+        RunAsync((userId, ct) => lobbies.ListInvitableAsync(userId, code, ct), cancellationToken);
 
     [HttpDelete("lobbies/{code}")]
     [AllowAnonymous]
@@ -63,7 +144,9 @@ public sealed class LobbiesController(
     {
         var result = await RunAsync(async (userId, ct) =>
         {
+            var before = await lobbies.GetAsync(code, ct);
             await lobbies.CloseAsync(userId, code, ct);
+            await SendUpdatedAsync(Closed(before), ct);
             return true;
         }, cancellationToken);
         return result.Result is OkObjectResult ? NoContent() : result.Result!;
@@ -97,6 +180,37 @@ public sealed class LobbiesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public Task<ActionResult<IReadOnlyList<LobbyDto>>> FriendLobbies(CancellationToken cancellationToken) =>
         RunAsync((userId, ct) => lobbies.ListFriendLobbiesAsync(userId, ct), cancellationToken);
+
+    private async Task<LobbyDto> BroadcastAsync(Task<LobbyDto> change, CancellationToken cancellationToken)
+    {
+        var lobby = await change;
+        await SendUpdatedAsync(lobby, cancellationToken);
+        return lobby;
+    }
+
+    private Task SendUpdatedAsync(LobbyDto? lobby, CancellationToken cancellationToken) =>
+        lobby is null
+            ? Task.CompletedTask
+            : hub.Clients.Group(ChatHub.LobbyGroup(lobby.Code)).SendAsync("LobbyUpdated", lobby, cancellationToken);
+
+    /// <summary>A closed lobby is sent once more with IsOpen=false and no members so clients drop it.</summary>
+    private static LobbyDto? Closed(LobbyDto? lobby) =>
+        lobby is null
+            ? null
+            : new LobbyDto
+            {
+                Code = lobby.Code,
+                GameId = lobby.GameId,
+                GameTitle = lobby.GameTitle,
+                HostUserId = lobby.HostUserId,
+                HostName = lobby.HostName,
+                Address = lobby.Address,
+                Players = 0,
+                MaxPlayers = lobby.MaxPlayers,
+                IsOpen = false,
+                CreatedAtUtc = lobby.CreatedAtUtc,
+                Started = lobby.Started
+            };
 
     /// <summary>Maps the service's exceptions to the status codes the other controllers use.</summary>
     private async Task<ActionResult<T>> RunAsync<T>(

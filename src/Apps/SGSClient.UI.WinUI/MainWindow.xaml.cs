@@ -43,6 +43,15 @@ public sealed partial class MainWindow : Window
         Sidebar.ViewModel.SetOpenDetailsHandler(OpenGameDetails);
         Sidebar.ViewModel.SetOpenPropertiesHandler(OpenGameProperties);
         App.Services.GetService<FriendsViewModel>()?.SetOpenFullProfileHandler(OpenUserProfile);
+        Sidebar.ViewModel.Lobby.SetViewHandlers(
+            () => NavigateTo(typeof(LobbyPage), selectTag: "Library"),
+            () =>
+            {
+                if (ContentFrame.CurrentSourcePageType == typeof(LobbyPage))
+                {
+                    NavigateByTagPublic("Library");
+                }
+            });
         ContentFrame.Navigate(typeof(HomePage));
         _ = Sidebar.InitializeAsync();
         WireDownloadStatusBar();
@@ -282,6 +291,9 @@ public sealed partial class MainWindow : Window
             OfflineBanner.Visibility = network.IsOnline ? Visibility.Collapsed : Visibility.Visible;
             MaintenanceBanner.Visibility = MaintenanceNotice.IsVisible(network.IsMaintenance, App.Services.GetService<IAuthSession>()) ? Visibility.Visible : Visibility.Collapsed;
             MaintenanceBannerText.Text = MaintenanceNotice.Text();
+            DevelopmentBanner.IsOpen = network.IsDevelopment;
+            DevelopmentBanner.Title = DevelopmentNotice.Title();
+            DevelopmentBanner.Message = DevelopmentNotice.Text();
         }
 
         network.Changed += (_, _) =>
