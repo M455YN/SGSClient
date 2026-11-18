@@ -199,4 +199,40 @@ public sealed class SgsPackageRulesTests
     [InlineData(@"..\other-game", false)]
     public void IsSafeStorageSegment_RejectsTraversalInVersion(string version, bool expected) =>
         Assert.Equal(expected, SgsPackageRules.IsSafeStorageSegment(version));
+
+    [Fact]
+    public void LobbyFeature_RoundTripsThroughManifestSlug()
+    {
+        Assert.True(SgsPackageRules.TryParseFeatures(["lobby", "multiplayer"], out var features, out _));
+        Assert.Equal(SGSClient.Core.Enums.GameFeatures.Lobby | SGSClient.Core.Enums.GameFeatures.MultiPlayer, features);
+        Assert.Contains("lobby", SgsPackageRules.ToManifestFeatures(features));
+    }
+
+    [Theory]
+    [InlineData(4, true)]
+    [InlineData(1, true)]
+    [InlineData(16, true)]
+    [InlineData(null, false)]
+    [InlineData(0, false)]
+    [InlineData(17, false)]
+    public void ValidateManifest_LobbyRequiresMaxPlayersInRange(int? maxPlayers, bool expected)
+    {
+        var manifest = new SgsPackageManifest
+        {
+            SchemaVersion = 1,
+            Game = new SgsPackageGameInfo
+            {
+                Title = "Lobby Game",
+                Symbol = "lobby-game",
+                Genre = "action",
+                Engine = "custom",
+                Features = ["multiplayer", "lobby"],
+                LobbyMaxPlayers = maxPlayers
+            },
+            Build = new SgsPackageBuildInfo { Version = "1.0.0", Platform = "windows", Executable = "Game.exe" }
+        };
+
+        var result = SgsPackageRules.ValidateManifest(manifest);
+        Assert.Equal(expected, result.IsValid);
+    }
 }

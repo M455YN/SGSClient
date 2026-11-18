@@ -1,0 +1,110 @@
+<Page xmlns:loc="using:SGSClient.UI.WinUI.Localization"
+    x:Class="SGSClient.UI.WinUI.Views.LobbyPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:SGSClient.UI.WinUI.Views">
+
+  <Page.Resources>
+    <local:BoolToVisibilityConverter x:Key="BoolToVis" />
+    <local:InverseBoolToVisibilityConverter x:Key="BoolToVisInv" />
+  </Page.Resources>
+
+  <Grid Padding="28,24" RowSpacing="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <StackPanel Spacing="6">
+      <TextBlock Text="{Binding GameTitle}" Style="{StaticResource TitleTextBlockStyle}" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="{loc:Tr Key='Kod lobby:'}" VerticalAlignment="Center" Opacity="0.7" />
+        <TextBlock Text="{Binding Code}" VerticalAlignment="Center" FontWeight="SemiBold" IsTextSelectionEnabled="True" />
+        <Button Click="CopyCode_Click" Padding="8,4"
+                ToolTipService.ToolTip="{loc:Tr Key='Kopiuj kod'}" AutomationProperties.Name="{loc:Tr Key='Kopiuj kod'}">
+          <FontIcon Glyph="&#xE8C8;" FontSize="14" />
+        </Button>
+      </StackPanel>
+      <TextBlock Text="{Binding StatusText}" Opacity="0.8" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnSpacing="24">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <Grid RowSpacing="10">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{loc:Tr Key='Gracze'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+          <TextBlock Text="{Binding PlayersText}" VerticalAlignment="Center" Opacity="0.7" />
+        </StackPanel>
+        <ScrollViewer Grid.Row="1">
+          <ItemsControl ItemsSource="{Binding Slots}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Margin="0,0,0,8" Padding="14,10" CornerRadius="6"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Opacity="{Binding Opacity}">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                    <Border Visibility="{Binding IsHost, Converter={StaticResource BoolToVis}}"
+                            Padding="8,2" CornerRadius="4" Background="{ThemeResource AccentFillColorDefaultBrush}">
+                      <TextBlock Text="{loc:Tr Key='Gospodarz'}" FontSize="11"
+                                 Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                    </Border>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+
+      <Grid Grid.Column="1" RowSpacing="10">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="{loc:Tr Key='Zaproś znajomych'}" Style="{StaticResource SubtitleTextBlockStyle}" />
+        <ScrollViewer Grid.Row="1">
+          <StackPanel>
+            <TextBlock Text="{loc:Tr Key='Brak znajomych z tą grą.'}" Opacity="0.6"
+                       Visibility="{Binding HasFriends, Converter={StaticResource BoolToVisInv}}" />
+            <ItemsControl ItemsSource="{Binding Friends}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid Margin="0,0,0,8" Padding="14,8" CornerRadius="6" Opacity="{Binding Opacity}"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="{Binding InviteLabel}" IsEnabled="{Binding CanInvite}"
+                            Tag="{Binding}" Click="Invite_Click" Padding="12,4" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+    </Grid>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+      <Button Content="{loc:Tr Key='Wyjdź z lobby'}" Command="{Binding LeaveCommand}" Padding="18,10" />
+      <Button Content="{loc:Tr Key='Zainstaluj'}" Command="{Binding InstallCommand}" Padding="18,10"
+              Visibility="{Binding NeedsInstall, Converter={StaticResource BoolToVis}}"
+              Style="{StaticResource AccentButtonStyle}" />
+      <Button Content="{loc:Tr Key='Start'}" Command="{Binding StartCommand}" Padding="18,10" MinWidth="140"
+              Visibility="{Binding IsHost, Converter={StaticResource BoolToVis}}"
+              IsEnabled="{Binding CanStart}"
+              Style="{StaticResource AccentButtonStyle}" />
+    </StackPanel>
+  </Grid>
+</Page>

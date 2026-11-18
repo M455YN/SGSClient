@@ -121,9 +121,12 @@ public sealed class SgsPackageGameInfo
     public string? AgeRating { get; set; }
 
     /// <summary>
-    /// Feature slugs: singleplayer, multiplayer, coop, controller, cloud, achievements, modding, vr.
+    /// Feature slugs: singleplayer, multiplayer, coop, controller, cloud, achievements, modding, vr, lobby.
     /// </summary>
     public IList<string>? Features { get; set; }
+
+    /// <summary>Max players in an SGS lobby (1-16). Required when features contain "lobby".</summary>
+    public int? LobbyMaxPlayers { get; set; }
 
     /// <summary>UI languages, e.g. Polski, English.</summary>
     public IList<string>? Languages { get; set; }

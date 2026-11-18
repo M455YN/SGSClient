@@ -53,6 +53,9 @@ public sealed class UpdateGameRequestDto
     public GameAgeRating? AgeRating { get; init; }
     public GameFeatures? Features { get; init; }
 
+    /// <summary>Lobby slot count (1-16); required when <see cref="Features"/> has Lobby, ignored otherwise.</summary>
+    public int? LobbyMaxPlayers { get; init; }
+
     /// <summary>Full replacement of the language list; empty list clears it.</summary>
     public IReadOnlyList<string>? Languages { get; init; }
 

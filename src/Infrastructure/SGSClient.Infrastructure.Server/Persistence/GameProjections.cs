@@ -52,6 +52,7 @@ public static class GameProjections
             ReleaseDateUtc = g.ReleaseDateUtc,
             AgeRating = g.AgeRating,
             Features = g.Features,
+            LobbyMaxPlayers = g.LobbyMaxPlayers,
             LanguagesCsv = g.LanguagesCsv,
             TagsCsv = g.TagsCsv,
             PackageSizeBytes = g.Builds

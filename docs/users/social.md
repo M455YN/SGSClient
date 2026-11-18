@@ -36,4 +36,14 @@ Jeśli twórca gry obsługuje lobby, znajomy może zaprosić Cię do wspólnej s
 
 Otwarte lobby z wolnym miejscem widzisz też przy znajomym na liście **Znajomi**.
 
-Lobby nie przechodzi przez NAT: połączenie z hostem działa w tej samej sieci lub przy otwartym porcie hosta.
+Lobby nie przechodzi przez NAT: połączenie z hostem działa w tej samej sieci lub przy otwartym porcie hosta, chyba że gra używa własnego relaya.
+
+## Graj ze znajomymi
+
+Jeśli gra to obsługuje, na jej stronie w bibliotece jest przycisk **Graj ze znajomymi**.
+
+1. Kliknij go. Klient otworzy lobby z listą graczy.
+2. Zaproś znajomych, którzy mają grę. Dołączą przez zaproszenie albo **Dołącz** na liście znajomych. W czasie oczekiwania pasek boczny pokazuje **W lobby**.
+3. Gdy wszyscy są, host klika **Start**. Gra uruchamia się u każdego i łączy graczy sama.
+
+Po meczu lobby się zamyka. Na kolejną rundę utwórz nowe.

@@ -153,6 +153,7 @@ public sealed partial class GameDetailsPage : Page, ILoadingPage
 
         LibraryActionsPanel.Visibility = ViewModel.ShowLibraryActions ? Visibility.Visible : Visibility.Collapsed;
         LaunchButton.IsEnabled = ViewModel.CanLaunch;
+        PlayWithFriendsButton.Visibility = ViewModel.CanPlayWithFriends ? Visibility.Visible : Visibility.Collapsed;
         InstallButton.IsEnabled = ViewModel.CanInstall;
         UninstallButton.IsEnabled = ViewModel.CanUninstall;
 
@@ -510,6 +511,9 @@ public sealed partial class GameDetailsPage : Page, ILoadingPage
         await ViewModel.ToggleWishlistCommand.ExecuteAsync(null);
         RefreshUi();
     }
+
+    private async void PlayWithFriends_Click(object sender, RoutedEventArgs e) =>
+        await ViewModel.PlayWithFriendsCommand.ExecuteAsync(null);
 
     private async void Launch_Click(object sender, RoutedEventArgs e)
     {

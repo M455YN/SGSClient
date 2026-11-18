@@ -92,7 +92,8 @@ public partial class App : Application
             sp.GetRequiredService<IServiceScopeFactory>(),
             configuration: configuration,
             queue: sp.GetService<IInstallQueueService>(),
-            auth: sp.GetService<IAuthSession>()));
+            auth: sp.GetService<IAuthSession>(),
+            lobby: sp.GetService<LobbyViewModel>()));
         // Do not resolve IGameInstallService from the root provider (it needs scoped ILocalLibraryStore).
         services.AddSingleton(sp => new LibraryViewModel(
             sp.GetRequiredService<IServiceScopeFactory>(),
@@ -190,6 +191,12 @@ public partial class App : Application
             sp.GetService<NotificationsViewModel>(),
             sp.GetService<ISgsApiService>(),
             sp.GetService<ICatalogCacheStore>(),
+            sp.GetService<IUiDispatcher>(),
+            sp.GetService<LobbyViewModel>()));
+        services.AddSingleton(sp => new LobbyViewModel(
+            sp.GetService<IUserApiClient>(),
+            sp.GetService<IAuthSession>(),
+            sp.GetService<SocialRealtimeService>(),
             sp.GetService<IUiDispatcher>()));
 
         Services = services.BuildServiceProvider();

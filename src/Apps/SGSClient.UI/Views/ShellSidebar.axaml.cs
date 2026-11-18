@@ -89,6 +89,7 @@ public partial class ShellSidebar : UserControl
         NavPublishLabel.IsVisible = expanded;
         NavStudioLabel.IsVisible = expanded;
         NavAdminLabel.IsVisible = expanded;
+        LobbyLabel.IsVisible = expanded;
         NavSettingsLabel.IsVisible = expanded;
 
         ApplyCompactChrome(PaneToggleButton, expanded, profileLike: false);

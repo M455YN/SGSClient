@@ -37,6 +37,7 @@ public sealed class GameEntity
     public DateTimeOffset? ReleaseDateUtc { get; set; }
     public GameAgeRating AgeRating { get; set; } = GameAgeRating.Unrated;
     public GameFeatures Features { get; set; } = GameFeatures.None;
+    public int? LobbyMaxPlayers { get; set; }
 
     /// <summary>Comma separated language names, e.g. "Polski,English".</summary>
     public string? LanguagesCsv { get; set; }

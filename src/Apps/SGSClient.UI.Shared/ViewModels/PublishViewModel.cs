@@ -27,6 +27,7 @@ public partial class PublishViewModel : ObservableObject
     private string? _releaseDate;
     private string? _ageRating;
     private IList<string>? _features;
+    private int? _lobbyMaxPlayers;
     private IList<string>? _languages;
     private IList<string>? _tags;
 
@@ -662,6 +663,7 @@ public partial class PublishViewModel : ObservableObject
         _releaseDate = manifest.Game.ReleaseDate;
         _ageRating = manifest.Game.AgeRating;
         _features = manifest.Game.Features?.ToList();
+        _lobbyMaxPlayers = manifest.Game.LobbyMaxPlayers;
         _languages = manifest.Game.Languages?.ToList();
         _tags = manifest.Game.Tags?.ToList();
         MediaCover = manifest.Game.Media?.Cover ?? string.Empty;
@@ -727,6 +729,7 @@ public partial class PublishViewModel : ObservableObject
                 ReleaseDate = NullIfWhiteSpace(_releaseDate),
                 AgeRating = NullIfWhiteSpace(_ageRating),
                 Features = _features,
+                LobbyMaxPlayers = _lobbyMaxPlayers,
                 Languages = _languages,
                 Tags = _tags,
                 Media = media
@@ -763,6 +766,7 @@ public partial class PublishViewModel : ObservableObject
         _releaseDate = null;
         _ageRating = null;
         _features = null;
+        _lobbyMaxPlayers = null;
         _languages = null;
         _tags = null;
         MediaCover = string.Empty;

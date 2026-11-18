@@ -76,6 +76,7 @@ public static class GameStoreLabels
         GameFeatures.Achievements => Loc.T("Osiągnięcia"),
         GameFeatures.Modding => Loc.T("Mody"),
         GameFeatures.Vr => "VR",
+        GameFeatures.Lobby => "Lobby SGS",
         _ => feature.ToString()
     };
 
@@ -88,7 +89,8 @@ public static class GameStoreLabels
         GameFeatures.CloudSaves,
         GameFeatures.Achievements,
         GameFeatures.Modding,
-        GameFeatures.Vr
+        GameFeatures.Vr,
+        GameFeatures.Lobby
     ];
 
     public static IReadOnlyList<string> FeatureList(GameFeatures features) =>

@@ -7,6 +7,99 @@ Tak jak osiągnięcia, lobby to zwykły HTTP na lokalnym moście, bez SDK. Gra u
 | Zmienna | Znaczenie |
 |---|---|
 | `SGS_LOBBY_CODE` | Ustawiona, gdy gracz dołączył przez zaproszenie albo przycisk **Dołącz** u znajomego. Połącz się z tym lobby przy starcie. |
+| `SGS_LOBBY_HOST` | `1` u hosta lobby utworzonego w kliencie (patrz niżej). U gości brak. |
+
+`SGS_API_URL` i token klient ustawia od nowa przy każdym uruchomieniu. Zawsze czytaj je ze zmiennych środowiskowych, nigdy nie wpisuj ich na sztywno.
+
+Lobby można prowadzić na dwa sposoby: [w kliencie SGS](#lobby-w-kliencie-sgs) (prostsze, gra nie potrzebuje własnego UI) albo [z gry](#wywołania) (gra sama otwiera lobby i zaprasza).
+
+## Lobby w kliencie SGS
+
+Działający przykład: [samples/lobby-demo](../../samples/lobby-demo/README.md), mini gra w kości z gotowym manifestem. Kodu lobby nigdzie nie wpisujesz, bo klient przekazuje go grze w `SGS_LOBBY_CODE`.
+
+Gra deklaruje lobby w manifeście. Bez flagi `lobby` nic się nie zmienia.
+
+```json
+"features": ["multiplayer", "lobby"],
+"lobbyMaxPlayers": 4
+```
+
+| Pole | Zasada |
+|---|---|
+| `lobby` w `features` | Na stronie gry w bibliotece pojawia się **Graj ze znajomymi** |
+| `lobbyMaxPlayers` | `1`–`16`, wymagane przy `lobby` |
+
+Przebieg:
+
+1. Host klika **Graj ze znajomymi**. Klient tworzy lobby i pokazuje listę graczy oraz zaproszenia znajomych, którzy mają grę.
+2. Znajomi wchodzą przez zaproszenie albo **Dołącz** na liście znajomych. Na pasku bocznym widzą **W lobby**.
+3. Host klika **Start**. Klient każdego członka uruchamia grę z `SGS_LOBBY_CODE`, a host dostaje też `SGS_LOBBY_HOST=1`.
+4. **Host:** gra startuje serwer i wysyła `PATCH /api/sdk/lobbies/{code}` z `{"address":"…"}`. Powtarzaj PATCH co kilka minut, żeby lobby nie wygasło.
+5. **Gość:** gra wywołuje `GET /api/sdk/lobbies/{code}`, aż `address` nie będzie pusty, i łączy się pod ten adres.
+6. Po meczu lobby się zamyka. Nie ma powrotu do lobby.
+
+Gra nie wywołuje `POST`, `invite` ani nie potrzebuje własnego UI lobby.
+
+### Przykład (Unity)
+
+```csharp
+using System;
+using System.Collections;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Networking;
+
+public class SgsLobby : MonoBehaviour
+{
+    string api = Environment.GetEnvironmentVariable("SGS_API_URL");
+    string token = Environment.GetEnvironmentVariable("SGS_ACHIEVEMENTS_TOKEN");
+    string code = Environment.GetEnvironmentVariable("SGS_LOBBY_CODE");
+    bool isHost = Environment.GetEnvironmentVariable("SGS_LOBBY_HOST") == "1";
+
+    [Serializable] class Lobby { public string address; }
+
+    // Host: po starcie serwera, potem co kilka minut.
+    public IEnumerator PublishAddress(string address)
+    {
+        var body = Encoding.UTF8.GetBytes(JsonUtility.ToJson(new Lobby { address = address }));
+        using var req = new UnityWebRequest($"{api}/api/sdk/lobbies/{code}", "PATCH");
+        req.uploadHandler = new UploadHandlerRaw(body);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("X-SGS-Token", token);
+        yield return req.SendWebRequest();
+    }
+
+    // Gość: czekaj na adres hosta.
+    public IEnumerator WaitForAddress(Action<string> connect)
+    {
+        while (true)
+        {
+            using var req = UnityWebRequest.Get($"{api}/api/sdk/lobbies/{code}");
+            req.SetRequestHeader("X-SGS-Token", token);
+            yield return req.SendWebRequest();
+            var address = req.result == UnityWebRequest.Result.Success
+                ? JsonUtility.FromJson<Lobby>(req.downloadHandler.text).address : null;
+            if (!string.IsNullOrEmpty(address)) { connect(address); yield break; }
+            yield return new WaitForSeconds(2);
+        }
+    }
+}
+```
+
+### Przez internet (relay silnika)
+
+`address` to dowolny tekst (do 100 znaków, bez spacji). Zamiast IP możesz wpisać kod relaya z silnika (Unity Relay, Steam Networking, EOS, Photon). Wtedy gracze połączą się przez internet. Przykład z Unity Relay:
+
+```csharp
+// Host
+var alloc = await RelayService.Instance.CreateAllocationAsync(maxConnections: 3);
+var joinCode = await RelayService.Instance.GetJoinCodeAsync(alloc.AllocationId);
+StartCoroutine(PublishAddress(joinCode));
+
+// Gość: address z WaitForAddress to joinCode
+var join = await RelayService.Instance.JoinAllocationAsync(address);
+```
 
 ## Wywołania
 
@@ -42,6 +135,6 @@ curl -X POST "$SGS_API_URL/api/sdk/lobbies" \
 
 ## Ograniczenia
 
-- **Brak przechodzenia przez NAT.** SGS przekazuje adres, który mu wysłałeś. Znajomi w tej samej sieci lokalnej (LAN) albo host z otwartym portem połączą się bez problemu. Między domowymi routerami potrzebujesz UPnP lub własnego relaya. Relay w `SGSClient.Server` nie jest jeszcze zbudowany.
+- **SGS nie przechodzi przez NAT.** Przekazuje tylko `address`, który mu wysłałeś. Zwykły IP zadziała w LAN albo u hosta z otwartym portem. Przez internet wpisz do `address` kod relaya silnika (Unity Relay, Steam Networking, EOS, Photon), patrz [wyżej](#przez-internet-relay-silnika).
 - Lobby żyją w pamięci API. Restart API je kasuje, a kilka instancji API ich nie współdzieli.
 - Każdy zalogowany, kto zna kod, może odczytać lobby, bo kod jest sekretem. Zaproszenie i widok na liście mają tylko znajomi hosta.

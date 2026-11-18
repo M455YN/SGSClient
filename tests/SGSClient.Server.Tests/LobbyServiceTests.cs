@@ -14,6 +14,8 @@ public class LobbyServiceTests
     private const int Host = 5;
     private const int Friend = 10;
     private const int Stranger = 11;
+    private const int FriendWithoutGame = 12;
+    private const int SecondFriend = 13;
     private const int GameId = 1;
 
     [Fact]
@@ -53,6 +55,18 @@ public class LobbyServiceTests
 
         Assert.Null(await sut.GetAsync(first.Code));
         Assert.NotNull(await sut.GetAsync(second.Code));
+    }
+
+    [Fact]
+    public async Task Create_RespectsTheGamesDeclaredLobbyMaxPlayers()
+    {
+        await using var db = CreateDb();
+        var (sut, _) = CreateSut(db);
+        (await db.Games.SingleAsync(g => g.Id == GameId)).LobbyMaxPlayers = 3;
+        await db.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<ArgumentException>(() => sut.CreateAsync(Host, Request()));
+        Assert.Equal(3, (await sut.CreateAsync(Host, new CreateLobbyRequest { GameId = GameId, MaxPlayers = 3 })).MaxPlayers);
     }
 
     [Fact]
@@ -109,6 +123,61 @@ public class LobbyServiceTests
         Assert.Empty(await sut.ListFriendLobbiesAsync(Friend));
     }
 
+    [Fact]
+    public async Task Join_AddsAFriendWhoOwnsTheGame_AndRefusesOthers()
+    {
+        await using var db = CreateDb();
+        var (sut, _) = CreateSut(db);
+        var lobby = await sut.CreateAsync(Host, new CreateLobbyRequest { GameId = GameId, MaxPlayers = 2 });
+        Assert.Equal(string.Empty, lobby.Address);
+
+        var joined = await sut.JoinAsync(Friend, lobby.Code);
+
+        Assert.Equal([Host, Friend], joined.Members.Select(m => m.UserId));
+        Assert.Equal("Friend", joined.Members[1].DisplayName);
+        Assert.Equal(2, joined.Players);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sut.JoinAsync(Stranger, lobby.Code));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sut.JoinAsync(FriendWithoutGame, lobby.Code));
+        await Assert.ThrowsAsync<ArgumentException>(() => sut.JoinAsync(SecondFriend, lobby.Code));
+    }
+
+    [Fact]
+    public async Task Start_IsHostOnly_AndHidesTheLobby_AndHostLeavingClosesIt()
+    {
+        await using var db = CreateDb();
+        var (sut, _) = CreateSut(db);
+        var lobby = await sut.CreateAsync(Host, new CreateLobbyRequest { GameId = GameId });
+        await sut.JoinAsync(Friend, lobby.Code);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sut.StartAsync(Friend, lobby.Code));
+        Assert.Single(await sut.ListFriendLobbiesAsync(SecondFriend));
+
+        var started = await sut.StartAsync(Host, lobby.Code);
+        Assert.True(started.Started);
+        Assert.False(started.IsOpen);
+        Assert.Empty(await sut.ListFriendLobbiesAsync(SecondFriend));
+        await Assert.ThrowsAsync<ArgumentException>(() => sut.JoinAsync(SecondFriend, lobby.Code));
+
+        Assert.Equal(1, (await sut.LeaveAsync(Friend, lobby.Code))!.Players);
+        Assert.Null(await sut.LeaveAsync(Host, lobby.Code));
+        Assert.Null(await sut.GetAsync(lobby.Code));
+    }
+
+    [Fact]
+    public async Task Invite_RefusesAFriendWithoutTheGame_AndInvitableListsOnlyOwnersNotInTheLobby()
+    {
+        await using var db = CreateDb();
+        var (sut, _) = CreateSut(db);
+        var lobby = await sut.CreateAsync(Host, new CreateLobbyRequest { GameId = GameId });
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sut.InviteAsync(Host, lobby.Code, FriendWithoutGame));
+        Assert.Equal([Friend, SecondFriend], (await sut.ListInvitableAsync(Host, lobby.Code)).Select(f => f.UserId).Order());
+
+        await sut.JoinAsync(Friend, lobby.Code);
+        Assert.Equal([SecondFriend], (await sut.ListInvitableAsync(Host, lobby.Code)).Select(f => f.UserId));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sut.ListInvitableAsync(Friend, lobby.Code));
+    }
+
     private static CreateLobbyRequest Request(int gameId = GameId, string address = "192.168.0.5:7777", int players = 1) =>
         new() { GameId = gameId, Address = address, MaxPlayers = 4, Players = players };
 
@@ -117,16 +186,25 @@ public class LobbyServiceTests
         db.Users.AddRange(
             new UserEntity { Id = Host, AzureSub = "h", DisplayName = "Host" },
             new UserEntity { Id = Friend, AzureSub = "f", DisplayName = "Friend" },
-            new UserEntity { Id = Stranger, AzureSub = "s", DisplayName = "Stranger" });
+            new UserEntity { Id = Stranger, AzureSub = "s", DisplayName = "Stranger" },
+            new UserEntity { Id = FriendWithoutGame, AzureSub = "n", DisplayName = "NoGame" },
+            new UserEntity { Id = SecondFriend, AzureSub = "t", DisplayName = "Second" });
         db.Games.Add(new GameEntity { Id = GameId, UserId = Host, Title = "Demo", Symbol = "demo" });
-        db.UserRelationships.Add(new UserRelationshipEntity
+        foreach (var id in new[] { Friend, FriendWithoutGame, SecondFriend })
         {
-            RequesterUserId = Host,
-            AddresseeUserId = Friend,
-            Kind = UserRelationshipKind.Friend,
-            Status = UserRelationshipStatus.Accepted,
-            CreatedAtUtc = DateTimeOffset.UtcNow
-        });
+            db.UserRelationships.Add(new UserRelationshipEntity
+            {
+                RequesterUserId = Host,
+                AddresseeUserId = id,
+                Kind = UserRelationshipKind.Friend,
+                Status = UserRelationshipStatus.Accepted,
+                CreatedAtUtc = DateTimeOffset.UtcNow
+            });
+        }
+
+        db.UserGameEntitlements.AddRange(
+            new UserGameEntitlementEntity { UserId = Friend, GameId = GameId, GrantedAtUtc = DateTimeOffset.UtcNow },
+            new UserGameEntitlementEntity { UserId = SecondFriend, GameId = GameId, GrantedAtUtc = DateTimeOffset.UtcNow });
         db.SaveChanges();
 
         var notifications = new EfNotificationService(db);

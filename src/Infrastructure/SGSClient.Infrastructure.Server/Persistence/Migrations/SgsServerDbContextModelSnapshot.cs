@@ -427,6 +427,9 @@ namespace SGSClient.Infrastructure.Server.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
+                    b.Property<int?>("LobbyMaxPlayers")
+                        .HasColumnType("int");
+
                     b.Property<string>("LogoUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("nvarchar(2048)");

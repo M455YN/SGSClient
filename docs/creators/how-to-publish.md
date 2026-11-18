@@ -78,7 +78,8 @@ Wymagane pola: `schemaVersion` (obecnie `1`), `game.title`, `game.symbol`, `buil
 | `releaseStatus` | `announced`, `earlyAccess`, `released`, `demo` |
 | `releaseDate` | Data ISO, np. `2024-06-15` |
 | `ageRating` | `unrated`, `pegi3`, `pegi7`, `pegi12`, `pegi16`, `pegi18` |
-| `features` | `singleplayer`, `multiplayer`, `coop`, `controller`, `cloud`, `achievements`, `modding`, `vr` (`achievements` ustawia się też automatycznie po zdefiniowaniu osiągnięć, patrz [Osiągnięcia](achievements.md)) |
+| `features` | `singleplayer`, `multiplayer`, `coop`, `controller`, `cloud`, `achievements`, `modding`, `vr` (`achievements` ustawia się też automatycznie po zdefiniowaniu osiągnięć, patrz [Osiągnięcia](achievements.md)). `lobby` włącza lobby w kliencie SGS, patrz [Lobby](lobbies.md#lobby-w-kliencie-sgs) |
+| `lobbyMaxPlayers` | Liczba miejsc w lobby klienta, `1`–`16`. Wymagane, gdy `features` zawiera `lobby` |
 | `languages`, `tags` | Tablice tekstów (te same pola co w Panelu twórcy) |
 
 Media są opcjonalne przy wysyłce. Możesz dodać je później w **Panel twórcy → Multimedia**. Wymiary znajdziesz w [Grafice sklepowej](store-art.md).

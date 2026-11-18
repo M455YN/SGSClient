@@ -229,6 +229,48 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         return list ?? [];
     }
 
+    public Task<(LobbyDto? Lobby, string? Error)> CreateLobbyAsync(
+        CreateLobbyRequest request,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<LobbyDto>(HttpMethod.Post, "api/lobbies", request, cancellationToken);
+
+    public Task<LobbyDto?> GetLobbyAsync(string code, CancellationToken cancellationToken = default) =>
+        SendAsync<LobbyDto>(HttpMethod.Get, $"api/lobbies/{Uri.EscapeDataString(code)}", body: null, cancellationToken);
+
+    public Task<(LobbyDto? Lobby, string? Error)> JoinLobbyAsync(string code, CancellationToken cancellationToken = default) =>
+        SendResultAsync<LobbyDto>(HttpMethod.Post, $"api/lobbies/{Uri.EscapeDataString(code)}/join", body: null, cancellationToken);
+
+    public Task<(bool Ok, string? Error)> LeaveLobbyAsync(string code, CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(HttpMethod.Post, $"api/lobbies/{Uri.EscapeDataString(code)}/leave", body: null, cancellationToken);
+
+    public Task<(LobbyDto? Lobby, string? Error)> StartLobbyAsync(string code, CancellationToken cancellationToken = default) =>
+        SendResultAsync<LobbyDto>(HttpMethod.Post, $"api/lobbies/{Uri.EscapeDataString(code)}/start", body: null, cancellationToken);
+
+    public Task<(bool Ok, string? Error)> InviteToLobbyAsync(
+        string code,
+        int friendUserId,
+        CancellationToken cancellationToken = default) =>
+        SendNoContentAsync(
+            HttpMethod.Post,
+            $"api/lobbies/{Uri.EscapeDataString(code)}/invite",
+            new InviteLobbyRequest { FriendUserId = friendUserId },
+            cancellationToken);
+
+    public async Task<IReadOnlyList<InvitableFriendDto>> GetInvitableFriendsAsync(
+        string code,
+        CancellationToken cancellationToken = default) =>
+        await SendAsync<List<InvitableFriendDto>>(
+            HttpMethod.Get,
+            $"api/lobbies/{Uri.EscapeDataString(code)}/invitable",
+            body: null,
+            cancellationToken).ConfigureAwait(false) ?? [];
+
+    public Task<(LobbyDto? Lobby, string? Error)> UpdateLobbyAsync(
+        string code,
+        UpdateLobbyRequest request,
+        CancellationToken cancellationToken = default) =>
+        SendResultAsync<LobbyDto>(HttpMethod.Patch, $"api/lobbies/{Uri.EscapeDataString(code)}", request, cancellationToken);
+
     public async Task<IReadOnlyList<LobbyDto>> GetFriendLobbiesAsync(CancellationToken cancellationToken = default) =>
         await SendAsync<List<LobbyDto>>(HttpMethod.Get, "api/me/lobbies/friends", body: null, cancellationToken)
             .ConfigureAwait(false) ?? [];
@@ -442,6 +484,43 @@ public sealed class BearerUserApiClient(HttpClient http, IAuthSession authSessio
         }
 
         return await response.Content.ReadFromJsonAsync<T>(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>For 204 endpoints: success or the server's error message.</summary>
+    private async Task<(bool Ok, string? Error)> SendNoContentAsync(
+        HttpMethod method,
+        string url,
+        object? body,
+        CancellationToken cancellationToken)
+    {
+        var token = await authSession.GetAccessTokenAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return (false, Loc.T("Brak tokena — zaloguj się ponownie."));
+        }
+
+        try
+        {
+            using var request = new HttpRequestMessage(method, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (body is not null)
+            {
+                request.Content = JsonContent.Create(body);
+            }
+
+            using var response = await http.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                return (true, null);
+            }
+
+            var text = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            return (false, $"HTTP {(int)response.StatusCode}: {TryExtractError(text) ?? response.ReasonPhrase ?? "błąd"}");
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
     }
 
     private async Task<(T? Value, string? Error)> SendResultAsync<T>(

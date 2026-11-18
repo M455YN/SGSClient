@@ -138,6 +138,15 @@ public partial class MainWindowViewModel : ViewModelBase
             await _library.LoadAsync();
         });
         _friends.SetOpenFullProfileHandler(OpenUserProfile);
+        Sidebar.Lobby.SetViewHandlers(
+            () => ShowAddScreen(Sidebar.Lobby, "Library"),
+            () =>
+            {
+                if (CurrentPage == Sidebar.Lobby)
+                {
+                    Navigate("Library");
+                }
+            });
         Sidebar.SelectNav("Home");
     }
 

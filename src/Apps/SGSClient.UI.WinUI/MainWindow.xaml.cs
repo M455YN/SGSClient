@@ -43,6 +43,15 @@ public sealed partial class MainWindow : Window
         Sidebar.ViewModel.SetOpenDetailsHandler(OpenGameDetails);
         Sidebar.ViewModel.SetOpenPropertiesHandler(OpenGameProperties);
         App.Services.GetService<FriendsViewModel>()?.SetOpenFullProfileHandler(OpenUserProfile);
+        Sidebar.ViewModel.Lobby.SetViewHandlers(
+            () => NavigateTo(typeof(LobbyPage), selectTag: "Library"),
+            () =>
+            {
+                if (ContentFrame.CurrentSourcePageType == typeof(LobbyPage))
+                {
+                    NavigateByTagPublic("Library");
+                }
+            });
         ContentFrame.Navigate(typeof(HomePage));
         _ = Sidebar.InitializeAsync();
         WireDownloadStatusBar();

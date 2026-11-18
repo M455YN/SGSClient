@@ -30,6 +30,21 @@ Gra uruchomiona z klienta SGS wywołuje te ścieżki przez [most lokalny](bridge
 
 Szczegóły i przykłady: [Osiągnięcia i statystyki](../creators/achievements.md) i [Lobby i zaproszenia](../creators/lobbies.md).
 
+## Lobby w kliencie (`/api/lobbies`)
+
+Wywołuje klient SGS z tokenem logowania gracza. Gra używa tylko `sdk/lobbies/{code}`.
+
+| Metoda | Ścieżka | Cel |
+|---|---|---|
+| POST | `lobbies/{code}/join` | Dołącz do lobby (tylko znajomy hosta, który ma grę; `400` gdy pełne lub wystartowało) |
+| POST | `lobbies/{code}/leave` | Opuść lobby (tylko członek; wyjście hosta zamyka lobby) |
+| POST | `lobbies/{code}/start` | Start (tylko host); klienci członków uruchamiają grę |
+| GET | `lobbies/{code}/invitable` | Znajomi hosta z grą, jeszcze nie w lobby (`userId`, `displayName`, `isOnline`) |
+
+`LobbyDto` ma dodatkowo `members` (lista `userId`, `displayName`, host pierwszy) i `started` (host kliknął Start).
+
+SignalR (`ChatHub`): `JoinLobbyGroup(code)` (tylko członkowie) i `LeaveLobbyGroup(code)`. Członkowie dostają zdarzenie `LobbyUpdated` z `LobbyDto`.
+
 ## Panel twórcy (`/api/games/{id}/studio`)
 
 Wymagają logowania właściciela gry albo admina.

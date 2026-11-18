@@ -393,6 +393,11 @@ public sealed class GamePackagePublisher(
             game.Features = GameFeatures.None;
         }
 
+        if (info.Features is not null || overwriteMissing)
+        {
+            game.LobbyMaxPlayers = game.Features.HasFlag(GameFeatures.Lobby) ? info.LobbyMaxPlayers : null;
+        }
+
         if (info.Languages is not null)
         {
             game.LanguagesCsv = CsvList.Join(info.Languages);

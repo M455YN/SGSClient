@@ -26,6 +26,11 @@ public sealed class LobbyRecord
     public int Players { get; set; }
     public bool IsOpen { get; set; } = true;
     public DateTimeOffset LastSeenUtc { get; set; }
+
+    // Host is always the first member. Join/leave set Players = Members.Count; a game-created lobby keeps
+    // only the host here and its game reports Players through PATCH as before. Lock the record to change it.
+    public List<int> Members { get; } = [];
+    public bool Started { get; set; }
 }
 
 public sealed class LobbyService(
@@ -45,7 +50,8 @@ public sealed class LobbyService(
         CreateLobbyRequest request,
         CancellationToken cancellationToken = default)
     {
-        var address = NormalizeAddress(request.Address);
+        // A lobby formed in the client has no address until the host's game starts and PATCHes it.
+        var address = string.IsNullOrEmpty(request.Address) ? string.Empty : NormalizeAddress(request.Address);
         if (request.MaxPlayers is < 1 or > MaxPlayersLimit)
         {
             throw new ArgumentException($"Liczba graczy musi mieścić się w zakresie 1–{MaxPlayersLimit}.");
@@ -56,18 +62,16 @@ public sealed class LobbyService(
             throw new ArgumentException("Liczba graczy w lobby jest nieprawidłowa.");
         }
 
-        var game = await db.Games.AsNoTracking()
-            .Where(g => g.Id == request.GameId)
-            .Select(g => new { g.UserId })
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new KeyNotFoundException("Nie znaleziono gry.");
+        await EnsureOwnsGameAsync(hostUserId, request.GameId, "Nie masz tej gry w bibliotece.", cancellationToken);
 
-        var owns = game.UserId == hostUserId
-                   || await db.UserGameEntitlements.AsNoTracking()
-                       .AnyAsync(e => e.UserId == hostUserId && e.GameId == request.GameId, cancellationToken);
-        if (!owns)
+        // The game's manifest caps the lobby; a client could otherwise ask for more slots than the game handles.
+        var declaredMax = await db.Games.AsNoTracking()
+            .Where(g => g.Id == request.GameId)
+            .Select(g => g.LobbyMaxPlayers)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (request.MaxPlayers > declaredMax)
         {
-            throw new UnauthorizedAccessException("Nie masz tej gry w bibliotece.");
+            throw new ArgumentException($"Ta gra obsługuje najwyżej {declaredMax} graczy.");
         }
 
         Purge();
@@ -90,7 +94,8 @@ public sealed class LobbyService(
                 CreatedAtUtc = now,
                 Address = address,
                 Players = request.Players,
-                LastSeenUtc = now
+                LastSeenUtc = now,
+                Members = { hostUserId }
             };
         }
         while (!store.Lobbies.TryAdd(record.Code, record));
@@ -155,6 +160,8 @@ public sealed class LobbyService(
             throw new UnauthorizedAccessException("Zaprosić można tylko znajomego.");
         }
 
+        await EnsureOwnsGameAsync(friendUserId, record.GameId, "Znajomy nie ma tej gry w bibliotece.", cancellationToken);
+
         var lobby = (await ToDtosAsync([record], cancellationToken))[0];
         return await notifications.CreateAsync(
             friendUserId,
@@ -165,6 +172,102 @@ public sealed class LobbyService(
             cancellationToken);
     }
 
+    public async Task<LobbyDto> JoinAsync(int userId, string code, CancellationToken cancellationToken = default)
+    {
+        var record = Find(code) ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
+        if (!record.Members.Contains(userId))
+        {
+            var overview = await friends.GetOverviewAsync(record.HostUserId, cancellationToken);
+            if (overview.Friends.All(f => f.Id != userId))
+            {
+                throw new UnauthorizedAccessException("Dołączyć można tylko do lobby znajomego.");
+            }
+
+            await EnsureOwnsGameAsync(userId, record.GameId, "Nie masz tej gry w bibliotece.", cancellationToken);
+            lock (record)
+            {
+                if (record.Started)
+                {
+                    throw new ArgumentException("Gra w tym lobby już wystartowała.");
+                }
+
+                if (!record.Members.Contains(userId))
+                {
+                    if (record.Members.Count >= record.MaxPlayers)
+                    {
+                        throw new ArgumentException("Lobby jest pełne.");
+                    }
+
+                    record.Members.Add(userId);
+                    record.Players = record.Members.Count;
+                }
+            }
+        }
+
+        record.LastSeenUtc = DateTimeOffset.UtcNow;
+        return (await ToDtosAsync([record], cancellationToken))[0];
+    }
+
+    public async Task<LobbyDto?> LeaveAsync(int userId, string code, CancellationToken cancellationToken = default)
+    {
+        var record = Find(code) ?? throw new KeyNotFoundException("Nie znaleziono lobby (mogło wygasnąć).");
+        if (record.HostUserId == userId)
+        {
+            store.Lobbies.TryRemove(record.Code, out _);
+            return null;
+        }
+
+        lock (record)
+        {
+            if (!record.Members.Remove(userId))
+            {
+                throw new UnauthorizedAccessException("Nie jesteś w tym lobby.");
+            }
+
+            record.Players = record.Members.Count;
+        }
+
+        return (await ToDtosAsync([record], cancellationToken))[0];
+    }
+
+    public async Task<LobbyDto> StartAsync(int hostUserId, string code, CancellationToken cancellationToken = default)
+    {
+        var record = FindHosted(hostUserId, code);
+        record.Started = true;
+        record.IsOpen = false;
+        record.LastSeenUtc = DateTimeOffset.UtcNow;
+        return (await ToDtosAsync([record], cancellationToken))[0];
+    }
+
+    public async Task<IReadOnlyList<InvitableFriendDto>> ListInvitableAsync(
+        int hostUserId,
+        string code,
+        CancellationToken cancellationToken = default)
+    {
+        var record = FindHosted(hostUserId, code);
+        var overview = await friends.GetOverviewAsync(hostUserId, cancellationToken);
+        List<int> members;
+        lock (record)
+        {
+            members = record.Members.ToList();
+        }
+
+        var candidates = overview.Friends.Where(f => !members.Contains(f.Id)).ToList();
+        var ids = candidates.Select(f => f.Id).ToList();
+        var ownerId = await db.Games.AsNoTracking()
+            .Where(g => g.Id == record.GameId)
+            .Select(g => g.UserId)
+            .FirstOrDefaultAsync(cancellationToken);
+        var entitled = await db.UserGameEntitlements.AsNoTracking()
+            .Where(e => e.GameId == record.GameId && ids.Contains(e.UserId))
+            .Select(e => e.UserId)
+            .ToListAsync(cancellationToken);
+        return candidates
+            .Where(f => f.Id == ownerId || entitled.Contains(f.Id))
+            .Select(f => new InvitableFriendDto { UserId = f.Id, DisplayName = f.DisplayName, IsOnline = f.IsOnline })
+            .ToList();
+    }
+
     public async Task<IReadOnlyList<LobbyDto>> ListFriendLobbiesAsync(
         int userId,
         CancellationToken cancellationToken = default)
@@ -173,10 +276,28 @@ public sealed class LobbyService(
         var overview = await friends.GetOverviewAsync(userId, cancellationToken);
         var friendIds = overview.Friends.Select(f => f.Id).ToHashSet();
         var visible = store.Lobbies.Values
-            .Where(l => friendIds.Contains(l.HostUserId) && l.IsOpen && l.Players < l.MaxPlayers)
+            .Where(l => friendIds.Contains(l.HostUserId) && l.IsOpen && !l.Started && l.Players < l.MaxPlayers)
             .OrderByDescending(l => l.CreatedAtUtc)
             .ToList();
         return await ToDtosAsync(visible, cancellationToken);
+    }
+
+    /// <summary>The game's author or anyone with an entitlement row owns it.</summary>
+    private async Task EnsureOwnsGameAsync(int userId, int gameId, string error, CancellationToken cancellationToken)
+    {
+        var game = await db.Games.AsNoTracking()
+            .Where(g => g.Id == gameId)
+            .Select(g => new { g.UserId })
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new KeyNotFoundException("Nie znaleziono gry.");
+
+        var owns = game.UserId == userId
+                   || await db.UserGameEntitlements.AsNoTracking()
+                       .AnyAsync(e => e.UserId == userId && e.GameId == gameId, cancellationToken);
+        if (!owns)
+        {
+            throw new UnauthorizedAccessException(error);
+        }
     }
 
     private LobbyRecord? Find(string code)
@@ -207,7 +328,8 @@ public sealed class LobbyService(
         CancellationToken cancellationToken)
     {
         var gameIds = records.Select(r => r.GameId).Distinct().ToList();
-        var userIds = records.Select(r => r.HostUserId).Distinct().ToList();
+        var members = records.ToDictionary(r => r.Code, r => { lock (r) { return r.Members.ToList(); } });
+        var userIds = members.Values.SelectMany(m => m).Concat(records.Select(r => r.HostUserId)).Distinct().ToList();
         var titles = await db.Games.AsNoTracking()
             .Where(g => gameIds.Contains(g.Id))
             .ToDictionaryAsync(g => g.Id, g => g.Title, cancellationToken);
@@ -226,7 +348,11 @@ public sealed class LobbyService(
             Players = r.Players,
             MaxPlayers = r.MaxPlayers,
             IsOpen = r.IsOpen,
-            CreatedAtUtc = r.CreatedAtUtc
+            CreatedAtUtc = r.CreatedAtUtc,
+            Members = members[r.Code]
+                .Select(id => new LobbyMemberDto { UserId = id, DisplayName = names.GetValueOrDefault(id) })
+                .ToList(),
+            Started = r.Started
         }).ToList();
     }
 

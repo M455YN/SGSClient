@@ -38,9 +38,18 @@ public sealed partial class ShellSidebar : UserControl
                 RefreshChrome();
             }
         };
+        ViewModel.Lobby.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(LobbyViewModel.SidebarText) or nameof(LobbyViewModel.IsActive))
+            {
+                RefreshChrome();
+            }
+        };
         RefreshChrome();
         RefreshInstalledList();
     }
+
+    private void Lobby_Click(object sender, RoutedEventArgs e) => ViewModel.Lobby.ShowCommand.Execute(null);
 
     public async Task InitializeAsync()
     {
@@ -68,6 +77,7 @@ public sealed partial class ShellSidebar : UserControl
         SetLabelVisibility(NavPublishLabel, expanded);
         SetLabelVisibility(NavStudioLabel, expanded);
         SetLabelVisibility(NavAdminLabel, expanded);
+        SetLabelVisibility(LobbyLabel, expanded);
         SetLabelVisibility(NavSettingsLabel, expanded);
 
         ApplyCompactChrome(ProfileButton, expanded, isProfile: true);
@@ -109,6 +119,9 @@ public sealed partial class ShellSidebar : UserControl
         NavAdmin.Visibility = ViewModel.IsAdminVisible ? Visibility.Visible : Visibility.Collapsed;
         NavPublish.Visibility = Visibility.Collapsed;
         NavStudio.Visibility = ViewModel.IsCreatorVisible ? Visibility.Visible : Visibility.Collapsed;
+        LobbyButton.Visibility = ViewModel.Lobby.IsActive ? Visibility.Visible : Visibility.Collapsed;
+        LobbyLabel.Text = ViewModel.Lobby.SidebarText;
+        ToolTipService.SetToolTip(LobbyButton, ViewModel.Lobby.SidebarText);
         InstalledHeaderText.Text = ViewModel.InstalledHeader.ToUpperInvariant();
 
         if (ViewModel.HasAvatar
