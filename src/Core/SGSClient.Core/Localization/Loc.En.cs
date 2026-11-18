@@ -312,6 +312,8 @@ public static partial class Loc
         ["Zaproś znajomych i naciśnij Start"] = "Invite friends and press Start",
         ["Czekamy na gospodarza…"] = "Waiting for the host…",
         ["Gra wystartowała bez Ciebie"] = "The game started without you",
+        ["Wersja deweloperska"] = "Development version",
+        ["Korzystasz z testowego serwera SGS. Dane mogą zostać zmienione lub usunięte."] = "You are using a test SGS server. Data may be changed or deleted.",
         ["Zainstaluj {0}, żeby zagrać ze znajomymi następnym razem."] = "Install {0} to play with your friends next time.",
         ["Wolne miejsce"] = "Free slot",
         ["Nie udało się wysłać zaproszenia."] = "Could not send the invite.",

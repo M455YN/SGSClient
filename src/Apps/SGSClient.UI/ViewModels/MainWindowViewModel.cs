@@ -101,6 +101,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 IsOffline = !_network.IsOnline;
                 IsMaintenance = MaintenanceNotice.IsVisible(_network.IsMaintenance, auth);
                 MaintenanceText = MaintenanceNotice.Text();
+                IsDevelopment = _network.IsDevelopment;
+                DevelopmentText = $"{DevelopmentNotice.Title()}: {DevelopmentNotice.Text()}";
             }
 
             RefreshBanners();
@@ -188,6 +190,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _maintenanceText = string.Empty;
+
+    [ObservableProperty]
+    private bool _isDevelopment;
+
+    [ObservableProperty]
+    private string _developmentText = string.Empty;
 
     /// <summary>True while the page just opened is still loading its data; the shell covers it.</summary>
     [ObservableProperty]

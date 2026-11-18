@@ -291,6 +291,9 @@ public sealed partial class MainWindow : Window
             OfflineBanner.Visibility = network.IsOnline ? Visibility.Collapsed : Visibility.Visible;
             MaintenanceBanner.Visibility = MaintenanceNotice.IsVisible(network.IsMaintenance, App.Services.GetService<IAuthSession>()) ? Visibility.Visible : Visibility.Collapsed;
             MaintenanceBannerText.Text = MaintenanceNotice.Text();
+            DevelopmentBanner.IsOpen = network.IsDevelopment;
+            DevelopmentBanner.Title = DevelopmentNotice.Title();
+            DevelopmentBanner.Message = DevelopmentNotice.Text();
         }
 
         network.Changed += (_, _) =>
