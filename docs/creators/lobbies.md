@@ -90,9 +90,38 @@ public class SgsLobby : MonoBehaviour
 }
 ```
 
-### Przez internet (relay silnika)
+## Łączność: LAN, otwarty port, relay
 
-`address` to dowolny tekst (do 100 znaków, bez spacji). Zamiast IP możesz wpisać kod relaya z silnika (Unity Relay, Steam Networking, EOS, Photon). Wtedy gracze połączą się przez internet. Przykład z Unity Relay:
+SGS pomaga graczom się **znaleźć**: zbiera skład, przekazuje kod i adres. Samo połączenie między grami zestawia gra. SGS nie ma własnego serwera pośredniczącego (relaya) i nie przepuszcza ruchu gry.
+
+### Dlaczego zwykły IP nie działa przez internet
+
+Domowy router (NAT) wpuszcza tylko odpowiedzi na połączenia wychodzące. Gość próbujący połączyć się z IP hosta jest blokowany przez router hosta. Dlatego `192.168.0.5:7777` działa w jednej sieci, a między dwoma domami zwykle nie.
+
+### Co może zrobić gra
+
+| Sposób | Co wpisać do `address` | Dla kogo |
+|---|---|---|
+| **LAN** | Lokalny IP i port hosta, np. `192.168.0.5:7777` | Gracze w jednej sieci. Działa od razu. |
+| **VPN dla graczy** (Tailscale, ZeroTier, Radmin VPN) | IP hosta w sieci VPN | Znajomi, którzy zainstalują ten sam VPN. Gra nic nie zmienia. |
+| **Otwarty port u hosta** (przekierowanie portu albo UPnP z gry) | Publiczny IP i port hosta | Host, który umie lub może otworzyć port. Działa nie w każdej sieci (np. sieci komórkowe, akademiki). |
+| **Relay silnika lub usługi** | Kod dołączenia z usługi | Gry dla wszystkich przez internet. Zalecane. |
+| **Własny relay twórcy** | Adres twojego serwera i np. id sesji | Twórca, który utrzymuje własny serwer. |
+
+`address` to dowolny tekst (do 100 znaków, bez spacji), więc mieści każdą z tych form. SGS go nie sprawdza i nie interpretuje.
+
+### Relay silnika (zalecane przez internet)
+
+Relay to serwer pośredniczący: host i goście łączą się do niego wychodząco, co przechodzi przez każdy router, a on przekazuje ruch między nimi. Większość silników i platform ma go gotowego:
+
+| Usługa | Silnik / platforma | Uwagi |
+|---|---|---|
+| **Unity Relay** (Unity Gaming Services) | Unity | Kod dołączenia pasuje wprost do `address`. Darmowy limit, potem płatne. |
+| **Steam Networking Sockets** | Gry na Steamie | Gracze muszą mieć Steam. |
+| **Epic Online Services P2P** | Dowolny silnik | Darmowe, wymaga konta deweloperskiego Epic. |
+| **Photon** (PUN, Fusion, Realtime) | Unity i inne | Darmowy limit graczy, potem płatne. |
+
+Przykład z Unity Relay:
 
 ```csharp
 // Host
@@ -103,6 +132,16 @@ StartCoroutine(PublishAddress(joinCode));
 // Gość: address z WaitForAddress to joinCode
 var join = await RelayService.Instance.JoinAllocationAsync(address);
 ```
+
+### Którą drogę wybrać
+
+- **Gra turowa, karciana, planszowa:** wystarczy TCP i dowolny relay. Na testy ze znajomymi wystarczy LAN albo VPN.
+- **Gra akcji:** potrzebujesz UDP (ENet, KCP, transport silnika) i relaya z UDP, np. Unity Relay, Steam, EOS.
+- **Własny silnik bez relaya:** zacznij od LAN i VPN. Do gry przez internet użyj EOS P2P albo własnego serwera.
+
+### Dlaczego SGS nie ma własnego relaya
+
+Rozważaliśmy to i na razie odpuściliśmy. Gry na popularnych silnikach mają relay w silniku albo w usłudze, a relay SGS pomógłby tylko grom bez takiej opcji, kosztem utrzymania osobnego serwera, który przepuszcza cały ruch gier. Jeśli twoja gra go potrzebuje, daj znać. Gdy pojawi się realna potrzeba, wrócimy do tematu: najpierw relay TCP dla gier turowych, a UDP dopiero dla gier akcji.
 
 ## Wywołania
 
@@ -138,6 +177,6 @@ curl -X POST "$SGS_API_URL/api/sdk/lobbies" \
 
 ## Ograniczenia
 
-- **SGS nie przechodzi przez NAT.** Przekazuje tylko `address`, który mu wysłałeś. Zwykły IP zadziała w LAN albo u hosta z otwartym portem. Przez internet wpisz do `address` kod relaya silnika (Unity Relay, Steam Networking, EOS, Photon), patrz [wyżej](#przez-internet-relay-silnika).
+- **SGS nie przechodzi przez NAT i nie ma własnego relaya.** Przekazuje tylko `address`, który mu wysłałeś. Zwykły IP zadziała w LAN, przez VPN albo u hosta z otwartym portem. Przez internet użyj relaya silnika, patrz [Łączność](#łączność-lan-otwarty-port-relay).
 - Lobby są zapisywane w bazie, więc przeżywają restart API. Przy kilku instancjach API zdarzenie `LobbyUpdated` dociera tylko do klientów połączonych z tą samą instancją, dopóki SignalR nie dostanie wspólnego backplane'u (np. Redis).
-- Każdy zalogowany, kto zna kod, może odczytać lobby, bo kod jest sekretem. Zaproszenie i widok na liście mają tylko znajomi hosta.
+- Kod lobby działa jak zaproszenie: każdy zalogowany, kto go zna i ma grę, może odczytać lobby i do niego dołączyć. Zaproszenia i lista lobby znajomych są tylko dla znajomych hosta. Host może wyrzucić niechcianego gracza.

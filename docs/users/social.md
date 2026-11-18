@@ -36,7 +36,7 @@ Jeśli twórca gry obsługuje lobby, znajomy może zaprosić Cię do wspólnej s
 
 Otwarte lobby z wolnym miejscem widzisz też przy znajomym na liście **Znajomi**.
 
-Lobby nie przechodzi przez NAT: połączenie z hostem działa w tej samej sieci lub przy otwartym porcie hosta, chyba że gra używa własnego relaya.
+SGS tylko zbiera graczy, a łączy ich sama gra. Jeśli gra nie używa relaya, połączenie z hostem działa w tej samej sieci, przez wspólny VPN (np. Tailscale, ZeroTier, Radmin VPN) albo gdy host ma otwarty port. Gry z relayem (np. na Unity Relay czy Steamie) działają przez internet bez tego.
 
 ## Graj ze znajomymi
 

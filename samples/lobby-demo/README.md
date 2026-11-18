@@ -43,5 +43,5 @@ W drugiej komendzie podaj adres, który wypisał host.
 
 ## Ograniczenia
 
-- Host podaje swój adres w sieci lokalnej, więc gra działa w obrębie jednej sieci albo przez VPN. Gra przeznaczona do grania przez internet wpisuje do `address` kod relaya (patrz [docs/creators/lobbies.md](../../docs/creators/lobbies.md)).
+- Host podaje swój adres w sieci lokalnej, więc gra działa w obrębie jednej sieci albo przez VPN. Gra przeznaczona do grania przez internet wpisuje do `address` kod relaya (patrz [Łączność](../../docs/creators/lobbies.md#łączność-lan-otwarty-port-relay)).
 - To przykład, nie wzór architektury sieciowej: tekstowy protokół, bez obsługi rozłączeń i ponownego dołączania.
