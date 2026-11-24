@@ -73,6 +73,7 @@ public sealed class GameDto
     public DateTimeOffset? ReleaseDateUtc { get; init; }
     public GameAgeRating AgeRating { get; init; } = GameAgeRating.Unrated;
     public GameFeatures Features { get; init; } = GameFeatures.None;
+    public int? LobbyMaxPlayers { get; init; }
     public string? LanguagesCsv { get; init; }
     public string? TagsCsv { get; init; }
 

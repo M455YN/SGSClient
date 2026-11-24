@@ -12,5 +12,6 @@ public enum GameFeatures
     CloudSaves = 1 << 4,
     Achievements = 1 << 5,
     Modding = 1 << 6,
-    Vr = 1 << 7
+    Vr = 1 << 7,
+    Lobby = 1 << 8
 }

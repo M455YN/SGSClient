@@ -15,7 +15,8 @@
     "releaseStatus": "released",
     "releaseDate": "2024-01-01",
     "ageRating": "pegi3",
-    "features": ["singleplayer", "controller"],
+    "features": ["singleplayer", "controller", "lobby"],
+    "lobbyMaxPlayers": 4,
     "languages": ["Polski", "English"],
     "tags": ["demo", "sample"],
     "media": {

@@ -168,6 +168,15 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
         var output = await LaunchAsync(CreateBridge(), gameId: 7, lobbyCode: "ABC234");
 
         Assert.Equal("ABC234", output.Split(';')[3]);
+        Assert.NotEqual("1", output.Split(';')[4]);
+    }
+
+    [Fact]
+    public async Task Launch_TellsTheLobbyHostToHost()
+    {
+        var output = await LaunchAsync(CreateBridge(), gameId: 7, lobbyCode: "ABC234", isLobbyHost: true);
+
+        Assert.Equal("1", output.Split(';')[4]);
     }
 
     [Fact]
@@ -286,7 +295,7 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
     }
 
     /// <summary>Starts a real throw-away script and reads back the environment the launcher gave it.</summary>
-    private async Task<string> LaunchAsync(AchievementBridge bridge, int gameId, string? lobbyCode = null)
+    private async Task<string> LaunchAsync(AchievementBridge bridge, int gameId, string? lobbyCode = null, bool isLobbyHost = false)
     {
         var outputPath = Path.Combine(_dir, "env.txt");
         var script = OperatingSystem.IsWindows()
@@ -295,8 +304,8 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
         File.WriteAllText(
             script,
             OperatingSystem.IsWindows()
-                ? $"@echo %SGS_GAME_ID%;%SGS_API_URL%;%SGS_ACHIEVEMENTS_TOKEN%;%SGS_LOBBY_CODE%> \"{outputPath}\""
-                : $"echo \"$SGS_GAME_ID;$SGS_API_URL;$SGS_ACHIEVEMENTS_TOKEN;$SGS_LOBBY_CODE\" > \"{outputPath}\"",
+                ? $"@echo %SGS_GAME_ID%;%SGS_API_URL%;%SGS_ACHIEVEMENTS_TOKEN%;%SGS_LOBBY_CODE%;%SGS_LOBBY_HOST%;> \"{outputPath}\""
+                : $"echo \"$SGS_GAME_ID;$SGS_API_URL;$SGS_ACHIEVEMENTS_TOKEN;$SGS_LOBBY_CODE;$SGS_LOBBY_HOST\" > \"{outputPath}\"",
             new UTF8Encoding(false));
 
         var services = new ServiceCollection();
@@ -309,7 +318,8 @@ public sealed class GameLauncherEnvironmentTests : IDisposable
             GameId = gameId,
             Title = "Test",
             ExecutablePath = script,
-            LobbyCode = lobbyCode
+            LobbyCode = lobbyCode,
+            IsLobbyHost = isLobbyHost
         });
         Assert.True(result.Started, result.Message);
 

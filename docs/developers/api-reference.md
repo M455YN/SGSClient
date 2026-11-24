@@ -27,8 +27,27 @@ Gra uruchomiona z klienta SGS wywołuje te ścieżki przez [most lokalny](bridge
 | POST | `sdk/lobbies` | Otwórz lobby, zwraca kod |
 | GET / PATCH / DELETE | `sdk/lobbies/{code}` | Odczyt, aktualizacja i zamknięcie lobby (aktualizacja tylko przez hosta) |
 | POST | `sdk/lobbies/{code}/invite` | Zaproś znajomego (tylko host) |
+| POST | `sdk/lobbies/{code}/finish` | Koniec meczu, wszyscy wracają do lobby (tylko host). Klient robi to sam, gdy gra hosta się zamknie |
 
 Szczegóły i przykłady: [Osiągnięcia i statystyki](../creators/achievements.md) i [Lobby i zaproszenia](../creators/lobbies.md).
+
+## Lobby w kliencie (`/api/lobbies`)
+
+Wywołuje klient SGS z tokenem logowania gracza. Gra używa tylko `sdk/lobbies/{code}`.
+
+| Metoda | Ścieżka | Cel |
+|---|---|---|
+| POST | `lobbies/{code}/join` | Dołącz do lobby (każdy, kto ma grę i zna kod; `400` gdy pełne lub wystartowało) |
+| POST | `lobbies/{code}/leave` | Opuść lobby (tylko członek). Gdy wychodzi host, gospodarzem zostaje najwcześniej dołączony gracz; ostatnie wyjście zamyka lobby |
+| POST | `lobbies/{code}/ready` z `{"ready": true}` | Gość zgłasza gotowość (lub ją cofa) |
+| POST | `lobbies/{code}/kick` z `{"userId": 3}` | Host wyrzuca gracza |
+| POST | `lobbies/{code}/start` | Start (tylko host, `400` gdy nie wszyscy goście są gotowi); klienci członków uruchamiają grę |
+| POST | `lobbies/{code}/finish` | Koniec meczu (tylko host): `started` wraca na `false`, gotowość się zeruje |
+| GET | `lobbies/{code}/invitable` | Znajomi hosta z grą, jeszcze nie w lobby (`userId`, `displayName`, `isOnline`) |
+
+`LobbyDto` ma dodatkowo `members` (lista `userId`, `displayName`, `isReady`, host pierwszy) i `started` (trwa mecz).
+
+SignalR (`ChatHub`): `JoinLobbyGroup(code)` (tylko członkowie) i `LeaveLobbyGroup(code)`. Członkowie dostają zdarzenie `LobbyUpdated` z `LobbyDto`.
 
 ## Panel twórcy (`/api/games/{id}/studio`)
 

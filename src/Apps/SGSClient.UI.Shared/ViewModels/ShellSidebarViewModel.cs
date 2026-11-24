@@ -41,7 +41,8 @@ public partial class ShellSidebarViewModel : ObservableObject
         NotificationsViewModel? notifications = null,
         ISgsApiService? api = null,
         ICatalogCacheStore? catalogCache = null,
-        IUiDispatcher? ui = null)
+        IUiDispatcher? ui = null,
+        LobbyViewModel? lobby = null)
     {
         _scopes = scopes;
         _launcher = launcher;
@@ -63,12 +64,24 @@ public partial class ShellSidebarViewModel : ObservableObject
         };
         Notifications = notifications ?? new NotificationsViewModel();
         LobbyJoin.Handler = JoinLobbyAsync;
+        Lobby = lobby ?? new LobbyViewModel();
+        Lobby.LaunchGame = (gameId, code, host) => LaunchInLobbyAsync(gameId, code, host);
+        Lobby.IsGameInstalled = async gameId => await FindInstalledAsync(gameId) is not null;
+        Lobby.OpenGameDetails = gameId => _openDetails?.Invoke(gameId);
+        LobbyJoin.CodeHandler = Lobby.JoinByCodeAsync;
+        if (_launcher is not null)
+        {
+            _launcher.SessionEnded += gameId => _ = Lobby.GameEndedAsync(gameId);
+        }
         _apiBaseUrl = configuration?.GetSection(ApiClientSettings.SectionName).Get<ApiClientSettings>()?.BaseUrl
             ?? new ApiClientSettings().BaseUrl;
         RefreshProfile();
     }
 
     public NotificationsViewModel Notifications { get; }
+
+    /// <summary>The lobby the player is in; drives the "W lobby" row.</summary>
+    public LobbyViewModel Lobby { get; }
 
     public void SetNavigateHandler(Action<string> navigate) => _navigate = navigate;
     public void SetOpenDetailsHandler(Action<int> open) => _openDetails = open;
@@ -305,32 +318,38 @@ public partial class ShellSidebarViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Starts the game with the lobby code so it joins the host. When the game is not installed
-    /// (or cannot start) the player lands on its page instead, to install it.
+    /// Games with the Lobby feature open the lobby view; other games start right away with the code so
+    /// they join the host themselves. When the game is not installed the player lands on its page instead.
     /// </summary>
     public async Task JoinLobbyAsync(int gameId, string code)
     {
+        if (await HasLobbyFeatureAsync(gameId))
+        {
+            await Lobby.JoinAsync(code);
+            return;
+        }
+
+        await LaunchInLobbyAsync(gameId, code, isHost: false);
+    }
+
+    private async Task LaunchInLobbyAsync(int gameId, string code, bool isHost)
+    {
         try
         {
-            if (_scopes is not null && _launcher is not null)
+            if (_launcher is not null && await FindInstalledAsync(gameId) is { } item)
             {
-                using var scope = _scopes.CreateScope();
-                var library = scope.ServiceProvider.GetService<ILocalLibraryStore>();
-                var item = library is null ? null : (await library.GetOwnedAsync()).FirstOrDefault(x => x.GameId == gameId);
-                if (item is { InstallState: InstallState.Installed } && !string.IsNullOrWhiteSpace(item.ExecutablePath))
+                var result = await _launcher.LaunchAsync(new GameLaunchRequest
                 {
-                    var result = await _launcher.LaunchAsync(new GameLaunchRequest
-                    {
-                        GameId = gameId,
-                        Title = item.Title,
-                        ExecutablePath = item.ExecutablePath,
-                        LobbyCode = code
-                    });
-                    if (result.Started)
-                    {
-                        await LoadInstalledAsync();
-                        return;
-                    }
+                    GameId = gameId,
+                    Title = item.Title,
+                    ExecutablePath = item.ExecutablePath!,
+                    LobbyCode = code,
+                    IsLobbyHost = isHost
+                });
+                if (result.Started)
+                {
+                    await LoadInstalledAsync();
+                    return;
                 }
             }
         }
@@ -340,6 +359,36 @@ public partial class ShellSidebarViewModel : ObservableObject
         }
 
         _openDetails?.Invoke(gameId);
+    }
+
+    private async Task<GameLibraryItem?> FindInstalledAsync(int gameId)
+    {
+        if (_scopes is null)
+        {
+            return null;
+        }
+
+        using var scope = _scopes.CreateScope();
+        var library = scope.ServiceProvider.GetService<ILocalLibraryStore>();
+        var item = library is null ? null : (await library.GetOwnedAsync()).FirstOrDefault(x => x.GameId == gameId);
+        return item is { InstallState: InstallState.Installed } && !string.IsNullOrWhiteSpace(item.ExecutablePath)
+            ? item
+            : null;
+    }
+
+    private async Task<bool> HasLobbyFeatureAsync(int gameId)
+    {
+        try
+        {
+            IReadOnlyList<SGSClient.Core.DTOs.GameDto> games = _api is not null
+                ? await _api.GetGamesAsync()
+                : _catalogCache is not null ? (await _catalogCache.LoadCatalogAsync()).Games : [];
+            return games.FirstOrDefault(g => g.Id == gameId)?.Features.HasFlag(GameFeatures.Lobby) == true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     [RelayCommand]

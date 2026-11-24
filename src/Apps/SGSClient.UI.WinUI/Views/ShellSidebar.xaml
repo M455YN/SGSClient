@@ -158,6 +158,12 @@
             <TextBlock x:Name="NavAdminLabel" Text="Admin" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
+        <Button x:Name="LobbyButton" Click="Lobby_Click" Style="{StaticResource NavButtonStyle}" Visibility="Collapsed">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <FontIcon Glyph="&#xE716;" FontSize="16" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+            <TextBlock x:Name="LobbyLabel" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </Button>
       </StackPanel>
 
       <Grid x:Name="InstalledSection" Grid.Row="1" Margin="4,8,4,0">

@@ -30,6 +30,8 @@ public static partial class SgsPackageRules
     public const int MaxStudioNameLength = 128;
     public const int MaxUrlLength = 2048;
     public const int MaxFeatureCount = 16;
+    public const int MinLobbyPlayers = 1;
+    public const int MaxLobbyPlayers = 16;
     public const int MaxLanguageCount = 32;
     public const int MaxTagCount = 32;
     public const int MaxCsvFieldLength = 512;
@@ -46,7 +48,8 @@ public static partial class SgsPackageRules
         "cloud",
         "achievements",
         "modding",
-        "vr"
+        "vr",
+        "lobby"
     ];
 
     public static readonly string[] ReleaseStatusSlugs =
@@ -545,6 +548,7 @@ public static partial class SgsPackageRules
         if (features.HasFlag(GameFeatures.Achievements)) list.Add("achievements");
         if (features.HasFlag(GameFeatures.Modding)) list.Add("modding");
         if (features.HasFlag(GameFeatures.Vr)) list.Add("vr");
+        if (features.HasFlag(GameFeatures.Lobby)) list.Add("lobby");
         return list;
     }
 
@@ -730,9 +734,13 @@ public static partial class SgsPackageRules
 
         if (game.Features is not null)
         {
-            if (!TryParseFeatures(game.Features, out _, out var featureError))
+            if (!TryParseFeatures(game.Features, out var parsedFeatures, out var featureError))
             {
                 errors.Add(featureError!);
+            }
+            else if (parsedFeatures.HasFlag(GameFeatures.Lobby) && game.LobbyMaxPlayers is null)
+            {
+                errors.Add(Loc.F("Funkcja 'lobby' wymaga pola lobbyMaxPlayers ({0}-{1}).", MinLobbyPlayers, MaxLobbyPlayers));
             }
             else
             {
@@ -743,6 +751,11 @@ public static partial class SgsPackageRules
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
             }
+        }
+
+        if (game.LobbyMaxPlayers is { } lobbyMax && (lobbyMax < MinLobbyPlayers || lobbyMax > MaxLobbyPlayers))
+        {
+            errors.Add(Loc.F("lobbyMaxPlayers musi być w zakresie {0}-{1}.", MinLobbyPlayers, MaxLobbyPlayers));
         }
 
         if (game.Languages is not null)
@@ -798,6 +811,7 @@ public static partial class SgsPackageRules
             "achievements" or "achievement" => "achievements",
             "modding" or "mods" or "mod" => "modding",
             "vr" or "virtualreality" => "vr",
+            "lobby" or "sgslobby" => "lobby",
             _ => null
         };
     }
@@ -814,6 +828,7 @@ public static partial class SgsPackageRules
             "achievements" => GameFeatures.Achievements,
             "modding" => GameFeatures.Modding,
             "vr" => GameFeatures.Vr,
+            "lobby" => GameFeatures.Lobby,
             _ => GameFeatures.None
         };
         return flag != GameFeatures.None;

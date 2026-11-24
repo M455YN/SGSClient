@@ -50,6 +50,10 @@
                      HorizontalAlignment="Center"
                      TextWrapping="Wrap" />
         </Border>
+        <InfoBar x:Name="DevelopmentBanner"
+                 IsOpen="False"
+                 IsClosable="False"
+                 Severity="Warning" />
       </StackPanel>
 
       <Grid Grid.Row="1">

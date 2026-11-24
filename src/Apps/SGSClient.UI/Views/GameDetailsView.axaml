@@ -77,6 +77,10 @@
                             Padding="18,12"
                             MinWidth="200"
                             Classes="accent"/>
+                    <Button Content="{loc:Tr Key='Graj ze znajomymi'}"
+                            Command="{Binding PlayWithFriendsCommand}"
+                            IsVisible="{Binding CanPlayWithFriends}"
+                            Padding="18,12"/>
                     <StackPanel VerticalAlignment="Center" Spacing="2">
                       <TextBlock Text="{Binding PlaytimeText}" IsVisible="{Binding HasPlaytime}"
                                  Opacity="0.85" FontSize="13" FontWeight="SemiBold"/>

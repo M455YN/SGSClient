@@ -465,6 +465,30 @@ public partial class FriendsViewModel : ObservableObject
         }
     }
 
+    /// <summary>A lobby code typed in by hand, e.g. from Discord.</summary>
+    [ObservableProperty]
+    public partial string LobbyCode { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string LobbyCodeError { get; private set; } = string.Empty;
+
+    [RelayCommand]
+    private async Task JoinByCodeAsync()
+    {
+        var code = LobbyCode.Trim().ToUpperInvariant();
+        if (code.Length != 6 || !code.All(char.IsAsciiLetterOrDigit))
+        {
+            LobbyCodeError = Loc.T("Kod ma 6 znaków, np. K7M4QX.");
+            return;
+        }
+
+        LobbyCodeError = string.Empty;
+        LobbyCode = string.Empty;
+        await LobbyJoin.RequestByCodeAsync(code);
+    }
+
+    partial void OnLobbyCodeChanged(string value) => LobbyCodeError = string.Empty;
+
     private void ApplyOverview(SocialOverviewDto overview)
     {
         Replace(Friends, overview.Friends);
