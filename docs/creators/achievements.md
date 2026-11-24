@@ -393,6 +393,127 @@ Licznik osiągnięcia (`progress`) tak samo, tylko adres `.../achievements/ACH_K
 
 Listę osiągnięć i zapisanych statystyk pobierzesz samym **Get URL** (bez danych POST, więc idzie `GET`): Global String A + `"/api/sdk/achievements?lang=pl&token="` + Global String B.
 
+### RPG Maker MV i MZ
+
+MV i MZ działają na NW.js, więc gra ma dostęp do zmiennych środowiskowych (`process.env`) i może wysyłać zapytania HTTP. Wystarczy jeden plugin, bez dodatkowych rozszerzeń.
+
+**1. Utwórz plik** `js/plugins/SgsAchievements.js` w folderze projektu i wklej:
+
+```js
+/*:
+ * @target MV MZ
+ * @plugindesc Osiągnięcia SGS: Sgs.unlock("klucz"), Sgs.progress("klucz", 5), Sgs.setStat("klucz", 12)
+ */
+(function () {
+    // Test z edytora albo gra uruchomiona poza SGS: brak zmiennych, wywołania nic nie robią.
+    var env = typeof process !== "undefined" ? process.env : {};
+    var url = env.SGS_API_URL;
+    var token = env.SGS_ACHIEVEMENTS_TOKEN;
+
+    function post(path, value) {
+        if (!url || !token) return;
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url + path);
+        xhr.setRequestHeader("X-SGS-Token", token);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onerror = function () {}; // klient SGS zamknięty: gra działa dalej
+        xhr.send(value === undefined ? null : JSON.stringify({ value: value }));
+    }
+
+    window.Sgs = {
+        unlock: function (key) { post("/api/sdk/achievements/" + key + "/unlock"); },
+        progress: function (key, value) { post("/api/sdk/achievements/" + key + "/progress", Math.floor(value)); },
+        setStat: function (key, value) { post("/api/sdk/stats/" + key, value); }
+    };
+})();
+```
+
+**2. Włącz plugin:** *Narzędzia → Menedżer pluginów* (Plugin Manager) → dodaj `SgsAchievements` → **ON**.
+
+**3. Wywołaj w zdarzeniu** komendą **Skrypt** (*Script*, 3. zakładka komend zdarzeń):
+
+| Co | Komenda Skrypt |
+|---|---|
+| Odblokuj osiągnięcie | `Sgs.unlock("ach_witamy_w_grojcu")` |
+| Licznik osiągnięcia ze zmiennej nr 5 | `Sgs.progress("ach_zabojca", $gameVariables.value(5))` |
+| Statystyka ze zmiennej nr 6 | `Sgs.setStat("NUM_GAMES", $gameVariables.value(6))` |
+
+W cudzysłowie jest API name z kolumny **API name** w Panelu twórcy. Adres i token plugin bierze sam, niczego więcej nie wpisujesz.
+
+- **Testuj grą uruchomioną z klienta SGS** (przycisk **Graj**). Przy *Test Play* z edytora zmiennych nie ma i nic się nie wysyła. To normalne.
+- Publikuj build **Windows** z *Plik → Wdrożenie* (*Deployment*). Wersja przeglądarkowa (*Web browsers/Android/iOS*) nie ma dostępu do `process.env`.
+- Gracz dostaje powiadomienie o odblokowaniu w kliencie SGS. Własny komunikat w grze jest opcjonalny.
+
+### RPG Maker VX Ace
+
+VX Ace (RGSS3) czyta zmienne środowiskowe przez `ENV`, ale nie ma wbudowanego HTTP. Skrypt niżej wysyła zapytania przez systemową bibliotekę Windows (WinHTTP), więc też nie potrzebujesz żadnych dodatków.
+
+**1. Dodaj skrypt:** *Narzędzia → Edytor skryptów* (F11) → w sekcji **▼ Materials** prawy klik → *Wstaw* (Insert) → nazwij `SGS` i wklej:
+
+```ruby
+# Osiągnięcia SGS. Komenda Skrypt w zdarzeniu: Sgs.unlock("klucz"), Sgs.set_stat("klucz", 12)
+module Sgs
+  Open    = Win32API.new('winhttp', 'WinHttpOpen', 'PLLLL', 'L')
+  Connect = Win32API.new('winhttp', 'WinHttpConnect', 'LPLL', 'L')
+  Request = Win32API.new('winhttp', 'WinHttpOpenRequest', 'LPPLLLL', 'L')
+  Send    = Win32API.new('winhttp', 'WinHttpSendRequest', 'LPLPLLL', 'L')
+  Receive = Win32API.new('winhttp', 'WinHttpReceiveResponse', 'LL', 'L')
+  Close   = Win32API.new('winhttp', 'WinHttpCloseHandle', 'L', 'L')
+
+  # Tekst ASCII -> UTF-16 dla WinHTTP. Adres, token i API name są zawsze ASCII.
+  def self.wide(text)
+    text.unpack('C*').pack('v*') + "\0\0"
+  end
+
+  def self.post(path, body = '')
+    url = ENV['SGS_API_URL']
+    token = ENV['SGS_ACHIEVEMENTS_TOKEN']
+    # Test z edytora albo gra poza SGS: brak zmiennych, nic nie wysyłamy.
+    return if token.nil? || url.nil? || url !~ %r{\Ahttp://([^:/]+):(\d+)}
+    host, port = $1, $2.to_i
+    session = Open.call(wide('SGS'), 1, 0, 0, 0) # 1 = bez proxy, most jest na 127.0.0.1
+    return if session == 0
+    begin
+      connect = Connect.call(session, wide(host), port, 0)
+      request = Request.call(connect, wide('POST'), wide(path), 0, 0, 0, 0)
+      headers = "X-SGS-Token: #{token}\r\nContent-Type: application/json"
+      Send.call(request, wide(headers), headers.size, body, body.size, body.size, 0)
+      Receive.call(request, 0)
+      Close.call(request)
+      Close.call(connect)
+    ensure
+      Close.call(session)
+    end
+  rescue StandardError
+    nil # klient SGS zamknięty albo błąd sieci: gra działa dalej
+  end
+
+  def self.unlock(key)
+    post("/api/sdk/achievements/#{key}/unlock")
+  end
+
+  def self.progress(key, value)
+    post("/api/sdk/achievements/#{key}/progress", "{\"value\":#{value.to_i}}")
+  end
+
+  def self.set_stat(key, value)
+    post("/api/sdk/stats/#{key}", "{\"value\":#{value}}")
+  end
+end
+```
+
+**2. Wywołaj w zdarzeniu** komendą **Skrypt** (*Script…*, 3. strona komend zdarzeń):
+
+| Co | Komenda Skrypt |
+|---|---|
+| Odblokuj osiągnięcie | `Sgs.unlock("ach_witamy_w_grojcu")` |
+| Licznik osiągnięcia ze zmiennej nr 5 | `Sgs.progress("ach_zabojca", $game_variables[5])` |
+| Statystyka ze zmiennej nr 6 | `Sgs.set_stat("NUM_GAMES", $game_variables[6])` |
+
+- Wywołanie trwa ułamek sekundy, bo most działa na tym samym komputerze. Gra na ten czas się nie zacina.
+- Tak jak w MV/MZ: testuj z klienta SGS (**Graj**). *Test Play* z edytora nic nie wysyła.
+- API name musi składać się z liter, cyfr, `_` i `-` (tak też wymaga panel), bo skrypt przesyła tylko znaki ASCII.
+
 Każdy inny silnik działa tak samo: odczytaj dwie zmienne, ustaw nagłówek (albo `?token=`) i wyślij `POST`.
 
 ### Pełny przykład: wygrane mecze → statystyka → osiągnięcie
